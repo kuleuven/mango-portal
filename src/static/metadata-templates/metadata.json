@@ -1,0 +1,179 @@
+{
+  "$id": "https://yoda.uu.nl/schemas/core-0/metadata.json",
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "definitions": {
+    "stringNormal": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "stringLong": {
+      "type": "string",
+      "maxLength": 2700
+    },
+    "optionsDataType": {
+      "type": "string",
+      "enum": [
+        "Dataset",
+        "DataPaper",
+        "Software",
+        "Text"
+      ],
+      "enumNames": [
+        "Datapackage",
+        "Method",
+        "Software",
+        "Other Document"
+      ]
+    },
+    "optionsDataClassification": {
+      "type": "string",
+      "enum": [
+        "Public",
+        "Basic",
+        "Sensitive",
+        "Critical"
+      ]
+    },
+    "optionsCreatorType": {
+      "type": "string",
+      "enum": [
+        "Person",
+        "Organisation"
+      ]
+    },
+    "optionsDataAccessRestriction": {
+      "type": "string",
+      "enum": [
+        "Open - freely retrievable",
+        "Restricted - available upon request",
+        "Closed"
+      ]
+    },
+    "optionsNameIdentifierScheme": {
+      "type": "string",
+      "enum": [
+        "ORCID",
+        "DAI",
+        "Author identifier (Scopus)",
+        "ResearcherID (Web of Science)",
+        "ISNI"
+      ]
+    },
+    "optionsLicense": {
+      "type": "string",
+      "enum": [
+        "Creative Commons Attribution 4.0 International Public License",
+        "Creative Commons Attribution-ShareAlike 4.0 International Public License",
+        "Creative Commons Zero v1.0 Universal",
+        "Open Data Commons Attribution License (ODC-By) v1.0",
+        "Custom"
+      ]
+    }
+  },
+  "title": "",
+  "type": "object",
+  "required": [
+    "Title",
+    "Description",
+    "Data_Type",
+    "Data_Classification",
+    "Creator",
+    "License",
+    "Data_Access_Restriction"
+  ],
+  "properties": {
+    "Title": {
+      "$ref": "#/definitions/stringNormal",
+      "title": "Title"
+    },
+    "Description": {
+      "$ref": "#/definitions/stringLong",
+      "title": "Description"
+    },
+    "Data_Type": {
+      "$ref": "#/definitions/optionsDataType",
+      "title": "Data type",
+      "default": "Dataset"
+    },
+    "Data_Classification": {
+      "$ref": "#/definitions/optionsDataClassification",
+      "title": "Data classification"
+    },
+    "Creator": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "yoda:structure": "subproperties",
+        "required": [
+          "Name",
+          "Affiliation"
+        ],
+        "properties": {
+          "Name": {
+            "type": "object",
+            "additionalProperties": false,
+            "yoda:structure": "compound",
+            "required": [
+              "Given_Name",
+              "Family_Name"
+            ],
+            "properties": {
+              "Given_Name": {
+                "$ref": "#/definitions/stringNormal",
+                "title": "First Name"
+              },
+              "Family_Name": {
+                "$ref": "#/definitions/stringNormal",
+                "title": "Family Name"
+              }
+            }
+          },
+          "Affiliation": {
+            "type": "array",
+            "default": ["Utrecht University"],
+            "items": {
+              "$ref": "#/definitions/stringNormal",
+              "title": "Affiliation",
+              "yoda:required": true
+            }
+          },
+          "Person_Identifier": {
+            "title": "Person identifier",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "yoda:structure": "compound",
+              "properties": {
+                "Name_Identifier_Scheme": {
+                  "$ref": "#/definitions/optionsNameIdentifierScheme",
+                  "title": "Type"
+                },
+                "Name_Identifier": {
+                  "$ref": "#/definitions/stringNormal",
+                  "title": "Identifier"
+                }
+              },
+              "dependencies": {
+                "Name_Identifier_Scheme": ["Name_Identifier"],
+                "Name_Identifier": ["Name_Identifier_Scheme"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "License": {
+      "$ref": "#/definitions/optionsLicense",
+      "title": "License"
+    },
+    "Data_Access_Restriction": {
+      "$ref": "#/definitions/optionsDataAccessRestriction",
+      "title": "Data package access",
+      "default": "Restricted - available upon request"
+    }
+  }
+}

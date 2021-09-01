@@ -1,0 +1,35 @@
+<div class="col-3 col-sm-3 flex-grow-sm-1 flex-shrink-1 flex-grow-0 sticky-top pb-sm-0 pb-3">
+            <div class="bg-light border rounded-3 p-1 h-100 sticky-top">
+                <!-- <h6 class="d-none d-sm-block text-muted">Sticky Sidebar</h6> -->
+                <ul class="nav nav-pills flex-sm-column flex-row mb-auto justify-content-between text-truncate">
+                   {#  <li class="nav-item">
+                        <a href="#" class="nav-link px-2 text-truncate">
+                            <i class="bi bi-house fs-4"></i>
+                            <span class="d-none d-sm-inline">Home</span>
+                        </a>
+                    </li> #}
+                    <li>
+                        <a href="/" class="nav-link px-2 text-truncate">
+                            <i class="bi bi-speedometer fs-4"></i>
+                            <span class="d-none d-sm-inline">Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{url_for('browse')}}" class="nav-link px-2 text-truncate"><i class="bi bi-folder fs-4"></i>
+                            <span class="d-none d-sm-inline">Collections</span> </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link px-2 text-truncate disabled"><i class="bi bi-search fs-4"></i>
+                            <span class="d-none d-sm-inline">Advanced search</span> </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link px-2 text-truncate disabled"><i class="bi bi-share fs-4"></i>
+                            <span class="d-none d-sm-inline">Share</span> </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link px-2 text-truncate disabled"><i class="bi bi-people fs-4"></i>
+                            <span class="d-none d-sm-inline">Your team</span> </a>
+                    </li>
+                </ul>
+            </div>
+</div>

@@ -1,0 +1,29 @@
+<header class="py-3 mb-4 border-bottom shadow">
+    <div class="container-fluid d-grid gap-3 align-items-center" style="grid-template-columns: 1fr 2fr;">
+        <div>
+            <a href="#" class="d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-dark text-decoration-none">
+                <img src="{{ url_for('static', filename='vsc-combi.webp') }}">
+            </a>
+        </div>
+        <div class="d-flex align-items-center">
+            <form class="w-100 me-3">
+                <input type="search" class="form-control" placeholder="Search..." disabled>
+            </form>
+            <div class="flex-shrink-0 dropdown">
+                <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
+                    {{username}} <i class="bi bi-person-circle fs-4"></i>
+                </a>
+                <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser2">
+
+                    <li><a class="dropdown-item" href="#">Preferences</a></li>
+                    <li><a class="dropdown-item" href="#">User profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="#">Sign out</a></li>
+                    <!--<li><a class="dropdown-item" href="#">Switch to admin</a></li>-->
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>

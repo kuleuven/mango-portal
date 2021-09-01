@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Welcome to the VSC iRODS portal</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.0/font/bootstrap-icons.css" rel="stylesheet">
+	<link rel="shortcut icon" href="{{ url_for('static', filename='vsc-icon.png') }}">
+
+</head>
+<body>
+
+{% include 'header.html.j2' %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+	  {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+{# <main class="container-fluid pb-3 flex-grow-1 d-flex flex-column flex-sm-row overflow-auto"> #}
+<main class="container">
+    <div class="row flex-grow-sm-1 flex-grow-0">
+		{% include 'sidebar.html.j2' %}
+
+
+       {#  <div class="col-8 overflow-auto h-100"> #}
+	   <div class="col-9">
+            <div class="bg-light border rounded-3 p-3">
+                {% block body %}
+			    {# THE MEAT #}
+				{% endblock %}
+            </div>
+        </div>
+    </div>
+</main>
+{% block javascript %}
+<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}">
+</script>
+{% endblock%}
+</body>
+</html>

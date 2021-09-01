@@ -1,0 +1,280 @@
+{% extends "base.html.j2" %}
+
+
+{% block body %}
+
+
+<nav style="--bs-breadcrumb-divider: '>'" aria-label="breadcrumb">
+	<ol class="breadcrumb">
+		{% for element in breadcrumbs[:-1] %}
+			<li class="breadcrumb-item"><a href="{{url_for('browse', collection=element['url'])}}">{{element['label']}}</a></li>
+		{% endfor %}
+		<li class="breadcrumb-item active" aria-current="page">{{breadcrumbs[-1]['label']}}</li>
+	</ol>
+</nav>
+
+<h1 class="display-6 mb-4">{{data_object.name}}</h1>
+
+<h5 class="mb-3">System properties</h5>
+
+<table class="table table-striped table-hover">
+	<tr><th>Owner</th><td>{{data_object.owner_name}}</td></tr>
+	<tr><th>Created</th><td>{{data_object.create_time}}</td></tr>
+	<tr><th>Modified</th><td>{{data_object.modify_time}}</td></tr>
+	<tr><th>Size</th><td>{{data_object.size | filesizeformat}}</td></tr>
+</table>
+
+<h5 class="mt-4">Meta data</h5>
+
+
+<table class="table table-striped table-hover">
+  {# <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Value</th>
+	  <th scope="col">Unit</th>
+
+    </tr>
+  </thead> #}
+
+
+  {% for item in meta_data_items  %}
+  <tr>
+	<th>{{item.name}}</th>
+	<td>{{item.value}}</td>
+	<td>{{item.units if item.units is not none}}</td>
+	<td><a href="#" data-bs-toggle="modal" data-bs-target="#editMetaData"
+	     data-bs-meta-data-name="{{item.name}}"
+		 data-bs-meta-data-value="{{item.value}}"
+		 data-bs-meta-data-units="{{item.units if item.units is not none}}"
+		 data-bs-object-path="{{data_object.path}}"
+		 ><i class="bi bi-pencil"></i></a></td>
+	<td><a href="#" data-bs-toggle="modal" data-bs-target="#deleteMetaData" class="text-danger"
+		 data-bs-meta-data-name="{{item.name}}"
+		 data-bs-meta-data-value="{{item.value}}"
+		 data-bs-meta-data-units="{{item.units if item.units is not none}}"
+		 data-bs-object-path="{{data_object.path}}"
+	><i class="bi bi-trash"></i></a></td>
+
+  </tr>
+
+
+  {% endfor %}
+
+  </table>
+
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMetaData">
+  Add meta data
+</button>
+
+  <!-- edit meta data modal -->
+
+  <div class="modal fade" id="editMetaData" tabindex="-1" aria-labelledby="editMetaDataLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editMetaDataLabel">Update meta data</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+    <form action="{{url_for('edit_meta_data')}}" method="POST" enctype="multipart/form-data" class="row g-3 needs-validation" novalidation>
+	   <div class="modal-body">
+          <div class="mb-3">
+            <label for="meta-data-name" class="col-form-label">Name</label>
+            <input type="text" class="form-control" id="meta-data-name" name="meta-data-name" required></input>
+			<div class="invalid-feedback">
+        Meta data field name is required
+      			</div>
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-value" class="col-form-label">Value</label>
+            <input type="text" class="form-control" id="meta-data-value" name="meta-data-value" required></input>
+			<div class="invalid-feedback">
+        Meta data field value is required
+      			</div>
+          </div>
+		  <div class="mb-3">
+            <label for="meta-data-units" class="col-form-label">Unit</label>
+            <input type="text" class="form-control" id="meta-data-units" name="meta-data-units"></input>
+          </div>
+		  <input type="hidden" id="object-path-edit" name="object-path" value="{{data_object.path}}">
+		  <input type="hidden" id="orig-meta-data-name" name="orig-meta-data-name" value="">
+		  <input type="hidden" id="orig-meta-data-value" name="orig-meta-data-value" value="">
+		  <input type="hidden" id="orig-meta-data-units" name="orig-meta-data-units" value="">
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" type="submit">Update</button>
+      </div>
+	  </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add meta data-->
+<div class="modal fade" id="addMetaData" tabindex="-1" aria-labelledby="addMetaDataLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addMetaDataLabel">Add meta data</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+	  <form action="{{url_for('add_meta_data')}}" method="POST" enctype="multipart/form-data" class="row g-3 needs-validation" novalidate>
+      <div class="modal-body">
+
+          <div class="mb-3">
+            <label for="meta-data-name-add" class="col-form-label">Name</label>
+            <input type="text" class="form-control" id="meta-data-name-add" name="meta-data-name" required>
+			<div class="invalid-feedback">
+        Name is required for meta data items
+      </div>
+
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-value-add" class="col-form-label">Value</label>
+            <input type="text" class="form-control" id="meta-data-value-add" name="meta-data-value" required></input>
+			<div class="invalid-feedback">
+        A value is required for meta data items
+      </div>
+          </div>
+		  <div class="mb-3">
+            <label for="meta-data-units-add" class="col-form-label">Unit</label>
+            <input type="text" class="form-control" id="meta-data-units-add" name="meta-data-units"></input>
+			<div class="valid-feedback">
+        A unit is not required for meta data
+      </div>
+
+          </div>
+		   <input type="hidden" id="object-path-add" name="object-path" value="{{data_object.path}}">
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button  class="btn btn-primary" type="submit">Add</button>
+      </div>
+	  </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete modal -->
+<div class="modal fade" id="deleteMetaData" tabindex="-1" aria-labelledby="deleteMetaDataLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteMetaDataLabel">Delete meta data</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+    <form action="{{url_for('delete_meta_data')}}" method="POST" enctype="multipart/form-data" class="row g-3 needs-validation" novalidation>
+	   <div class="modal-body">
+          <div class="mb-3">
+            <label for="meta-data-name-delete" class="col-form-label">Name</label>
+            <input type="text" class="form-control" id="meta-data-name-delete" name="meta-data-name" readonly></input>
+			<div class="invalid-feedback">
+        Meta data field name is required
+      			</div>
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-value-delete" class="col-form-label">Value</label>
+            <input type="text" class="form-control" id="meta-data-value-delete" name="meta-data-value" readonly></input>
+			<div class="invalid-feedback">
+        Meta data field value is required
+      			</div>
+          </div>
+		  <div class="mb-3">
+            <label for="meta-data-units" class="col-form-label">Unit</label>
+            <input type="text" class="form-control" id="meta-data-units-delete" name="meta-data-units" readonly></input>
+          </div>
+		  <input type="hidden" id="object-path-delete" name="object-path" value="{{data_object.path}}"></input>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger" type="submit">Delete</button>
+      </div>
+	  </form>
+    </div>
+  </div>
+</div>
+
+{% endblock body %}
+
+{% block javascript %}
+{{ super() }}
+
+<script async src="{{url_for('static', filename='js/form-validation.js')}}"></script>
+
+<script>
+
+//// Edit meta data listener for modal
+var editMetaData = document.getElementById('editMetaData')
+editMetaData.addEventListener('show.bs.modal', function (event) {
+  // Button that triggered the modal
+  var button = event.relatedTarget
+  // Extract info from data-bs-* attributes
+  var fieldMDName = button.getAttribute('data-bs-meta-data-name')
+  var fieldMDValue = button.getAttribute('data-bs-meta-data-value')
+  var fieldMDUnit = button.getAttribute('data-bs-meta-data-units')
+  var fieldObjectPath = button.getAttribute('data-bs-data-path')
+  // If necessary, you could initiate an AJAX request here
+  // and then do the updating in a callback.
+  //
+  // Update the modal's content.
+  //var modalTitle = editMetaData.querySelector('.modal-title')
+  var modalBodyInputMDName = editMetaData.querySelector('#meta-data-name')
+  var modalBodyInputMDValue = editMetaData.querySelector('#meta-data-value')
+  var modalBodyInputMDUnit = editMetaData.querySelector('#meta-data-units')
+  var modalBodyInputDataPath = editMetaData.querySelector('#object-path')
+
+  var modalBodyInputOrigMDName = editMetaData.querySelector('#orig-meta-data-name')
+  var modalBodyInputOrigMDValue = editMetaData.querySelector('#orig-meta-data-value')
+  var modalBodyInputOrigMDUnit = editMetaData.querySelector('#orig-meta-data-units')
+
+
+  //modalTitle.textContent = 'Data object ' +
+  modalBodyInputMDName.value = fieldMDName
+  modalBodyInputMDValue.value = fieldMDValue
+  modalBodyInputMDUnit.value = fieldMDUnit
+  modalBodyInputDataPath = fieldObjectPath
+
+  modalBodyInputOrigMDName.value = fieldMDName
+  modalBodyInputOrigMDValue.value = fieldMDValue
+  modalBodyInputOrigMDUnit.value = fieldMDUnit
+
+})
+
+//// Delete meta data listener for modal
+
+var deleteMetaData = document.getElementById('deleteMetaData')
+deleteMetaData.addEventListener('show.bs.modal', function (event) {
+  // Button that triggered the modal
+  var button = event.relatedTarget
+  // Extract info from data-bs-* attributes
+  var fieldMDName = button.getAttribute('data-bs-meta-data-name')
+  var fieldMDValue = button.getAttribute('data-bs-meta-data-value')
+  var fieldMDUnit = button.getAttribute('data-bs-meta-data-units')
+  var fieldObjectPath = button.getAttribute('data-bs-data-path')
+  // If necessary, you could initiate an AJAX request here
+  // and then do the updating in a callback.
+  //
+  // Update the modal's content.
+  var modalTitle = deleteMetaData.querySelector('.modal-title')
+  var modalBodyInputMDName = deleteMetaData.querySelector('#meta-data-name-delete')
+  var modalBodyInputMDValue = deleteMetaData.querySelector('#meta-data-value-delete')
+  var modalBodyInputMDUnit = deleteMetaData.querySelector('#meta-data-units-delete')
+  var modalBodyInputDataPath = deleteMetaData.querySelector('#object-path-delete')
+
+
+  //modalTitle.textContent = 'Data object ' +
+  modalBodyInputMDName.value = fieldMDName
+  modalBodyInputMDValue.value = fieldMDValue
+  modalBodyInputMDUnit.value = fieldMDUnit
+  modalBodyInputDataPath = fieldObjectPath
+
+})
+</script>
+
+
+
+{% endblock javascript %}

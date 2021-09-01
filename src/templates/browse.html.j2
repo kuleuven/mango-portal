@@ -1,0 +1,217 @@
+{% extends "base.html.j2" %}
+
+
+{% block body %}
+
+
+<nav style="--bs-breadcrumb-divider: '>'" aria-label="breadcrumb">
+	<ol class="breadcrumb">
+		{% for element in breadcrumbs[:-1] %}
+			<li class="breadcrumb-item"><a href="{{url_for('browse', collection=element['url'])}}">{{element['label']}}</a></li>
+		{% endfor %}
+		<li class="breadcrumb-item active" aria-current="page">{{breadcrumbs[-1]['label']}}</li>
+	</ol>
+</nav>
+
+<div class="d-flex justify-content-end">
+  <div class="col-3 mr-auto">
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCollection">
+			Add collection
+			</button>
+  </div>
+	<div class="col-8 mr-auto">
+		<form action="{{url_for('upload_file')}}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+			<div class="input-group mb-3">
+      <div class="invalid-feedback">
+                A file to upload is required
+           </div>
+  			  <input type="file" class="form-control" id="newfile" name="newfile" required>
+
+			  <button type="submit" class="btn btn-primary">Upload</buton>
+			  <input type="hidden" name="collection" value="{{collection.path}}"/>
+
+			</div>
+
+		</form>
+	</div>
+</div>
+
+<ul class="nav nav-tabs" role="tablist">
+  <li class="nav-item bg-light" role="presentation">
+    <button class="nav-link bg-light h5 active" id="content-tab" data-bs-toggle="tab" data-bs-target="#collection-content" type="button" role="tab" aria-controls="collection-tab" aria-selected="true">Content</button>
+  </li>
+  <li class="nav-item bg-light" role="presentation">
+    <button class="nav-link bg-light h5" id="metadata-tab" data-bs-toggle="tab" data-bs-target="#collection-metadata" type="button" role="tab" aria-controls="collection-metadata" aria-selected="false">Meta data</button>
+  </li>
+</ul>
+
+<div class="tab-content" id="collection-tabs">
+
+<div class="tab-pane" id="collection-metadata">
+
+
+
+			<table class="table table-striped table-hover mt-2">
+      <tbody>
+
+			{% for item in collection.metadata.items()  %}
+			<tr>
+				<th>{{item.name}}</th>
+				<td>{{item.value}}</td>
+				<td>{{item.units if item.units is not none}}</td>
+				<td><a href="#" data-bs-toggle="modal" data-bs-target="#editMetaData"
+					data-bs-meta-data-name="{{item.name}}"
+					data-bs-meta-data-value="{{item.value}}"
+					data-bs-meta-data-units="{{item.units if item.units is not none}}"
+					data-bs-object-path="{{collection.path}}"
+					><i class="bi bi-pencil"></i></a></td>
+				<td><a href="#" data-bs-toggle="modal" data-bs-target="#deleteMetaData" class="text-danger"
+					data-bs-meta-data-name="{{item.name}}"
+					data-bs-meta-data-value="{{item.value}}"
+					data-bs-meta-data-units="{{item.units if item.units is not none}}"
+					data-bs-object-path="{{collection.path}}"
+				><i class="bi bi-trash"></i></a></td>
+
+			</tr>
+
+
+			{% endfor %}
+
+      </tbody>
+
+			</table>
+
+			<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMetaData">
+			Add meta data
+			</button>
+</div>
+
+
+
+<div class="tab-pane show active" id="collection-content" role="tabpanel" aria-labelledby="home-tab">
+	  <table class="table table-striped table-hover mt-2">
+  <thead>
+    <tr>
+      <th scope="col"></th>
+      <th scope="col">Owner</th>
+	  <th scope="col">Created</th>
+      <th scope="col">Modified</th>
+      <th scope="col">Size</th>
+    </tr>
+  </thead>
+   <tbody>
+  {% for collection in sub_collections  %}
+  <tr>
+	<td><i class="bi bi-folder fs-4"></i> <a href="{{url_for('browse', collection=collection.path)}}">{{collection.name}}</a></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+  </tr>
+
+  {% endfor %}
+
+  {% for data_object in data_objects  %}
+  <tr>
+	<td><i class="bi bi-file-earmark fs-4"></i><span> <a href="{{url_for('view_object', data_object_path=data_object.path)}}">{{data_object.name}}</a></span></td>
+	<td><!--{{ data_object.__dict__ }}-->{{data_object.owner_name}}</td>
+	<td>{{data_object.create_time}}</td>
+	<td>{{data_object.modify_time}}</td>
+	<td>{{data_object.size | filesizeformat}}</td>
+  </tr>
+
+
+  {% endfor %}
+
+  </tbody>
+  </table>
+</div>
+</div>
+
+<!-- Add meta data-->
+<div class="modal fade" id="addMetaData" tabindex="-1" aria-labelledby="addMetaDataLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addMetaDataLabel">Add meta data</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+	  <form action="{{url_for('add_meta_data_collection')}}" method="POST" enctype="multipart/form-data" class="row g-3 needs-validation" novalidate>
+      <div class="modal-body">
+
+          <div class="mb-3">
+            <label for="meta-data-name-add" class="col-form-label">Name</label>
+            <input type="text" class="form-control" id="meta-data-name-add" name="meta-data-name" required>
+			<div class="invalid-feedback">
+        Name is required for meta data items
+      </div>
+
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-value-add" class="col-form-label">Value</label>
+            <input type="text" class="form-control" id="meta-data-value-add" name="meta-data-value" required></input>
+			<div class="invalid-feedback">
+        A value is required for meta data items
+      </div>
+          </div>
+		  <div class="mb-3">
+            <label for="meta-data-units-add" class="col-form-label">Unit</label>
+            <input type="text" class="form-control" id="meta-data-units-add" name="meta-data-units"></input>
+			<div class="valid-feedback">
+        A unit is not required for meta data
+      </div>
+
+          </div>
+		   <input type="hidden" id="collection-path-add" name="collection-path" value="{{collection.path}}">
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button  class="btn btn-primary" type="submit">Add</button>
+      </div>
+	  </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addCollection" tabindex="-1" aria-labelledby="addCollectionLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addCollectionLabel">Add collection</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+	  <form action="{{url_for('add_collection')}}" method="POST" enctype="multipart/form-data" class="row g-3 needs-validation" novalidate>
+      <div class="modal-body">
+
+          <div class="mb-3">
+            <label for="collection-name-add" class="col-form-label">Name</label>
+            <input type="text" class="form-control" id="collection-name-add" name="collection_name" required>
+              <div class="invalid-feedback">
+                A collection name is required
+              </div>
+
+          </div>
+
+		   <input type="hidden" id="collection-path-add" name="parent_collection_path" value="{{collection.path}}">
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button  class="btn btn-primary" type="submit">Add</button>
+      </div>
+	  </form>
+    </div>
+  </div>
+</div>
+
+
+
+{% endblock body %}
+
+{% block javascript %}
+{{ super() }}
+<script async src="{{url_for('static', filename='js/form-validation.js')}}"></script>
+
+
+{% endblock javascript %}

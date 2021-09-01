@@ -1,0 +1,70 @@
+{#<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Welcome to the VSC iRODS portal</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.0/font/bootstrap-icons.css" rel="stylesheet">
+	<link rel="shortcut icon" href="{{ url_for('static', filename='vsc-icon.png') }}">
+
+</head>
+<body>
+
+{% include 'header.html.j2' %}
+
+<main class="container-fluid pb-3 flex-grow-1 d-flex flex-column flex-sm-row overflow-auto">
+    <div class="row flex-grow-sm-1 flex-grow-0">
+
+        {% include 'sidebar.html.j2' %}
+
+        <div class="col overflow-auto h-100">
+            <div class="bg-light border rounded-3 p-3">
+#}
+{% extends "base.html.j2" %}
+
+{% block body %}
+                <h2>Welcome to your VSC iRODS Portal</h2>
+
+                <img src="{{ url_for('static', filename='fibre-rack.jpg') }}" width="70%" class="bi-align-center">
+				<hr />
+				{# <img src="{{ url_for('static', filename='data-repository.webp') }}" width="70%" class="bi-align-center"> #}
+				<p>
+				{% for path_element in current_path %}
+
+				{% endfor %}
+				</p>
+				<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Owner</th>
+      <th scope="col">Modified</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+  {% for collection in collections  %}
+  <tr>
+	<td><i class="bi bi-folder fs-4"></i> {{collection.name}}</td>
+	<td><!--{{ collection.__dict__ }}--></td>
+	<td></td>
+	<td></td>
+  </tr>
+
+  {% endfor %}
+
+  {% for data_object in data_objects  %}
+  <tr>
+	<td><i class="bi bi-file fs-4"></i> {{data_object.name}}</td>
+	<td><!--{{ data_object.__dict__ }}--></td>
+	<td></td>
+	<td></td>
+  </tr>
+
+
+  {% endfor %}
+  <tbody>
+  </tbody>
+  </table>
+
+{% endblock body %}

@@ -1,0 +1,48 @@
+{
+  "Title": {
+    "ui:help": "The title of your data package"
+  },
+  "Description": {
+    "ui:help": "A description of your data package",
+    "ui:widget": "textarea"
+  },
+  "Data_Type": {
+    "ui:help": "What is the type of your data"
+  },
+  "Data_Classification": {
+    "ui:help": "How is your data classified with regards to information security policy"
+  },
+  "Creator": {
+    "ui:description": "The person(s) who created (a version of) the data package.",
+    "items": {
+      "Name": {
+        "Given_Name": {
+          "ui:help": "The personal or first name of the person(s) who created (a version of) the data package"
+        },
+        "Family_Name": {
+          "ui:help": "The surname or last name of the person(s) who created (a version of) the data package"
+        }
+      },
+      "Affiliation": {
+        "ui:description": "The organizational or institutional affiliation of the creator"
+      },
+      "Person_Identifier": {
+        "ui:description": "Person identifier of creator of the data package",
+        "items": {
+          "Name_Identifier_Scheme": {
+            "ui:help": "What type of person identifier is used? (e.g. an ORCID, DAI, or ScopusID)"
+          },
+          "Name_Identifier": {
+            "ui:help": "Identifier as it can be resolved on the appropriate service"
+          }
+        }
+      }
+    }
+  },
+  "License": {
+    "ui:help": "The license under which you offer the data package for use by third parties. Preferred value is CC BY"
+  },
+  "Data_Access_Restriction": {
+    "ui:help": "Once archived, how is your data package accessible to third parties?"
+  }
+}
