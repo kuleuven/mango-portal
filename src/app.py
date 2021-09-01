@@ -294,10 +294,20 @@ def get_meta_data_template():
 """
 
 
+def save_metadata_template(filename, contents):
+    with open("static/metadata-templates/" + filename, "w") as f:
+        f.write(contents)
+    return True
+
+
 @app.route("/metadata-template/update", methods=["POST"])
 def update_meta_data_templates():
     """
     """
+    template_name = request.form["template_name"]
+    template_json = request.form["template_json"]
+    save_metadata_template(template_name, template_json)
+
     return redirect(request.referrer)
 
 
@@ -305,6 +315,10 @@ def update_meta_data_templates():
 def new_meta_data_template():
     """
     """
+    template_name = request.form["template_name"]
+    template_json = request.form["template_json"]
+    save_metadata_template(template_name, template_json)
+
     return redirect(request.referrer)
 
 
@@ -312,11 +326,15 @@ def new_meta_data_template():
 def delete_meta_data_template():
     """
     """
+    template_name = template_name = request.form["template_name"]
+    os.unlink("static/metadata-templates/" + template_name)
     return redirect(request.referrer)
 
 
-@app.route("/metadata-template/dump-form", methods=["POST"])
+@app.route("/metadata-template/dump-form-contents", methods=["POST"])
 def dump_meta_data_form():
     """
     """
-    return redirect(request.referrer)
+    print(f"{json.dumps(request.form)}")
+
+    return json.dumps(request.form)
