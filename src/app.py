@@ -331,6 +331,7 @@ def delete_meta_data_template():
     return redirect(request.referrer)
 
 
+# Testing endpoint
 @app.route("/metadata-template/dump-form-contents", methods=["POST"])
 def dump_meta_data_form():
     """
@@ -338,3 +339,14 @@ def dump_meta_data_form():
     print(f"{json.dumps(request.form)}")
 
     return json.dumps(request.form)
+
+
+# Testing endpoint
+@app.route("/metadata-template/dump-contents-body/<filename>", methods=["POST"])
+def dump_meta_data_body(filename):
+    """
+    """
+    print(f"{filename}")
+    print(f"{request.data}")
+
+    return "OK"

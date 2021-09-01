@@ -9,7 +9,7 @@ You need to have a valid and initialised iRODS environment for your account, the
 - icts.irods-t.hpc.kuleuven.be
 - icts.irods-q.hpc.kuleuven.be
 - tier1-pilot.irods-q.hpc.kuleuven.be
-- irods.hpc.kuleuven.be
+- irods.hpc.kuleuven.be (production)
 
 Create a python virtual environment in the root of this repository checkout and install the required modules, for example
 ```
