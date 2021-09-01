@@ -15,7 +15,7 @@ import glob
 import flask
 import sys
 from pprint import pformat
-
+from flask_cors import CORS
 import json
 
 # from werkzeug import secure_filename
@@ -35,6 +35,7 @@ if irods_session.collections.exists(user_home):
     print(f"Success", file=sys.stderr)
 
 app = Flask(__name__)
+CORS(app)
 
 app.config["UPLOAD_FOLDER"] = "/tmp"
 app.config["MAX_CONTENT_PATH"] = 1024 * 1024 * 16
@@ -335,7 +336,11 @@ def delete_meta_data_template():
 @app.route("/metadata-template/dump-form-contents", methods=["POST"])
 def dump_meta_data_form():
     """
+    dumps all variables defined url encoded from the request body, for example
+    variable1=value1&variable2=value2
     """
+
+    # log output
     print(f"{json.dumps(request.form)}")
 
     return json.dumps(request.form)
@@ -343,8 +348,9 @@ def dump_meta_data_form():
 
 # Testing endpoint
 @app.route("/metadata-template/dump-contents-body/<filename>", methods=["POST"])
-def dump_meta_data_body(filename):
+def dump_meta_data_body_json(filename):
     """
+    expects "Content-Type: application/json" header
     """
     print(f"{filename}")
     print(f"{request.data}")
