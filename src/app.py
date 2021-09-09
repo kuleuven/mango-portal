@@ -59,10 +59,11 @@ def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
 def collection_tree_to_dict(collection):
     (_, label) = os.path.split(collection.path)
     d = {"id": collection.path, "label": label}
-    d["children"] = [
-        collection_tree_to_dict(subcollection)
-        for subcollection in collection.subcollections
-    ]
+    if collection.subcollections:
+        d["children"] = [
+            collection_tree_to_dict(subcollection)
+            for subcollection in collection.subcollections
+        ]
     return d
 
 
@@ -418,4 +419,4 @@ def api_collection_tree(collection):
     if not collection.startswith("/"):
         collection = "/" + collection
     current_collection = irods_session.collections.get(collection)
-    return json.dumps(collection_tree_to_dict(current_collection))
+    return flask.jsonify([collection_tree_to_dict(current_collection)])
