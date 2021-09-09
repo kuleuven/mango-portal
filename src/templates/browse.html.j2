@@ -7,7 +7,7 @@
 <nav style="--bs-breadcrumb-divider: '>'" aria-label="breadcrumb">
 	<ol class="breadcrumb">
 		{% for element in breadcrumbs[:-1] %}
-			<li class="breadcrumb-item"><a href="{{url_for('browse', collection=element['url'])}}">{{element['label']}}</a></li>
+			<li class="breadcrumb-item"><a href="{{url_for('collection_browse', collection=element['url'])}}">{{element['label']}}</a></li>
 		{% endfor %}
 		<li class="breadcrumb-item active" aria-current="page">{{breadcrumbs[-1]['label']}}</li>
 	</ol>
@@ -20,7 +20,7 @@
 			</button>
   </div>
 	<div class="col-8 mr-auto">
-		<form action="{{url_for('upload_file')}}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+		<form action="{{url_for('collection_upload_file')}}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
 			<div class="input-group mb-3">
       <div class="invalid-feedback">
                 A file to upload is required
@@ -102,7 +102,7 @@
    <tbody>
   {% for collection in sub_collections  %}
   <tr>
-	<td><i class="bi bi-folder fs-4"></i> <a href="{{url_for('browse', collection=collection.path)}}">{{collection.name}}</a></td>
+	<td><i class="bi bi-folder fs-4"></i> <a href="{{url_for('collection_browse', collection=collection.path.lstrip('/'))}}">{{collection.name}}</a></td>
 	<td></td>
 	<td></td>
 	<td></td>
@@ -113,7 +113,7 @@
 
   {% for data_object in data_objects  %}
   <tr>
-	<td><i class="bi bi-file-earmark fs-4"></i><span> <a href="{{url_for('view_object', data_object_path=data_object.path)}}">{{data_object.name}}</a></span></td>
+	<td><i class="bi bi-file-earmark fs-4"></i><span> <a href="{{url_for('view_object', data_object_path=data_object.path.lstrip('/'))}}">{{data_object.name}}</a></span></td>
 	<td><!--{{ data_object.__dict__ }}-->{{data_object.owner_name}}</td>
 	<td>{{data_object.create_time}}</td>
 	<td>{{data_object.modify_time}}</td>
@@ -205,6 +205,7 @@
   </div>
 </div>
 
+<!-- Delete modal -->
 
 
 {% endblock body %}

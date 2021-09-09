@@ -41,6 +41,7 @@ app.config["UPLOAD_FOLDER"] = "/tmp"
 app.config["MAX_CONTENT_PATH"] = 1024 * 1024 * 16
 app.config["SECRET_KEY"] = "development_paul"
 
+
 # custom filters
 
 
@@ -54,9 +55,20 @@ def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
 
 
+# Move to lib
+def collection_tree_to_dict(collection):
+    (_, label) = os.path.split(collection.path)
+    d = {"id": collection.path, "label": label}
+    d["children"] = [
+        collection_tree_to_dict(subcollection)
+        for subcollection in collection.subcollections
+    ]
+    return d
+
+
 # app.jinja_options["variable_start_string"] = "@{"
 
-
+# Blueprint common
 @app.route("/")
 def index():
     collection = irods_session.collections.get(user_home)
@@ -83,9 +95,10 @@ def index():
     )
 
 
-@app.route("/browse", defaults={"collection": None}, strict_slashes=False)
-@app.route("/browse/<path:collection>")
-def browse(collection):
+# Blueprint common
+@app.route("/collection/browse", defaults={"collection": None}, strict_slashes=False)
+@app.route("/collection/browse/<path:collection>")
+def collection_browse(collection):
     """ returns the list of objects and subcollections for the given
     collection.
 
@@ -134,7 +147,18 @@ def browse(collection):
     )
 
 
-@app.route("/view/<path:data_object_path>")
+# Blueprint common
+@app.route("/collection/delete", methods=["POST", "DELETE"])
+def delete_collection():
+    """
+    """
+    collection_path = request.form["collection_path"]
+    # recursive remove
+    irods_session.collections.remove(collection_path)
+    return redirect(request.referrer)
+
+
+@app.route("/data-object/view/<path:data_object_path>")
 def view_object(data_object_path):
     """
     """
@@ -159,8 +183,19 @@ def view_object(data_object_path):
     )
 
 
-@app.route("/upload/file", methods=["POST"])
-def upload_file():
+# Blueprint common
+@app.route("/data-object/delete", methods=["POST", "DELETE"])
+def remove_data_object():
+    """
+    """
+    data_object_path = request.form["data_object_path"]
+    irods_session.data_objects.get(data_object_path).unlink()
+    return redirect(request.referrer)
+
+
+# Blueprint common
+@app.route("/collection/upload/file", methods=["POST"])
+def collection_upload_file():
     """
     """
 
@@ -177,6 +212,7 @@ def upload_file():
     return redirect(request.referrer)
 
 
+# Blueprint common/metadata
 @app.route("/data_object/metadata/add", methods=["POST"])
 def add_meta_data():
     """
@@ -195,6 +231,7 @@ def add_meta_data():
     return redirect(request.referrer)
 
 
+# Blueprint common/metadata
 @app.route("/data_object/metadata/edit", methods=["POST"])
 def edit_meta_data():
     """
@@ -215,6 +252,7 @@ def edit_meta_data():
     return redirect(request.referrer)
 
 
+# Blueprint common/metadata
 @app.route("/data_object/metadata/delete", methods=["POST"])
 def delete_meta_data():
     """
@@ -231,6 +269,7 @@ def delete_meta_data():
     return redirect(request.referrer)
 
 
+# Blueprint common
 @app.route("/collection/add/subcollection", methods=["POST"])
 def add_collection():
     """
@@ -243,6 +282,7 @@ def add_collection():
     return redirect(request.referrer)
 
 
+# Blueprint common/metadata
 @app.route("/collection/add/metadata", methods=["POST"])
 def add_meta_data_collection():
     """
@@ -265,7 +305,7 @@ def add_meta_data_collection():
 
 json_template_dir = os.path.abspath("./static/metadata-templates")
 
-
+# Blueprint templates
 @app.route("/metadata-template/list", methods=["GET"])
 def list_meta_data_templates():
     """
@@ -294,13 +334,14 @@ def get_meta_data_template():
     return redirect(request.referrer)
 """
 
-
+# Blueprint templates
 def save_metadata_template(filename, contents):
     with open("static/metadata-templates/" + filename, "w") as f:
         f.write(contents)
     return True
 
 
+# Blueprint templates
 @app.route("/metadata-template/update", methods=["POST"])
 def update_meta_data_templates():
     """
@@ -312,6 +353,7 @@ def update_meta_data_templates():
     return redirect(request.referrer)
 
 
+# Blueprint templates
 @app.route("/metadata-template/new", methods=["POST"])
 def new_meta_data_template():
     """
@@ -323,6 +365,7 @@ def new_meta_data_template():
     return redirect(request.referrer)
 
 
+# Blueprint templates
 @app.route("/metadata-template/delete", methods=["POST"])
 def delete_meta_data_template():
     """
@@ -356,3 +399,23 @@ def dump_meta_data_body_json(filename):
     print(f"{request.data}")
 
     return "OK"
+
+
+# Blueprint api
+# Endpoint for obtaining collection trees
+@app.route(
+    "/api/collection/tree",
+    methods=["GET"],
+    defaults={"collection": None},
+    strict_slashes=False,
+)
+@app.route("/api/collection/tree/<path:collection>")
+def api_collection_tree(collection):
+    """
+    """
+    if collection is None or collection == "~":
+        collection = user_home
+    if not collection.startswith("/"):
+        collection = "/" + collection
+    current_collection = irods_session.collections.get(collection)
+    return json.dumps(collection_tree_to_dict(current_collection))

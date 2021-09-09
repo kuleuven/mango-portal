@@ -7,7 +7,7 @@
 <nav style="--bs-breadcrumb-divider: '>'" aria-label="breadcrumb">
 	<ol class="breadcrumb">
 		{% for element in breadcrumbs[:-1] %}
-			<li class="breadcrumb-item"><a href="{{url_for('browse', collection=element['url'])}}">{{element['label']}}</a></li>
+			<li class="breadcrumb-item"><a href="{{url_for('collection_browse', collection=element['url'])}}">{{element['label']}}</a></li>
 		{% endfor %}
 		<li class="breadcrumb-item active" aria-current="page">{{breadcrumbs[-1]['label']}}</li>
 	</ol>
