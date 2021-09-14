@@ -205,6 +205,14 @@
   </div>
 </div>
 
+
+
+<div id="app">
+  <welcome></welcome>
+  <hello></hello>
+</div>
+
+
 <!-- Delete modal -->
 
 
@@ -212,7 +220,7 @@
 
 {% block javascript %}
 {{ super() }}
-<script async src="{{url_for('static', filename='js/form-validation.js')}}"></script>
 
+{#<script async src="{{url_for('static', filename='js/form-validation.js')}}"></script>#}
 
 {% endblock javascript %}

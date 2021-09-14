@@ -18,12 +18,24 @@ $ . venv/bin/activate
 $ pip3 install < requirements.txt
 ```
 
+### Vue2.js development and building
+
+Currently the node module parcel and its dependencies are required for building, see https://parceljs.org/
+
+Before using
+
+```sh
+$ npm install
+$ npm run build
+```
+
+### Starting the development server
+
 Launch the flask development server from the src directory:
 ```
 $ cd src
 $ ./run_dev.sh
 ```
-
 Point your browser to `http://localhost:5000`
 
 ### Installation using the docker image

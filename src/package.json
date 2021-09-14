@@ -1,0 +1,30 @@
+{
+  "name": "irods-portal",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "watch": "parcel watch client/js/index.js -d static/dist --public-url /static/dist/",
+    "build": "parcel build client/js/index.js -d static/dist --public-url /static/dist/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@popperjs/core": "^2.10.1",
+    "bootstrap": "^5.1.1",
+    "parcel-bundler": "^1.12.5",
+    "rimraf": "^3.0.2",
+    "vue": "^2.6.14",
+    "vue-hot-reload-api": "^2.3.4"
+  },
+  "devDependencies": {
+    "@vue/component-compiler-utils": "^3.2.2",
+    "prettier": "2.4.0",
+    "sass": "^1.39.2",
+    "vue-template-compiler": "^2.6.14"
+  }
+}

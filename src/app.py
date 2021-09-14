@@ -55,7 +55,7 @@ def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
 
 
-# Move to lib
+# Move to lib or util
 def collection_tree_to_dict(collection):
     (_, label) = os.path.split(collection.path)
     d = {"id": collection.path, "label": label}
@@ -420,3 +420,10 @@ def api_collection_tree(collection):
         collection = "/" + collection
     current_collection = irods_session.collections.get(collection)
     return flask.jsonify([collection_tree_to_dict(current_collection)])
+
+
+@app.route("/test", methods=["GET"])
+def test_simple_vue():
+    """
+    """
+    return render_template("test.html.j2")

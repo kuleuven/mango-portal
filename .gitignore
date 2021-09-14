@@ -56,3 +56,10 @@ src/scratch
 lib/vsc_irods
 # local python environment
 venv
+#Node modules
+node_modules
+
+.gitignore
+.cache
+.eslintrc.json
+package-lock.json
