@@ -58,6 +58,8 @@ lib/vsc_irods
 venv
 #Node modules
 node_modules
+#Vue build files
+src/static/dist
 
 .gitignore
 .cache
