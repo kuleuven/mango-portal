@@ -5,7 +5,7 @@
             <div class="modal-container">
                 <h3 style="display: inline">Add checkboxes input </h3>
                 <div>
-                    <form class="needs-validation" novalidate>
+                    <form ref="addCheckboxesForm" class="needs-validation" novalidate>
                         <div>
                             <label for="checkboxesId" class="form-label h6">ID for checkboxes input</label>
                             <input class="form-control" id="checkboxesId" v-model="checkboxesId" required>
@@ -73,7 +73,7 @@
             },
             // Submits the final object if it passes the form validation
             submitFinalObject(){
-                let form = document.querySelectorAll('.needs-validation')[document.querySelectorAll('.needs-validation').length-1];
+                let form = this.$refs.addCheckboxesForm;
                 form.classList.add("was-validated");
                 if (form.checkValidity()){
                     this.$emit('submit', this.finalObject());

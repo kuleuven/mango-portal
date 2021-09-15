@@ -5,7 +5,7 @@
             <div class="modal-container">
                 <h3 style="display: inline">Add radio input </h3>
                 <div>
-                    <form class="needs-validation" novalidate>
+                    <form ref="addRadioForm" class="needs-validation" novalidate>
                         <div>
                             <label for="radioId" class="form-label h6">ID for radio input</label>
                             <input class="form-control" id="radioId" v-model="radioId" required>
@@ -70,7 +70,7 @@
             },
             // Submits the final object if it passes the form validation
             submitFinalObject(){
-                let form = document.querySelectorAll('.needs-validation')[document.querySelectorAll('.needs-validation').length-1];
+                let form = this.$refs.addRadioForm;
                 form.classList.add("was-validated");
                 if (form.checkValidity()){
                     this.$emit('submit', this.finalObject());

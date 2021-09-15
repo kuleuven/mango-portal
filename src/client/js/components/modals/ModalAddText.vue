@@ -5,7 +5,7 @@
             <div class="modal-container">
                 <h3>Add text input</h3>
                 <div class="addTextForm">
-                    <form class="needs-validation" novalidate>
+                    <form ref="addTextForm" class="needs-validation" novalidate>
                         <div>
                             <label for="textId" class="form-label h6">ID for text input</label>
                             <input class="form-control" id="textId" v-model="textId" required>
@@ -123,7 +123,7 @@
             validate(){
                 let success = true;
                 // check if the minimum number of items is smaller than or equal to the maximum number of items
-                var numberInputs = document.querySelectorAll('.needs-validation')[document.querySelectorAll('.needs-validation').length-1].querySelectorAll("input[type=number]");
+                var numberInputs = this.$refs.addTextForm.querySelectorAll("input[type=number]");
                 if (this.min > this.max){
                     this.$refs.minMaxFeedback.style = "display: block; padding-left: 0";
                     for (let j=0; j < numberInputs.length; j++){
@@ -140,7 +140,7 @@
             },
             // Submits the final object if it passes the form validation
             submitFinalObject(){
-                let form = document.querySelectorAll('.needs-validation')[document.querySelectorAll('.needs-validation').length-1];
+                let form = this.$refs.addTextForm;
                 form.classList.add("was-validated");
                 if (this.validate() && form.checkValidity()){
                     this.$emit('submit', this.finalObject());

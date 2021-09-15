@@ -21,7 +21,7 @@
                                 <button class="btn btn-primary" @click="deleteElement()">Delete</button>
                             </div>
                         </div>
-                        <form class="needs-validation" novalidate>
+                        <form ref="addArrayForm" class="needs-validation" novalidate>
                             <div>
                                 <label for="arrayId" class="form-label h6">ID for array input</label>
                                 <input class="form-control" id="arrayId" v-model="arrayId" required>
@@ -57,9 +57,9 @@
                     </div>
                 </div>
             </div>
-            <ModalFormElement v-if="showModalFormElement" :showArray="false" :showSelect="false" :showCheckboxes="false" :showRadio="false" @addText="addText()" @addObject="addObject()" @cancel="cancel()"><ModalFormElement>
+            <ModalFormElement v-if="showModalFormElement" :showArray="false" :showSelect="false" :showCheckboxes="false" :showRadio="false" @addText="addText()" @addObject="addObject()" @cancel="cancel()"></ModalFormElement>
             <ModalAddText v-else-if="showModalAddText" @submit="submit" @cancel="cancel()"></ModalAddText>
-            <ModalAddObject v-else-if="showModalAddObject" @submit="submit" @cancel="cancel()"><ModalAddObject>
+            <ModalAddObject v-else-if="showModalAddObject" @submit="submit" @cancel="cancel()"></ModalAddObject>
         </div>
       </transition>
 </template>
@@ -102,7 +102,7 @@
                    success = false;
                 } 
                 // check if the minimum number of items is smaller than or equal to the maximum number of items
-                var numberInputs = document.querySelectorAll('.needs-validation')[document.querySelectorAll('.needs-validation').length-1].querySelectorAll("input[type=number]");
+                var numberInputs = this.$refs.addArrayForm.querySelectorAll("input[type=number]");
                 if (this.minItems > this.maxItems){
                     this.$refs.minMaxFeedback.style = "display: block; padding-left: 0";
                     for (let j=0; j < numberInputs.length; j++){

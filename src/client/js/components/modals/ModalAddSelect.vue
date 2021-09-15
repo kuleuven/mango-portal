@@ -5,7 +5,7 @@
             <div class="modal-container">
                 <h3 style="display: inline">Add select input </h3>
                 <div>
-                    <form class="needs-validation" novalidate>
+                    <form ref="addSelectForm" class="needs-validation" novalidate>
                         <div>
                             <label for="selectId" class="form-label h6">ID for slect input</label>
                             <input class="form-control" id="selectId" v-model="selectId" required>
@@ -69,7 +69,7 @@
             },
             // Submits the final object if it passes the form validation
             submitFinalObject(){
-                let form = document.querySelectorAll('.needs-validation')[document.querySelectorAll('.needs-validation').length-1];
+                let form = this.$refs.addSelectForm;
                 form.classList.add("was-validated");
                 if (form.checkValidity()){
                     this.$emit('submit', this.finalObject());

@@ -39,7 +39,7 @@
                                 <button class="btn btn-primary" @click="addBelow(index)">Add element</button>
                             </div>
                         </div>
-                        <form class="needs-validation" novalidate>
+                        <form ref="addObjectForm" class="needs-validation" novalidate>
                             <div>
                                 <label for="objectId" class="form-label h6">ID for object input</label>
                                 <input class="form-control" id="objectId" v-model="objectId" required>
@@ -156,7 +156,7 @@
             },
             // Submits the final object if it passes the form validation
             submitFinalObject(){
-                let form = document.querySelectorAll('.needs-validation')[document.querySelectorAll('.needs-validation').length-1];
+                let form =  this.$refs.addObjectForm;
                 form.classList.add("was-validated");
                 if (this.validate() && form.checkValidity()){
                     this.$emit('submit', this.finalObject());
