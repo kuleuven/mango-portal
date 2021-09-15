@@ -30,6 +30,7 @@ print(f"Flask version {flask.__version__}")
 irods_session = iRODSSession(irods_env_file=irods_env_file, zone=irods_zone)
 success = False
 user_home = f"/{irods_session.zone}/home/{irods_session.username}"
+zone_home = f"/{irods_session.zone}/home"
 if irods_session.collections.exists(user_home):
     success = True
     print(f"Success", file=sys.stderr)
@@ -145,6 +146,7 @@ def collection_browse(collection):
         data_objects=data_objects,
         session=irods_session,
         username=irods_session.username,
+        browse_root=zone_home
     )
 
 
