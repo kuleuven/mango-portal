@@ -3,10 +3,16 @@
 
 {% block body %}
 <main>
-<div id="metadata_template_editor">
-    <metadata-template-editor></metadata-template-editor>
-</div>
-<script src="{{url_for('static', filename='dist/metadataTemplateEditor.js')}}"></script>
-<link href="{{ url_for('static', filename='dist/metadataTemplateEditor.css') }}" rel="stylesheet">
+    <div id="metadata_template_editor">
+        <metadata-template-editor></metadata-template-editor>
+    </div>
+    <script src="{{url_for('static', filename='dist/metadataTemplateEditor.js')}}"></script>
+    <link href="{{ url_for('static', filename='dist/metadataTemplateEditor.css') }}" rel="stylesheet">
+
+    <div id="metadata_form">
+        <metadata-form></metadata-form>
+    </div>
+    <script src="{{url_for('static', filename='dist/metadataForm.js')}}"></script>
+    <link href="{{ url_for('static', filename='dist/metadataForm.css') }}" rel="stylesheet">
 </main>
 {% endblock %}
