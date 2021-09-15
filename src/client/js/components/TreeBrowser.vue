@@ -1,7 +1,7 @@
 <template>
     <div>
         <h3 style="margin: 0.5rem 1rem">Select the destination folder</h3>
-        <treeselect style="margin: 0.5rem 1rem" v-model="destination" :close-on-select="false" :clearable="true" :multiple="false" :searchable="true" :options="treeStructure"/>
+        <treeselect style="margin: 0.5rem 1rem" v-model="destination" :close-on-select="false" :clearable="true" :multiple="false" :searchable="true" :options="treeStructure"></treeselect>
         <div v-if="destination==null" style="display:block; margin: 0.5rem 1rem" class="invalid-feedback">No destination selected</div>
         <button type="button" style="margin: 0.5rem 1rem" @click="move()">Move</button>
         <button type="button" style="margin: 0.5rem 0rem">Cancel</button>
@@ -42,3 +42,7 @@
         }
 }
 </script>
+<style lang="scss">
+    @import "../../css/forms.scss";
+    @import "../../css/formEditor.scss";
+</style>
