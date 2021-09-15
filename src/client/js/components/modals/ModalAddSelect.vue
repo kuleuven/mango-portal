@@ -65,7 +65,7 @@
                         "enum": this.selectValues,
                         "title": this.selectLabel,
                     }
-                };
+                }
             },
             // Submits the final object if it passes the form validation
             submitFinalObject(){

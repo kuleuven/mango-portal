@@ -131,7 +131,7 @@
                     }
                     success = false;
                 } else {
-                    this.$refs.minMaxFeedback.style = "display: none" ;
+                    this.$refs.minMaxFeedback.style = "display: none";
                     for (let j=0; j < numberInputs.length; j++){
                         numberInputs[j].setCustomValidity("");
                     }

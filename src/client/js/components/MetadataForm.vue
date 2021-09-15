@@ -81,7 +81,7 @@
                     let substring = str.substring(prevPos, pos);
                     modelValue = modelValue[substring];
                     prevPos = str.indexOf("[", pos)+1;
-                    pos = str.indexOf("]", pos+1)   ;
+                    pos = str.indexOf("]", pos+1);
                 }
                 return modelValue
             },
@@ -173,7 +173,7 @@
                                 this.applyFeedback(formDivs[i], "This field is required");
                                 success = false;
                             } else {
-                                this.makeFieldsValid(formDivs[i])
+                                this.makeFieldsValid(formDivs[i]);
                                 let invalidFeedback2 = formDivs[i].querySelector('.form-feedback');
                                 if (invalidFeedback2 != null){
                                     invalidFeedback2.style = "display: none";
