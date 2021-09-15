@@ -1,0 +1,157 @@
+$primary: #1d8db0;
+$secondary: #08a7eb;
+@import "~bootstrap/scss/bootstrap";
+
+// global style around a form
+.form {
+    text-align: left;
+    width: 600px;
+    margin: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+// style for form validation invalid feedback
+.form-feedback {
+    @extend .invalid-feedback;
+}
+
+// Styling for checkboxes
+div[data-fs-kind=boolean] {
+    position: relative;
+    height: auto;
+}
+
+div[data-fs-kind=boolean]>label {
+    position: relative;
+    display: inline-block;
+    left: 2rem;
+}
+
+div[data-fs-kind=boolean]>div[data-fs-input=checkbox] {
+    position: absolute;
+    display: inline-block;
+    left: -0.1em;
+    width: 1rem;
+}
+
+div[data-fs-input=checkbox]>input {
+    @extend .form-check-input;
+}
+
+div[data-fs-input=checkbox]>input:checked {
+    @extend .form-check-input;
+    background-color: $secondary;
+    border-color: $secondary
+}
+
+.form-check-input:checked{
+    background-color: $secondary;
+    border-color: $secondary;
+}
+
+// Style for labels
+div[data-fs-kind=string]>label, div[data-fs-kind=number]>label, div[data-fs-kind=enum]>label, div[data-fs-kind=list]>label, div[data-fs-kind=object]>label{
+    @extend .form-label;
+    @extend .h6;
+}
+
+div[data-fs-kind=array]>label {
+    @extend .form-label;
+    @extend .h5;
+}
+
+label:empty {
+    display: none;
+}
+
+// style for text input
+div[data-fs-input=text]>input {
+    @extend .form-control;
+}
+
+div[data-fs-kind=string] {
+    padding-bottom: 5px;
+}
+
+// style for button
+button {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    @extend .btn;
+    @extend .btn-secondary;
+    color: white;
+    font-weight: bold;
+}
+
+// style for radio input
+[data-fs-kind=enum] {
+    @extend .form-check;
+    padding-left: 0;
+    padding-bottom: 5px;
+}
+
+[data-fs-kind=radio] {
+    @extend .form-check;
+    padding-left: 1.5em;
+}
+
+div[data-fs-input=radio]>input {
+    @extend .form-check-input;
+    transform: translateY(-150%);
+}
+
+div[data-fs-input=radio]>input:checked {
+    @extend .form-check-input;
+    transform: translateY(-150%);
+    background-color: $secondary;
+    border-color: $secondary
+}
+
+div[data-fs-kind=radio]>label {
+    @extend .form-check-label;
+}
+
+// style for object input
+[data-fs-input=array]>[data-fs-kind=object], div[data-fs-kind=object]:not(div[data-fs-field*=checkboxes]){
+    @extend .border;
+    @extend .rounded;
+    padding: 24px;
+    margin-bottom: 10px;
+    margin-top: 5px;
+}
+
+// style for select input
+div[data-fs-input=list]>select {
+    @extend .form-select;
+}
+
+// style for date input
+div[data-fs-input=date]>input {
+    @extend .form-control;
+    width: fit-content;
+}
+
+// style for number input
+div[data-fs-input=number]>input {
+    @extend .form-control;
+    width: fit-content;
+}
+
+// style for email input
+div[data-fs-input=email]>input {
+    @extend .form-control;
+    width: fit-content;
+}
+
+// style for time input
+div[data-fs-input=time]>input {
+    @extend .form-control;
+    width: fit-content;
+}
+
+// style for URL input
+div[data-fs-input=url]>input {
+    @extend .form-control;
+    width: fit-content;
+}

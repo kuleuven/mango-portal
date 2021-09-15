@@ -1,0 +1,44 @@
+.formEditorContainer{
+    text-align: left;
+    width: 100%;
+    margin: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.sideMenuButton{
+    width: 80%;
+    margin: 10px 10%;
+}
+
+.row {
+    margin-left: 0;
+    margin-right: 20px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.row>button {
+    width: auto;
+}
+
+.row>.column>button {
+    width: auto;
+    bottom: 10px;
+    right: 10px;
+    position: absolute;
+}
+
+.column {
+    position: relative;
+    float: left;
+    padding: 10px;
+}
+
+.small {
+    width: 20%;
+}
+
+.big {
+    width: 80%;
+}
