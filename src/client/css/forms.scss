@@ -1,5 +1,3 @@
-$primary: #1d8db0;
-$secondary: #08a7eb;
 @import "~bootstrap/scss/bootstrap";
 
 // global style around a form
@@ -75,13 +73,10 @@ div[data-fs-kind=string] {
 }
 
 // style for button
-button {
-    margin-top: 5px;
-    margin-bottom: 5px;
+div[data-fs-input=array]>button, div[data-fs-buttons]>button {
+    margin: 5px 5px 5px 0px;
     @extend .btn;
-    @extend .btn-secondary;
-    color: white;
-    font-weight: bold;
+    @extend .btn-primary;
 }
 
 // style for radio input
