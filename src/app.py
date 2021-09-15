@@ -310,7 +310,7 @@ json_template_dir = os.path.abspath("./static/metadata-templates")
 
 # Blueprint templates
 @app.route("/metadata-template", methods=["GET"])
-def list_meta_data_templates():
+def metadata_template():
     """
     """
     return render_template("metadata_template_module.html.j2")

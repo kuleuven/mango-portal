@@ -39,13 +39,6 @@ div[data-fs-input=checkbox]>input {
 
 div[data-fs-input=checkbox]>input:checked {
     @extend .form-check-input;
-    background-color: $secondary;
-    border-color: $secondary
-}
-
-.form-check-input:checked{
-    background-color: $secondary;
-    border-color: $secondary;
 }
 
 // Style for labels
@@ -94,13 +87,6 @@ div[data-fs-input=array]>button, div[data-fs-buttons]>button {
 div[data-fs-input=radio]>input {
     @extend .form-check-input;
     transform: translateY(-150%);
-}
-
-div[data-fs-input=radio]>input:checked {
-    @extend .form-check-input;
-    transform: translateY(-150%);
-    background-color: $secondary;
-    border-color: $secondary
 }
 
 div[data-fs-kind=radio]>label {

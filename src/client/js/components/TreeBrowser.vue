@@ -18,6 +18,10 @@
                 type: Array,
                 default: () => []
             },
+            browseRoot: {
+                type: String,
+                default: "/api/collection/tree/kuleuven_tier1_pilot/home"
+            }
         },
         data: () => ({
             destination: undefined,
@@ -25,15 +29,15 @@
         }),
         mounted() {
             axios
-            .get("http://localhost:5000/api/collection/tree/kuleuven_tier1_pilot/home") // TODO: edit to correct address
-            .then(response => (this.treeStructure = response.data))
+            .get(this.browseRoot) // TODO: edit to correct address
+            .then(response => (this.treeStructure = response.data));
         },
         methods: {
             // Moves this.selectedFiles to this.destination
             move(){
                 if (this.destination != null){
                     //TODO
-                    console.log("The selected files ("+this.selectedFiles+") are moved to "+this.destination+".")
+                    console.log("The selected files ("+this.selectedFiles+") are moved to "+this.destination+".");
                 } 
             },
         },

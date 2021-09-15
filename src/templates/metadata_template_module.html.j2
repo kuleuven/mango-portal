@@ -1,6 +1,12 @@
-% extends "base.html.j2" %}
+{% extends "base.html.j2" %}
 
 
 {% block body %}
-
+<main>
+<div id="metadata_template_editor">
+    <metadata-template-editor></metadata-template-editor>
+</div>
+<script src="{{url_for('static', filename='dist/metadataTemplateEditor.js')}}"></script>
+<link href="{{ url_for('static', filename='dist/metadataTemplateEditor.css') }}" rel="stylesheet">
+</main>
 {% endblock %}
