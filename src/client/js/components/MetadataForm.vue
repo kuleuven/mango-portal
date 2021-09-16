@@ -30,6 +30,10 @@
                 type: Object,
                 default: () => {return {}}
             },
+            fieldValues: {
+                type: Object,
+                default: () => {return {}}
+            },
         },
         data: () => ({
             model: {},
@@ -40,8 +44,9 @@
                 return JSON.stringify(this.model).split(",").length
             }
         },
-        //TODO: remove this function and replace in backend using the prop schema
         created () {
+            this.model = this.fieldValues
+            //TODO: remove next part and replace in backend using the prop schema
             //Removing $ref from schema
             $RefParser.dereference(schemaWithPointers)
             .then((schema) => {

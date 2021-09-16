@@ -2,7 +2,7 @@
     <div class="formEditorContainer d-flex flex-column">
         <div class="p-2">
             <button class="btn btn-primary" @click="showTemplates()">Edit template</button>
-            <button class="btn btn-primary" @click="showForm()">Show form preview</button>
+            <button class="btn btn-primary" @click="showForm()">Show template preview</button>
             <button class="btn btn-primary" @click="saveTemplate()">Save template</button>
         </div>
 
@@ -79,6 +79,7 @@
     export default {
         data: ()=>({
             templateName: "",
+            templateType: "new",
             elements: [],
             fieldIds: [],
             required: [],
@@ -102,6 +103,7 @@
             // Opens the given template to edit
             editTemplate(template, name){
                 this.showModalTemplateList = false;
+                this.templateType = "update";
                 $RefParser.dereference(template).then((schema) => {
                     this.templateName = schema.title;
                     if(this.templateName === ""){
@@ -146,7 +148,7 @@
                     var formData = new FormData();
                     formData.append("template_name", this.templateName+".json");
                     formData.append("template_json",  JSON.stringify(this.json()));
-                    axios.post('/metadata-template/update', formData)
+                    axios.post('/metadata-template/'+this.templateType, formData)
                     // axios
                     // .post("/metadata-template/update", {"template_name": this.templateName, "template_json": this.json()});
                     // var element = document.createElement('a');
