@@ -65,9 +65,9 @@
 </template>
 
 <script>
-    import FormSchema from '@formschema/native'
-    import ModalFormElement from './ModalFormElement.vue'
-    import ModalAddText from './ModalAddText.vue'
+    import FormSchema from '@formschema/native';
+    import ModalFormElement from './ModalFormElement.vue';
+    import ModalAddText from './ModalAddText.vue';
 
     export default {
         data: () => ({

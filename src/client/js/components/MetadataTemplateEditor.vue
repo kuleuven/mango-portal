@@ -1,15 +1,15 @@
 <template>
     <div class="formEditorContainer d-flex flex-column">
         <div class="p-2">
-            <button class="sideMenuButton btn btn-primary" @click="loadJSON()">Load JSON</button>
-            <input type="file" style="display: none" ref="fileInput" accept="application/JSON" @change="onFilePicked"/>
-            <button class="sideMenuButton btn btn-primary" @click="showForm()">Show form preview</button>
-            <button class="sideMenuButton btn btn-primary" @click="getJSON()">Get final JSON</button>
+            <button class="btn btn-primary" @click="showTemplates()">Edit template</button>
+            <button class="btn btn-primary" @click="showForm()">Show form preview</button>
+            <button class="btn btn-primary" @click="saveTemplate()">Save template</button>
         </div>
 
         <div class="p-2">
             <div class="row">
-                <input class="form-control" type="text" placeholder="Form title" v-model="formTitle"/>
+                <input ref="nameInput" class="form-control" type="text" placeholder="Metadata template name" v-model="templateName"/>
+                <div v-if="templateName === ''" style="display:block;" class="invalid-feedback">Metadata template name is required</div>
             </div>
             <div class="row">
                 <button class="btn btn-primary" @click="addBelow(null)">Add element</button>
@@ -56,26 +56,29 @@
         <ModalAddCheckboxes v-else-if="showModalAddCheckboxes" @submit="submit" @cancel="cancel()"></ModalAddCheckboxes>
         <ModalAddObject v-else-if="showModalAddObject" @submit="submit" @cancel="cancel()"></ModalAddObject>
         <ModalAddArray v-else-if="showModalAddArray" @submit="submit" @cancel="cancel()"></ModalAddArray>
+        <ModalTemplateList v-else-if="showModalTemplateList" @editTemplate="editTemplate" @cancel="cancel()"></ModalTemplateList>
     </div>
     
 </template>
 
 <script>
-    import FormSchema from '@formschema/native'
-    import ModalMessage from './modals/ModalMessage.vue'
-    import ModalFormElement from './modals/ModalFormElement.vue'
-    import ModalFormPreview from './modals/ModalFormPreview.vue'
-    import ModalAddText from './modals/ModalAddText.vue'
-    import ModalAddSelect from './modals/ModalAddSelect.vue'
-    import ModalAddRadio from './modals/ModalAddRadio.vue'
-    import ModalAddCheckboxes from './modals/ModalAddCheckboxes.vue'
-    import ModalAddObject from './modals/ModalAddObject.vue'
-    import ModalAddArray from './modals/ModalAddArray.vue'
-    import $RefParser from 'json-schema-ref-parser'
+    import FormSchema from '@formschema/native';
+    import ModalMessage from './modals/ModalMessage.vue';
+    import ModalFormElement from './modals/ModalFormElement.vue';
+    import ModalFormPreview from './modals/ModalFormPreview.vue';
+    import ModalAddText from './modals/ModalAddText.vue';
+    import ModalAddSelect from './modals/ModalAddSelect.vue';
+    import ModalAddRadio from './modals/ModalAddRadio.vue';
+    import ModalAddCheckboxes from './modals/ModalAddCheckboxes.vue';
+    import ModalAddObject from './modals/ModalAddObject.vue';
+    import ModalAddArray from './modals/ModalAddArray.vue';
+    import ModalTemplateList from './modals/ModalTemplateList.vue';
+    import $RefParser from 'json-schema-ref-parser';
+    import axios from 'axios';
 
     export default {
         data: ()=>({
-            formTitle: "",
+            templateName: "",
             elements: [],
             fieldIds: [],
             required: [],
@@ -89,39 +92,34 @@
             showModalAddCheckboxes: false,
             showModalAddObject: false,
             showModalAddArray: false,
+            showModalTemplateList: false,
         }),
         methods: {
-            // Functions for loading a JSON schema
-            onFilePicked(e){
-                let files = e.target.files || e.dataTransfer.files;
-                if (!files.length) return;
-                this.readFile(files[0]);
+            // Opens a modal to show the existing templates to select 1 to edit
+            showTemplates(){
+                this.showModalTemplateList = true;
             },
-            loadJSON(){
-                this.$refs.fileInput.click();
-            },
-            readFile(file) {
-                let reader = new FileReader();
-                reader.onload = e => {
-                    let jsonWithReferences = JSON.parse(e.target.result);
-                    $RefParser.dereference(jsonWithReferences).then((schema) => {
-                        this.formTitle = schema.title;
-                        this.elements = [];
-                        this.required = [];
-                        this.fieldIds = [];
-                        for (const [key, value] of Object.entries(schema.properties)) {
-                            this.elements.push({[key]:value});
-                            this.fieldIds.push(key);
-                            if (schema.required.includes(key)){
-                                this.required.push(true);
-                            } else {
-                                this.required.push(false);
-                            }
+            // Opens the given template to edit
+            editTemplate(template, name){
+                this.showModalTemplateList = false;
+                $RefParser.dereference(template).then((schema) => {
+                    this.templateName = schema.title;
+                    if(this.templateName === ""){
+                        this.templateName = name;
+                    }
+                    this.elements = [];
+                    this.required = [];
+                    this.fieldIds = [];
+                    for (const [key, value] of Object.entries(schema.properties)) {
+                        this.elements.push({[key]:value});
+                        this.fieldIds.push(key);
+                        if (schema.required.includes(key)){
+                            this.required.push(true);
+                        } else {
+                            this.required.push(false);
                         }
-                        this.$refs.fileInput.value = null;
-                    })
-                }
-                reader.readAsText(file)
+                    }
+                })
             },
             // Function for getting the result JSON of the form editor
             json() {
@@ -133,20 +131,32 @@
                         required.push(Object.keys(this.elements[id])[0]);
                     }
                 }
-                return {"title": this.formTitle,
+                return {"title": this.templateName,
                         "type": "object",
                         "required": required,
                         "properties":result}
             },
             // Function for downloading the final JSON from the form editor
-            getJSON(){
-                var element = document.createElement('a');
-                element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(this.json())));
-                element.setAttribute('download', "metadata.json");
-                element.style.display = 'none';
-                document.body.appendChild(element);
-                element.click();
-                document.body.removeChild(element);
+            saveTemplate(){
+                const nameElement = this.$refs.nameInput;
+                if (this.templateName === ""){
+                    nameElement.setCustomValidity("Invalid field.");
+                } else {
+                    nameElement.setCustomValidity("");
+                    var formData = new FormData();
+                    formData.append("template_name", this.templateName+".json");
+                    formData.append("template_json",  JSON.stringify(this.json()));
+                    axios.post('/metadata-template/update', formData)
+                    // axios
+                    // .post("/metadata-template/update", {"template_name": this.templateName, "template_json": this.json()});
+                    // var element = document.createElement('a');
+                    // element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(this.json())));
+                    // element.setAttribute('download', this.templateName + ".json");
+                    // element.style.display = 'none';
+                    // document.body.appendChild(element);
+                    // element.click();
+                    // document.body.removeChild(element);
+                }
             },
             // Function for showing a preview of the form
             showForm(){
@@ -237,6 +247,7 @@
                 this.showModalAddObject = false;
                 this.showModalAddArray = false;
                 this.selectedElement = null;
+                this.showModalTemplateList = false;
             },
         },
         components: {
@@ -249,6 +260,7 @@
             ModalAddCheckboxes,
             ModalAddObject,
             ModalAddArray,
+            ModalTemplateList,
             FormSchema,
         }
     }

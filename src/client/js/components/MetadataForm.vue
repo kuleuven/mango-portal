@@ -18,17 +18,17 @@
 </template>
 
 <script>
-    import FormSchema from '@formschema/native'
-    import schemaWithPointers from '../../../static/metadata-templates/metadata.json'
-    import $RefParser from 'json-schema-ref-parser'
-    import ModalMessage from './modals/ModalMessage.vue'
-    import axios from 'axios'
+    import FormSchema from '@formschema/native';
+    import schemaWithPointers from '../../../static/metadata-templates/metadata.json';
+    import $RefParser from 'json-schema-ref-parser';
+    import ModalMessage from './modals/ModalMessage.vue';
+    import axios from 'axios';
 
     export default {
         props: {
             schema: {
                 type: Object,
-                default: {}
+                default: () => {return {}}
             },
         },
         data: () => ({
@@ -40,6 +40,7 @@
                 return JSON.stringify(this.model).split(",").length
             }
         },
+        //TODO: remove this function and replace in backend using the prop schema
         created () {
             //Removing $ref from schema
             $RefParser.dereference(schemaWithPointers)

@@ -8,9 +8,9 @@
     </div>
 </template>
 <script>
-    import Treeselect from '@riophae/vue-treeselect'
-    import '@riophae/vue-treeselect/dist/vue-treeselect.css'
-    import axios from 'axios'
+    import Treeselect from '@riophae/vue-treeselect';
+    import '@riophae/vue-treeselect/dist/vue-treeselect.css';
+    import axios from 'axios';
 
     export default {
         props:{

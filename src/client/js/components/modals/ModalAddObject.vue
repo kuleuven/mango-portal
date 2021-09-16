@@ -80,14 +80,14 @@
 </template>
 
 <script>
-    import FormSchema from '@formschema/native'
-    import ModalMessage from './ModalMessage.vue'
-    import ModalFormElement from './ModalFormElement.vue'
-    import ModalAddText from './ModalAddText.vue'
-    import ModalAddSelect from './ModalAddSelect.vue'
-    import ModalAddRadio from './ModalAddRadio.vue'
-    import ModalAddCheckboxes from './ModalAddCheckboxes.vue'
-    import ModalAddArray from './ModalAddArray.vue'
+    import FormSchema from '@formschema/native';
+    import ModalMessage from './ModalMessage.vue';
+    import ModalFormElement from './ModalFormElement.vue';
+    import ModalAddText from './ModalAddText.vue';
+    import ModalAddSelect from './ModalAddSelect.vue';
+    import ModalAddRadio from './ModalAddRadio.vue';
+    import ModalAddCheckboxes from './ModalAddCheckboxes.vue';
+    import ModalAddArray from './ModalAddArray.vue';
 
     export default {
         name: "modal-add-object",
