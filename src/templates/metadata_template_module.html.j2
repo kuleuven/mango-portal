@@ -3,11 +3,11 @@
 
 {% block body %}
 <main>
-    <div id="metadata_template_editor_container">
-        <metadata-template-editor new-url="{{url_for('new_meta_data_template')}}" update-url="{{url_for('update_meta_data_templates')}}" template-list-url="{{url_for('list_meta_data_templates')}}"></metadata-template-editor>
+    <div id="metadata_template_list_container">
+        <metadata-template-list new-url="{{url_for('new_meta_data_template')}}" update-url="{{url_for('update_meta_data_templates')}}" template-list-url="{{url_for('list_meta_data_templates')}}" new-template-url="/static/metadata-templates/"></metadata-template-list>
     </div>
-    <script src="{{url_for('static', filename='dist/metadataTemplateEditor.js')}}"></script>
-    <link href="{{ url_for('static', filename='dist/metadataTemplateEditor.css') }}" rel="stylesheet">
+    <script src="{{url_for('static', filename='dist/metadataTemplateList.js')}}"></script>
+    <link href="{{ url_for('static', filename='dist/metadataTemplateList.css') }}" rel="stylesheet">
 
     <hr>
     
