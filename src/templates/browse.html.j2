@@ -85,48 +85,49 @@
 			Add meta data
 			</button>
 </div>
+  <div style="width:fit-content" class="input-group my-3">
+    <select class="form-select" id="action_select">
+      <option value="" selected>Choose action for selected files/collections</option>
+      <option value="move">Move</option>
+      <option value="delete">Delete</option>
+    </select>
+    <button type="button" class="btn btn-primary" onclick="applyAction()">Apply</button>
+  </div>
 
+	<table class="table table-striped table-hover mt-2" id="browseTable">
+    <thead>
+      <tr>
+        <th scope="col">Select</th>
+        <th scope="col">Name</th>
+        <th scope="col">Owner</th>
+        <th scope="col">Created</th>
+        <th scope="col">Modified</th>
+        <th scope="col">Size</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for collection in sub_collections  %}
+      <tr>
+        <td><input style="vertical-align:middle" class="form-check-input checkbox-inline" type="checkbox" value="{{collection.path}}"></td>
+        <td><i class="bi bi-folder fs-4"></i> <a href="{{url_for('collection_browse', collection=collection.path.lstrip('/'))}}">{{collection.name}}</a></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      {% endfor %}
 
-
-<div class="tab-pane show active" id="collection-content" role="tabpanel" aria-labelledby="home-tab">
-	  <table class="table table-striped table-hover mt-2">
-  <thead>
-    <tr>
-      <th scope="col">Select</th>
-      <th scope="col">Name</th>
-      <th scope="col">Owner</th>
-	    <th scope="col">Created</th>
-      <th scope="col">Modified</th>
-      <th scope="col">Size</th>
-    </tr>
-  </thead>
-   <tbody>
-  {% for collection in sub_collections  %}
-  <tr>
-  <td><input style="vertical-align:middle" class="form-check-input checkbox-inline" type="checkbox" value="{{collection.name}}"></td>
-	<td><i class="bi bi-folder fs-4"></i> <a href="{{url_for('collection_browse', collection=collection.path.lstrip('/'))}}">{{collection.name}}</a></td>
-	<td></td>
-	<td></td>
-	<td></td>
-	<td></td>
-  </tr>
-
-  {% endfor %}
-
-  {% for data_object in data_objects  %}
-  <tr>
-  <td><input style="vertical-align:middle" class="form-check-input checkbox-inline" type="checkbox" value="{{data_object.name}}"></td>
-	<td><i class="bi bi-file-earmark fs-4"></i><span> <a href="{{url_for('view_object', data_object_path=data_object.path.lstrip('/'))}}">{{data_object.name}}</a></span></td>
-	<td><!--{{ data_object.__dict__ }}-->{{data_object.owner_name}}</td>
-	<td>{{data_object.create_time}}</td>
-	<td>{{data_object.modify_time}}</td>
-	<td>{{data_object.size | filesizeformat}}</td>
-  </tr>
-
-
-  {% endfor %}
-
-  </tbody>
+      {% for data_object in data_objects  %}
+      <tr>
+        <td><input style="vertical-align:middle" class="form-check-input checkbox-inline" type="checkbox" value="{{data_object.path}}"></td>
+        <td><i class="bi bi-file-earmark fs-4"></i><span> <a href="{{url_for('view_object', data_object_path=data_object.path.lstrip('/'))}}">{{data_object.name}}</a></span></td>
+        <td><!--{{ data_object.__dict__ }}-->{{data_object.owner_name}}</td>
+        <td>{{data_object.create_time}}</td>
+        <td>{{data_object.modify_time}}</td>
+        <td>{{data_object.size | filesizeformat}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
   </table>
 </div>
 </div>
@@ -223,6 +224,56 @@
 {% block javascript %}
 {{ super() }}
 
+<script>
+//function for applying action on all selected collections/files
+function applyAction() {
+  let action = document.getElementById("action_select").value;
+  let selectedCollections = [];
+  let selectedDataObjects = [];
+  let rows = document.getElementById("browseTable").querySelectorAll("tr");
+  let checkboxes = rows[0].querySelectorAll("[type=checkbox]");
+  for (const checkbox of checkboxes){
+    if (checkbox.checked){
+      selectedDataObjects.push(checkbox.value);
+    }
+  }
+  checkboxes = rows[1].querySelectorAll("[type=checkbox]");
+  for (const checkbox of checkboxes){
+    if (checkbox.checked){
+      selectedCollections.push(checkbox.value);
+    }
+  }
+  console.log(selectedCollections);
+  console.log(selectedDataObjects)
+  if (selectedCollections.length > 0 || selectedDataObjects.length > 0){
+    switch(action) {
+      case "move":
+        // move selected items
+        let treeBrowser = document.getElementById("tree_browser");
+        tree_browser.style = "display: block!important";
+        break;
+      case "delete":
+        // deleted selected items, TODO: api call
+        for (const path of selectedCollections){
+          var xhr = new XMLHttpRequest();
+          xhr.open("POST", "{{url_for('delete_collection')}}");
+          var formData = new FormData();
+          formData.append("collection_path", path);
+          xhr.send(formData);
+        }
+        for (const path of selectedDataObjects){
+          var xhr = new XMLHttpRequest();
+          xhr.open("POST", "{{url_for('remove_data_object')}}");
+          var formData = new FormData();
+          formData.append("data_object_path", path);
+          xhr.send(formData);
+        }
+        break;
+    }
+  }
+  
+}
+</script>
 {#<script async src="{{url_for('static', filename='js/form-validation.js')}}"></script>#}
 
 {% endblock javascript %}
