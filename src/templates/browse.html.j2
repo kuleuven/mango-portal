@@ -211,9 +211,7 @@
 
 
 <div id="app">
-  <welcome></welcome>
-  <hello></hello>
-  <tree-browser browse-root="{{ url_for('api_collection_tree', collection=browse_root) }}"></tree-browser>
+  <tree-browser style="display:none!important" browse-root="{{ url_for('api_collection_tree', collection=browse_root) }}" id="tree_browser"></tree-browser>
 </div>
 
 

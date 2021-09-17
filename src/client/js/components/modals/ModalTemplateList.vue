@@ -27,12 +27,18 @@
     import axios from 'axios';
 
     export default {
+        props:{
+            templateListUrl:{
+                type: String,
+                required: true
+            }
+        },
         data: () => ({
             templates: [],
         }),
         created(){
             axios
-            .get("/metadata-template/list")
+            .get(this.templateListUrl)
             .then(response => (this.templates = response.data));
         },
         methods:{

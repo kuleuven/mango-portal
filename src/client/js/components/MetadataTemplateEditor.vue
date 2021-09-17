@@ -56,7 +56,7 @@
         <ModalAddCheckboxes v-else-if="showModalAddCheckboxes" @submit="submit" @cancel="cancel()"></ModalAddCheckboxes>
         <ModalAddObject v-else-if="showModalAddObject" @submit="submit" @cancel="cancel()"></ModalAddObject>
         <ModalAddArray v-else-if="showModalAddArray" @submit="submit" @cancel="cancel()"></ModalAddArray>
-        <ModalTemplateList v-else-if="showModalTemplateList" @editTemplate="editTemplate" @cancel="cancel()"></ModalTemplateList>
+        <ModalTemplateList v-else-if="showModalTemplateList" @editTemplate="editTemplate" @cancel="cancel()" :template-list-url="templateListUrl"></ModalTemplateList>
     </div>
     
 </template>
@@ -77,6 +77,20 @@
     import axios from 'axios';
 
     export default {
+        props:{
+            newUrl: {
+                type: String,
+                required: true
+            },
+            updateUrl: {
+                type: String,
+                required: true
+            },
+            templateListUrl: {
+                type: String,
+                required: true
+            },
+        },
         data: ()=>({
             templateName: "",
             templateType: "new",
@@ -148,7 +162,11 @@
                     var formData = new FormData();
                     formData.append("template_name", this.templateName+".json");
                     formData.append("template_json",  JSON.stringify(this.json()));
-                    axios.post('/metadata-template/'+this.templateType, formData)
+                    if (this.templateType === "new") {
+                        axios.post(this.newUrl, formData)
+                    } else {
+                        axios.post(this.updateUrl, formData)
+                    }
                     // axios
                     // .post("/metadata-template/update", {"template_name": this.templateName, "template_json": this.json()});
                     // var element = document.createElement('a');

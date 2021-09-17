@@ -34,6 +34,10 @@
                 type: Object,
                 default: () => {return {}}
             },
+            submitUrl: {
+                type: String,
+                required: true
+            }
         },
         data: () => ({
             model: {},
@@ -226,11 +230,11 @@
                 if (this.validate()){
                     //Option 1
                     axios
-                    .post("http://localhost:5000/metadata-template/dump-contents-body/test.json", JSON.stringify(this.model)); // TODO: edit to correct address
+                    .post(this.submitUrl, JSON.stringify(this.model));
                     //Option 2
                     const form = document.getElementById("metadata_form");
                     form.method = "post";
-                    form.action = "http://localhost:5000/metadata-template/dump-form-contents"; // TODO: edit to correct address
+                    form.action = "/metadata-template/dump-form-contents"; // TODO: edit to correct address
                     form.submit();
                 }
             },

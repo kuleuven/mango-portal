@@ -3,16 +3,16 @@
 
 {% block body %}
 <main>
-    <div id="metadata_template_editor">
-        <metadata-template-editor></metadata-template-editor>
+    <div id="metadata_template_editor_container">
+        <metadata-template-editor new-url="{{url_for('new_meta_data_template')}}" update-url="{{url_for('update_meta_data_templates')}}" template-list-url="{{url_for('list_meta_data_templates')}}"></metadata-template-editor>
     </div>
     <script src="{{url_for('static', filename='dist/metadataTemplateEditor.js')}}"></script>
     <link href="{{ url_for('static', filename='dist/metadataTemplateEditor.css') }}" rel="stylesheet">
 
     <hr>
     
-    <div id="metadata_form">
-        <metadata-form></metadata-form>
+    <div id="metadata_form_container">
+        <metadata-form submit-url="{{url_for('dump_meta_data_body_json', filename='test.json')}}"></metadata-form>
     </div>
     <script src="{{url_for('static', filename='dist/metadataForm.js')}}"></script>
     <link href="{{ url_for('static', filename='dist/metadataForm.css') }}" rel="stylesheet">
