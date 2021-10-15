@@ -65,9 +65,9 @@
 </template>
 
 <script>
-    import FormSchema from '@formschema/native'
-    import ModalFormElement from './ModalFormElement.vue'
-    import ModalAddText from './ModalAddText.vue'
+    import FormSchema from '@formschema/native';
+    import ModalFormElement from './ModalFormElement.vue';
+    import ModalAddText from './ModalAddText.vue';
 
     export default {
         data: () => ({
@@ -110,7 +110,7 @@
                     }
                     success = false;
                 } else {
-                    this.$refs.minMaxFeedback.style = "display: none" ;
+                    this.$refs.minMaxFeedback.style = "display: none";
                     for (let j=0; j < numberInputs.length; j++){
                         numberInputs[j].setCustomValidity("");
                     }

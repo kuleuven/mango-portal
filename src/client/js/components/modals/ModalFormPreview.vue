@@ -12,7 +12,7 @@
 </template>
 
 <script>
-    import FormSchema from '@formschema/native'
+    import FormSchema from '@formschema/native';
 
     export default {
         props: {

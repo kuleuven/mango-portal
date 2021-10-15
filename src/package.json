@@ -7,8 +7,8 @@
     "lib": "lib"
   },
   "scripts": {
-    "watch": "parcel watch client/js/index.js -d static/dist --public-url /static/dist/ && parcel watch client/js/metadataTemplateEditor.js -d static/dist --public-url /static/dist/ && parcel watch client/js/metadataForm.js -d static/dist --public-url /static/dist/",
-    "build": "parcel build client/js/index.js -d static/dist --public-url /static/dist/ && parcel build client/js/metadataTemplateEditor.js -d static/dist --public-url /static/dist/ && parcel build client/js/metadataForm.js -d static/dist --public-url /static/dist/"
+    "watch": "parcel watch client/js/index.js -d static/dist --public-url /static/dist/ && parcel watch client/js/metadataTemplateList.js -d static/dist --public-url /static/dist/ && parcel watch client/js/metadataForm.js -d static/dist --public-url /static/dist/",
+    "build": "parcel build client/js/index.js -d static/dist --public-url /static/dist/ && parcel build client/js/metadataTemplateList.js -d static/dist --public-url /static/dist/ && parcel build client/js/metadataForm.js -d static/dist --public-url /static/dist/"
   },
   "keywords": [],
   "author": "",

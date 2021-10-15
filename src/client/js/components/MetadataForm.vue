@@ -18,18 +18,26 @@
 </template>
 
 <script>
-    import FormSchema from '@formschema/native'
-    import schemaWithPointers from '../../../static/metadata-templates/metadata.json'
-    import $RefParser from 'json-schema-ref-parser'
-    import ModalMessage from './modals/ModalMessage.vue'
-    import axios from 'axios'
+    import FormSchema from '@formschema/native';
+    import schemaWithPointers from '../../../static/metadata-templates/metadata.json';
+    import $RefParser from 'json-schema-ref-parser';
+    import ModalMessage from './modals/ModalMessage.vue';
+    import axios from 'axios';
 
     export default {
         props: {
             schema: {
                 type: Object,
-                default: {}
+                default: () => {return {}}
             },
+            fieldValues: {
+                type: Object,
+                default: () => {return {}}
+            },
+            submitUrl: {
+                type: String,
+                required: true
+            }
         },
         data: () => ({
             model: {},
@@ -41,6 +49,8 @@
             }
         },
         created () {
+            this.model = this.fieldValues
+            //TODO: remove next part and replace in backend using the prop schema
             //Removing $ref from schema
             $RefParser.dereference(schemaWithPointers)
             .then((schema) => {
@@ -81,7 +91,7 @@
                     let substring = str.substring(prevPos, pos);
                     modelValue = modelValue[substring];
                     prevPos = str.indexOf("[", pos)+1;
-                    pos = str.indexOf("]", pos+1)   ;
+                    pos = str.indexOf("]", pos+1);
                 }
                 return modelValue
             },
@@ -173,7 +183,7 @@
                                 this.applyFeedback(formDivs[i], "This field is required");
                                 success = false;
                             } else {
-                                this.makeFieldsValid(formDivs[i])
+                                this.makeFieldsValid(formDivs[i]);
                                 let invalidFeedback2 = formDivs[i].querySelector('.form-feedback');
                                 if (invalidFeedback2 != null){
                                     invalidFeedback2.style = "display: none";
@@ -220,11 +230,11 @@
                 if (this.validate()){
                     //Option 1
                     axios
-                    .post("http://localhost:5000/metadata-template/dump-contents-body/test.json", JSON.stringify(this.model)); // TODO: edit to correct address
+                    .post(this.submitUrl, JSON.stringify(this.model));
                     //Option 2
                     const form = document.getElementById("metadata_form");
                     form.method = "post";
-                    form.action = "http://localhost:5000/metadata-template/dump-form-contents"; // TODO: edit to correct address
+                    form.action = "/metadata-template/dump-form-contents"; // TODO: edit to correct address
                     form.submit();
                 }
             },
