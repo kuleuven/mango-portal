@@ -13,6 +13,15 @@
   <link href="{{ url_for('static', filename='dist/index.css') }}" rel="stylesheet">
   {# <link href="{{ url_for('static', filename='css/ipack.css') }}" rel="stylesheet"> #}
 
+<style>
+<!-- prevent the scrollbar to make page content jump horizonthally -->
+@media screen and (min-width: 960px) {
+    html {
+        margin-left: calc(100vw - 100%);
+        margin-right: 0;
+    }
+}
+</style>
 
 </head>
 <body>

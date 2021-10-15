@@ -4,8 +4,9 @@
 {% block body %}
 
 
-<nav style="--bs-breadcrumb-divider: '>'" aria-label="breadcrumb">
+<nav style="--bs-breadcrumb-divider: '&raquo;'" aria-label="breadcrumb">
 	<ol class="breadcrumb">
+    <i class="bi bi-house-door-fill"> </i>&nbsp;
 		{% for element in breadcrumbs[:-1] %}
 			<li class="breadcrumb-item"><a href="{{url_for('collection_browse', collection=element['url'])}}">{{element['label']}}</a></li>
 		{% endfor %}
@@ -207,11 +208,12 @@
 
 
 
-<div id="app">
+{#<div id="app">
   <welcome></welcome>
   <hello></hello>
   <tree-browser browse-root="{{ url_for('api_collection_tree', collection=browse_root) }}"></tree-browser>
 </div>
+#}
 
 
 <!-- Delete modal -->

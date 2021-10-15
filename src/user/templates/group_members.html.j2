@@ -1,0 +1,22 @@
+{% extends "base.html.j2" %}
+
+
+{% block body %}
+
+<div class="row">
+  <div class="col-sm-10">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="bi bi-people"> {{ group_name }}</h4>
+        </div>
+        <ul class="list-group">
+        {% for person in members %}
+            <li class="list-group-item">{{person.name}}</li>
+
+        {%endfor%}
+        </ul>
+    </div>
+  </div>
+</div>
+
+{% endblock body%}

@@ -9,6 +9,7 @@ from flask import (
     render_template,
     flash,
     make_response,
+    Blueprint,
 )
 import os
 import glob
@@ -17,6 +18,8 @@ import sys
 from pprint import pformat
 from flask_cors import CORS
 import json
+
+from user.user import user_bp
 
 # from werkzeug import secure_filename
 
@@ -35,12 +38,27 @@ if irods_session.collections.exists(user_home):
     success = True
     print(f"Success", file=sys.stderr)
 
+
 app = Flask(__name__)
+
+## Allow cross origin requests for SPA/Ajax situations
 CORS(app)
 
 app.config["UPLOAD_FOLDER"] = "/tmp"
 app.config["MAX_CONTENT_PATH"] = 1024 * 1024 * 16
-app.config["SECRET_KEY"] = "development_paul"
+app.config["SECRET_KEY"] = "mushrooms_from_paris"
+
+# Register blueprints
+with app.app_context():
+    app.register_blueprint(user_bp)
+
+
+@app.before_request
+def init_irods():
+    """
+    """
+    global irods_session
+    g.irods_session = irods_session
 
 
 # custom filters
@@ -146,7 +164,7 @@ def collection_browse(collection):
         data_objects=data_objects,
         session=irods_session,
         username=irods_session.username,
-        browse_root=zone_home
+        browse_root=zone_home,
     )
 
 

@@ -1,0 +1,37 @@
+{% extends "base.html.j2" %}
+
+
+{% block body %}
+
+
+<div class="row">
+  <div class="col-sm-6">
+    <div class="card">
+        <div class="card-header">
+        <h1 class="bi bi-person-square display-1"></h1>
+        </div>
+        <table class="table">
+            <tr><th>Account</th><td>{{me.name}}</td></tr>
+            <tr><th>Zone</th><td>{{me.zone}}</td></tr>
+            <tr><th>User type</th><td>{{me.type}}</td></tr>
+            <tr><th>User info</th><td>{{me.info if not me.info == None}}</td></tr>
+            <tr><th>User id</th><td>{{me.id}}</td></tr>
+        </table>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-header">
+        <h1 class="bi bi-people display-1"></h1>
+        </div>
+        <ul class="list-group list-group-flush">
+        {% for group in my_groups %}
+            <li class="list-group-item"><a href="{{url_for('user_bp.group_members', group_name = group.name)}}">{{group.name}}</li>
+
+        {%endfor%}
+        </ul>
+    </div>
+  </div>
+</div>
+
+{% endblock body%}
