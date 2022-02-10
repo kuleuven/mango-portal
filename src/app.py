@@ -18,8 +18,14 @@ import sys
 from pprint import pformat
 from flask_cors import CORS
 import json
+import irods
+
+from jinja2 import Environment, select_autoescape
 
 from user.user import user_bp
+from common.error import error_bp
+from common.browse import browse_bp
+from metadata.metadata import metadata_bp
 
 # from werkzeug import secure_filename
 
@@ -48,9 +54,15 @@ app.config["UPLOAD_FOLDER"] = "/tmp"
 app.config["MAX_CONTENT_PATH"] = 1024 * 1024 * 16
 app.config["SECRET_KEY"] = "mushrooms_from_paris"
 
+## enable auto escape in jinja2 templates
+app.jinja_options["autoescape"] = lambda _: True
+
 # Register blueprints
 with app.app_context():
     app.register_blueprint(user_bp)
+    app.register_blueprint(error_bp)
+    app.register_blueprint(browse_bp)
+    app.register_blueprint(metadata_bp)
 
 
 @app.before_request
@@ -59,6 +71,10 @@ def init_irods():
     """
     global irods_session
     g.irods_session = irods_session
+    g.user_home = user_home
+    g.zone_home = zone_home
+    g.prc_version = irods.__version__
+    g.flask_version = flask.__version__
 
 
 # custom filters
@@ -114,212 +130,6 @@ def index():
         user=irods_session.username,
     )
 
-
-# Blueprint common
-@app.route("/collection/browse", defaults={"collection": None}, strict_slashes=False)
-@app.route("/collection/browse/<path:collection>")
-def collection_browse(collection):
-    """ returns the list of objects and subcollections for the given
-    collection.
-
-    Arguments:
-
-    collection: str or None
-        a path string
-        If None,the current user home dir will be used
-        if the collection path starts with a ~ character, the remaining is appended to the user home directory
-
-    """
-    if collection is None or collection == "~":
-        co_path = user_home
-    else:
-        co_path_elements = collection.split("/")
-        prefix = "/"  # default
-        if co_path_elements[0] == "~":
-            prefix = user_home + "/"
-            co_path_elements = co_path_elements.pop(0)
-        co_path = prefix + "/".join(co_path_elements)
-
-    breadcrumbs = []
-    path_elements = co_path.strip("/").split("/")
-    for idx, path_element in enumerate(path_elements):
-        breadcrumbs.append(
-            {"label": path_element, "url": "/".join(path_elements[: idx + 1])}
-        )
-    # print(breadcrumbs)
-
-    current_collection = irods_session.collections.get(co_path)
-    sub_collections = current_collection.subcollections
-    data_objects = current_collection.data_objects
-
-    return render_template(
-        "browse.html.j2",
-        co_path=co_path,
-        breadcrumbs=breadcrumbs,
-        collection=current_collection,
-        irodssession=irods_session,
-        current_path=user_home.split("/"),
-        zone=irods_zone,
-        sub_collections=sub_collections,
-        data_objects=data_objects,
-        session=irods_session,
-        username=irods_session.username,
-        browse_root=zone_home,
-    )
-
-
-# Blueprint common
-@app.route("/collection/delete", methods=["POST", "DELETE"])
-def delete_collection():
-    """
-    """
-    collection_path = request.form["collection_path"]
-    # recursive remove
-    irods_session.collections.remove(collection_path)
-    return redirect(request.referrer)
-
-
-@app.route("/data-object/view/<path:data_object_path>")
-def view_object(data_object_path):
-    """
-    """
-    if not data_object_path.startswith("/"):
-        data_object_path = "/" + data_object_path
-    data_object = irods_session.data_objects.get(data_object_path)
-
-    meta_data_items = data_object.metadata.items()
-
-    breadcrumbs = []
-    path_elements = data_object_path.strip("/").split("/")
-    for idx, path_element in enumerate(path_elements):
-        breadcrumbs.append(
-            {"label": path_element, "url": "/".join(path_elements[: idx + 1])}
-        )
-
-    return render_template(
-        "view_object.html.j2",
-        data_object=data_object,
-        meta_data_items=meta_data_items,
-        breadcrumbs=breadcrumbs,
-    )
-
-
-# Blueprint common
-@app.route("/data-object/delete", methods=["POST", "DELETE"])
-def remove_data_object():
-    """
-    """
-    data_object_path = request.form["data_object_path"]
-    irods_session.data_objects.get(data_object_path).unlink()
-    return redirect(request.referrer)
-
-
-# Blueprint common
-@app.route("/collection/upload/file", methods=["POST"])
-def collection_upload_file():
-    """
-    """
-
-    collection = request.form["collection"]
-    print(f"Requested upload file for collection {collection}")
-    f = request.files["newfile"]
-    filename = "/tmp/" + f.filename
-    f.save(filename)
-
-    current_collection = irods_session.collections.get(collection)
-    irods_session.data_objects.put(filename, collection + "/" + f.filename)
-    os.unlink(filename)
-
-    return redirect(request.referrer)
-
-
-# Blueprint common/metadata
-@app.route("/data_object/metadata/add", methods=["POST"])
-def add_meta_data():
-    """
-    """
-    avu_name = request.form["meta-data-name"]
-    avu_value = request.form["meta-data-value"]
-    avu_units = request.form["meta-data-units"]
-    data_object_path = request.form["object-path"]
-    if not data_object_path.startswith("/"):
-        data_object_path = "/" + data_object_path
-    data_object = irods_session.data_objects.get(data_object_path)
-    data_object.metadata.add(avu_name, avu_value, avu_units)
-    # print(avu_name, avu_value, avu_units, data_object_path, sep="|")
-
-    flash(f"Successfully added metadata to {data_object.name}", "success")
-    return redirect(request.referrer)
-
-
-# Blueprint common/metadata
-@app.route("/data_object/metadata/edit", methods=["POST"])
-def edit_meta_data():
-    """
-    """
-    avu_name = request.form["meta-data-name"]
-    avu_value = request.form["meta-data-value"]
-    avu_units = request.form["meta-data-units"]
-    orig_avu_name = request.form["orig-meta-data-name"]
-    orig_avu_value = request.form["orig-meta-data-value"]
-    orig_avu_units = request.form["orig-meta-data-units"]
-    data_object_path = request.form["object-path"]
-    if not data_object_path.startswith("/"):
-        data_object_path = "/" + data_object_path
-    data_object = irods_session.data_objects.get(data_object_path)
-    data_object.metadata.remove(orig_avu_name, orig_avu_value, orig_avu_units)
-    data_object.metadata.add(avu_name, avu_value, avu_units)
-
-    return redirect(request.referrer)
-
-
-# Blueprint common/metadata
-@app.route("/data_object/metadata/delete", methods=["POST"])
-def delete_meta_data():
-    """
-    """
-    avu_name = request.form["meta-data-name"]
-    avu_value = request.form["meta-data-value"]
-    avu_units = request.form["meta-data-units"]
-    data_object_path = request.form["object-path"]
-    if not data_object_path.startswith("/"):
-        data_object_path = "/" + data_object_path
-    data_object = irods_session.data_objects.get(data_object_path)
-    data_object.metadata.remove(avu_name, avu_value, avu_units)
-
-    return redirect(request.referrer)
-
-
-# Blueprint common
-@app.route("/collection/add/subcollection", methods=["POST"])
-def add_collection():
-    """
-    """
-    parent_collection_path = request.form["parent_collection_path"]
-    collection_name = request.form["collection_name"]
-    # parent_collection = irods_session.collections.get(parent_collection_path)
-    irods_session.collections.create(f"{parent_collection_path}/{collection_name}")
-
-    return redirect(request.referrer)
-
-
-# Blueprint common/metadata
-@app.route("/collection/add/metadata", methods=["POST"])
-def add_meta_data_collection():
-    """
-    """
-    avu_name = request.form["meta-data-name"]
-    avu_value = request.form["meta-data-value"]
-    avu_units = request.form["meta-data-units"]
-    collection_path = request.form["collection-path"]
-    if not collection_path.startswith("/"):
-        collection_path = "/" + collection_path
-    collection = irods_session.collections.get(collection_path)
-    collection.metadata.add(avu_name, avu_value, avu_units)
-    # print(avu_name, avu_value, avu_units, collection_path, sep="|")
-
-    flash(f"Successfully added metadata to {collection.name}", "success")
-    return redirect(request.referrer)
 
 
 ##### Templates, @todo: move to blueprint

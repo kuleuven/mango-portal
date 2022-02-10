@@ -12,7 +12,7 @@ from flask import (
 )
 from irods.models import User
 
-from irods.session import iRODSSession
+# from irods.session import iRODSSession
 from irods.user import iRODSUser, iRODSUserGroup, UserGroup
 from pprint import pprint, pformat
 
@@ -26,20 +26,6 @@ user_bp = Blueprint(
 def my_groups():
     """
     """
-    # result = g.irods_session.query(iRODSUserGroup, iRODSUser)
-
-    user_groups = (
-        g.irods_session.query(UserGroup).filter(User.type == "rodsgroup").all()
-    )
-    # pprint(user_groups)
-    # return pformat(dir(g.irods_session.users.get(g.irods_session.username)))
-    o_groups = [
-        (
-            iRODSUserGroup(g.irods_session.user_groups, result).name,
-            iRODSUser(g.irods_session.users, result).name,
-        )
-        for result in g.irods_session.query(UserGroup, User)
-    ]
 
     my_groups = [
         iRODSUserGroup(g.irods_session.user_groups, item)
@@ -47,14 +33,8 @@ def my_groups():
         .filter(User.name == g.irods_session.username)
         .all()
     ]
-    members = {group.name: group.members for group in my_groups}
 
-    me = g.irods_session.users.get(g.irods_session.username)
-    # return g.irods_session.pool.account.client_user
-
-    return pformat(members)
-    # return pformat(o_groups)
-    # return jsonify(me.name, me.info)
+    return render_template("mygroups.html.j2", my_groups=my_groups)
 
 
 @user_bp.route("/user/profile")

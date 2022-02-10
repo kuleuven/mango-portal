@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<title>Welcome to the VSC iRODS portal</title>
+	<title>Your iRODS portal</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
 
@@ -27,6 +27,7 @@
 <body>
 
 {% include 'header.html.j2' %}
+
 {% with messages = get_flashed_messages(with_categories=true) %}
   <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
   {% if messages %}
@@ -46,7 +47,7 @@
 
 
        {#  <div class="col-8 overflow-auto h-100"> #}
-	   <div class="col-9">
+	      <div class="col-9">
             <div class="bg-light border rounded-3 p-3">
                 {% block body %}
 			    {# THE MEAT #}
@@ -54,11 +55,23 @@
             </div>
         </div>
     </div>
+    <div class="row mt-5">{% include 'footer.html.j2' %}</div>
 </main>
 <script src="{{url_for('static', filename='dist/index.js')}}"></script>
 <script src="{{url_for('static', filename='js/form-validation.js')}}"></script>
 {% block javascript %}
+<script>
+  window.setTimeout(function() {
+      var alertNodes = document.getElementsByClassName('alert')
 
+      for (var i = 0; i < alertNodes.length; i++) {
+          //var alert = bootstrap.Alert.getInstance(alertNodes[i].outerHTML)
+          //alert.close()
+          alertNodes[i].remove()
+      }
+
+  }, 2000);
+</script>
 {% endblock%}
 </body>
 </html>

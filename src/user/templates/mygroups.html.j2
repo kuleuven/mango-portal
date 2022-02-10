@@ -2,7 +2,19 @@
 
 
 {% block body %}
+<div class="row">
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-header">
+        <h1 class="bi bi-people display-1"></h1>
+        </div>
+        <ul class="list-group list-group-flush">
+        {% for group in my_groups %}
+            <li class="list-group-item"><a href="{{url_for('user_bp.group_members', group_name = group.name)}}">{{group.name}}</li>
 
-
-
+        {%endfor%}
+        </ul>
+    </div>
+  </div>
+</div>
 {% endblock body%}

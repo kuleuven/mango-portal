@@ -15,20 +15,21 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{url_for('collection_browse')}}" class="nav-link px-2 text-truncate"><i class="bi bi-folder fs-4"></i>
+                        <a href="{{url_for('browse_bp.collection_browse')}}" class="nav-link px-2 text-truncate"><i class="bi bi-folder fs-4"></i>
                             <span class="d-none d-sm-inline">Collections</span> </a>
                     </li>
                     <li>
                         <a href="#" class="nav-link px-2 text-truncate disabled"><i class="bi bi-search fs-4"></i>
-                            <span class="d-none d-sm-inline">Advanced search</span> </a>
+                            <span class="d-none d-sm-inline">Meta data search</span> </a>
                     </li>
-                    {# <li>
-                        <a href="#" class="nav-link px-2 text-truncate disabled"><i class="bi bi-share fs-4"></i>
-                            <span class="d-none d-sm-inline">Share</span> </a>
-                    </li> #}
+
                     <li>
-                        <a href="#" class="nav-link px-2 text-truncate disabled"><i class="bi bi-people fs-4"></i>
-                            <span class="d-none d-sm-inline">Your team</span> </a>
+                        <a href="{{url_for('user_bp.my_groups')}}" class="nav-link px-2 text-truncate"><i class="bi bi-people fs-4"></i>
+                            <span class="d-none d-sm-inline">Your groups</span> </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('browse_bp.collection_browse') + '/' + g.irods_session.zone + '/trash/home' }}" class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>
+                            <span class="d-none d-sm-inline">Trash</span> </a>
                     </li>
                     <li>
                         <a href="/metadata-template" class="nav-link px-2 text-truncate">
