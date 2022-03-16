@@ -1,3 +1,6 @@
+import os
+
+
 def generate_breadcrumbs(path_string):
     breadcrumbs = []
     path_elements = path_string.strip("/").split("/")
@@ -6,3 +9,14 @@ def generate_breadcrumbs(path_string):
             {"label": path_element, "url": "/".join(path_elements[: idx + 1])}
         )
     return breadcrumbs
+
+
+def collection_tree_to_dict(collection):
+    (_, label) = os.path.split(collection.path)
+    d = {"id": collection.path, "label": label}
+    if collection.subcollections:
+        d["children"] = [
+            collection_tree_to_dict(subcollection)
+            for subcollection in collection.subcollections
+        ]
+    return d

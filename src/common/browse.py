@@ -1,6 +1,7 @@
 from flask import (
     Blueprint,
     render_template,
+    current_app,
     url_for,
     redirect,
     g,
@@ -8,12 +9,21 @@ from flask import (
     abort,
     stream_with_context,
     Response,
+    request,
+    flash,
 )
 
+from irods.meta import iRODSMeta
+
+from PIL import Image
+from pdf2image import convert_from_path
 import mimetypes
+import tempfile
 from urllib.parse import unquote
 
 from lib.util import generate_breadcrumbs
+import magic
+import os
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
@@ -55,6 +65,7 @@ def collection_browse(collection):
         collection=current_collection,
         sub_collections=sub_collections,
         data_objects=data_objects,
+        permissions=g.irods_session.permissions.get(current_collection),
     )
 
 
@@ -67,12 +78,30 @@ def view_object(data_object_path):
     data_object = g.irods_session.data_objects.get(data_object_path)
 
     meta_data_items = data_object.metadata.items()
+    # see if the mime type is present in the metadata, if not
+    if "p.mime" not in [item.name for item in meta_data_items]:
+        try:
+            with data_object.open("r") as f:
+                blub = f.read(50 * 1024)
+            mime_type = magic.from_buffer(blub, mime=True)
+            mime_avu = iRODSMeta("p.mime", mime_type)
+            data_object.metadata.add("p.mime", mime_type)
+            meta_data_items.append(mime_avu)
+            print(
+                f"mime-type was not set for object {data_object.id}, so we blubbed a bit into magic"
+            )
+        except:
+            flash(
+                f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
+                "warning",
+            )
 
     return render_template(
         "view_object.html.j2",
         data_object=data_object,
         meta_data_items=meta_data_items,
         breadcrumbs=generate_breadcrumbs(data_object_path),
+        permissions=g.irods_session.permissions.get(data_object),
     )
 
 
@@ -199,7 +228,9 @@ def collection_upload_file():
     f.save(filename)
 
     # current_collection = irods_session.collections.get(collection)
-    irods_session.data_objects.put(filename, collection + "/" + f.filename)
+    g.irods_session.data_objects.put(filename, collection + "/" + f.filename)
+    data_object = g.irods_session.data_objects.get(f"{collection}/{f.filename}")
+
     os.unlink(filename)
 
     return redirect(request.referrer)
@@ -215,3 +246,56 @@ def add_collection():
     g.irods_session.collections.create(f"{parent_collection_path}/{collection_name}")
 
     return redirect(request.referrer)
+
+
+@browse_bp.route("/data-object/preview/<path:data_object_path>")
+def object_preview(data_object_path):
+    """
+    """
+    thumbnail_storage = f"storage/thumbnails/{g.irods_session.zone}"
+    if not os.path.exists(thumbnail_storage):
+        os.makedirs(thumbnail_storage)
+    data_object_path = unquote(data_object_path)
+    if not data_object_path.startswith("/"):
+        data_object_path = "/" + data_object_path
+    data_object = g.irods_session.data_objects.get(data_object_path)
+
+    if (
+        data_object.size > 10000000
+    ):  # current_app.config('DATA_OBJECT_MAX_SIZE_PREVIEW'):
+        return send_file("static/too-large.jpg", "image/jpeg")
+    else:
+
+        if not os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
+            local_path = f"/tmp/irods-download-{data_object.name}"
+            with open(local_path, "wb") as local_file, data_object.open() as irods_file:
+                position = 0
+                while position < data_object.size:
+                    read_bytes = min(
+                        g.irods_session.data_objects.READ_BUFFER_SIZE,
+                        data_object.size - position,
+                    )
+                    file_chunk = irods_file.read(read_bytes)
+                    bytes_read = len(file_chunk)
+                    local_file.write(file_chunk)
+                    position += bytes_read
+
+            if data_object.name.endswith(("pdf")):
+                with tempfile.TemporaryDirectory() as path:
+                    image = convert_from_path(
+                        f"/tmp/irods-download-{data_object.name}",
+                        output_folder=path,
+                        last_page=1,
+                        fmt="png",
+                        size=400,
+                        single_file=True,
+                    )[0]
+
+            else:
+                image = Image.open(f"/tmp/irods-download-{data_object.name}")
+                image.thumbnail((400, 400))
+            image.save(f"{thumbnail_storage}/{data_object.id}.png")
+        if os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
+            return send_file(f"{thumbnail_storage}/{data_object.id}.png", "image/png")
+        else:
+            return send_file("static/too-large.jpg", "image/jpeg")

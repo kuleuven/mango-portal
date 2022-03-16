@@ -20,12 +20,18 @@ from flask_cors import CORS
 import json
 import irods
 
+from flask_wtf import CSRFProtect
+
 from jinja2 import Environment, select_autoescape
+from flask_bootstrap import Bootstrap5
+from lib.util import collection_tree_to_dict
 
 from user.user import user_bp
 from common.error import error_bp
 from common.browse import browse_bp
 from metadata.metadata import metadata_bp
+from search.basic_search import basic_search_bp
+
 
 # from werkzeug import secure_filename
 
@@ -36,7 +42,7 @@ irods_zone = "kuleuven_tier1_pilot"
 
 print(f"Flask version {flask.__version__}")
 
-irods_session = iRODSSession(irods_env_file=irods_env_file, zone=irods_zone)
+irods_session = iRODSSession(irods_env_file=irods_env_file)
 success = False
 user_home = f"/{irods_session.zone}/home/{irods_session.username}"
 zone_home = f"/{irods_session.zone}/home"
@@ -47,15 +53,23 @@ if irods_session.collections.exists(user_home):
 
 app = Flask(__name__)
 
+
 ## Allow cross origin requests for SPA/Ajax situations
 CORS(app)
+
 
 app.config["UPLOAD_FOLDER"] = "/tmp"
 app.config["MAX_CONTENT_PATH"] = 1024 * 1024 * 16
 app.config["SECRET_KEY"] = "mushrooms_from_paris"
+app.config["DATA_OBJECT_MAX_SIZE_PREVIEW"] = 1024 * 1024 * 16
 
 ## enable auto escape in jinja2 templates
 app.jinja_options["autoescape"] = lambda _: True
+
+# register bootstrap5 support
+bootstrap = Bootstrap5(app)
+
+csrf = CSRFProtect(app)
 
 # Register blueprints
 with app.app_context():
@@ -63,6 +77,16 @@ with app.app_context():
     app.register_blueprint(error_bp)
     app.register_blueprint(browse_bp)
     app.register_blueprint(metadata_bp)
+    app.register_blueprint(basic_search_bp)
+
+
+@app.context_processor
+def dump_variable():
+    return dict(pformat=pformat)
+
+
+# permissions
+# irods_session.permissions.get
 
 
 @app.before_request
@@ -111,7 +135,7 @@ def index():
     collections = collection.subcollections
     data_objects = collection.data_objects
     print(
-        f"Success, in zone {irods_zone} collections { collections } and objects { data_objects }",
+        f"Success, in zone {irods_session.zone} collections { collections } and objects { data_objects }",
         file=sys.stderr,
     )
     print(irods_session.__dict__)
@@ -129,7 +153,6 @@ def index():
         jinja_options=app.jinja_options,
         user=irods_session.username,
     )
-
 
 
 ##### Templates, @todo: move to blueprint

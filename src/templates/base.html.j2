@@ -32,7 +32,7 @@
   <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
   {% if messages %}
     {% for category, message in messages %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      <div class="alert alert-{{ category }} alert-dismissible fade show" data-category="{{category}}" role="alert">
 	  {{ message }}
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
@@ -62,7 +62,7 @@
 {% block javascript %}
 <script>
   window.setTimeout(function() {
-      var alertNodes = document.getElementsByClassName('alert')
+      var alertNodes = document.getElementsByClassName('alert-success')
 
       for (var i = 0; i < alertNodes.length; i++) {
           //var alert = bootstrap.Alert.getInstance(alertNodes[i].outerHTML)
@@ -70,7 +70,7 @@
           alertNodes[i].remove()
       }
 
-  }, 2000);
+  }, 5000);
 </script>
 {% endblock%}
 </body>

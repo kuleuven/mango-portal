@@ -15,7 +15,7 @@ Create a python virtual environment in the root of this repository checkout and 
 ```
 $ python3 -m venv venv
 $ . venv/bin/activate
-$ pip3 install < requirements.txt
+$ pip3 install -r requirements.txt
 ```
 
 ### Vue2.js development and building
@@ -25,6 +25,7 @@ Currently the node module parcel and its dependencies are required for building,
 Before using
 
 ```sh
+$ cd src
 $ npm install
 $ npm run build
 ```
@@ -32,10 +33,16 @@ $ npm run build
 ### Starting the development server
 
 Launch the flask development server from the src directory:
-```
+```sh
 $ cd src
 $ ./run_dev.sh
 ```
+or
+
+```sh
+$ src/run_dev.sh
+```
+
 Point your browser to `http://localhost:5000`
 
 ### Installation using the docker image
