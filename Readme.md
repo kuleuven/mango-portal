@@ -25,6 +25,7 @@ Currently the node module parcel and its dependencies are required for building,
 Before using
 
 ```sh
+$ cd src
 $ npm install
 $ npm run build
 ```
