@@ -2,9 +2,9 @@
 {% extends "base.html.j2" %}
 
 {% block body %}
-                <h2>Welcome to your iRODS Portal</h2>
+                <h2>Welcome to Khipu, your active data portal</h2>
 
-                <img src="{{ url_for('static', filename='fibre-rack.jpg') }}" width="70%" class="bi-align-center">
+                <img src="{{ url_for('static', filename='inca_quipu.jpg') }}" width="70%" class="bi-align-center">
 				<hr />
 				{# <img src="{{ url_for('static', filename='data-repository.webp') }}" width="70%" class="bi-align-center"> #}
 				<p>
@@ -12,16 +12,19 @@
 
 				{% endfor %}
 				</p>
-				<table class="table">
-  <thead>
-    <tr>
-      <th scope="col">Name</th>
-      <th scope="col">Owner</th>
-      <th scope="col">Modified</th>
-      <th scope="col">Actions</th>
-    </tr>
-  </thead>
-  {% for collection in collections  %}
+
+{# <p> Total objects: {{total_objects}}</p>
+<p> Total attributes: {{total_avu}} </p>
+<table class="table">
+<thead><tr><th>avu name<th><th>count</th><tr></thead>
+<tbody>
+{% for item in avu_counts %}
+<tr><td>{{item['name']}}</td><td>{{ item['total']}}</td></tr>
+{% endfor %}
+
+</tbody>
+</table> #}
+  {# {% for collection in collections  %}
   <tr>
 	<td><i class="bi bi-folder fs-4"></i> {{collection.name}}</td>
 	<td><!--{{ collection.__dict__ }}--></td>
@@ -29,9 +32,9 @@
 	<td></td>
   </tr>
 
-  {% endfor %}
+  {% endfor %} #}
 
-  {% for data_object in data_objects  %}
+  {# {% for data_object in data_objects  %}
   <tr>
 	<td><i class="bi bi-file fs-4"></i> {{data_object.name}}</td>
 	<td><!--{{ data_object.__dict__ }}--></td>
@@ -40,9 +43,7 @@
   </tr>
 
 
-  {% endfor %}
-  <tbody>
-  </tbody>
-  </table>
+  {% endfor %} #}
+
 
 {% endblock body %}
