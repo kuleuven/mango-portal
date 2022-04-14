@@ -11,6 +11,7 @@ from flask import (
     make_response,
     Blueprint,
 )
+from cache import cache
 import os
 import glob
 import flask
@@ -25,6 +26,8 @@ from flask_wtf import CSRFProtect
 from jinja2 import Environment, select_autoescape
 from flask_bootstrap import Bootstrap5
 from lib.util import collection_tree_to_dict
+from pprint import pprint
+from operator import itemgetter
 
 from user.user import user_bp
 from common.error import error_bp
@@ -32,6 +35,17 @@ from common.browse import browse_bp
 from metadata.metadata import metadata_bp
 from search.basic_search import basic_search_bp
 
+from irods.models import (
+    Collection,
+    DataObject,
+    DataObjectMeta,
+    CollectionMeta,
+    UserMeta,
+)
+from irods.session import iRODSSession
+from irods.query import Query
+from irods.column import Criterion, Like
+import platform
 
 # from werkzeug import secure_filename
 
@@ -62,7 +76,10 @@ app.config["UPLOAD_FOLDER"] = "/tmp"
 app.config["MAX_CONTENT_PATH"] = 1024 * 1024 * 16
 app.config["SECRET_KEY"] = "mushrooms_from_paris"
 app.config["DATA_OBJECT_MAX_SIZE_PREVIEW"] = 1024 * 1024 * 16
-
+app.config["CACHE_TYPE"] = "FileSystemCache"
+app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+app.config["CACHE_DIR"] = "storage/cache"
+app.config["DEBUG"] = True
 ## enable auto escape in jinja2 templates
 app.jinja_options["autoescape"] = lambda _: True
 
@@ -70,6 +87,12 @@ app.jinja_options["autoescape"] = lambda _: True
 bootstrap = Bootstrap5(app)
 
 csrf = CSRFProtect(app)
+
+# Caching, make sure the filesystem dir exists
+if not os.path.exists(app.config["CACHE_DIR"]):
+    os.makedirs(app.config["CACHE_DIR"])
+
+cache.init_app(app)
 
 # Register blueprints
 with app.app_context():
@@ -99,6 +122,7 @@ def init_irods():
     g.zone_home = zone_home
     g.prc_version = irods.__version__
     g.flask_version = flask.__version__
+    g.python_version = platform.python_version()
 
 
 # custom filters
@@ -134,11 +158,38 @@ def index():
     collection = irods_session.collections.get(user_home)
     collections = collection.subcollections
     data_objects = collection.data_objects
-    print(
-        f"Success, in zone {irods_session.zone} collections { collections } and objects { data_objects }",
-        file=sys.stderr,
-    )
-    print(irods_session.__dict__)
+    # print(
+    #     f"Success, in zone {irods_session.zone} collections { collections } and objects { data_objects }",
+    #     file=sys.stderr,
+    # )
+    # app.logger.info(irods_session.__dict__)
+    # to_query = (
+    #     Query(g.irods_session, DataObject.id)
+    #     .filter(Criterion("=", DataObject.replica_number, 0))
+    #     .count(DataObject.id)
+    # )
+    # total_objects_result = to_query.execute()
+    # total_objects = int(total_objects_result[0][DataObject.id])
+    # for r in total_objects_result:
+    #     pprint(r)
+    # avu_query = Query(g.irods_session, (DataObjectMeta.id)).count(DataObjectMeta.id)
+
+    # total_avu_result = avu_query.execute()
+    # total_avu = int(total_avu_result[0][DataObjectMeta.id])
+
+    # avu_groups_query = Query(g.irods_session, (DataObjectMeta.name)).count(
+    #     DataObjectMeta.value
+    # )
+    # avu_groups_result = avu_groups_query.execute()
+
+    # avu_counts = []
+
+    # for r in avu_groups_result:
+    #     # pprint(r)
+    #     avu_counts.append(
+    #         {"name": r[DataObjectMeta.name], "total": int(r[DataObjectMeta.value])}
+    #     )
+
     # return f"Result: {collections} collections and  {data_objects} data objects"
     return render_template(
         "index.html.j2",
@@ -152,6 +203,9 @@ def index():
         dir=dir,
         jinja_options=app.jinja_options,
         user=irods_session.username,
+        # total_objects=total_objects,
+        # total_avu=total_avu,
+        # avu_counts=sorted(avu_counts, key=itemgetter("total"), reverse=True),
     )
 
 
@@ -204,6 +258,7 @@ def save_metadata_template(filename, contents):
 
 # Blueprint templates
 @app.route("/metadata-template/update", methods=["POST"])
+@csrf.exempt
 def update_meta_data_templates():
     """
     """
@@ -216,6 +271,7 @@ def update_meta_data_templates():
 
 # Blueprint templates
 @app.route("/metadata-template/new", methods=["POST"])
+@csrf.exempt
 def new_meta_data_template():
     """
     """
@@ -228,6 +284,7 @@ def new_meta_data_template():
 
 # Blueprint templates
 @app.route("/metadata-template/delete", methods=["POST"])
+@csrf.exempt
 def delete_meta_data_template():
     """
     """
@@ -238,6 +295,7 @@ def delete_meta_data_template():
 
 # Testing endpoint
 @app.route("/metadata-template/dump-form-contents", methods=["POST"])
+@csrf.exempt
 def dump_meta_data_form():
     """
     dumps all variables defined url encoded from the request body, for example
@@ -252,6 +310,7 @@ def dump_meta_data_form():
 
 # Testing endpoint
 @app.route("/metadata-template/dump-contents-body/<filename>", methods=["POST"])
+@csrf.exempt
 def dump_meta_data_body_json(filename):
     """
     expects "Content-Type: application/json" header

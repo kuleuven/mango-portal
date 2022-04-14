@@ -28,7 +28,7 @@
                             <span class="d-none d-sm-inline">Your groups</span> </a>
                     </li>
                     <li>
-                        <a href="{{ url_for('browse_bp.collection_browse') + '/' + g.irods_session.zone + '/trash/home' }}" class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>
+                        <a href="{{ url_for('browse_bp.collection_browse') + '/' + g.irods_session.zone + '/trash/home/' + g.irods_session.username }}" class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>
                             <span class="d-none d-sm-inline">Trash</span> </a>
                     </li>
                     <li>

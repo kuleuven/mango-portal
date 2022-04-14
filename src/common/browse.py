@@ -54,7 +54,10 @@ def collection_browse(collection):
             co_path_elements = co_path_elements.pop(0)
         co_path = prefix + "/".join(co_path_elements)
 
-    current_collection = g.irods_session.collections.get(co_path)
+    try:
+        current_collection = g.irods_session.collections.get(co_path)
+    except:
+        abort(404)
     sub_collections = current_collection.subcollections
     data_objects = current_collection.data_objects
 
@@ -260,6 +263,8 @@ def object_preview(data_object_path):
         data_object_path = "/" + data_object_path
     data_object = g.irods_session.data_objects.get(data_object_path)
 
+    if data_object.size == 0:
+        return send_file("static/bh-empty.jpg", "image/jpeg")
     if (
         data_object.size > 10000000
     ):  # current_app.config('DATA_OBJECT_MAX_SIZE_PREVIEW'):
