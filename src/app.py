@@ -23,6 +23,9 @@ import irods
 
 from flask_wtf import CSRFProtect
 
+# proxy so it can also be imported in blueprints from csrf.py independently
+from csrf import csrf
+
 from jinja2 import Environment, select_autoescape
 from flask_bootstrap import Bootstrap5
 from lib.util import collection_tree_to_dict
@@ -34,6 +37,7 @@ from common.error import error_bp
 from common.browse import browse_bp
 from metadata.metadata import metadata_bp
 from search.basic_search import basic_search_bp
+from metadata_schema.editor import metadata_schema_editor_bp
 
 from irods.models import (
     Collection,
@@ -80,13 +84,14 @@ app.config["CACHE_TYPE"] = "FileSystemCache"
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300
 app.config["CACHE_DIR"] = "storage/cache"
 app.config["DEBUG"] = True
+# app.config["EXPLAIN_TEMPLATE_LOADING"] = True
 ## enable auto escape in jinja2 templates
 app.jinja_options["autoescape"] = lambda _: True
 
 # register bootstrap5 support
 bootstrap = Bootstrap5(app)
-
-csrf = CSRFProtect(app)
+# register csrf on the main app
+csrf.init_app(app)
 
 # Caching, make sure the filesystem dir exists
 if not os.path.exists(app.config["CACHE_DIR"]):
@@ -101,7 +106,7 @@ with app.app_context():
     app.register_blueprint(browse_bp)
     app.register_blueprint(metadata_bp)
     app.register_blueprint(basic_search_bp)
-
+    app.register_blueprint(metadata_schema_editor_bp)
 
 @app.context_processor
 def dump_variable():
@@ -209,88 +214,6 @@ def index():
     )
 
 
-##### Templates, @todo: move to blueprint
-
-json_template_dir = os.path.abspath("./static/metadata-templates")
-
-# Blueprint templates
-@app.route("/metadata-template", methods=["GET"])
-def metadata_template():
-    """
-    """
-    return render_template("metadata_template_module.html.j2")
-
-
-@app.route("/metadata-template/list", methods=["GET"])
-def list_meta_data_templates():
-    """
-    """
-    # template_files = glob.glob(json_template_dir + "/*.json")
-    template_files = glob.glob("static/metadata-templates/*.json")
-    template_filenames = [
-        os.path.basename(template_file) for template_file in template_files
-    ]
-
-    return json.dumps(
-        [
-            {
-                "name": name,
-                "url": url_for("static", filename="metadata-templates/" + name),
-            }
-            for name in template_filenames
-        ]
-    )
-
-
-"""
-Single get not needed for now, static resources
-@app.route("/metadata-template/get", methods=["GET"])
-def get_meta_data_template():
-    return redirect(request.referrer)
-"""
-
-# Blueprint templates
-def save_metadata_template(filename, contents):
-    with open("static/metadata-templates/" + filename, "w") as f:
-        f.write(contents)
-    return True
-
-
-# Blueprint templates
-@app.route("/metadata-template/update", methods=["POST"])
-@csrf.exempt
-def update_meta_data_templates():
-    """
-    """
-    template_name = request.form["template_name"]
-    template_json = request.form["template_json"]
-    save_metadata_template(template_name, template_json)
-
-    return redirect(request.referrer)
-
-
-# Blueprint templates
-@app.route("/metadata-template/new", methods=["POST"])
-@csrf.exempt
-def new_meta_data_template():
-    """
-    """
-    template_name = request.form["template_name"]
-    template_json = request.form["template_json"]
-    save_metadata_template(template_name, template_json)
-
-    return redirect(request.referrer)
-
-
-# Blueprint templates
-@app.route("/metadata-template/delete", methods=["POST"])
-@csrf.exempt
-def delete_meta_data_template():
-    """
-    """
-    template_name = template_name = request.form["template_name"]
-    os.unlink("static/metadata-templates/" + template_name)
-    return redirect(request.referrer)
 
 
 # Testing endpoint
