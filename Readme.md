@@ -32,6 +32,8 @@ $ npm run build
 
 ### Starting the development server
 
+Make sure you activated the virtual environment
+
 Launch the flask development server from the src directory:
 ```sh
 $ cd src
@@ -44,6 +46,22 @@ $ src/run_dev.sh
 ```
 
 Point your browser to `http://localhost:5000`
+
+### Updating
+
+Check for new required python modules and or versions
+
+```
+$ pip3 install -r requirements.txt
+```
+
+If you encounter javascript related errors, the Vue javascript based code may need an update:
+
+```sh
+$ cd src
+$ npm install
+$ npm run build
+```
 
 ### Installation using the docker image
 
