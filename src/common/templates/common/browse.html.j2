@@ -184,6 +184,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 	  <form action="{{url_for('metadata_bp.add_meta_data_collection')}}" method="POST" enctype="multipart/form-data" class="row g-3 needs-validation" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <div class="modal-body">
 
           <div class="mb-3">
@@ -232,7 +233,8 @@
       </div>
 
     <form action="{{url_for('metadata_bp.edit_meta_data_collection')}}" method="POST" enctype="multipart/form-data" class="row g-3 needs-validation" novalidation>
-	   <div class="modal-body">
+	   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+     <div class="modal-body">
           <div class="mb-3">
             <label for="meta-data-name" class="col-form-label">Name</label>
             <input type="text" class="form-control" id="meta-data-name" name="meta-data-name" required></input>
@@ -277,7 +279,8 @@
       </div>
 
     <form action="{{url_for('metadata_bp.delete_meta_data_collection')}}" method="POST" enctype="multipart/form-data" class="row g-3 needs-validation" novalidation>
-	   <div class="modal-body">
+	   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+     <div class="modal-body">
           <div class="mb-3">
             <label for="meta-data-name-delete" class="col-form-label">Name</label>
             <input type="text" class="form-control" id="meta-data-name-delete" name="meta-data-name" readonly></input>
@@ -316,6 +319,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 	  <form action="{{url_for('browse_bp.add_collection')}}" method="POST" enctype="multipart/form-data" class="row g-3 needs-validation" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <div class="modal-body">
 
           <div class="mb-3">
