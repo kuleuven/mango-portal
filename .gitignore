@@ -60,6 +60,10 @@ venv
 node_modules
 #Vue build files
 src/static/dist
+# Caches
+src/storage/cache
+#Thumbnails
+src/storage/thumbnails
 
 .gitignore
 .cache

@@ -98,6 +98,8 @@ if not os.path.exists(app.config["CACHE_DIR"]):
     os.makedirs(app.config["CACHE_DIR"])
 
 cache.init_app(app)
+with app.app_context():
+    cache.clear()
 
 # Register blueprints
 with app.app_context():
