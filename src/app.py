@@ -38,6 +38,7 @@ from common.browse import browse_bp
 from metadata.metadata import metadata_bp
 from search.basic_search import basic_search_bp
 from metadata_schema.editor import metadata_schema_editor_bp
+from metadata_schema.form import metadata_schema_form_bp
 
 from irods.models import (
     Collection,
@@ -109,6 +110,8 @@ with app.app_context():
     app.register_blueprint(metadata_bp)
     app.register_blueprint(basic_search_bp)
     app.register_blueprint(metadata_schema_editor_bp)
+    app.register_blueprint(metadata_schema_form_bp)
+
 
 @app.context_processor
 def dump_variable():
@@ -214,8 +217,6 @@ def index():
         # total_avu=total_avu,
         # avu_counts=sorted(avu_counts, key=itemgetter("total"), reverse=True),
     )
-
-
 
 
 # Testing endpoint
