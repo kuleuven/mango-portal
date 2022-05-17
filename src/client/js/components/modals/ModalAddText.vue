@@ -24,6 +24,7 @@
                             <label for="textType" class="form-label h6">Text type</label>
                             <select class="form-select" id="textType" v-model="textType" required>
                                 <option value="Text" selected>Text</option>
+                                <option value="LongText">Text box</option>
                                 <option value="Number">Number</option>
                                 <option value="Date">Date</option>
                                 <option value="Email">Email</option>

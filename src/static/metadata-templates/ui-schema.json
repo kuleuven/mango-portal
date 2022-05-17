@@ -1,0 +1,1 @@
+{"title":"ui-schema","type":"object","required":[],"properties":{"title":{"type":"string","title":"Book title"}}}

@@ -24,6 +24,7 @@ from urllib.parse import unquote
 from lib.util import generate_breadcrumbs
 import magic
 import os
+import glob
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
@@ -61,6 +62,9 @@ def collection_browse(collection):
     sub_collections = current_collection.subcollections
     data_objects = current_collection.data_objects
 
+    schema_files = glob.glob("static/metadata-templates/*.json")
+    metadata_schema_filenames = [os.path.basename(_file) for _file in schema_files]
+
     return render_template(
         "browse.html.j2",
         co_path=co_path,
@@ -69,6 +73,7 @@ def collection_browse(collection):
         sub_collections=sub_collections,
         data_objects=data_objects,
         permissions=g.irods_session.permissions.get(current_collection),
+        metadata_schema_filenames=metadata_schema_filenames,
     )
 
 
@@ -76,19 +81,20 @@ def collection_browse(collection):
 def view_object(data_object_path):
     """
     """
+    MIME_TYPE_ATTRIBUTE_NAME = "ku.mime_type"
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
     data_object = g.irods_session.data_objects.get(data_object_path)
 
     meta_data_items = data_object.metadata.items()
     # see if the mime type is present in the metadata, if not
-    if "p.mime" not in [item.name for item in meta_data_items]:
+    if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
         try:
             with data_object.open("r") as f:
                 blub = f.read(50 * 1024)
             mime_type = magic.from_buffer(blub, mime=True)
-            mime_avu = iRODSMeta("p.mime", mime_type)
-            data_object.metadata.add("p.mime", mime_type)
+            mime_avu = iRODSMeta(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
+            data_object.metadata.add(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
             meta_data_items.append(mime_avu)
             print(
                 f"mime-type was not set for object {data_object.id}, so we blubbed a bit into magic"
@@ -264,7 +270,7 @@ def object_preview(data_object_path):
     data_object = g.irods_session.data_objects.get(data_object_path)
 
     if data_object.size == 0:
-        return send_file("static/bh-empty.jpg", "image/jpeg")
+        return send_file("static/bh_sag_A.jpg", "image/jpeg")
     if (
         data_object.size > 10000000
     ):  # current_app.config('DATA_OBJECT_MAX_SIZE_PREVIEW'):

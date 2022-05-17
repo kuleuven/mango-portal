@@ -20,3 +20,9 @@ def collection_tree_to_dict(collection):
             for subcollection in collection.subcollections
         ]
     return d
+
+
+def strip_suffix(_string: str, _suffix: str):
+    if _string.endswith(_suffix):
+        _string = _string[: -len(_suffix)]
+    return _string

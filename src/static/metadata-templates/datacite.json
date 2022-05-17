@@ -1,0 +1,25 @@
+{
+    "title": "datacite",
+    "type": "object",
+    "required": [],
+    "properties": {
+        "title": {
+            "type": "string",
+            "title": "Title"
+        },
+        "coulour_checkboxes": {
+            "type": "object",
+            "title": "Colour",
+            "properties": {
+                "red": {
+                    "type": "boolean",
+                    "title": "red"
+                },
+                "blue": {
+                    "type": "boolean",
+                    "title": "blue"
+                }
+            }
+        }
+    }
+}

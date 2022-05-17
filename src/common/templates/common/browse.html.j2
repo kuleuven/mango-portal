@@ -69,18 +69,22 @@
           <th>{{item.name}}</th>
           <td>{{item.value}}</td>
           <td>{{item.units if item.units is not none}}</td>
-          <td><a href="#" data-bs-toggle="modal" data-bs-target="#editMetaData"
-            data-bs-meta-data-name="{{item.name}}"
-            data-bs-meta-data-value="{{item.value}}"
-            data-bs-meta-data-units="{{item.units if item.units is not none}}"
-            data-bs-object-path="{{collection.path}}"
-            ><i class="bi bi-pencil"></i></a></td>
-          <td><a href="#" data-bs-toggle="modal" data-bs-target="#deleteMetaData" class="text-danger"
-            data-bs-meta-data-name="{{item.name}}"
-            data-bs-meta-data-value="{{item.value}}"
-            data-bs-meta-data-units="{{item.units if item.units is not none}}"
-            data-bs-object-path="{{collection.path}}"
-          ><i class="bi bi-trash"></i></a></td>
+          {% if not item.name.startswith(('ku.', 'irods::')) %}
+            <td><a href="#" data-bs-toggle="modal" data-bs-target="#editMetaData"
+              data-bs-meta-data-name="{{item.name}}"
+              data-bs-meta-data-value="{{item.value}}"
+              data-bs-meta-data-units="{{item.units if item.units is not none}}"
+              data-bs-object-path="{{collection.path}}"
+              ><i class="bi bi-pencil"></i></a></td>
+            <td><a href="#" data-bs-toggle="modal" data-bs-target="#deleteMetaData" class="text-danger"
+              data-bs-meta-data-name="{{item.name}}"
+              data-bs-meta-data-value="{{item.value}}"
+              data-bs-meta-data-units="{{item.units if item.units is not none}}"
+              data-bs-object-path="{{collection.path}}"
+            ><i class="bi bi-trash"></i></a></td>
+          {% else %}
+              <td></td><td></td>
+          {% endif %}
 
         </tr>
 
@@ -94,6 +98,21 @@
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMetaData">
         Add meta data
         </button>
+
+        <h4 class="mt-4">Edit/add metadata via schema</h4>
+
+        <form class="row g-3 col-md-6 mt-4" method="GET" action="{{url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
+
+        <input type="hidden" name="item_type" value="collection">
+        <input type="hidden" name="id" value="{{collection.id}}">
+        <select name="schema">
+        {% for schema_file in metadata_schema_filenames %}
+          <option value="{{schema_file}}">{{schema_file[:-5]}}</option>
+        {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Edit</buton>
+
+        </form>
 
   </div>
   <div class="tab-pane show active" id="collection-content">
