@@ -277,3 +277,8 @@ def edit_schema_metadata_for_item():
             # form_values.add(meta_data_item.name, meta_data_item.value)
 
     return redirect(request.referrer)
+
+@metadata_schema_form_bp.route("/metada-schema/delete", methods=["POST"])
+def delete_schema_metadata_for_item():
+    """
+    """

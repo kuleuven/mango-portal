@@ -1,0 +1,1 @@
+{"title":"Project","type":"object","required":["name","description"],"properties":{"name":{"type":"string","title":"Project name"},"description":{"type":"string","title":"Description"},"area":{"type":"string","enum":["Biology","Chemistry","Engineering","Mathematics","Physics","Other"],"title":"Area"}}}

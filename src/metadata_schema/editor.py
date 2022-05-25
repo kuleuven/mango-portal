@@ -31,10 +31,11 @@ from pprint import pprint
 # from flask_wtf import CSRFProtect
 from csrf import csrf
 
+from slugify import slugify
+
 metadata_schema_editor_bp = Blueprint(
     "metadata_schema_editor_bp", __name__, template_folder="templates/metadata_schema",
 )
-
 
 
 json_template_dir = os.path.abspath("static/metadata-templates")
@@ -77,6 +78,8 @@ def get_meta_data_template():
 
 # Blueprint templates
 def save_metadata_template(filename, contents):
+    # normalize the filename, lowercase, no weird characters
+    filename = f"{slugify(filename[:-5])}.json"
     with open("static/metadata-templates/" + filename, "w") as f:
         f.write(contents)
     return True

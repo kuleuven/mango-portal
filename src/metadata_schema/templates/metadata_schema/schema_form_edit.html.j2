@@ -11,4 +11,7 @@
     {{ render_messages() }}
     {{ render_form(schema_form, action=url_for('metadata_schema_form_bp.edit_schema_metadata_for_item'), method='POST', form_type='horizontal', horizontal_columns=('md', 2,6)) }} {#form_type='horizontal', horizontal_columns=('md', 2,6) ) --#}
     {{ render_hidden_errors(schema_form) }}
+    <form>
+        <input type="button" class="btn btn-secondary" value="Cancel" onclick="history.back()">
+    </form>
 {% endblock %}

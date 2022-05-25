@@ -65,6 +65,21 @@ def collection_browse(collection):
     schema_files = glob.glob("static/metadata-templates/*.json")
     metadata_schema_filenames = [os.path.basename(_file) for _file in schema_files]
 
+    # metadata grouping  to be moved to proper function for re-use
+    grouped_metadata = {"un_managed": []}
+    for item in current_collection.metadata.items():
+        """
+        """
+        if item.name.startswith("ku."):
+            (ku_prefix, schema, meta_name) = item.name.split(".", 2)
+            item.name = meta_name
+            if schema not in grouped_metadata:
+                grouped_metadata[schema] = []
+            grouped_metadata[schema].append(item)
+
+        else:
+            grouped_metadata["un_managed"].append(item)
+
     return render_template(
         "browse.html.j2",
         co_path=co_path,
@@ -74,6 +89,7 @@ def collection_browse(collection):
         data_objects=data_objects,
         permissions=g.irods_session.permissions.get(current_collection),
         metadata_schema_filenames=metadata_schema_filenames,
+        grouped_metadata=grouped_metadata,
     )
 
 
