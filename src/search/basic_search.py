@@ -288,14 +288,14 @@ def catalog_search():
         collection_subtree = FormField(ColllectionForm, label="Subtree filter")
         item_name = FormField(ItemTypeNameForm, label="Name")
         # data_object_avu = FormField(
-        #     AVUFormSuggestionListDO, label="Data object meta data"
+        #     AVUFormSuggestionListDO, label="Data object metadata"
         # )
         # collection_avu = FormField(
-        #     AVUFormSuggestionListCO, label="Collection meta data"
+        #     AVUFormSuggestionListCO, label="Collection metadata"
         # )
-        any_avu1 = FormField(AVUFormSuggestionList, label="Meta data")
-        any_avu2 = FormField(AVUFormSuggestionListNoLabel, label="Meta data")
-        any_avu3 = FormField(AVUFormSuggestionListNoLabel, label="Meta data")
+        any_avu1 = FormField(AVUFormSuggestionList, label="Metadata")
+        any_avu2 = FormField(AVUFormSuggestionListNoLabel, label="Metadata")
+        any_avu3 = FormField(AVUFormSuggestionListNoLabel, label="Metadata")
         create_date = FormField(ItemDateForm, label="Created")
         mod_date = FormField(ItemDateForm, label="Modified")
         per_page = HiddenField("per_page")

@@ -1,35 +1,37 @@
 {% extends "base.html.j2" %}
-
 {% from 'bootstrap5/form.html' import render_form, render_field, render_form_row, render_hidden_errors %}
-
 {% block body %}
-
-
-{% if results %}
-<div class="d-flex justify-content-end">
-    <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#basic-search-form" aria-expanded="false" aria-controls="collapseform">
-    Show/hide filters
-  </button>
-</div>
-{%endif%}
-<form method="get" action="{{ url_for('basic_search_bp.catalog_search')}}" id="basic-search-form" {% if results %} class="collapse" {% endif %}>
-
-    {{ render_form_row([search_form.item_name.item_type, search_form.collection_subtree.collection]) }}
-    {{ render_form_row([search_form.item_name.comparison, search_form.item_name.item_name],
+    {% if results %}
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-secondary"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#basic-search-form"
+                    aria-expanded="false"
+                    aria-controls="collapseform">
+                Show/hide filters
+            </button>
+        </div>
+    {% endif %}
+    <form method="get"
+          action="{{ url_for('basic_search_bp.catalog_search')}}"
+          id="basic-search-form"
+          {% if results %} class="collapse"{% endif %}>
+        {{ render_form_row([search_form.item_name.item_type, search_form.collection_subtree.collection]) }}
+        {{ render_form_row([search_form.item_name.comparison, search_form.item_name.item_name],
         col_map = {'item_name-item_type': 'col-md-3', 'item_name-comparison' : 'col-md-2'}
         )}}
-    <div class="row">
-        <div class="col-md-6">
-            <h5>Created</h5>
-            {{ render_form_row([search_form.create_date.comparison, search_form.create_date.date])}}
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Created</h5>
+                {{ render_form_row([search_form.create_date.comparison, search_form.create_date.date])}}
+            </div>
+            <div class="col-md-6">
+                <h5>Modified</h5>
+                {{ render_form_row([search_form.mod_date.comparison, search_form.mod_date.date])}}
+            </div>
         </div>
-        <div class="col-md-6">
-            <h5>Modified</h5>
-            {{ render_form_row([search_form.mod_date.comparison, search_form.mod_date.date])}}
-        </div>
-    </div>
-    {# <h4>Data object metadata</h4>
-
+        {# <h4>Data object metadata</h4>
     {{ render_form_row(
             [search_form.data_object_avu.meta_a, search_form.data_object_avu.meta_v, search_form.data_object_avu.meta_u],
             col_map = {"data_object_avu-meta_a": 'col-md-4',
@@ -44,120 +46,86 @@
             col_map = {"collection_avu-meta_a": 'col-md-4',
                 "collection_avu-meta_v" : 'col-md-6',
                 "collection_avu-meta_u": 'col-md-2'}
-            )}} #}
-
-    <h4>Metadata</h4>
-
-    {{ render_form_row(
-            [search_form.any_avu1.meta_a, search_form.any_avu1.meta_v, search_form.any_avu1.meta_u],
-            col_map = {"any_avu1-meta_a": 'col-md-4',
-                "any_avu1-meta_v" : 'col-md-6',
-                "any_avu1-meta_u": 'col-md-2'},
-                form_group_classes="col-mb-0"
-            )}}
-    {{ render_form_row(
+)}} #}
+        <h4>Metadata</h4>
+        {{ render_form_row(
+        [search_form.any_avu1.meta_a, search_form.any_avu1.meta_v, search_form.any_avu1.meta_u],
+        col_map = {"any_avu1-meta_a": 'col-md-4',
+        "any_avu1-meta_v" : 'col-md-6',
+        "any_avu1-meta_u": 'col-md-2'},
+        form_group_classes="col-mb-0"
+        )}}
+        {{ render_form_row(
         [search_form.any_avu2.meta_a, search_form.any_avu2.meta_v, search_form.any_avu2.meta_u],
         col_map = {"any_avu2-meta_a": 'col-md-4',
-            "any_avu2-meta_v" : 'col-md-6',
-            "any_avu2-meta_u": 'col-md-2'},
-                form_group_classes="col-mb-0"
+        "any_avu2-meta_v" : 'col-md-6',
+        "any_avu2-meta_u": 'col-md-2'},
+        form_group_classes="col-mb-0"
         )}}
-    {{ render_form_row(
+        {{ render_form_row(
         [search_form.any_avu3.meta_a, search_form.any_avu3.meta_v, search_form.any_avu3.meta_u],
         col_map = {"any_avu3-meta_a": 'col-md-4',
-            "any_avu3-meta_v" : 'col-md-6',
-            "any_avu3-meta_u": 'col-md-2'},
+        "any_avu3-meta_v" : 'col-md-6',
+        "any_avu3-meta_u": 'col-md-2'},
         )}}
-
-    {{ render_field(search_form.per_page)}}
-    {{ render_field(search_form.total)}}
-
-
-    {{ render_field(search_form.submit) }}
-    {# {{ search_form.csrf_token }} #}
-
-</form>
-
-{{ render_hidden_errors(search_form) }}
-
-{# {{ pformat(results) }} #}
-{# {{ render_form(search_form, form_type='horizonthal') }} #}
-
-{% if dict_results|length > 0 %}
-
-<h4 class="mt-3">Results</h4>
-<div class="row">
-    <div class="col-md-8">
-    {{pagination.links}}
-    </div>
-    <div class="col-md-4 text-end">
-    {{pagination.info}}
-    </div>
-
-</div>
-
-<table class="table">
-    <thead>
-        <tr>
-            {% for header in dict_results[0]  %}
-                <th>{{ header | capitalize() }}</th>
-            {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-    {% for row in dict_results %}
-    <tr>
-        {% for key, value in row.items() %}
-        {% if key == 'size' %}
-            <td>{{value | filesizeformat}}</td>
-        {% elif key =='name' %}
-            <td class="text-wrap text-break">
-                {% if row["type"] == 'data_object' %}
-                    <a href="{{url_for('browse_bp.view_object', data_object_path = row['path']+'/'+row['name'])}}">{{value}}</a>
-                {% else %}
-                    <a href="{{url_for('browse_bp.collection_browse', collection=row['name'])}}">{{value}}</a>
-                {% endif %}
-
-            </td>
-        {% elif key =='path' %}
-            <td class="text-wrap text-break">
-            {{value}}
-            </td>
-        {% else %}
-            <td>{{value}}</td>
-        {%endif%}
-        {% endfor %}
-    </tr>
-    {% endfor %}
-
-    </tbody>
-</table>
-
-<div class="row">
-{{pagination.links}}
-</div>
-
-{% elif search_time is defined %}
-    <div class="text-warning">No matches for the specified criteria</div>
-{% endif %}
-
-{% if search_time is defined %}
-    <p class="small text-end"> Searching took {{"%.3f" % (search_time) }} seconds </p>
-{% endif %}
-
-<datalist id="search_meta_names">
-{% for meta_name in meta_names %}
-    <option value="{{ meta_name }}">
-{%endfor%}
-</datalist>
-
-{# <datalist id="co_search_meta_names">
+        {{ render_field(search_form.per_page)}}
+        {{ render_field(search_form.total)}}
+        {{ render_field(search_form.submit) }}
+        {# {{ search_form.csrf_token }} #}
+    </form>
+    {{ render_hidden_errors(search_form) }}
+    {# {{ pformat(results) }} #}
+    {# {{ render_form(search_form, form_type='horizonthal') }} #}
+    {% if dict_results|length > 0 %}
+        <h4 class="mt-3">Results</h4>
+        <div class="row">
+            <div class="col-md-8">{{ pagination.links }}</div>
+            <div class="col-md-4 text-end">{{ pagination.info }}</div>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    {% for header in dict_results[0] %}<th>{{ header | capitalize() }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in dict_results %}
+                    <tr>
+                        {% for key, value in row.items() %}
+                            {% if key == 'size' %}
+                                <td>{{ value | filesizeformat }}</td>
+                            {% elif key =='name' %}
+                                <td class="text-wrap text-break">
+                                    {% if row["type"] == 'data_object' %}
+                                        <a href="{{ url_for('browse_bp.view_object', data_object_path = row['path']+'/'+row['name'])}}">{{ value }}</a>
+                                    {% else %}
+                                        <a href="{{ url_for('browse_bp.collection_browse', collection=row['name'])}}">{{ value }}</a>
+                                    {% endif %}
+                                </td>
+                            {% elif key =='path' %}
+                                <td class="text-wrap text-break">{{ value }}</td>
+                            {% else %}
+                                <td>{{ value }}</td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="row">{{ pagination.links }}</div>
+    {% elif search_time is defined %}
+        <div class="text-warning">No matches for the specified criteria</div>
+    {% endif %}
+    {% if search_time is defined %}
+        <p class="small text-end">Searching took {{"%.3f" % (search_time) }} seconds</p>
+    {% endif %}
+    <datalist id="search_meta_names">
+        {% for meta_name in meta_names %}<option value="{{ meta_name }}"/>{% endfor %}
+    </datalist>
+    {# <datalist id="co_search_meta_names">
 {% for meta_name in meta_names %}
     <option value="{{ meta_name }}">
 {%endfor%}
 </datalist> #}
-
-
-{# {{ collection_tree }} #}
-
+    {# {{ collection_tree }} #}
 {% endblock body %}
