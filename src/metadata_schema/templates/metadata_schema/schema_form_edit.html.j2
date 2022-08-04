@@ -1,17 +1,23 @@
 {% extends "base.html.j2" %}
-
 {% from 'bootstrap5/form.html' import render_form, render_field, render_form_row, render_hidden_errors, render_messages %}
 {% from 'bootstrap5/utils.html' import render_messages %}
-
 {% block body %}
-
-<h2>{{ item.name }}</h2>
-<p> Type: {{ item.item_type}}</p>
-<p> Metadata schema: <b>{{ title }}</b><p>
+    <h2>{{ item.name }}</h2>
+    <p>Type: {{ item.item_type }}</p>
+    <p>
+        Metadata schema: <b>{{ title }}</b>
+    </p>
     {{ render_messages() }}
-    {{ render_form(schema_form, action=url_for('metadata_schema_form_bp.edit_schema_metadata_for_item'), method='POST', form_type='horizontal', horizontal_columns=('md', 2,6)) }} {#form_type='horizontal', horizontal_columns=('md', 2,6) ) --#}
+    {{ render_form(schema_form,
+    action=url_for('metadata_schema_form_bp.edit_schema_metadata_for_item'),
+    method='post',
+    form_type='horizontal',
+    horizontal_columns=('md', 2,6)) }} {# form_type='horizontal', horizontal_columns=('md', 2,6) )--#}
     {{ render_hidden_errors(schema_form) }}
     <form>
-        <input type="button" class="btn btn-secondary" value="Cancel" onclick="history.back()">
+        <input type="button"
+               class="btn btn-secondary"
+               value="Cancel"
+               onclick="history.back()"/>
     </form>
-{% endblock %}
+{% endblock body %}

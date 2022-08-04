@@ -1,3 +1,4 @@
+from unittest import result
 from flask import (
     Blueprint,
     render_template,
@@ -32,7 +33,9 @@ from wtforms import (
     Form,
     TimeField,
     HiddenField,
+    SelectMultipleField,
 )
+import wtforms.widgets
 from werkzeug.datastructures import MultiDict
 
 from irods.meta import iRODSMeta, AVUOperation
@@ -46,6 +49,8 @@ from irods.query import Query
 from slugify import slugify
 
 from pprint import pprint
+
+from lib.util import flatten_josse_schema
 
 metadata_schema_form_bp = Blueprint(
     "metadata_schema_form_bp", __name__, template_folder="templates/metadata_schema",
@@ -79,6 +84,15 @@ def josse_process_property(property_tuple, required=False, prefix=""):
             _validators += [validators.NumberRange(**range_args)]
         return IntegerField(label=_property["title"], validators=_validators,)
     if _property["type"] == "checkboxes":
+
+        #### new try
+        choices = [*_property["properties"]]
+        return SelectMultipleField(
+            label=_property["title"],
+            choices=choices,
+            validators=_validators,
+            option_widget=wtforms.widgets.CheckboxInput,
+        )
 
         class _p_form_class(Form):
             pass
@@ -170,6 +184,12 @@ def form_test():
     setattr(schema_form_class, "submit", SubmitField(label="Submit/Update"))
     schema_form = schema_form_class(request.values)
 
+    schema_dict = flatten_josse_schema(
+        ("", form_dict), level=0, prefix="ku.another-schema", result_dict={}
+    )
+    print(f"final")
+    pprint(schema_dict)
+
     return render_template(
         "schema_form_test.html.j2", schema_form=schema_form, title=form_dict["title"]
     )
@@ -191,6 +211,10 @@ def edit_schema_metadata_for_item():
     """
     """
     _parameters = request.values.to_dict()
+
+    print("Raw request data")
+    print(request.values)
+    print("request data as mutable dict")
     pprint(_parameters)
     item_type = _parameters["item_type"]
     template_name = _parameters["schema"]
@@ -199,6 +223,13 @@ def edit_schema_metadata_for_item():
     json_template_dir = os.path.abspath("static/metadata-templates")
     with open(f"{json_template_dir}/{template_name}") as template_file:
         form_dict = json.load(template_file)
+
+    # needed for getting and setting specific values, for example multivalued fields like the checkboxes
+    flat_form_dict = flatten_josse_schema(
+        ("", form_dict), level=0, prefix=prefix, result_dict={}
+    )
+    print("flat form dict")
+    pprint(flat_form_dict)
 
     filters = (
         [Criterion("=", DataObject.id, _parameters["id"])]
@@ -220,12 +251,19 @@ def edit_schema_metadata_for_item():
     form_values = MultiDict()
     # form_values.extend(_parameters)
     for _key, _value in _parameters.items():
+        pprint(f"Key is: {_key}")
+
         form_values.add(_key, _value)
 
     for meta_data_item in catalog_item.metadata.items():
         if meta_data_item.name.startswith(prefix):
+            # if flat_form_dict[meta_data_item.name]["type"] == "checkboxes":
+            #     try:
+            #         meta_data_item.value = json.loads(_value)
+            #     except:
+            #         pass
             form_values.add(meta_data_item.name, meta_data_item.value)
-
+    print("data from irods:")
     pprint(form_values)
 
     if request.method == "GET":
@@ -246,6 +284,8 @@ def edit_schema_metadata_for_item():
     if request.method == "POST":
         """
         """
+        print("POST form data")
+        pprint(request.form)
         print(f"saving metadata for {template_name}")
 
         # remove all relevant attributes for this schema
@@ -257,7 +297,11 @@ def edit_schema_metadata_for_item():
                     AVUOperation(operation="remove", avu=meta_data_item)
                 )
         for _key, _value in _parameters.items():
+
             if _key.startswith(prefix) and _value:
+                if flat_form_dict[_key]["type"] == "checkboxes":
+
+                    _value = json.dumps(_value)
                 avu_operation_list.append(
                     AVUOperation(operation="add", avu=iRODSMeta(_key, _value))
                 )
@@ -277,6 +321,7 @@ def edit_schema_metadata_for_item():
             # form_values.add(meta_data_item.name, meta_data_item.value)
 
     return redirect(request.referrer)
+
 
 @metadata_schema_form_bp.route("/metada-schema/delete", methods=["POST"])
 def delete_schema_metadata_for_item():
