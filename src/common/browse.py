@@ -14,6 +14,8 @@ from flask import (
 )
 
 from irods.meta import iRODSMeta
+from irods.access import iRODSAccess
+import irods.keywords
 
 from PIL import Image
 from pdf2image import convert_from_path
@@ -21,10 +23,17 @@ import mimetypes
 import tempfile
 from urllib.parse import unquote
 
-from lib.util import generate_breadcrumbs
+from lib.util import generate_breadcrumbs, flatten_josse_schema
 import magic
 import os
 import glob
+import json
+import requests
+import pprint
+import tempfile
+import re
+import datetime
+from collections import Counter, namedtuple
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
@@ -66,19 +75,66 @@ def collection_browse(collection):
     metadata_schema_filenames = [os.path.basename(_file) for _file in schema_files]
 
     # metadata grouping  to be moved to proper function for re-use
-    grouped_metadata = {"un_managed": []}
+    other = "other"
+    grouped_metadata = {other: {}}
     for item in current_collection.metadata.items():
         """
         """
-        if item.name.startswith("ku."):
+        if item.name.startswith("ku.") and item.name.count(".") >= 2:
             (ku_prefix, schema, meta_name) = item.name.split(".", 2)
-            item.name = meta_name
+            # item.name = meta_name
             if schema not in grouped_metadata:
-                grouped_metadata[schema] = []
-            grouped_metadata[schema].append(item)
+                grouped_metadata[schema] = {}
+            grouped_metadata[schema][item.name] = item
 
         else:
-            grouped_metadata["un_managed"].append(item)
+            grouped_metadata[other][item.name] = item
+
+    schema_labels = {}
+    if len(grouped_metadata) == 1 and "other" in grouped_metadata:
+        pass
+    else:
+        json_template_dir = os.path.abspath("static/metadata-templates")
+        with open(f"{json_template_dir}/{schema}.json") as template_file:
+            form_dict = json.load(template_file)
+            for schema in grouped_metadata:  # schema_labels[schema][item.name]:
+                if schema != "other":
+                    try:
+                        with open(
+                            f"{json_template_dir}/{schema}.json", "r"
+                        ) as schema_file:
+                            form_dict = json.load(schema_file)
+                            schema_labels[schema] = flatten_josse_schema(
+                                ("", form_dict),
+                                level=0,
+                                prefix=f"ku.{schema}",
+                                result_dict={},
+                            )
+                    except (e):
+                        pass
+
+        # now re-order the grouped entries according to the order from the flattened file
+        # for schema in schema_labels:
+        #    grouped_metadata[schema] = {}
+    # pprint.pprint(grouped_metadata)
+    # Now sort the metadata according to the schema definition
+    sorted_metadata = {}
+    # for schema in grouped_metadata:
+    #     if schema in schema_labels:
+    #         sorted_metadata[schema] = {}
+    #         for meta_data_name in schema_labels[schema]:
+    #             sorted_metadata[schema][meta_data_name] = grouped_metadata[schema].pop(
+    #                 meta_data_name, ""
+    #             )
+    #     else:
+    #         sorted_metadata[schema] = grouped_metadata[schema]
+    # pprint.pprint(sorted_metadata)
+    acl_users = []
+    permissions = g.irods_session.permissions.get(
+        current_collection, report_raw_acls=True, acl_users=acl_users
+    )
+    acl_users_dict = {user.name: user.type for user in acl_users}
+    acl_counts = Counter([permission.access_name for permission in permissions])
 
     return render_template(
         "browse.html.j2",
@@ -87,9 +143,13 @@ def collection_browse(collection):
         collection=current_collection,
         sub_collections=sub_collections,
         data_objects=data_objects,
-        permissions=g.irods_session.permissions.get(current_collection),
+        permissions=permissions,
+        acl_users=acl_users,
+        acl_users_dict=acl_users_dict,
+        acl_counts=acl_counts,
         metadata_schema_filenames=metadata_schema_filenames,
-        grouped_metadata=grouped_metadata,
+        grouped_metadata=grouped_metadata,  # sorted_metadata,
+        schema_labels=schema_labels,
     )
 
 
@@ -120,13 +180,36 @@ def view_object(data_object_path):
                 f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
                 "warning",
             )
+    acl_users = []
+
+    permissions = g.irods_session.permissions.get(
+        data_object, report_raw_acls=True, acl_users=acl_users
+    )
+    # Workaround for a bug with report_raw_acls for data objects where every ACL is listed twice
+    PermissionTuple = namedtuple(
+        "PermissionTuple", ["user_name", "access_name", "user_zone"]
+    )
+    # List and set calls is used to get unique named tuples working around the mentioned bug
+    permissions = list(
+        set(
+            [
+                PermissionTuple(p.user_name, p.access_name, p.user_zone)
+                for p in permissions
+            ]
+        )
+    )
+
+    acl_users_dict = {user.name: user.type for user in acl_users}
+    acl_counts = Counter([permission.access_name for permission in permissions])
 
     return render_template(
         "view_object.html.j2",
         data_object=data_object,
         meta_data_items=meta_data_items,
         breadcrumbs=generate_breadcrumbs(data_object_path),
-        permissions=g.irods_session.permissions.get(data_object),
+        permissions=permissions,
+        acl_users_dict=acl_users_dict,
+        acl_counts=acl_counts,
     )
 
 
@@ -210,7 +293,10 @@ def delete_collection():
     collection_path = request.form["collection_path"]
     # recursive remove
     g.irods_session.collections.remove(collection_path)
-    return redirect(request.referrer)
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    else:
+        return redirect(request.referrer)
 
 
 @browse_bp.route("/data-object/delete", methods=["POST", "DELETE"])
@@ -219,7 +305,10 @@ def remove_data_object():
     """
     data_object_path = request.form["data_object_path"]
     g.irods_session.data_objects.get(data_object_path).unlink()
-    return redirect(request.referrer)
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    else:
+        return redirect(request.referrer)
 
 
 # Blueprint common
@@ -273,11 +362,93 @@ def add_collection():
     return redirect(request.referrer)
 
 
+@browse_bp.route("/data-object/ask_tika/<path:data_object_path>")
+def ask_tika(data_object_path):
+    """
+    """
+    # FETCH FROM CONFIG INSTEAD
+    tika_host = "http://localhost:9998"
+    tika_url = f"{tika_host}/tika/text"
+    tika_storage = f"storage/tika_output/{g.irods_session.zone}"
+    if not os.path.exists(tika_storage):
+        os.makedirs(tika_storage)
+    data_object_path = unquote(data_object_path)
+
+    if not data_object_path.startswith("/"):
+        data_object_path = "/" + data_object_path
+
+    data_object = g.irods_session.data_objects.get(data_object_path)
+
+    tika_file_path = f"{tika_storage}/{data_object.id}.tika.json"
+
+    if (
+        os.path.exists(tika_file_path)
+        and data_object.modify_time
+        < datetime.datetime.fromtimestamp(os.path.getmtime(tika_file_path))
+        and not "skip-tika-cache" in request.values
+    ):
+        with open(tika_file_path, mode="r") as tika_file:
+            result = json.load(tika_file)
+    else:
+
+        try:
+            ping_tika = requests.get(tika_host)
+            destination = f"/tmp/irods-{data_object.id}.download"
+
+            options = {irods.keywords.FORCE_FLAG_KW: True}
+            data_object = g.irods_session.data_objects.get(
+                data_object_path, destination, **options
+            )
+
+            # files = {"file": (data_object.name, open(destination, mode="rb").read())}
+            headers = {
+                "Accept": "application/json",
+                # "Content-Type": "application/octet-stream",
+                # "X-Tika-OCRLanguage": "eng+fra"
+            }
+            pprint.pprint(request.values)
+            if not "do-tika-ocr" in request.values:
+                # "X-Tika-OCRmaxFileSizeToOcr": "0",  # Tika 1.x
+                # "X-Tika-OCRskipOcr": "true", #Tika 2.x
+                headers["X-Tika-OCRskipOcr"] = "true"
+            try:
+                res = requests.put(
+                    url=tika_url, headers=headers, data=open(destination, mode="rb")
+                )
+                # result = res.content
+                result = dict(sorted(res.json().items()))
+                pprint.pprint(result)
+                # strip multiple blank lines to just one
+                result["X-TIKA:content"] = re.sub("\n+", "\n", result["X-TIKA:content"])
+                result["X-TIKA:content"] = result["X-TIKA:content"].strip()
+                with open(tika_file_path, mode="w") as tika_file:
+                    json.dump(result, fp=tika_file)
+
+            except Exception as e:
+                result = {"error": f"Something went wrong asking Tika about me: {e}"}
+
+            os.unlink(destination)
+        except Exception as e:
+            result = {"error": f"Tika discover service is not reachable: {e}"}
+
+    if "X-TIKA:content" in result and len(result["X-TIKA:content"]) > 50000:
+        result["X-TIKA:content"] = (
+            result["X-TIKA:content"][:50000] + "\n ------☢️-truncated-☢️-------\n"
+        )
+
+    return render_template(
+        "object_ask_tika.html.j2",
+        data_object=data_object,
+        breadcrumbs=generate_breadcrumbs(data_object_path),
+        result=result,
+    )
+
+
 @browse_bp.route("/data-object/preview/<path:data_object_path>")
 def object_preview(data_object_path):
     """
     """
-    thumbnail_storage = f"storage/thumbnails/{g.irods_session.zone}"
+    thumbnail_storage = f"storage/{__name__}/{g.irods_session.zone}/object_preview"
     if not os.path.exists(thumbnail_storage):
         os.makedirs(thumbnail_storage)
     data_object_path = unquote(data_object_path)
@@ -322,7 +493,40 @@ def object_preview(data_object_path):
                 image = Image.open(f"/tmp/irods-download-{data_object.name}")
                 image.thumbnail((400, 400))
             image.save(f"{thumbnail_storage}/{data_object.id}.png")
+            os.unlink(local_path)
         if os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
             return send_file(f"{thumbnail_storage}/{data_object.id}.png", "image/png")
         else:
             return send_file("static/too-large.jpg", "image/jpeg")
+
+
+@browse_bp.route("/permission/set/<path:item_path>", methods=["POST"])
+def set_permissions(item_path: str):
+    """
+    """
+    groups = request.form.get("groups", [])
+    permission_type = request.form.get("permission_type", "null")
+    recursive = True if "recursive" in request.form else False
+    if not item_path.startswith("/"):
+        item_path = "/" + item_path
+
+    try:
+        if isinstance(groups, list):
+            for group in groups:
+                g.irods_session.permissions.set(
+                    iRODSAccess(permission_type, item_path, user_name=group),
+                    recursive=recursive,
+                )
+        else:
+            g.irods_session.permissions.set(
+                iRODSAccess(permission_type, item_path, user_name=groups),
+                recursive=recursive,
+            )
+    except Exception as e:
+        print(e)
+        abort(500, "failed to set permissions")
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    else:
+        return redirect(request.referrer)
