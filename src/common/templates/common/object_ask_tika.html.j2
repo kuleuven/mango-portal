@@ -1,0 +1,66 @@
+{% extends "base.html.j2" %}
+
+
+{% block body %}
+
+
+<nav style="--bs-breadcrumb-divider: '>'" aria-label="breadcrumb">
+	<ol class="breadcrumb">
+		{% for element in breadcrumbs[:-1] %}
+			<li class="breadcrumb-item"><a href="{{url_for('browse_bp.collection_browse', collection=element['url'])}}">{{element['label']}}</a></li>
+		{% endfor %}
+		<li class="breadcrumb-item active" aria-current="page">{{breadcrumbs[-1]['label']}}</li>
+	</ol>
+</nav>
+<div class="row">
+    <div class="col-11"><h2 class="mb-4">{{data_object.name}}</h2></div>
+    <div class="col-1 display-6">
+
+      {% if data_object.size < 20000000000 %}
+                <a href="{{url_for('browse_bp.download_object', data_object_path = data_object.path)}}"><i class="bi bi-download"></i></a>
+      {% endif%}
+    </div>
+
+
+    {# to be moved to its own server side handler + template to include #}
+    {% if data_object.name.endswith(('jpg','jpeg','png', 'pdf')) %}
+    <div class="row">
+      <img src="{{url_for('browse_bp.object_preview', data_object_path = data_object.path)}}"  class="w-50" style="object-fit: contain">
+    </div>
+    {% else %}
+      <p>Preview not possible for this type</p>
+    {% endif %}
+    <h2>Analysis via Tika</h2>
+    <ul class="list-group">
+    {% if result['X-TIKA:Parsed-By-Full-Set'] is not string %}
+      {% for step in result['X-TIKA:Parsed-By-Full-Set']%}
+      <li class="list-group-item">{{step}}</li>
+      {% endfor %}
+    {% else %}
+      <li class="list-group-item">{{result['X-TIKA:Parsed-By-Full-Set']}}</li>
+    {% endif %}
+    </ul>
+    <h3>Text content for full text indexing</h3>
+    <pre>
+    {{result['X-TIKA:content']}}
+    </pre>
+    <h3>Metadata fields</h3>
+    <table class="table">
+    {% for key, item in result.items() %}
+      {% if key not in ['X-TIKA:content','X-TIKA:Parsed-By-Full-Set', 'X-TIKA:Parsed-By'] %}
+        <tr><th>{{key}}<th><td>{{item}}</td></tr>
+      {% endif %}
+    {% endfor %}
+    </table>
+</div>
+
+{% endblock body %}
+
+
+
+{% block javascript %}
+
+
+
+
+{% endblock javascript %}

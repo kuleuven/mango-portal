@@ -85,6 +85,7 @@ app.config["CACHE_TYPE"] = "FileSystemCache"
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300
 app.config["CACHE_DIR"] = "storage/cache"
 app.config["DEBUG"] = True
+app.config["ACL_PROTECT_OWN"] = True
 # app.config["EXPLAIN_TEMPLATE_LOADING"] = True
 ## enable auto escape in jinja2 templates
 app.jinja_options["autoescape"] = lambda _: True
