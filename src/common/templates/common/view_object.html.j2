@@ -180,11 +180,10 @@
           </tr>
         </thead>
         <tbody>
-          {{ permissions|pprint }}
           {% for permission in permissions %}
             <tr>
               <td>
-                {{ permission.user_name }}
+                {{ permission.user_name }} ({{ acl_users_dict[permission.user_name] }})
               </td>
               <td>
                 {{ permission.access_name }}
@@ -198,7 +197,6 @@
           {% endfor %}
         </tbody>
       </table>
-      {{ acl_counts|pprint }}
     </div>
     <div class="tab-pane fade"
          id="preview"
@@ -209,7 +207,8 @@
         <div class="row">
           <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path)}}"
                class="w-50"
-               style="object-fit: contain" alt="preview image"/>
+               style="object-fit: contain"
+               alt="preview image"/>
         </div>
       {% else %}
         <p>

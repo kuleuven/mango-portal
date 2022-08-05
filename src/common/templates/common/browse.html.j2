@@ -357,7 +357,7 @@
           {% for permission in permissions %}
             <tr>
               <td>
-                {{ permission.user_name }}
+                {{ permission.user_name }} ({{ acl_users_dict[permission.user_name] }})
               </td>
               <td>
                 {{ permission.access_name }}
@@ -431,10 +431,7 @@
             </select>
           </div>
           <div class="col">
-            <input type="checkbox"
-                   name="recursive"
-                   id="set_recursive"
-                   value="True"/>
+            <input type="checkbox" name="recursive" id="set_recursive" value="True"/>
             <label for="set_recursive">
               Recursive
             </label>
