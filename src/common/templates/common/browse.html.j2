@@ -398,6 +398,7 @@
           {% endfor %}
         </tbody>
       </table>
+      {{ my_groups|pprint }}
       <form method="post"
             action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/')) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -410,12 +411,11 @@
                     aria-label="Groups"
                     name="groups"
                     id="permission_groups">
-              <option value="public">
-                public
-              </option>
-              <option value="datateam">
-                datateam
-              </option>
+              {% for group in my_groups if not group.name == g.irods_session.username %}
+                <option value="{{ group.name }}">
+                  {{ group.name }}
+                </option>
+              {% endfor %}
             </select>
           </div>
           <div class="col">

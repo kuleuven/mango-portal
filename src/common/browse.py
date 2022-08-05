@@ -16,6 +16,7 @@ from flask import (
 from irods.meta import iRODSMeta
 from irods.access import iRODSAccess
 import irods.keywords
+from irods.user import iRODSUserGroup, UserGroup, User
 
 from PIL import Image
 from pdf2image import convert_from_path
@@ -136,6 +137,13 @@ def collection_browse(collection):
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
+    my_groups = [
+        iRODSUserGroup(g.irods_session.user_groups, item)
+        for item in g.irods_session.query(UserGroup)
+        .filter(User.name == g.irods_session.username)
+        .all()
+    ]
+
     return render_template(
         "browse.html.j2",
         co_path=co_path,
@@ -150,6 +158,7 @@ def collection_browse(collection):
         metadata_schema_filenames=metadata_schema_filenames,
         grouped_metadata=grouped_metadata,  # sorted_metadata,
         schema_labels=schema_labels,
+        my_groups=my_groups,
     )
 
 
