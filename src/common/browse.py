@@ -530,3 +530,20 @@ def set_permissions(item_path: str):
         return redirect(request.values["redirect_route"])
     else:
         return redirect(request.referrer)
+
+
+@browse_bp.route("/permission/inheritance/set/<path:collection_path>", methods=["POST"])
+def set_inheritance(collection_path: str):
+    """
+    """
+    if not collection_path.startswith("/"):
+        collection_path = "/" + collection_path
+    if "inheritance" in request.form:
+        g.irods_session.permissions.set(iRODSAccess("inherit", collection_path))
+    else:
+        g.irods_session.permissions.set(iRODSAccess("noinherit", collection_path))
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    else:
+        return redirect(request.referrer)
