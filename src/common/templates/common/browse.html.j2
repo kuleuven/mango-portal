@@ -398,7 +398,6 @@
           {% endfor %}
         </tbody>
       </table>
-      {{ my_groups|pprint }}
       <form method="post"
             action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/')) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
