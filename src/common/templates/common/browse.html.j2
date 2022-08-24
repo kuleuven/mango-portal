@@ -388,8 +388,8 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <input type="hidden" name="groups" value="{{ permission.user_name }}" />
                     <input type="hidden" name="permission_type" value="null" />
-                    <button type="submit" class="btn btn-danger">
-                      <i class="bi bi-trash"></i>
+                    <button type="submit" class="btn">
+                      <i class="bi bi-trash text-danger"></i>
                     </button>
                   </form>
                 {% endif %}
