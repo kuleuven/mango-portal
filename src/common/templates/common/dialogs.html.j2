@@ -1,0 +1,236 @@
+{# add one field dialog #}
+{% macro simple_required_field_dialog(dialog_id, field_name, field_label, post_url, title="", add_launch_button=true, btn_ok="ok", btn_cancel="cancel", invalid_feedback="Required field", extra_fields_mode="hide" ) %}
+    {% if add_launch_button %}
+        <button type="button"
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#{{ dialog_id }}">
+            {{ title }}
+        </button>
+    {% endif %}
+    <div class="modal fade"
+         id="{{ dialog_id }}"
+         tabindex="-1"
+         aria-labelledby="dialogLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dialogLabel">{{ title }}</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <form action="{{ post_url }}"
+                      method="post"
+                      enctype="multipart/form-data"
+                      class="row g-3 needs-validation"
+                      novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="{{ dialog_id + field_name }}" class="col-form-label">{{ field_label }}</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="{{ dialog_id + field_name }}"
+                                   name="{{ field_name }}"
+                                   required/>
+                            <div class="invalid-feedback">{{ invalid_feedback }}</div>
+                        </div>
+                        {% if extra_fields_mode == "hide" %}
+                            {% for field in kwargs %}
+                                <input type="hidden"
+                                       id="{{ dialog_id + field }}"
+                                       name="field"
+                                       value="{{ kwargs[field] }}"/>
+                            {% endfor %}
+                        {% endif %}
+                        {% if extra_fields_mode == "show-disabled" %}
+                            {% for field in kwargs %}
+                                <div class="mb-3">
+                                    <label for="{{ dialog_id + field }}" class="col-form-label">Name</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="{{ dialog_id + field }}"
+                                           name="{{ field }}"
+                                           value="{{ kwargs[field] }}"
+                                           readonly/>
+                                </div>
+                                <input type="hidden"
+                                       id="{{ dialog_id + field }}"
+                                       name="field"
+                                       value="{{ kwargs[field] }}"/>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ btn_cancel }}</button>
+                        <button class="btn btn-primary" type="submit">{{ btn_ok }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+{# delete dialog #}
+{% macro confirm_delete_dialog(dialog_id, post_url, title="", mode="standalone", btn_ok="delete", btn_cancel="cancel", hidden_fields=[], readonly_fields=[], modal_class="") %}
+    {% if mode == "standalone" %}
+        <button type="button"
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#{{ dialog_id }}">
+            {{ title }}
+        </button>
+    {% endif %}
+    <div class="modal fade"
+         id="{{ dialog_id }}"
+         tabindex="-1"
+         aria-labelledby="dialogLabel"
+         aria-hidden="true">
+        <div class="modal-dialog {{ modal_class }}">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dialogLabel">{{ title }}</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <form action="{{ post_url }}"
+                      method="post"
+                      enctype="multipart/form-data"
+                      class="row g-3 needs-validation"
+                      novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="modal-body">
+                        {% for field in hidden_fields %}
+                            <input type="hidden"
+                                   id="{{ dialog_id + field['name'] }}"
+                                   name="{{ field['name'] }}"
+                                   value="{{ field['value'] }}"/>
+                        {% endfor %}
+                        {% for field in readonly_fields %}
+                            <div class="mb-3">
+                                <label for="{{ dialog_id + field['name'] }}" class="col-form-label">
+                                    {{ field['label'] if field['label'] else field['name']|capitalize }}
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="{{ dialog_id + field['name'] }}"
+                                       name="{{ field['name'] }}"
+                                       value="{{ field['value'] }}"
+                                       readonly/>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ btn_cancel }}</button>
+                        <button class="btn btn-danger" type="submit">{{ btn_ok }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% if mode=="listen-many" %}
+        {# Need to insert some javascript code with conventions #}
+        <script>
+var {{dialog_id}} = document.getElementById('{{dialog_id}}');
+{{dialog_id}}.addEventListener('show.bs.modal', function (event) {
+  // Button that triggered the modal
+var button = event.relatedTarget;
+// update the values in the modal from the button data attributes
+{% for field in hidden_fields + readonly_fields %}
+if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
+{{dialog_id}}.querySelector('#{{dialog_id + field["name"]}}').value = button.getAttribute('data-bs-field-{{field["name"]}}') ;
+}
+{% endfor %}
+
+})
+        </script>
+    {% endif %}
+{% endmacro %}
+{% macro general_dialog(dialog_id, post_url, title="", body_text = "", mode="standalone", btn_ok="delete", btn_cancel="cancel", hidden_fields=[], readonly_fields=[], modal_class="", button_classes={"button_ok": "btn-primary", "button_cancel": "btn-secondary"}) %}
+    {% if mode == "standalone" %}
+        <button type="button"
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#{{ dialog_id }}">
+            {{ title }}
+        </button>
+    {% endif %}
+    <div class="modal fade"
+         id="{{ dialog_id }}"
+         tabindex="-1"
+         aria-labelledby="dialogLabel"
+         aria-hidden="true">
+        <div class="modal-dialog {{ modal_class }}">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dialogLabel">{{ title }}</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <form action="{{ post_url }}"
+                      method="post"
+                      enctype="multipart/form-data"
+                      class="row g-3 needs-validation"
+                      novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="modal-body">
+                        <p>{{ body_text }}</p>
+                        {% for field in hidden_fields %}
+                            <input type="hidden"
+                                   id="{{ dialog_id + field['name'] }}"
+                                   name="{{ field['name'] }}"
+                                   value="{{ field['value'] }}"/>
+                        {% endfor %}
+                        {% for field in readonly_fields %}
+                            <div class="mb-3">
+                                <label for="{{ dialog_id + field['name'] }}" class="col-form-label">
+                                    {{ field['label'] if field['label'] else field['name']|capitalize }}
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="{{ dialog_id + field['name'] }}"
+                                       name="{{ field['name'] }}"
+                                       value="{{ field['value'] }}"
+                                       readonly/>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button"
+                                class="btn {{ buton_classes['button_cancel'] if buton_classes['button_cancel'] else 'btn-primary' }}"
+                                data-bs-dismiss="modal">
+                            {{ btn_cancel }}
+                        </button>
+                        <button class="btn {{ buton_classes['button_ok'] if buton_classes['button_ok'] else 'btn-primary' }}"
+                                type="submit">
+                            {{ btn_ok }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% if mode=="listen-many" %}
+        {# Need to insert some javascript code with conventions #}
+        <script>
+var {{dialog_id}} = document.getElementById('{{dialog_id}}');
+{{dialog_id}}.addEventListener('show.bs.modal', function (event) {
+  // Button that triggered the modal
+var button = event.relatedTarget;
+// update the values in the modal from the button data attributes
+{% for field in hidden_fields + readonly_fields %}
+if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
+{{dialog_id}}.querySelector('#{{dialog_id + field["name"]}}').value = button.getAttribute('data-bs-field-{{field["name"]}}') ;
+}
+{% endfor %}
+
+})
+        </script>
+    {% endif %}
+{% endmacro %}
