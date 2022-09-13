@@ -34,6 +34,7 @@ def my_groups():
         .all()
     ]
 
+    my_groups = [group for group in my_groups if group.name != g.irods_session.username]
     return render_template("mygroups.html.j2", my_groups=my_groups)
 
 
@@ -49,6 +50,7 @@ def my_profile():
     ]
 
     me = g.irods_session.users.get(g.irods_session.username)
+    my_groups = [group for group in my_groups if group.name != g.irods_session.username]
 
     return render_template("myprofile.html.j2", me=me, my_groups=my_groups)
 
