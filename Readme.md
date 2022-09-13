@@ -11,8 +11,13 @@ You need to have a valid and initialised iRODS environment for your account, the
 - tier1-pilot.irods-q.hpc.kuleuven.be
 - irods.hpc.kuleuven.be (production)
 
+The current version is developed with python 3.10, but 3.8 and 3.9 probably will work as well. See also the section on changing the python version below.
+
+
+
 Create a python virtual environment in the root of this repository checkout and install the required modules, for example
-```
+
+```sh
 $ python3 -m venv venv
 $ . venv/bin/activate
 $ pip3 install -r requirements.txt
@@ -22,7 +27,7 @@ $ pip3 install -r requirements.txt
 
 Currently the node module parcel and its dependencies are required for building, see https://parceljs.org/
 
-Before using
+Before using the first time, execute the following steps
 
 ```sh
 $ cd src
@@ -61,6 +66,15 @@ If you encounter javascript related errors, the Vue javascript based code may ne
 $ cd src
 $ npm install
 $ npm run build
+```
+
+### Changing the python version
+
+If you upgrade your python version, the requirements.txt may not be correct anymore (outdated packages). You can install updated python modules with:
+
+```sh
+$ pip list --outdated --format=freeze | grep -v '^\-e' | \
+ cut -d = -f 1  | xargs -n1 pip install -U
 ```
 
 ### Installation using the docker image
