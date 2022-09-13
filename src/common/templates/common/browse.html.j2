@@ -1,4 +1,5 @@
 {% extends "base.html.j2" %}
+{% import "dialogs.html.j2" as dialogs %}
 {% block body %}
   <nav style="--bs-breadcrumb-divider: '&raquo;'" aria-label="breadcrumb">
     <ol class="breadcrumb">
@@ -43,40 +44,43 @@
   </div>
   <ul class="nav nav-tabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active"
-              id="content-tab"
-              data-bs-toggle="tab"
-              data-bs-target="#collection-content"
-              type="button"
-              role="tab"
-              aria-controls="collection-tab"
-              aria-selected="true">
+      <a class="nav-link active"
+         href="#content"
+         id="content-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#collection-content"
+         type="button"
+         role="tab"
+         aria-controls="collection-tab"
+         aria-selected="true">
         Content
-      </button>
+      </a>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link"
-              id="metadata-tab"
-              data-bs-toggle="tab"
-              data-bs-target="#collection-metadata"
-              type="button"
-              role="tab"
-              aria-controls="collection-metadata"
-              aria-selected="false">
+      <a class="nav-link"
+         href="#metadata"
+         id="metadata-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#collection-metadata"
+         type="button"
+         role="tab"
+         aria-controls="collection-metadata"
+         aria-selected="false">
         Metadata
-      </button>
+      </a>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link"
-              id="permissions-tab"
-              data-bs-toggle="tab"
-              data-bs-target="#collection-permissions"
-              type="button"
-              role="tab"
-              aria-controls="collection-permissions"
-              aria-selected="false">
+      <a class="nav-link"
+         href="#permissions"
+         id="permissions-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#collection-permissions"
+         type="button"
+         role="tab"
+         aria-controls="collection-permissions"
+         aria-selected="false">
         Permissions
-      </button>
+      </a>
     </li>
   </ul>
   <div class="tab-content" id="pills-tab-content">
@@ -170,7 +174,7 @@
                       <th>
                         <span title="{{ item.name }}">{{ schema_labels[schema][item.name]['label'] if (schema_labels[schema] and schema_labels[schema][item.name]) else item.name }}</span>
                       </th>
-                      <td>{{ item.value }}</td>
+                      <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}">{{ item.value }}</td>
                       <td>{{ item.units if item.units is not none }}</td>
                       {% if not item.name.startswith(('ku.', 'irods::')) and schema == 'other' %}
                         <td>
@@ -326,6 +330,19 @@
           {% endfor %}
         </tbody>
       </table>
+      <div class="row mt-5">
+        <div class="col">
+          <button type="button"
+                  class="btn btn-danger float-end"
+                  data-bs-toggle="modal"
+                  data-bs-target="#delete_collection"
+                  data-bs-field-ha="hihi"
+                  data-bs-field-bo="hoho">
+            Delete Collection
+          </button>
+        </div>
+      </div>
+      {{ dialogs.confirm_delete_dialog('delete_collection', url_for('browse_bp.delete_collection'), title="Delete collection and contents", mode="listen-many", readonly_fields = [{'name' : 'collection_path', 'value': collection.path, 'label': 'Collection Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=breadcrumbs[-2]['url'])}], modal_class="modal-xl" )}}
     </div>
     <div class="tab-pane" id="collection-permissions">
       <div class="float-end">
@@ -333,13 +350,17 @@
           <form method="post"
                 action="{{ url_for('browse_bp.set_inheritance', collection_path = collection.path.lstrip('/'))}}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <label for "inheritance-checkbox" class="me-3">
-              <b>Inheritance</b>
-            </label>
-            <input type="checkbox"
-                   name="inheritance"
-                   onChange="this.form.submit()"
-                   {% if collection.inheritance %}checked{% endif %}/>
+            <input type="hidden" name="redirect_hash" value="#permissions"/>
+            <div class="form-check form-switch">
+              <label for "inheritance-checkbox" class="me-3 form-check-label">
+                <b>Inheritance</b>
+              </label>
+              <input type="checkbox"
+                     class="form-check-input"
+                     name="inheritance"
+                     onChange="this.form.submit()"
+                     {% if collection.inheritance %}checked{% endif %}/>
+            </div>
           </form>
         </p>
       </div>
@@ -388,6 +409,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <input type="hidden" name="groups" value="{{ permission.user_name }}" />
                     <input type="hidden" name="permission_type" value="null" />
+                    <input type="hidden" name="redirect_hash" value="#permissions"/>
                     <button type="submit" class="btn">
                       <i class="bi bi-trash text-danger"></i>
                     </button>
@@ -401,6 +423,7 @@
       <form method="post"
             action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/')) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="redirect_hash" value="#permissions"/>
         <div class="row">
           <div class="col">
             <label for="permission_groups">
@@ -410,7 +433,7 @@
                     aria-label="Groups"
                     name="groups"
                     id="permission_groups">
-              {% for group in my_groups if not group.name == g.irods_session.username %}
+              {% for group in my_groups %}
                 <option value="{{ group.name }}">
                   {{ group.name }}
                 </option>
@@ -560,6 +583,7 @@
               class="row g-3 needs-validation"
               novalidation>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="redirect_hash" value="#metadata"/>
           <div class="modal-body">
             <div class="mb-3">
               <label for="meta-data-name" class="col-form-label">
@@ -653,6 +677,7 @@
               class="row g-3 needs-validation"
               novalidation>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="redirect_hash" value="#metadata"/>
           <div class="modal-body">
             <div class="mb-3">
               <label for="meta-data-name-delete" class="col-form-label">
@@ -768,6 +793,15 @@
   <tree-browser browse-root="{{ url_for('api_collection_tree', collection=browse_root) }}"></tree-browser>
 </div>
 #}
+  <div class="row">
+    {# temp #}
+    {# {% for r in metadata_objects %}
+      <p>
+        {{ r|pprint }}
+      </p>
+    {% endfor %} #}
+    {# endtemp #}
+  </div>
   <!-- Delete modal -->
 {% endblock body %}
 {% block javascript %}
@@ -811,7 +845,7 @@ function applyAction() {
         }
         for (const path of selectedDataObjects){
           var xhr = new XMLHttpRequest();
-          xhr.open("POST", "{{url_for('browse_bp.remove_data_object')}}");
+          xhr.open("POST", "{{url_for('browse_bp.delete_data_object')}}");
           var formData = new FormData();
           formData.append("data_object_path", path);
           xhr.send(formData);
@@ -887,6 +921,10 @@ deleteMetaData.addEventListener('show.bs.modal', function (event) {
   modalBodyInputDataPath = fieldObjectPath
 
 })
+
+// open the active tab if specified by simulating a click() :)
+var hash = window.location.hash;
+hash && document.querySelector('a[href="'+hash+'"]').click()
 
   </script>
   {# <script async src="{{url_for('static', filename='js/form-validation.js')}}"></script> #}

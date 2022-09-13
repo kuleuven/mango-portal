@@ -1,3 +1,4 @@
+from curses import meta
 from flask import (
     Blueprint,
     render_template,
@@ -55,8 +56,11 @@ def collection_browse(collection):
         if the collection path starts with a ~ character, the remaining is appended to the user home directory
 
     """
-    if collection is None or collection == "~":
+
+    if collection == "~":
         co_path = g.user_home
+    elif collection is None:
+        co_path = g.zone_home
     else:
         co_path_elements = collection.split("/")
         prefix = "/"  # default
@@ -68,12 +72,16 @@ def collection_browse(collection):
     try:
         current_collection = g.irods_session.collections.get(co_path)
     except:
-        abort(404)
+        abort(404, "Path not found or not accessible for you")
     sub_collections = current_collection.subcollections
     data_objects = current_collection.data_objects
 
     schema_files = glob.glob("static/metadata-templates/*.json")
-    metadata_schema_filenames = [os.path.basename(_file) for _file in schema_files]
+    metadata_schema_filenames = [
+        os.path.basename(_file)
+        for _file in schema_files
+        if os.path.basename(_file) != "uischema.json"
+    ]
 
     # metadata grouping  to be moved to proper function for re-use
     other = "other"
@@ -143,6 +151,25 @@ def collection_browse(collection):
         .filter(User.name == g.irods_session.username)
         .all()
     ]
+    # filter out current user group
+    my_groups = [group for group in my_groups if group.name != g.irods_session.username]
+
+    # temp: look up metadata items in full, including create_time and modify_time
+    from irods.query import Query
+    from irods.column import Criterion, In
+    from irods.models import CollectionMeta
+
+    objects = [CollectionMeta]
+    filters = []
+    avu_ids = [metadata.avu_id for (_, metadata) in grouped_metadata[other].items()]
+    metadata_objects = []
+    if avu_ids:
+        filters += [In(CollectionMeta.id, avu_ids)]
+
+        query = Query(g.irods_session, *objects).filter(*filters)
+        metadata_objects = query.execute()
+
+    # end temp
 
     return render_template(
         "browse.html.j2",
@@ -159,6 +186,7 @@ def collection_browse(collection):
         grouped_metadata=grouped_metadata,  # sorted_metadata,
         schema_labels=schema_labels,
         my_groups=my_groups,
+        metadata_objects=metadata_objects,
     )
 
 
@@ -211,6 +239,30 @@ def view_object(data_object_path):
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
+    my_groups = [
+        iRODSUserGroup(g.irods_session.user_groups, item)
+        for item in g.irods_session.query(UserGroup)
+        .filter(User.name == g.irods_session.username)
+        .all()
+    ]
+    # filter out current user group
+    my_groups = [group for group in my_groups if group.name != g.irods_session.username]
+
+    # temp: look up metadata items in full, including create_time and modify_time
+    from irods.query import Query
+    from irods.column import Criterion, In
+    from irods.models import DataObjectMeta
+
+    objects = [DataObjectMeta]
+    filters = []
+    avu_ids = [metadata.avu_id for metadata in meta_data_items]
+    filters += [In(DataObjectMeta.id, avu_ids)]
+
+    query = Query(g.irods_session, *objects).filter(*filters)
+    metadata_objects = query.execute()
+
+    # end temp
+
     return render_template(
         "view_object.html.j2",
         data_object=data_object,
@@ -219,6 +271,8 @@ def view_object(data_object_path):
         permissions=permissions,
         acl_users_dict=acl_users_dict,
         acl_counts=acl_counts,
+        my_groups=my_groups,
+        metadata_objects=metadata_objects,
     )
 
 
@@ -300,24 +354,52 @@ def delete_collection():
     """
     """
     collection_path = request.form["collection_path"]
+    if "force_delete" in request.values:
+        force_delete = True
+    else:
+        force_delete = (
+            True
+            if collection_path.startswith(f"/{g.irods_session.zone}/trash")
+            else False
+        )
+    print(
+        f"Recursive and forced remove of {collection_path} based on /{g.irods_session.zone}/trash: {force_delete}"
+    )
+    # workaround for a problem in tier1-data
+    if g.irods_session.zone == "kuleuven_tier1_pilot":
+        force_delete = True
     # recursive remove
-    g.irods_session.collections.remove(collection_path)
+    g.irods_session.collections.remove(collection_path, force=force_delete)
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
-    else:
-        return redirect(request.referrer)
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
 
 
 @browse_bp.route("/data-object/delete", methods=["POST", "DELETE"])
-def remove_data_object():
+def delete_data_object():
     """
     """
     data_object_path = request.form["data_object_path"]
-    g.irods_session.data_objects.get(data_object_path).unlink()
+    if "force_delete" in request.values:
+        force_delete = True
+    else:
+        force_delete = (
+            True
+            if data_object_path.startswith(f"/{g.irods_session.zone}/trash")
+            else False
+        )
+    g.irods_session.data_objects.get(data_object_path).unlink(force=force_delete)
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
-    else:
-        return redirect(request.referrer)
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
 
 
 # Blueprint common
@@ -356,6 +438,12 @@ def collection_upload_file():
 
     os.unlink(filename)
 
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
     return redirect(request.referrer)
 
 
@@ -537,8 +625,11 @@ def set_permissions(item_path: str):
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
-    else:
-        return redirect(request.referrer)
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
 
 
 @browse_bp.route("/permission/inheritance/set/<path:collection_path>", methods=["POST"])
@@ -554,5 +645,8 @@ def set_inheritance(collection_path: str):
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
-    else:
-        return redirect(request.referrer)
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)

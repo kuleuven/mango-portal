@@ -55,7 +55,9 @@ def list_meta_data_templates():
     # template_files = glob.glob(json_template_dir + "/*.json")
     template_files = glob.glob("static/metadata-templates/*.json")
     template_filenames = [
-        os.path.basename(template_file) for template_file in template_files
+        simple_name := os.path.basename(template_file)
+        for template_file in template_files
+        if simple_name != "uischema.json"
     ]
 
     return json.dumps(

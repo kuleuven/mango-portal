@@ -35,6 +35,12 @@ def add_meta_data_collection():
     # print(avu_name, avu_value, avu_units, collection_path, sep="|")
 
     flash(f"Successfully added metadata to {collection.name}", "success")
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
     return redirect(request.referrer)
 
 
@@ -55,6 +61,12 @@ def edit_meta_data_collection():
     collection.metadata.remove(orig_avu_name, orig_avu_value, orig_avu_units)
     collection.metadata.add(avu_name, avu_value, avu_units)
 
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
     return redirect(request.referrer)
 
 
@@ -72,6 +84,12 @@ def delete_meta_data_collection():
     collection = g.irods_session.collections.get(collection_path)
     collection.metadata.remove(avu_name, avu_value, avu_units)
 
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
     return redirect(request.referrer)
 
 
@@ -90,6 +108,12 @@ def add_meta_data():
     # print(avu_name, avu_value, avu_units, data_object_path, sep="|")
 
     flash(f"Successfully added metadata to {data_object.name}", "success")
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
     return redirect(request.referrer)
 
 
@@ -110,6 +134,12 @@ def edit_meta_data():
     data_object.metadata.remove(orig_avu_name, orig_avu_value, orig_avu_units)
     data_object.metadata.add(avu_name, avu_value, avu_units)
 
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
     return redirect(request.referrer)
 
 
@@ -126,4 +156,10 @@ def delete_meta_data():
     data_object = g.irods_session.data_objects.get(data_object_path)
     data_object.metadata.remove(avu_name, avu_value, avu_units)
 
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
     return redirect(request.referrer)
