@@ -252,3 +252,44 @@
         </div>
     {% endif %}
 {% endmacro %}
+{% macro analysis_tika_block(result)%}
+    <h2>
+        Analysis via Tika
+    </h2>
+    <ul class="list-group">
+        {% if result['X-TIKA:Parsed-By-Full-Set'] is not string %}
+            {% for step in result['X-TIKA:Parsed-By-Full-Set'] %}
+                <li class="list-group-item">
+                    {{ step }}
+                </li>
+            {% endfor %}
+        {% else %}
+            <li class="list-group-item">
+                {{ result['X-TIKA:Parsed-By-Full-Set'] }}
+            </li>
+        {% endif %}
+    </ul>
+    <h3>
+        Text content for full text indexing
+    </h3>
+    <pre>
+    {{result['X-TIKA:content']}}
+    </pre>
+    <h3>
+        Metadata fields
+    </h3>
+    <table class="table">
+        {% for key, item in result.items() %}
+            {% if key not in ['X-TIKA:content','X-TIKA:Parsed-By-Full-Set', 'X-TIKA:Parsed-By'] %}
+                <tr>
+                    <th>
+                        {{ key }}
+                    </th>
+                    <td>
+                        {{ item }}
+                    </td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+    </table>
+{% endmacro %}

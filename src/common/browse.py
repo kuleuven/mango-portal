@@ -263,6 +263,20 @@ def view_object(data_object_path):
     metadata_objects = query.execute()
 
     # end temp
+    tika_result = {}
+    tika_storage = f"storage/tika_output/{g.irods_session.zone}"
+    tika_file_path = f"{tika_storage}/{data_object.id}.tika.json"
+
+    if os.path.exists(tika_file_path) and data_object.modify_time < (
+        analysis_timestamp := datetime.datetime.fromtimestamp(
+            os.path.getmtime(tika_file_path)
+        )
+    ):
+        with open(tika_file_path, mode="r") as tika_file:
+            tika_result = json.load(tika_file)
+            tika_result["Analysis time"] = analysis_timestamp.replace(
+                tzinfo=datetime.timezone.utc, microsecond=0
+            ).isoformat()
 
     return render_template(
         "view_object.html.j2",
@@ -274,6 +288,7 @@ def view_object(data_object_path):
         acl_counts=acl_counts,
         my_groups=my_groups,
         metadata_objects=metadata_objects,
+        tika_result=tika_result,
     )
 
 
@@ -342,7 +357,9 @@ def download_object(data_object_path):
                 file_chunk = f.read(read_bytes)
                 bytes_read = len(file_chunk)
                 position += bytes_read
-                print(f"sending {position} bytes after {time.time()-start}")
+                print(
+                    f"{data_object.name}: sending {position} bytes after {time.time()-start}"
+                )
                 yield file_chunk
 
     return Response(
@@ -506,7 +523,7 @@ def ask_tika(data_object_path):
                 # "Content-Type": "application/octet-stream",
                 # "X-Tika-OCRLanguage": "eng+fra"
             }
-            pprint.pprint(request.values)
+            # pprint.pprint(request.values)
             if not "do-tika-ocr" in request.values:
                 # "X-Tika-OCRmaxFileSizeToOcr": "0",  # Tika 1.x
                 # "X-Tika-OCRskipOcr": "true", #Tika 2.x
@@ -517,7 +534,7 @@ def ask_tika(data_object_path):
                 )
                 # result = res.content
                 result = dict(sorted(res.json().items()))
-                pprint.pprint(result)
+                # pprint.pprint(result)
                 # strip multiple blank lines to just one
                 result["X-TIKA:content"] = re.sub("\n+", "\n", result["X-TIKA:content"])
                 result["X-TIKA:content"] = result["X-TIKA:content"].strip()
@@ -536,12 +553,20 @@ def ask_tika(data_object_path):
             result["X-TIKA:content"][:50000] + "\n ------☢️-truncated-☢️-------\n"
         )
 
-    return render_template(
-        "object_ask_tika.html.j2",
-        data_object=data_object,
-        breadcrumbs=generate_breadcrumbs(data_object_path),
-        result=result,
-    )
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
+
+    # return render_template(
+    #     "object_ask_tika.html.j2",
+    #     data_object=data_object,
+    #     breadcrumbs=generate_breadcrumbs(data_object_path),
+    #     result=result,
+    # )
 
 
 @browse_bp.route("/data-object/preview/<path:data_object_path>")
