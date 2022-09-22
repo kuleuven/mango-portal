@@ -35,6 +35,7 @@ import pprint
 import tempfile
 import re
 import datetime
+import time
 from collections import Counter, namedtuple
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
@@ -325,21 +326,23 @@ def download_object(data_object_path):
     (object_type, object_encoding) = mimetypes.guess_type(object_name)
     if object_type is None:
         object_type = "application/octet-stream"
-    print(
-        f"Current read buffer size is {g.irods_session.data_objects.READ_BUFFER_SIZE}"
-    )
+
+    read_buffer_size = 2 ** 22
+    print(f"Current read buffer size is {read_buffer_size}")
 
     def data_object_chunks():
         with data_object.open("r") as f:
             position = 0
+            start = time.time()
             while position < data_object.size:
                 read_bytes = min(
-                    g.irods_session.data_objects.READ_BUFFER_SIZE,  # typically 8MB
+                    read_buffer_size,  # 64kB #g.irods_session.data_objects.READ_BUFFER_SIZE,  # typically 8MB
                     data_object.size - position,
                 )
                 file_chunk = f.read(read_bytes)
                 bytes_read = len(file_chunk)
                 position += bytes_read
+                print(f"sending {position} bytes after {time.time()-start}")
                 yield file_chunk
 
     return Response(
