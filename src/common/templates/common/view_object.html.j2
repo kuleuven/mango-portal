@@ -198,7 +198,7 @@
          role="tabpanel"
          aria-labelledby="preview-tab">
       {# to be moved to its own server side handler + template to include #}
-      {% if data_object.name.endswith(('jpg','jpeg','png', 'pdf')) %}
+      {% if data_object.name.endswith(('jpg','jpeg','png', 'pdf', 'tif', 'tiff', 'gif')) %}
         <div class="row">
           <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path)}}"
                class="w-50"
@@ -245,13 +245,6 @@
       </form>
       {% if tika_result %}{{ block_macros.analysis_tika_block(tika_result)}}{% endif %}
     </div>
-    {# temp #}
-    {# {% for r in metadata_objects %}
-      <p>
-        {{ r|pprint }}
-      </p>
-    {% endfor %} #}
-    {# endtemp #}
   </div>
   <!-- edit metadata modal -->
   <div class="modal fade"
