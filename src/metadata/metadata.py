@@ -1,3 +1,4 @@
+from pprint import pprint
 from flask import (
     Blueprint,
     request,
@@ -10,6 +11,8 @@ from flask import (
     flash,
 )
 from irods import models, query, session
+from irods.meta import iRODSMeta, AVUOperation
+import json
 
 metadata_bp = Blueprint("metadata_bp", __name__, template_folder="templates/metadata")
 
@@ -155,6 +158,37 @@ def delete_meta_data():
         data_object_path = "/" + data_object_path
     data_object = g.irods_session.data_objects.get(data_object_path)
     data_object.metadata.remove(avu_name, avu_value, avu_units)
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
+
+
+@metadata_bp.route("/data_object/metadata/add_tika_results", methods=["POST"])
+def add_tika_metadata():
+    """
+    """
+    data_object_path = request.form["data_object_path"]
+    if not data_object_path.startswith("/"):
+        data_object_path = "/" + data_object_path
+    data_object = g.irods_session.data_objects.get(data_object_path)
+
+    # pprint(request.form.getlist("consolidate"))
+    avu_operation_list = []
+    for av_string in request.form.getlist("consolidate"):
+        av_dict = json.loads(av_string)
+        av_key = list(av_dict.keys())[0]
+        av_value = av_dict[av_key]
+        avu_operation_list.append(
+            AVUOperation(
+                operation="add", avu=iRODSMeta(av_key, av_value, "analysis/tika")
+            )
+        )
+    data_object.metadata.apply_atomic_operations(*avu_operation_list)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])

@@ -81,11 +81,17 @@ app.config["UPLOAD_FOLDER"] = "/tmp"
 app.config["MAX_CONTENT_PATH"] = 1024 * 1024 * 16
 app.config["SECRET_KEY"] = "mushrooms_from_paris"
 app.config["DATA_OBJECT_MAX_SIZE_PREVIEW"] = 1024 * 1024 * 16
-app.config["CACHE_TYPE"] = "FileSystemCache"
+app.config["CACHE_TYPE"] = "SimpleCache"
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300
 app.config["CACHE_DIR"] = "storage/cache"
 app.config["DEBUG"] = True
 app.config["ACL_PROTECT_OWN"] = True
+app.config["MANGO_PREFIX"] = "mg"
+app.config["MANGO_NOSCHEMA_LABEL"] = "other"
+app.config["METADATA_NOEDIT_PREFIX"] = (
+    f"{app.config['MANGO_PREFIX']}.",
+    "irods::",
+)
 # app.config["EXPLAIN_TEMPLATE_LOADING"] = True
 ## enable auto escape in jinja2 templates
 app.jinja_options["autoescape"] = lambda _: True

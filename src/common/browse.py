@@ -37,8 +37,40 @@ import re
 import datetime
 import time
 from collections import Counter, namedtuple
+from cache import cache
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
+
+
+def group_prefix_metadata_items(
+    metadata_items, mango_prefix, no_schema_label="other", group_analysis_unit=False,
+):
+    """
+    """
+    grouped_metadata = {no_schema_label: {}}
+    if group_analysis_unit:
+        grouped_metadata['analysis'] = {}
+    for avu in metadata_items:
+        if avu.name.startswith(mango_prefix) and avu.name.count(".") >= 2:
+            (mango_schema_prefix, schema, avu_name) = avu.name.split(".", 2)
+            # item.name = meta_name
+            if schema not in grouped_metadata:
+                grouped_metadata[schema] = {}
+            grouped_metadata[schema][avu.name] = avu
+        elif (group_analysis_unit and avu.units and avu.units.startswith('analysis')):
+            grouped_metadata['analysis'][avu.name] = avu
+        else:
+            grouped_metadata[no_schema_label][avu.name] = avu
+    return grouped_metadata
+
+
+@cache.memoize(1200)
+def get_current_user_rights(current_user_name, item):
+    access = []
+    for permission in g.irods_session.permissions.get(item, report_raw_acls=False):
+        if current_user_name == permission.user_name:
+            access += [permission.access_name]
+    return access
 
 
 @browse_bp.route(
@@ -85,30 +117,23 @@ def collection_browse(collection):
     ]
 
     # metadata grouping  to be moved to proper function for re-use
-    other = "other"
-    grouped_metadata = {other: {}}
-    for item in current_collection.metadata.items():
-        """
-        """
-        if item.name.startswith("ku.") and item.name.count(".") >= 2:
-            (ku_prefix, schema, meta_name) = item.name.split(".", 2)
-            # item.name = meta_name
-            if schema not in grouped_metadata:
-                grouped_metadata[schema] = {}
-            grouped_metadata[schema][item.name] = item
-
-        else:
-            grouped_metadata[other][item.name] = item
+    other = current_app.config["MANGO_NOSCHEMA_LABEL"]
+    grouped_metadata = group_prefix_metadata_items(
+        current_collection.metadata(timestamps=True).items(), current_app.config["MANGO_PREFIX"]
+    )
 
     schema_labels = {}
-    if len(grouped_metadata) == 1 and "other" in grouped_metadata:
+    if (
+        len(grouped_metadata) == 1
+        and current_app.config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata
+    ):
         pass
     else:
         json_template_dir = os.path.abspath("static/metadata-templates")
         with open(f"{json_template_dir}/{schema}.json") as template_file:
             form_dict = json.load(template_file)
             for schema in grouped_metadata:  # schema_labels[schema][item.name]:
-                if schema != "other":
+                if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
                     try:
                         with open(
                             f"{json_template_dir}/{schema}.json", "r"
@@ -117,7 +142,7 @@ def collection_browse(collection):
                             schema_labels[schema] = flatten_josse_schema(
                                 ("", form_dict),
                                 level=0,
-                                prefix=f"ku.{schema}",
+                                prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
                                 result_dict={},
                             )
                     except (e):
@@ -188,6 +213,9 @@ def collection_browse(collection):
         schema_labels=schema_labels,
         my_groups=my_groups,
         metadata_objects=metadata_objects,
+        current_user_rights=get_current_user_rights(
+            g.irods_session.username, current_collection
+        ),
     )
 
 
@@ -195,12 +223,20 @@ def collection_browse(collection):
 def view_object(data_object_path):
     """
     """
-    MIME_TYPE_ATTRIBUTE_NAME = "ku.mime_type"
+    MIME_TYPE_ATTRIBUTE_NAME = f"{current_app.config['MANGO_PREFIX']}.mime_type"
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
     data_object = g.irods_session.data_objects.get(data_object_path)
 
     meta_data_items = data_object.metadata.items()
+    grouped_metadata = group_prefix_metadata_items(
+        data_object.metadata(timestamps=True).items(),
+        current_app.config["MANGO_PREFIX"],
+        no_schema_label = current_app.config['MANGO_NOSCHEMA_LABEL'],
+        group_analysis_unit=True,
+    )
+
+    consolidated_analysis_metadata_names = [avu_name for avu_name in grouped_metadata['analysis']]
     # see if the mime type is present in the metadata, if not
     if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
         try:
@@ -274,7 +310,7 @@ def view_object(data_object_path):
     ):
         with open(tika_file_path, mode="r") as tika_file:
             tika_result = json.load(tika_file)
-            tika_result["Analysis time"] = analysis_timestamp.replace(
+            tika_result["X-ANALYSIS-timestamp"] = analysis_timestamp.replace(
                 tzinfo=datetime.timezone.utc, microsecond=0
             ).isoformat()
 
@@ -289,6 +325,10 @@ def view_object(data_object_path):
         my_groups=my_groups,
         metadata_objects=metadata_objects,
         tika_result=tika_result,
+        consolidated_names = consolidated_analysis_metadata_names,
+        current_user_rights=get_current_user_rights(
+            g.irods_session.username, data_object
+        ),
     )
 
 
@@ -543,10 +583,12 @@ def ask_tika(data_object_path):
 
             except Exception as e:
                 result = {"error": f"Something went wrong asking Tika about me: {e}"}
+                flash(f"Something went wrong asking Tika about me: {e}", "warning")
 
             os.unlink(destination)
         except Exception as e:
             result = {"error": f"Tika discover service is not reachable: {e}"}
+            flash(f"Tika analysis service is not reachable", "warning")
 
     if "X-TIKA:content" in result and len(result["X-TIKA:content"]) > 50000:
         result["X-TIKA:content"] = (
@@ -583,9 +625,7 @@ def object_preview(data_object_path):
 
     if data_object.size == 0:
         return send_file("static/bh_sag_A.jpg", "image/jpeg")
-    if (
-        data_object.size > 10000000
-    ):  # current_app.config('DATA_OBJECT_MAX_SIZE_PREVIEW'):
+    if data_object.size > current_app.config["DATA_OBJECT_MAX_SIZE_PREVIEW"]:
         return send_file("static/too-large.jpg", "image/jpeg")
     else:
 

@@ -218,7 +218,7 @@ def edit_schema_metadata_for_item():
     pprint(_parameters)
     item_type = _parameters["item_type"]
     template_name = _parameters["schema"]
-    prefix = f"ku.{get_schema_prefix_from_filename(template_name)}"
+    prefix = f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(template_name)}"
 
     json_template_dir = os.path.abspath("static/metadata-templates")
     with open(f"{json_template_dir}/{template_name}") as template_file:
@@ -263,8 +263,8 @@ def edit_schema_metadata_for_item():
             #     except:
             #         pass
             form_values.add(meta_data_item.name, meta_data_item.value)
-    print("data from irods:")
-    pprint(form_values)
+    # print("data from irods:")
+    # pprint(form_values)
 
     if request.method == "GET":
 

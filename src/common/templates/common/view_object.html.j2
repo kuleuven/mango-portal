@@ -191,7 +191,7 @@
       </button>
     </div>
     <div class="tab-pane" id="item-permissions">
-      {{ block_macros.permission_block(data_object.path.lstrip("/"), permissions, acl_users_dict, acl_counts, my_groups=my_groups)}}
+      {{ block_macros.permission_block(data_object.path.lstrip("/"), permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights)}}
     </div>
     <div class="tab-pane fade"
          id="preview"
@@ -212,38 +212,45 @@
       {% endif %}
     </div>
     <div class="tab-pane" id="item-analysis">
-      <form class="row row-cols-lg-auto g-3 align-items-center mt-3"
-            method="get"
-            action="{{ url_for('browse_bp.ask_tika', data_object_path=data_object.path)}}">
-        {% if data_object.name.endswith(('.jpg','.jpeg','.png', '.tif', '.tiff', '.gif')) %}
+      {% if tika_result %}
+        {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata'), data_object_path=data_object.path) }}
+      {% endif %}
+      <div class="row">
+        <form class="row row-cols-lg-auto g-3 align-items-center mt-3 mb-3 text-end"
+              method="get"
+              action="{{ url_for('browse_bp.ask_tika', data_object_path=data_object.path)}}">
+          {% if data_object.name.endswith(('.jpg','.jpeg','.png', '.tif', '.tiff', '.gif')) %}
+            <div class="col-12">
+              <input class="form-check-input text-end"
+                     type="checkbox"
+                     value="true"
+                     id="tika-ocr"
+                     name="do-tika-ocr"/>
+              <label class="form-check-label" for="tika-ocr">
+                Perform OCR on the image to extract text
+              </label>
+            </div>
+          {% endif %}
+          {% if tika_result %}
+            <div class="col-12">
+              <input class="form-check-input"
+                     type="hidden"
+                     value="true"
+                     id="tika-skip-cache"
+                     name="skip-tika-cache"/>
+            </div>
+          {% endif %}
           <div class="col-12">
-            <input class="form-check-input"
-                   type="checkbox"
-                   value="true"
-                   id="tika-ocr"
-                   name="do-tika-ocr"/>
-            <label class="form-check-label" for="tika-ocr">
-              Perform OCR on the image to extract text
-            </label>
+            <button type="submit" class="btn btn-primary text-end">
+              {% if tika_result %}
+                Refresh analysis with Tika inspector
+              {% else %}
+                Analyze with Tika inspector
+              {% endif %}
+            </button>
           </div>
-        {% endif %}
-        <div class="col-12">
-          <input class="form-check-input"
-                 type="checkbox"
-                 value="true"
-                 id="tika-skip-cache"
-                 name="skip-tika-cache"/>
-          <label class="form-check-label" for="tika-skip-cache">
-            Skip cache
-          </label>
-        </div>
-        <div class="col-12">
-          <button type="submit" class="btn btn-primary">
-            Ask Tika
-          </button>
-        </div>
-      </form>
-      {% if tika_result %}{{ block_macros.analysis_tika_block(tika_result)}}{% endif %}
+        </form>
+      </div>
     </div>
   </div>
   <!-- edit metadata modal -->

@@ -1,4 +1,4 @@
-{% macro permission_block(item_path, permissions, acl_users_dict, acl_counts, my_groups=[], group_filter_exclude=[], recursive=false )%}
+{% macro permission_block(item_path, permissions, acl_users_dict, acl_counts, my_groups=[], group_filter_exclude=[], current_user_rights = [], recursive=false )%}
     <table class="table table-striped table-hover mt-2" id="permssions-table">
         <thead>
             <tr>
@@ -25,7 +25,7 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </p>
-                        {% else %}
+                        {% elif 'own' in current_user_rights %}
                             <form method="post"
                                   action="{{ url_for('browse_bp.set_permissions', item_path=item_path) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -42,58 +42,60 @@
             {% endfor %}
         </tbody>
     </table>
-    <form method="post"
-          action="{{ url_for('browse_bp.set_permissions', item_path=item_path) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <input type="hidden" name="redirect_hash" value="#permissions"/>
-        <div class="row">
-            <div class="col">
-                <label for="permission_groups">Groups</label>
-                <select class="form-select"
-                        aria-label="Groups"
-                        name="groups"
-                        id="permission_groups">
-                    {% for group in my_groups %}
-                        <option value="{{ group.name }}">
-                            {{ group.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col">
-                <label for="permission_type">Rights</label>
-                <select class="form-select"
-                        aria-label="Groups"
-                        name="permission_type"
-                        id="permission_type">
-                    <option value="own">
-                        Own
-                    </option>
-                    <option value="write">
-                        Modify
-                    </option>
-                    <option value="read">
-                        Read
-                    </option>
-                </select>
-            </div>
-            {% if recursive %}
+    {% if 'own' in current_user_rights %}
+        <form method="post"
+              action="{{ url_for('browse_bp.set_permissions', item_path=item_path) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="redirect_hash" value="#permissions"/>
+            <div class="row">
                 <div class="col">
-                    <input type="checkbox" name="recursive" id="set_recursive" value="True"/>
-                    <label for="set_recursive">Recursive</label>
+                    <label for="permission_groups">Groups</label>
+                    <select class="form-select"
+                            aria-label="Groups"
+                            name="groups"
+                            id="permission_groups">
+                        {% for group in my_groups %}
+                            <option value="{{ group.name }}">
+                                {{ group.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
-            {% endif %}
-            <div class="col">
-                <button type="submit" class="btn btn-primary">Apply</button>
+                <div class="col">
+                    <label for="permission_type">Rights</label>
+                    <select class="form-select"
+                            aria-label="Groups"
+                            name="permission_type"
+                            id="permission_type">
+                        <option value="own">
+                            Own
+                        </option>
+                        <option value="write">
+                            Modify
+                        </option>
+                        <option value="read">
+                            Read
+                        </option>
+                    </select>
+                </div>
+                {% if recursive %}
+                    <div class="col">
+                        <input type="checkbox" name="recursive" id="set_recursive" value="True"/>
+                        <label for="set_recursive">Recursive</label>
+                    </div>
+                {% endif %}
+                <div class="col">
+                    <button type="submit" class="btn btn-primary">Apply</button>
+                </div>
             </div>
-        </div>
-    </form>
+        </form>
+    {% endif %}
 {% endmacro %}
 {% macro metadata_block(object_path, grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::')) %}
-    {% if grouped_metadata|length == 1 and 'other' in grouped_metadata %}
+    {% if grouped_metadata|length == 1 and config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata %}
         <table class="table table-striped table-hover mt-2">
             <tbody>
-                {% for item in grouped_metadata['other'].items() %}
+                {% for item in grouped_metadata[config['MANGO_NOSCHEMA_LABEL']].items() %}
                     <tr>
                         <th>{{ item.name }}</th>
                         <td>{{ item.value }}</td>
@@ -181,7 +183,7 @@
                                     </th>
                                     <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}">{{ item.value }}</td>
                                     <td>{{ item.units if item.units is not none }}</td>
-                                    {% if not item.name.startswith(('ku.', 'irods::')) and schema == 'other' %}
+                                    {% if not item.name.startswith(config['MANGO_PREFIX']) and schema == config['MANGO_NOSCHEMA_LABEL'] %}
                                         <td>
                                             <a href="#"
                                                data-bs-toggle="modal"
@@ -209,7 +211,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    {% if schema == 'other' %}
+                    {% if schema == config['MANGO_NOSCHEMA_LABEL'] %}
                         <button type="button"
                                 class="btn btn-primary"
                                 data-bs-toggle="modal"
@@ -252,10 +254,67 @@
         </div>
     {% endif %}
 {% endmacro %}
-{% macro analysis_tika_block(result)%}
+{% macro analysis_tika_block(result, consolidate=false, consolidated=[], consolidate_url='{{ url_for }}
+    ', data_object_path = '') %}
     <h2>
-        Analysis via Tika
+        Analysis via Tika metadata extractor
     </h2>
+    {% if result['X-ANALYSIS-timestamp'] %}
+        <p class="text-end">
+            Analysis executed on {{ result['X-ANALYSIS-timestamp'] }}
+        </p>
+    {% endif %}
+    <h4>
+        Metadata fields
+    </h4>
+    {% if consolidate %}
+        <form action="{{ consolidate_url }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="data_object_path" value="{{ data_object_path }}"/>
+        {% endif %}
+        <table class="table">
+            {% for key, item in result.items() %}
+                {% if key not in ['X-TIKA:content','X-TIKA:Parsed-By-Full-Set', 'X-TIKA:Parsed-By', 'X-ANALYSIS-timestamp'] %}
+                    <tr>
+                        <th>
+                            {{ key }}
+                        </th>
+                        <td>
+                            {{ item }}
+                        </td>
+                        {% if consolidate %}
+                            <td>
+                                {% if key in consolidated %}
+                                    <i class="bi bi-check2-square text-primary"></i>
+                                {% else %}
+                                    <input type="checkbox" name="consolidate" value='{{ {key:item} | tojson }}'/>
+                                    {# note the single quotes required #}
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </table>
+        {% if consolidate %}
+            <div class="row mt-5">
+                <div class="col">
+                    <button class="btn btn-primary float-end">
+                        Add selected metadata items as regular metadata
+                    </button>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+    <h4>
+        Text content for full text indexing
+    </h4>
+    <pre>
+    {{result['X-TIKA:content']}}
+    </pre>
+    <h4>
+        Analysis steps
+    </h4>
     <ul class="list-group">
         {% if result['X-TIKA:Parsed-By-Full-Set'] is not string %}
             {% for step in result['X-TIKA:Parsed-By-Full-Set'] %}
@@ -269,27 +328,4 @@
             </li>
         {% endif %}
     </ul>
-    <h3>
-        Text content for full text indexing
-    </h3>
-    <pre>
-    {{result['X-TIKA:content']}}
-    </pre>
-    <h3>
-        Metadata fields
-    </h3>
-    <table class="table">
-        {% for key, item in result.items() %}
-            {% if key not in ['X-TIKA:content','X-TIKA:Parsed-By-Full-Set', 'X-TIKA:Parsed-By'] %}
-                <tr>
-                    <th>
-                        {{ key }}
-                    </th>
-                    <td>
-                        {{ item }}
-                    </td>
-                </tr>
-            {% endif %}
-        {% endfor %}
-    </table>
 {% endmacro %}
