@@ -59,7 +59,7 @@ venv
 #Node modules
 node_modules
 #Vue build files
-src/static/dist
+#src/static/dist
 # Caches
 src/storage/cache
 #Thumbnails

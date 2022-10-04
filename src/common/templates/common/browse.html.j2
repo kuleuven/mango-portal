@@ -90,7 +90,7 @@
       {% if grouped_metadata|length == 1 and config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata %}
         <table class="table table-striped table-hover mt-2">
           <tbody>
-            {% for item in collection.metadata.items() %}
+            {% for _key, item in grouped_metadata[config["MANGO_NOSCHEMA_LABEL"]].items() %}
               <tr>
                 <th>{{ item.name }}</th>
                 <td>{{ item.value }}</td>
