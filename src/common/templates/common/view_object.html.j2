@@ -24,64 +24,69 @@
   </div>
   <ul class="nav nav-tabs mb-4" id="object_tab" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active"
-              id="system-tab"
-              data-bs-toggle="tab"
-              data-bs-target="#system"
-              type="button"
-              role="tab"
-              aria-controls="home"
-              aria-selected="true">
+      <a class="nav-link active"
+         href="#system"
+         id="system-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#system"
+         type="button"
+         role="tab"
+         aria-controls="home"
+         aria-selected="true">
         System properties
-      </button>
+      </a>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link"
-              id="meta-data-tab"
-              data-bs-toggle="tab"
-              data-bs-target="#meta-data"
-              type="button"
-              role="tab"
-              aria-controls="meta-data"
-              aria-selected="false">
+      <a class="nav-link"
+         href="#metadata"
+         id="meta-data-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#meta-data"
+         type="button"
+         role="tab"
+         aria-controls="meta-data"
+         aria-selected="false">
         Metadata
-      </button>
+      </a>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link"
-              id="permissions-tab"
-              data-bs-toggle="tab"
-              data-bs-target="#item-permissions"
-              type="button"
-              role="tab"
-              aria-controls="collection-permissions"
-              aria-selected="false">
+      <a class="nav-link"
+         href="#permissions"
+         id="permissions-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#item-permissions"
+         type="button"
+         role="tab"
+         aria-controls="collection-permissions"
+         aria-selected="false">
         Permissions
-      </button>
+      </a>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link"
-              id="preview-tab"
-              data-bs-toggle="tab"
-              data-bs-target="#preview"
-              type="button"
-              role="tab"
-              aria-controls="preview"
-              aria-selected="false">
+      <a class="nav-link"
+         href="#preview"
+         id="preview-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#preview"
+         type="button"
+         role="tab"
+         aria-controls="preview"
+         aria-selected="false">
         Preview
-      </button>
+      </a>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link"
-              id="analysis-tab"
-              data-bs-toggle="tab"
-              data-bs-target="#item-analysis"
-              type="button"
-              role="tab"
-              aria-controls="analysis"
-              aria-selected="false">
+      <a class="nav-link"
+         href="#analysis"
+         id="analysis-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#item-analysis"
+         type="button"
+         role="tab"
+         aria-controls="analysis"
+         aria-selected="false">
         Analysis
-      </button>
+      </a>
     </li>
   </ul>
   <div class="tab-content" id="myTabContent">
@@ -316,6 +321,7 @@
               class="row g-3 needs-validation"
               novalidate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="redirect_hash" value="#metadata"/>
           <div class="modal-body">
             <div class="mb-3">
               <label for="meta-data-name-add" class="col-form-label">
@@ -398,6 +404,7 @@
             class="row g-3 needs-validation"
             novalidation>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="redirect_hash" value="#metadata"/>
         <div class="modal-body">
           <div class="mb-3">
             <label for="meta-data-name-delete" class="col-form-label">
@@ -523,5 +530,9 @@ deleteMetaData.addEventListener('show.bs.modal', function (event) {
   modalBodyInputDataPath = fieldObjectPath
 
 })
+
+// open the active tab if specified by simulating a click() :)
+var hash = window.location.hash;
+hash && document.querySelector('a[href="'+hash+'"]').click()
   </script>
 {% endblock javascript %}
