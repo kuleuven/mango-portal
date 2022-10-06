@@ -135,6 +135,7 @@
               action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
           <input type="hidden" name="item_type" value="collection" />
           <input type="hidden" name="id" value="{{ collection.id }}" />
+          <input type="hidden" name="object_path" value="{{ collection.path }}" />
           <select name="schema" class="form-select">
             {% for schema_file in metadata_schema_filenames %}
               <option value="{{ schema_file }}">
@@ -178,7 +179,7 @@
                       </th>
                       <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}">{{ item.value }}</td>
                       <td>{{ item.units if item.units is not none }}</td>
-                      {% if not item.name.startswith(config["METADATA_NOEDIT_PREFIX"]) and schema == config[""] %}
+                      {% if not item.name.startswith(config["METADATA_NOEDIT_PREFIX"]) %}
                         <td>
                           <a href="#"
                              data-bs-toggle="modal"
@@ -219,6 +220,7 @@
                       action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
                   <input type="hidden" name="item_type" value="collection" />
                   <input type="hidden" name="id" value="{{ collection.id }}" />
+                  <input type="hidden" name="object_path" value="{{ collection.path }}" />
                   <select name="schema" class="form-select">
                     {% for schema_file in metadata_schema_filenames %}
                       <option value="{{ schema_file }}">
@@ -876,7 +878,7 @@ editMetaData.addEventListener('show.bs.modal', function (event) {
   // and then do the updating in a callback.
   //
   // Update the modal's content.
-  //var modalTitle = editMetaData.querySelector('.modal-title')
+  var modalTitle = editMetaData.querySelector('.modal-title')
   var modalBodyInputMDName = editMetaData.querySelector('#meta-data-name')
   var modalBodyInputMDValue = editMetaData.querySelector('#meta-data-value')
   var modalBodyInputMDUnit = editMetaData.querySelector('#meta-data-units')

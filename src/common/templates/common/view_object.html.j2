@@ -135,60 +135,7 @@
          id="meta-data"
          role="tabpanel"
          aria-labelledby="meta-data-tab">
-      <table class="table table-striped table-hover">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Value</th>
-            <th scope="col">Unit</th>
-          </tr>
-        </thead>
-        {% for item in meta_data_items %}
-          <tr>
-            <th>
-              {{ item.name }}
-            </th>
-            <td>
-              {{ item.value }}
-            </td>
-            <td>
-              {{ item.units if item.units is not none }}
-            </td>
-            {% if not item.name.startswith(('irods::', 'mg.', 'mt.')) %}
-              <td>
-                <a href="#"
-                   data-bs-toggle="modal"
-                   data-bs-target="#editMetaData"
-                   data-bs-meta-data-name="{{ item.name }}"
-                   data-bs-meta-data-value="{{ item.value }}"
-                   data-bs-meta-data-units="{{ item.units if item.units is not none }}"
-                   data-bs-object-path="{{ data_object.path }}"><i class="bi bi-pencil"></i></a>
-              </td>
-              <td>
-                <a href="#"
-                   data-bs-toggle="modal"
-                   data-bs-target="#deleteMetaData"
-                   class="text-danger"
-                   data-bs-meta-data-name="{{ item.name }}"
-                   data-bs-meta-data-value="{{ item.value }}"
-                   data-bs-meta-data-units="{{ item.units if item.units is not none }}"
-                   data-bs-object-path="{{ data_object.path }}"><i class="bi bi-trash"></i></a>
-              </td>
-            {% else %}
-              <td>
-              </td>
-              <td>
-              </td>
-            {% endif %}
-          </tr>
-        {% endfor %}
-      </table>
-      <button type="button"
-              class="btn btn-primary"
-              data-bs-toggle="modal"
-              data-bs-target="#addMetaData">
-        Add metadata
-      </button>
+      {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/"), grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="data_object")}}
     </div>
     <div class="tab-pane" id="item-permissions">
       {{ block_macros.permission_block(data_object.path.lstrip("/"), permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights)}}
@@ -206,9 +153,7 @@
                alt="preview image"/>
         </div>
       {% else %}
-        <p>
-          Preview not possible for this type
-        </p>
+        <p>Preview not possible for this type</p>
       {% endif %}
     </div>
     <div class="tab-pane" id="item-analysis">
@@ -258,87 +203,93 @@
        id="editMetaData"
        tabindex="-1"
        aria-labelledby="editMetaDataLabel"
-       aria-hidden="true"
-       class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="editMetaDataLabel">
-          Update metadata
-        </h5>
-        <button type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close">
-        </button>
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editMetaDataLabel">
+            Update metadata
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('metadata_bp.edit_meta_data_collection')}}"
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="redirect_hash" value="#metadata"/>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="meta-data-name" class="col-form-label">
+                Name
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="meta-data-name"
+                     name="meta-data-name"
+                     required/>
+              <div class="invalid-feedback">
+                Metadata field name is required
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="meta-data-value" class="col-form-label">
+                Value
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="meta-data-value"
+                     name="meta-data-value"
+                     required/>
+              <div class="invalid-feedback">
+                Metadata field value is required
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="meta-data-units" class="col-form-label">
+                Unit
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="meta-data-units"
+                     name="meta-data-units"/>
+            </div>
+            <input type="hidden"
+                   id="object-path-edit"
+                   name="collection-path"
+                   value="{{ data_object.path }}"/>
+            <input type="hidden"
+                   id="target-type-edit"
+                   name="target-type"
+                   value="data_object"/>
+            <input type="hidden"
+                   id="orig-meta-data-name"
+                   name="orig-meta-data-name"
+                   value=""/>
+            <input type="hidden"
+                   id="orig-meta-data-value"
+                   name="orig-meta-data-value"
+                   value=""/>
+            <input type="hidden"
+                   id="orig-meta-data-units"
+                   name="orig-meta-data-units"
+                   value=""/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Update
+            </button>
+          </div>
+        </form>
       </div>
-      <form action="{{ url_for('metadata_bp.edit_meta_data')}}"
-            method="post"
-            enctype="multipart/form-data"
-            class="row g-3 needs-validation"
-            novalidation>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="meta-data-name" class="col-form-label">
-              Name
-            </label>
-            <input type="text"
-                   class="form-control"
-                   id="meta-data-name"
-                   name="meta-data-name"
-                   required/>
-            <div class="invalid-feedback">
-              Metadata field name is required
-            </div>
-          </div>
-          <div class="mb-3">
-            <label for="meta-data-value" class="col-form-label">
-              Value
-            </label>
-            <input type="text"
-                   class="form-control"
-                   id="meta-data-value"
-                   name="meta-data-value"
-                   required/>
-            <div class="invalid-feedback">
-              Metadata field value is required
-            </div>
-          </div>
-          <div class="mb-3">
-            <label for="meta-data-units" class="col-form-label">
-              Unit
-            </label>
-            <input type="text"
-                   class="form-control"
-                   id="meta-data-units"
-                   name="meta-data-units"/>
-          </div>
-          <input type="hidden"
-                 id="object-path-edit"
-                 name="object-path"
-                 value="{{ data_object.path }}"/>
-          <input type="hidden"
-                 id="orig-meta-data-name"
-                 name="orig-meta-data-name"
-                 value=""/>
-          <input type="hidden"
-                 id="orig-meta-data-value"
-                 name="orig-meta-data-value"
-                 value=""/>
-          <input type="hidden"
-                 id="orig-meta-data-units"
-                 name="orig-meta-data-units"
-                 value=""/>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Cancel
-          </button>
-          <button class="btn btn-primary" type="submit">
-            Update
-          </button>
-        </div>
-      </form>
     </div>
   </div>
   <!-- Add meta data-->
@@ -510,36 +461,36 @@
 var editMetaData = document.getElementById('editMetaData')
 editMetaData.addEventListener('show.bs.modal', function (event) {
   // Button that triggered the modal
-  var button = event.relatedTarget
+var button = event.relatedTarget
   // Extract info from data-bs-* attributes
-  var fieldMDName = button.getAttribute('data-bs-meta-data-name')
-  var fieldMDValue = button.getAttribute('data-bs-meta-data-value')
-  var fieldMDUnit = button.getAttribute('data-bs-meta-data-units')
-  var fieldObjectPath = button.getAttribute('data-bs-data-path')
+var fieldMDName = button.getAttribute('data-bs-meta-data-name')
+var fieldMDValue = button.getAttribute('data-bs-meta-data-value')
+var fieldMDUnit = button.getAttribute('data-bs-meta-data-units')
+//var fieldObjectPath = button.getAttribute('data-bs-data-path') //path is fixed for all metadata
   // If necessary, you could initiate an AJAX request here
   // and then do the updating in a callback.
   //
   // Update the modal's content.
   //var modalTitle = editMetaData.querySelector('.modal-title')
-  var modalBodyInputMDName = editMetaData.querySelector('#meta-data-name')
-  var modalBodyInputMDValue = editMetaData.querySelector('#meta-data-value')
-  var modalBodyInputMDUnit = editMetaData.querySelector('#meta-data-units')
-  var modalBodyInputDataPath = editMetaData.querySelector('#object-path')
+var modalBodyInputMDName = editMetaData.querySelector('#meta-data-name')
+var modalBodyInputMDValue = editMetaData.querySelector('#meta-data-value')
+var modalBodyInputMDUnit = editMetaData.querySelector('#meta-data-units')
+  //var modalBodyInputDataPath = editMetaData.querySelector('#object-path-edit')
 
-  var modalBodyInputOrigMDName = editMetaData.querySelector('#orig-meta-data-name')
-  var modalBodyInputOrigMDValue = editMetaData.querySelector('#orig-meta-data-value')
-  var modalBodyInputOrigMDUnit = editMetaData.querySelector('#orig-meta-data-units')
+var modalBodyInputOrigMDName = editMetaData.querySelector('#orig-meta-data-name')
+var modalBodyInputOrigMDValue = editMetaData.querySelector('#orig-meta-data-value')
+var modalBodyInputOrigMDUnit = editMetaData.querySelector('#orig-meta-data-units')
 
 
   //modalTitle.textContent = 'Data object ' +
-  modalBodyInputMDName.value = fieldMDName
-  modalBodyInputMDValue.value = fieldMDValue
-  modalBodyInputMDUnit.value = fieldMDUnit
-  modalBodyInputDataPath = fieldObjectPath
+modalBodyInputMDName.value = fieldMDName
+modalBodyInputMDValue.value = fieldMDValue
+modalBodyInputMDUnit.value = fieldMDUnit
+  //modalBodyInputDataPath = fieldObjectPath
 
-  modalBodyInputOrigMDName.value = fieldMDName
-  modalBodyInputOrigMDValue.value = fieldMDValue
-  modalBodyInputOrigMDUnit.value = fieldMDUnit
+modalBodyInputOrigMDName.value = fieldMDName
+modalBodyInputOrigMDValue.value = fieldMDValue
+modalBodyInputOrigMDUnit.value = fieldMDUnit
 
 })
 
@@ -558,7 +509,7 @@ deleteMetaData.addEventListener('show.bs.modal', function (event) {
   // and then do the updating in a callback.
   //
   // Update the modal's content.
-  var modalTitle = deleteMetaData.querySelector('.modal-title')
+ // var modalTitle = deleteMetaData.querySelector('.modal-title')
   var modalBodyInputMDName = deleteMetaData.querySelector('#meta-data-name-delete')
   var modalBodyInputMDValue = deleteMetaData.querySelector('#meta-data-value-delete')
   var modalBodyInputMDUnit = deleteMetaData.querySelector('#meta-data-units-delete')

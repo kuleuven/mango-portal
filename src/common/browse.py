@@ -130,23 +130,22 @@ def collection_browse(collection):
         pass
     else:
         json_template_dir = os.path.abspath("static/metadata-templates")
-        with open(f"{json_template_dir}/{schema}.json") as template_file:
-            form_dict = json.load(template_file)
-            for schema in grouped_metadata:  # schema_labels[schema][item.name]:
-                if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
-                    try:
-                        with open(
-                            f"{json_template_dir}/{schema}.json", "r"
-                        ) as schema_file:
-                            form_dict = json.load(schema_file)
-                            schema_labels[schema] = flatten_josse_schema(
-                                ("", form_dict),
-                                level=0,
-                                prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
-                                result_dict={},
-                            )
-                    except (e):
-                        pass
+
+        for schema in grouped_metadata:  # schema_labels[schema][item.name]:
+            if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
+                try:
+                    with open(
+                        f"{json_template_dir}/{schema}.json", "r"
+                    ) as schema_file:
+                        form_dict = json.load(schema_file)
+                        schema_labels[schema] = flatten_josse_schema(
+                            ("", form_dict),
+                            level=0,
+                            prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
+                            result_dict={},
+                        )
+                except:
+                    pass
 
         # now re-order the grouped entries according to the order from the flattened file
         # for schema in schema_labels:
@@ -229,14 +228,51 @@ def view_object(data_object_path):
     data_object = g.irods_session.data_objects.get(data_object_path)
 
     meta_data_items = data_object.metadata.items()
+    group_analysis_unit = True
     grouped_metadata = group_prefix_metadata_items(
         data_object.metadata(timestamps=True).items(),
         current_app.config["MANGO_PREFIX"],
         no_schema_label = current_app.config['MANGO_NOSCHEMA_LABEL'],
-        group_analysis_unit=True,
+        group_analysis_unit = group_analysis_unit,
     )
+    pprint.pprint(grouped_metadata)
+    schema_files = glob.glob("static/metadata-templates/*.json")
+    metadata_schema_filenames = [
+        os.path.basename(_file)
+        for _file in schema_files
+        if os.path.basename(_file) != "uischema.json"
+    ]
 
-    consolidated_analysis_metadata_names = [avu_name for avu_name in grouped_metadata['analysis']]
+    schema_labels = {}
+    if (
+        len(grouped_metadata) == 1
+        and current_app.config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata
+    ):
+        pass
+    else:
+        json_template_dir = os.path.abspath("static/metadata-templates")
+
+        for schema in grouped_metadata:  # schema_labels[schema][item.name]:
+            if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
+                try:
+                    with open(
+                        f"{json_template_dir}/{schema}.json", "r"
+                    ) as schema_file:
+                        form_dict = json.load(schema_file)
+                        schema_labels[schema] = flatten_josse_schema(
+                            ("", form_dict),
+                            level=0,
+                            prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
+                            result_dict={},
+                        )
+                except:
+                    pass
+    if group_analysis_unit:
+        consolidated_analysis_metadata_names = [avu_name for avu_name in grouped_metadata['analysis']]
+    else:
+        #consolidated_analysis_metadata_names = []
+        #pprint.pprint(grouped_metadata['other'].items())
+        consolidated_analysis_metadata_names = [avu.name for avu in grouped_metadata[current_app.config["MANGO_NOSCHEMA_LABEL"]].values() if avu.units and avu.units.startswith('analysis')]
     # see if the mime type is present in the metadata, if not
     if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
         try:
@@ -324,6 +360,9 @@ def view_object(data_object_path):
         acl_counts=acl_counts,
         my_groups=my_groups,
         metadata_objects=metadata_objects,
+        grouped_metadata = grouped_metadata,
+        schema_labels = schema_labels,
+        metadata_schema_filenames = metadata_schema_filenames,
         tika_result=tika_result,
         consolidated_names = consolidated_analysis_metadata_names,
         current_user_rights=get_current_user_rights(

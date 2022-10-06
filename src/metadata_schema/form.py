@@ -217,9 +217,12 @@ def edit_schema_metadata_for_item():
     print("request data as mutable dict")
     pprint(_parameters)
     item_type = _parameters["item_type"]
+    object_path = _parameters["object_path"]
+    if not object_path.startswith("/"):
+        object_path = "/" + object_path
     template_name = _parameters["schema"]
     prefix = f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(template_name)}"
-
+    form_dict={}
     json_template_dir = os.path.abspath("static/metadata-templates")
     with open(f"{json_template_dir}/{template_name}") as template_file:
         form_dict = json.load(template_file)
@@ -231,19 +234,28 @@ def edit_schema_metadata_for_item():
     print("flat form dict")
     pprint(flat_form_dict)
 
-    filters = (
-        [Criterion("=", DataObject.id, _parameters["id"])]
-        if item_type == "data_object"
-        else [Criterion("=", Collection.id, _parameters["id"])]
-    )
-    item = DataObject if item_type == "data_object" else Collection
+    # filters = []
 
-    item_query = Query(g.irods_session, item).filter(*filters)
-    query_result = item_query.one()
+    # if item_type == "data_object":
+    #     filters += [Criterion("=", DataObject.replica_number, 0)]
+
+    # filters += [Criterion("=", DataObject.id, _parameters["id"])]
+    #     if item_type == "data_object"
+    #     else [Criterion("=", Collection.id, _parameters["id"])]
+
+    # item = DataObject if item_type == "data_object" else Collection
+    # pprint(filters)
+
+    # pprint(filters)
+
+    # item_query = Query(g.irods_session, item).filter(*filters)
+    # query_result = item_query.one()
+    # if item_type == 'data_object':
+    #     pprint(query_result[DataObject.path])
     catalog_item = (
-        g.irods_session.data_objects.get(query_result[DataObject.path])
+        g.irods_session.data_objects.get(object_path)
         if item_type == "data_object"
-        else g.irods_session.collections.get(query_result[Collection.name])
+        else g.irods_session.collections.get(object_path)
     )
     setattr(catalog_item, "item_type", item_type)
     print("and now the metada data")
@@ -271,6 +283,7 @@ def edit_schema_metadata_for_item():
         schema_form_class = josse_walk_schema_object((prefix, form_dict), prefix=prefix)
         setattr(schema_form_class, "id", HiddenField())
         setattr(schema_form_class, "schema", HiddenField())
+        setattr(schema_form_class, "object_path", HiddenField())
         setattr(schema_form_class, "item_type", HiddenField())
         setattr(schema_form_class, "submit", SubmitField(label="Save"))
         schema_form = schema_form_class(form_values)
