@@ -236,6 +236,7 @@
                       action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
                   <input type="hidden" name="item_type" value="collection" />
                   <input type="hidden" name="id" value="{{ collection.id }}" />
+                  <input type="hidden" name="object_path" value="{{ collection.path }}" />
                   <input name="schema" type="hidden" value="{{ schema }}.json" />
                   <button type="submit" class="btn btn-primary">
                     Edit
