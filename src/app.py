@@ -10,6 +10,8 @@ from flask import (
     flash,
     make_response,
     Blueprint,
+    session,
+    current_app,
 )
 from cache import cache
 import os
@@ -32,6 +34,7 @@ from lib.util import collection_tree_to_dict
 from pprint import pprint
 from operator import itemgetter
 
+# Blueprints
 from user.user import user_bp
 from common.error import error_bp
 from common.browse import browse_bp
@@ -39,6 +42,7 @@ from metadata.metadata import metadata_bp
 from search.basic_search import basic_search_bp
 from metadata_schema.editor import metadata_schema_editor_bp
 from metadata_schema.form import metadata_schema_form_bp
+from admin.admin import admin_bp
 
 from irods.models import (
     Collection,
@@ -51,47 +55,25 @@ from irods.session import iRODSSession
 from irods.query import Query
 from irods.column import Criterion, Like
 import platform
-
-# from werkzeug import secure_filename
-
-# from vsc_irods.manager import path_manager, search_manager, bulk_manager
-
-irods_env_file = os.path.expanduser("~/.irods/irods_environment.json")
-irods_zone = "kuleuven_tier1_pilot"
+import typing
+from irods_zones_config import irods_zones
+import irods_session_pool
 
 print(f"Flask version {flask.__version__}")
 
-irods_session = iRODSSession(irods_env_file=irods_env_file)
-success = False
-user_home = f"/{irods_session.zone}/home/{irods_session.username}"
-zone_home = f"/{irods_session.zone}/home"
-if irods_session.collections.exists(user_home):
-    success = True
-    print(f"Success", file=sys.stderr)
 
 
 app = Flask(__name__)
 
 
+app.config.from_pyfile('config.py')
+app.config['irods_zones'] = irods_zones
+
+# global dict holding the irods sessions per user, identified either by their flsk session id or by a magic key 'localdev'
+irods_sessions = {}
 ## Allow cross origin requests for SPA/Ajax situations
 CORS(app)
 
-
-app.config["UPLOAD_FOLDER"] = "/tmp"
-app.config["MAX_CONTENT_PATH"] = 1024 * 1024 * 16
-app.config["SECRET_KEY"] = "mushrooms_from_paris"
-app.config["DATA_OBJECT_MAX_SIZE_PREVIEW"] = 1024 * 1024 * 16
-app.config["CACHE_TYPE"] = "SimpleCache"
-app.config["CACHE_DEFAULT_TIMEOUT"] = 300
-app.config["CACHE_DIR"] = "storage/cache"
-app.config["DEBUG"] = True
-app.config["ACL_PROTECT_OWN"] = True
-app.config["MANGO_PREFIX"] = "mg"
-app.config["MANGO_NOSCHEMA_LABEL"] = "other"
-app.config["METADATA_NOEDIT_PREFIX"] = (
-    f"{app.config['MANGO_PREFIX']}.",
-    "irods::",
-)
 # app.config["EXPLAIN_TEMPLATE_LOADING"] = True
 ## enable auto escape in jinja2 templates
 app.jinja_options["autoescape"] = lambda _: True
@@ -118,29 +100,66 @@ with app.app_context():
     app.register_blueprint(basic_search_bp)
     app.register_blueprint(metadata_schema_editor_bp)
     app.register_blueprint(metadata_schema_form_bp)
+    app.register_blueprint(admin_bp)
 
 
 @app.context_processor
 def dump_variable():
     return dict(pformat=pformat)
 
-
-# permissions
-# irods_session.permissions.get
-
-
 @app.before_request
-def init_irods():
+def init_and_secure_views():
     """
     """
-    global irods_session
-    g.irods_session = irods_session
-    g.user_home = user_home
-    g.zone_home = zone_home
+    if request.endpoint in ['static','user_bp.login_basic']:
+        return None
+
+    # some globals for feeding the templates
     g.prc_version = irods.__version__
     g.flask_version = flask.__version__
     g.python_version = platform.python_version()
 
+    if current_app.config["MANGO_AUTH"] == 'localdev':
+        irods_session = None
+        if not 'userid' in session:
+            print(f"No user id in session")
+        if 'userid' in session:
+            irods_session = irods_session_pool.get_irods_session(session['userid'])
+        if not irods_session:
+            print("No irods session found in pool, recreating one")
+            irods_env_file = os.path.expanduser("~/.irods/irods_environment.json")
+            irods_session = iRODSSession(irods_env_file=irods_env_file)
+            session['userid'] = irods_session.username
+            irods_session_pool.add_irods_session(session['userid'], irods_session)
+        g.irods_session = irods_session
+        print(f"Session id: {session['userid']}")
+        user_home = f"/{g.irods_session.zone}/home/{irods_session.username}"
+        zone_home = f"/{g.irods_session.zone}/home"
+        g.user_home = user_home
+        g.zone_home = zone_home
+        return None
+
+    if current_app.config["MANGO_AUTH"] == 'basic':
+        irods_session = None
+        if not 'userid' in session:
+            print(f"No user id in session, basic auth")
+        if 'userid' in session:
+            irods_session = irods_session_pool.get_irods_session(session['userid'])
+        if irods_session:
+            g.irods_session = irods_session
+            user_home = f"/{g.irods_session.zone}/home/{irods_session.username}"
+            zone_home = f"/{g.irods_session.zone}/home"
+            g.user_home = user_home
+            g.zone_home = zone_home
+            return None
+        else:
+            return redirect(url_for('user_bp.login_basic'))
+
+@app.after_request
+def release_irods_session_lock(response):
+    if 'userid' in session:
+        irods_session_pool.unlock_irods_session(session['userid'])
+    return response
 
 # custom filters
 
@@ -172,7 +191,7 @@ def collection_tree_to_dict(collection):
 # Blueprint common
 @app.route("/")
 def index():
-    collection = irods_session.collections.get(user_home)
+    collection =  g.irods_session.collections.get(g.user_home)
     collections = collection.subcollections
     data_objects = collection.data_objects
     # print(
@@ -210,16 +229,16 @@ def index():
     # return f"Result: {collections} collections and  {data_objects} data objects"
     return render_template(
         "index.html.j2",
-        irodssession=irods_session,
-        current_path=user_home.split("/"),
-        zone=irods_zone,
-        collections=collections,
-        data_objects=data_objects,
-        session=irods_session,
-        pformat=pformat,
-        dir=dir,
-        jinja_options=app.jinja_options,
-        user=irods_session.username,
+        # irodssession=g.irods_session,
+        # current_path=g.user_home.split("/"),
+        # zone=g.zone_home,
+        # collections=collections,
+        # data_objects=data_objects,
+        # session=g.irods_session,
+        # pformat=pformat,
+        # dir=dir,
+        # jinja_options=app.jinja_options,
+        # user=g.irods_session.username,
         # total_objects=total_objects,
         # total_avu=total_avu,
         # avu_counts=sorted(avu_counts, key=itemgetter("total"), reverse=True),

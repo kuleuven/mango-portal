@@ -1,42 +1,55 @@
-<div style="height:fit-content" class="col-3 col-sm-3 flex-grow-sm-1 flex-shrink-1 flex-grow-0 sticky-top pb-sm-0 pb-3">
-            <div class="bg-light border rounded-3 p-1 h-100 sticky-top">
-                <!-- <h6 class="d-none d-sm-block text-muted">Sticky Sidebar</h6> -->
-                <ul class="nav nav-pills flex-sm-column flex-row mb-auto justify-content-between text-truncate">
-                   {#  <li class="nav-item">
+<div style="height:fit-content"
+     class="col-3 col-sm-3 flex-grow-sm-1 flex-shrink-1 flex-grow-0 sticky-top pb-sm-0 pb-3">
+    <div class="bg-light border rounded-3 p-1 h-100 sticky-top">
+        <!-- <h6 class="d-none d-sm-block text-muted">Sticky Sidebar</h6> -->
+        <ul class="nav nav-pills flex-sm-column flex-row mb-auto justify-content-between text-truncate">
+            {#  <li class="nav-item">
                         <a href="#" class="nav-link px-2 text-truncate">
                             <i class="bi bi-house fs-4"></i>
                             <span class="d-none d-sm-inline">Home</span>
                         </a>
                     </li> #}
-                    <li>
-                        <a href="/" class="nav-link px-2 text-truncate">
-                            <i class="bi bi-speedometer fs-4"></i>
-                            <span class="d-none d-sm-inline">Dashboard</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{url_for('browse_bp.collection_browse')}}" class="nav-link px-2 text-truncate"><i class="bi bi-folder fs-4"></i>
-                            <span class="d-none d-sm-inline">Collections</span> </a>
-                    </li>
-                    <li>
-                        <a href="{{url_for('basic_search_bp.catalog_search')}}" class="nav-link px-2 text-truncate"><i class="bi bi-search fs-4"></i>
-                            <span class="d-none d-sm-inline">Advanced search</span> </a>
-                    </li>
-
-                    <li>
-                        <a href="{{url_for('user_bp.my_groups')}}" class="nav-link px-2 text-truncate"><i class="bi bi-people fs-4"></i>
-                            <span class="d-none d-sm-inline">Your groups</span> </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('browse_bp.collection_browse') + '/' + g.irods_session.zone + '/trash/home/' + g.irods_session.username }}" class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>
-                            <span class="d-none d-sm-inline">Trash</span> </a>
-                    </li>
-                    <li>
-                        <a href="/metadata-template" class="nav-link px-2 text-truncate">
-                            <i class="bi bi-file-code fs-4"></i>
-                            <span class="d-none d-sm-inline">Metadata templates</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            <li>
+                <a href="/" class="nav-link px-2 text-truncate">
+                    <i class="bi bi-speedometer fs-4"></i>
+                    <span class="d-none d-sm-inline">Dashboard</span>
+                </a>
+            </li>
+            <li>
+            <a href="{{ url_for('browse_bp.collection_browse')}}"
+               class="nav-link px-2 text-truncate"><i class="bi bi-folder fs-4"></i>
+            <span class="d-none d-sm-inline">Collections</span> </a>
+    </li>
+    <li>
+    <a href="{{ url_for('basic_search_bp.catalog_search')}}"
+       class="nav-link px-2 text-truncate"><i class="bi bi-search fs-4"></i>
+    <span class="d-none d-sm-inline">Advanced search</span> </a>
+</li>
+<li>
+<a href="{{ url_for('user_bp.my_groups')}}"
+   class="nav-link px-2 text-truncate"><i class="bi bi-people fs-4"></i>
+<span class="d-none d-sm-inline">Your groups</span> </a>
+</li>
+<li>
+<a href="{{ url_for('browse_bp.collection_browse') + '/' + g.irods_session.zone + '/trash/home/' + g.irods_session.username }}"
+   class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>
+<span class="d-none d-sm-inline">Trash</span> </a>
+</li>
+<li>
+    <a href="/metadata-template" class="nav-link px-2 text-truncate">
+        <i class="bi bi-file-code fs-4"></i>
+        <span class="d-none d-sm-inline">Metadata templates</span>
+    </a>
+</li>
+{% if g.irods_session.username in config['irods_zones'][g.irods_session.zone]['admin_users'] %}
+    <li>
+        <a href="{{ url_for('admin_bp.node_sessions') }}"
+           class="nav-link px-2 text-truncate">
+            <i class="bi bi-incognito fs-4"></i>
+            <span class="d-none d-sm-inline">Admin | Sessions</span>
+        </a>
+    </li>
+{% endif %}
+</ul>
+</div>
 </div>
