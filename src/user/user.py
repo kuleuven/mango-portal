@@ -92,10 +92,10 @@ def login_basic():
         zone = request.form.get('irods_zone')
 
         if username == '':
-            flash('Missing user id')
+            flash('Missing user id', category='danger')
             return render_template('login_basic.html.j2')
         if password == '':
-            flash('Missing password')
+            flash('Missing password', category='danger')
             return render_template('login_basic.html.j2')
         try:
             parameters = DEFAULT_IRODS_PARAMETERS.copy()
@@ -111,7 +111,7 @@ def login_basic():
 
         except Exception as e:
             print(e)
-            flash('Could not create iRODS session')
+            flash('Could not create iRODS session', category='danger')
             return render_template('login_basic.html.j2')
 
         # sanity check on credentials
@@ -119,13 +119,13 @@ def login_basic():
             irods_session.collections.get(f"/{irods_session.zone}/home")
         except PAM_AUTH_PASSWORD_FAILED as e:
             print(e)
-            flash('Authentication failed: invalid password')
+            flash('Authentication failed: invalid password', category='danger')
             return render_template('login_basic.html.j2')
 
         except Exception as e:
             print(e)
             flash('Authentication failed: '+str(e))
-            return render_template('login_basic.html.j2')
+            return render_template('login_basic.html.j2', category='danger')
 
         # should be ok now to add session to pool
         irods_session_pool.add_irods_session(username, irods_session)

@@ -27,30 +27,32 @@
     color: red;
   }
     </style>
+    {% block custom_style %}
+    {% endblock custom_style %}
   </head>
   <body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show"
-               data-category="{{ category }}"
-               role="alert">
-            {{ message }}
-            <button type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Close"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
     {# <main class="container-fluid pb-3 flex-grow-1 d-flex flex-column flex-sm-row overflow-auto"> #}
     <main class="container">
       <div class="row flex-grow-sm-1 flex-grow-0">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show"
+                   data-category="{{ category }}"
+                   role="alert">
+                {{ message }}
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
         <div class="col-9">
           <div class="bg-light border rounded-3 p-3">
-            {% block body %}<form{% endblock %}
+            {% block body %}{% endblock %}
           </div>
         </div>
       </div>

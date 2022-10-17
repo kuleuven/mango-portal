@@ -1,17 +1,27 @@
 {% extends "base_core.html.j2" %}
+{% block custom_style %}
+    <style>
+div#login-form {
+    background-image: url({{ url_for('static', filename='unsplash-mango.jpg') }});
+    background-color: rgba(255,255,255,0.8);
+    background-blend-mode: lighten;
+    /* You may add things like width, height, background-size... */
+}
+    </style>
+{% endblock custom_style %}
 {% block body %}
     <div class="container">
         <div class="row align-items-center justify-content-center">
-            <div class="col-md-7">
-                <h3>Login to your Mango iRODS Active Data Portal</h3>
+            <div class="col-md-9 rounded-3" id="login-form">
+                <h3>Login to Mango, your iRODS Active Data Portal</h3>
                 <p class="mb-4">Please use the password provided by the VSC/KU Leuven iRODS login service</p>
                 <form action="{{ url_for('user_bp.login_basic') }}"" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="form-group">
-                        <label for="username">Username</label>
+                        <label for="username">User id</label>
                         <input type="text"
                                class="form-control"
-                               placeholder="Your login id"
+                               placeholder="Your user id"
                                id="username"
                                name="username"/>
                     </div>
@@ -33,7 +43,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <input type="submit" value="Log In" class="btn btn-block btn-primary"/>
+                    <input type="submit" value="Log In" class="btn btn-block btn-primary mb-3"/>
                 </form>
             </div>
         </div>
