@@ -1,7 +1,7 @@
 FROM python:3.10
 WORKDIR /app
 COPY requirements.txt /app/
-RUN apt install poppler-utils
+RUN apt-get update && apt-get -y install poppler-utils
 RUN pip install -r requirements.txt
 RUN echo "Europe/Brussels" > /etc/timezone && rm /etc/localtime && dpkg-reconfigure -f noninteractive tzdata
 RUN pwd
