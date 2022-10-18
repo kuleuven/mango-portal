@@ -563,7 +563,7 @@ def ask_tika(data_object_path):
     """
     """
     # FETCH FROM CONFIG INSTEAD
-    tika_host = "http://localhost:9998"
+    tika_host = current_app.config['TIKA_URL'].rstrip('/')
     tika_url = f"{tika_host}/tika/text"
     tika_storage = f"storage/tika_output/{g.irods_session.zone}"
     if not os.path.exists(tika_storage):

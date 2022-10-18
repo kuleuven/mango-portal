@@ -1,4 +1,5 @@
-# not much yet
+import os
+
 MANGO_AUTH='basic' # 'localdev', 'basic', 'pam'
 UPLOAD_FOLDER = "/tmp"
 SECRET_KEY = "mushrooms_from_paris"
@@ -14,3 +15,4 @@ METADATA_NOEDIT_PREFIX = (
     f"{MANGO_PREFIX}.",
     "irods::",
 )
+TIKA_URL = os.environ.get('TIKA_URL', 'http://localhost:9998/')
