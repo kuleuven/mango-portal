@@ -1,0 +1,14 @@
+{% macro render_navigation_bar(menus=[], active="") %}
+    <nav class="navbar navbar-expand-lg bg-light">
+        <div class="container-fluid">
+            <ul class="nav nav-pills me-auto mb-2 mb-lg-0">
+                {% for menu_item in menus %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if menu_item['endpoint'] == active %} active{% endif %}"
+                           href="{{ url_for(menu_item['endpoint']) }}">{{ menu_item['label'] }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </nav>
+{% endmacro %}

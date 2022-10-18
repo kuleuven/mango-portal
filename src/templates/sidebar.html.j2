@@ -43,10 +43,10 @@
 </li>
 {% if g.irods_session.username in config['irods_zones'][g.irods_session.zone]['admin_users'] %}
     <li>
-        <a href="{{ url_for('admin_bp.node_sessions') }}"
+        <a href="{{ url_for('admin_bp.index') }}"
            class="nav-link px-2 text-truncate">
             <i class="bi bi-incognito fs-4"></i>
-            <span class="d-none d-sm-inline">Admin | Sessions</span>
+            <span class="d-none d-sm-inline">Admin</span>
         </a>
     </li>
 {% endif %}

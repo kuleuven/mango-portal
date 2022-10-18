@@ -1,0 +1,20 @@
+{% extends "base.html.j2" %}
+{% block body %}
+    {% include "admin_header.html.j2" %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for config_name, config_value in config.items() %}
+                <tr>
+                    <td>{{ config_name }}</td>
+                    <td>{{ config_value }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock body %}
