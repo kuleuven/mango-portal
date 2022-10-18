@@ -7,4 +7,4 @@ RUN echo "Europe/Brussels" > /etc/timezone && rm /etc/localtime && dpkg-reconfig
 RUN pwd
 COPY src  /app/
 EXPOSE 80
-ENTRYPOINT ["/usr/local/bin/python", "waitress_server.py"]
+ENTRYPOINT ["/usr/local/bin/python", "waitress_serve.py"]

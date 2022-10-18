@@ -56,8 +56,9 @@ from irods.query import Query
 from irods.column import Criterion, Like
 import platform
 import typing
-from irods_zones_config import irods_zones
+from irods_zones_config import irods_zones, DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
 import irods_session_pool
+from werkzeug.exceptions import HTTPException
 
 print(f"Flask version {flask.__version__}")
 
@@ -107,6 +108,15 @@ with app.app_context():
 def dump_variable():
     return dict(pformat=pformat)
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # pass through HTTP errors
+    if isinstance(e, HTTPException):
+        return e
+
+    # non-HTTP exceptions only
+    return render_template("500.html.j2", e=e), 500
+
 @app.before_request
 def init_and_secure_views():
     """
@@ -145,6 +155,29 @@ def init_and_secure_views():
             print(f"No user id in session, basic auth")
         if 'userid' in session:
             irods_session = irods_session_pool.get_irods_session(session['userid'])
+        if not irods_session and session['password'] and session['zone']:
+            #try to recreate a session object,maybe the password is still valid
+            try:
+                parameters = DEFAULT_IRODS_PARAMETERS.copy()
+                ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
+                zone=session['zone']
+                parameters.update(irods_zones[zone]['parameters'])
+                ssl_settings.update(irods_zones[zone]['ssl_settings'])
+                irods_session = iRODSSession(
+                    user=session['userid'],
+                    password=session['password'],
+                    **parameters,
+                    **ssl_settings
+                )
+                irods_session.collections.get(f"/{irods_session.zone}/home")
+                irods_session_pool.add_irods_session(session['userid'], irods_session)
+            except:
+                irods_session = None
+                #note we'll leave the session['zone'] parameter for use a hint in the login form
+                session.pop('userid', default=None)
+                session.pop('password', default=None)
+
+
         if irods_session:
             g.irods_session = irods_session
             user_home = f"/{g.irods_session.zone}/home/{irods_session.username}"
