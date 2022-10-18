@@ -61,6 +61,9 @@ def group_prefix_metadata_items(
             grouped_metadata['analysis'][avu.name] = avu
         else:
             grouped_metadata[no_schema_label][avu.name] = avu
+    # if there are no consolidated metadata in the analysis group, delete the (empty) group
+    if group_analysis_unit and grouped_metadata['analysis'].len() == 0:
+        del grouped_metadata['analysis']
     return grouped_metadata
 
 
