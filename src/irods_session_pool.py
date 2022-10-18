@@ -1,6 +1,6 @@
 from irods.session import iRODSSession
 
-from threading import Lock, Thread
+from threading import Lock, Thread, Event
 import datetime, time
 
 class iRODSUSerSession(iRODSSession):
@@ -42,19 +42,45 @@ def remove_irods_session(session_id):
     if session_id in irods_user_sessions:
         del irods_user_sessions[session_id]
 
+
 TTL = 60 * 30 # 30 minutes
+class SessionCleanupThread(Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._stop = Event()
+    def stop(self):
+        self._stop.set()
 
-clean_old_sessions_lock = Lock()
-def clean_old_sessions():
-    while True:
-        with clean_old_sessions_lock:
-            current_time = datetime.datetime.now()
-            global irods_user_sessions
-            # clean up inactive old sessions
+    def stopped(self):
+        return self._stop.isSet()
+
+    def run(self):
+        current_time = datetime.datetime.now()
+        global irods_user_sessions
+        while True:
+            if self.stopped():
+                return
             irods_user_sessions = {k: v for k, v in irods_user_sessions.items() if (current_time - v.last_accessed).total_seconds() < TTL or v.lock.locked()}
+            time.sleep(1)
 
-        time.sleep(2)
+
+cleanup_old_sessions_thread = SessionCleanupThread()
+cleanup_old_sessions_thread.daemon = True
+
+cleanup_old_sessions_thread.start()
 
 
-clean_old_sessions_lock_thread = Thread(target=clean_old_sessions, name='clean-old-irods-sessions', daemon=True)
-clean_old_sessions_lock_thread.start()
+# clean_old_sessions_lock = Lock()
+# def clean_old_sessions():
+#     while True:
+#         with clean_old_sessions_lock:
+#             current_time = datetime.datetime.now()
+#             global irods_user_sessions
+#             # clean up inactive old sessions
+#             irods_user_sessions = {k: v for k, v in irods_user_sessions.items() if (current_time - v.last_accessed).total_seconds() < TTL or v.lock.locked()}
+
+#         time.sleep(2)
+
+
+# clean_old_sessions_lock_thread = Thread(target=clean_old_sessions, name='clean-old-irods-sessions', daemon=True)
+# clean_old_sessions_lock_thread.start()
