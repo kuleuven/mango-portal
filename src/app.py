@@ -155,7 +155,7 @@ def init_and_secure_views():
             print(f"No user id in session, basic auth")
         if 'userid' in session:
             irods_session = irods_session_pool.get_irods_session(session['userid'])
-        if not irods_session and session['password'] and session['zone']:
+        if not irods_session and 'password' in session and 'zone' in session:
             #try to recreate a session object,maybe the password is still valid
             try:
                 parameters = DEFAULT_IRODS_PARAMETERS.copy()
