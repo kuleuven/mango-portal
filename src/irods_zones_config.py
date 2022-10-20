@@ -40,4 +40,44 @@ irods_zones = {
         'ssl_settings' : {},
         'admin_users': ['u0123318']
         },
+    'gbiomed' : {
+        'parameters' : {
+            'host': 'gbiomed.irods.icts.kuleuven.be',
+            'zone': 'gbiomed',
+        },
+        'ssl_settings' : {},
+        'admin_users': ['u0123318']
+        },
+    'gbiomed_eximious' : {
+        'parameters' : {
+            'host': 'gbiomed-eximious.irods.icts.kuleuven.be',
+            'zone': 'gbiomed_eximious',
+        },
+        'ssl_settings' : {},
+        'admin_users': ['u0123318']
+        },
+    'gbiomed_fbi' : {
+        'parameters' : {
+            'host': 'gbiomed-fbi.irods.icts.kuleuven.be',
+            'zone': 'gbiomed_fbi',
+        },
+        'ssl_settings' : {},
+        'admin_users': ['u0123318']
+        },
+    'ghum' : {
+        'parameters' : {
+            'host': 'ghum.irods.icts.kuleuven.be',
+            'zone': 'ghum',
+        },
+        'ssl_settings' : {},
+        'admin_users': ['u0123318']
+        },
+    'demo' : {
+        'parameters' : {
+            'host': 'demo.irods.t.icts.kuleuven.be',
+            'zone': 'icts_demo',
+        },
+        'ssl_settings' : {},
+        'admin_users': ['u0123318']
+        },
 }

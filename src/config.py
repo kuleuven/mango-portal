@@ -16,3 +16,4 @@ METADATA_NOEDIT_PREFIX = (
     "irods::",
 )
 TIKA_URL = os.environ.get('TIKA_URL', 'http://localhost:9998/')
+USER_MAX_HOME_SIZE=100*10**6 #100MB

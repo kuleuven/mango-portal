@@ -20,9 +20,7 @@ if __name__ == '__main__':
         irods_session_pool.cleanup_old_sessions_thread.stop()
         # wait for thethread to be stopped, it runs in a sleep(1) infinite loop
         time.sleep(2)
-        #irods_session_pool.cleanup_old_sessions_thread.join()
-        #time.sleep(1)
-        # close all sessions
+        # close all iRODS sessions
         logging.warning("Removing sessions")
         for session_id in list(irods_session_pool.irods_user_sessions):
             irods_session_pool.remove_irods_session(session_id)

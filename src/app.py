@@ -110,6 +110,7 @@ def dump_variable():
 
 @app.errorhandler(Exception)
 def handle_exception(e):
+    app.logger.exception(e)
     # pass through HTTP errors
     if isinstance(e, HTTPException):
         return e
