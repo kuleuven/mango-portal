@@ -61,7 +61,18 @@ def my_profile():
     # logged in since info
     logged_in_since = irods_session_pool.irods_user_sessions[session['userid']].created
 
-    return render_template("myprofile.html.j2", me=me, my_groups=my_groups, logged_in_since=logged_in_since)
+    home_total_size_in_bytes = 0
+    n_data_objs = 0
+    try:
+        collection = g.irods_session.collections.get(f"/{g.irods_session.zone}/home/{g.irods_session.username}")
+        for info in collection.walk( ):
+            n_data_objs += len( info[2] )
+            home_total_size_in_bytes += sum( d.size for d in info[2] )
+    except e:
+        home_total_size_in_bytes = -1
+
+
+    return render_template("myprofile.html.j2", me=me, my_groups=my_groups, logged_in_since=logged_in_since, home_total_size=home_total_size_in_bytes)
 
 
 @user_bp.route("/group/members/<group_name>")

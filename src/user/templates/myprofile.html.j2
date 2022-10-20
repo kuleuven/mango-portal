@@ -31,6 +31,12 @@
             <th>Logged in since</th>
             <td>{{ logged_in_since }}</td>
           </tr>
+          <tr>
+            <th>Disk space used in your home</th>
+            <td class="{% if home_total_size > config['USER_MAX_HOME_SIZE'] %}text-danger{% else %}text-success{% endif %}">
+              {{ home_total_size | filesizeformat }}
+            </td>
+          </tr>
         </table>
       </div>
     </div>
