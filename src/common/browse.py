@@ -62,7 +62,7 @@ def group_prefix_metadata_items(
         else:
             grouped_metadata[no_schema_label][avu.name] = avu
     # if there are no consolidated metadata in the analysis group, delete the (empty) group
-    if group_analysis_unit and grouped_metadata['analysis'].len() == 0:
+    if group_analysis_unit and len(grouped_metadata['analysis']) == 0:
         del grouped_metadata['analysis']
     return grouped_metadata
 
@@ -271,7 +271,7 @@ def view_object(data_object_path):
                 except:
                     pass
     if group_analysis_unit:
-        consolidated_analysis_metadata_names = [avu_name for avu_name in grouped_metadata['analysis']]
+        consolidated_analysis_metadata_names = [avu_name for avu_name in grouped_metadata['analysis']] if 'analysis' in grouped_metadata else []
     else:
         #consolidated_analysis_metadata_names = []
         #pprint.pprint(grouped_metadata['other'].items())
