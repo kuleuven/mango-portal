@@ -23,6 +23,7 @@ div#login-form {
                                class="form-control"
                                placeholder="Your user id"
                                id="username"
+                               value="{{ userid }}"
                                name="username"/>
                     </div>
                     <div class="form-group mb-3">
@@ -37,7 +38,8 @@ div#login-form {
                         <label for="irods_zone">iRODS zone</label>
                         <select class="form-select" name="irods_zone" id="irods_zone">
                             {% for zone_name in config['irods_zones'] %}
-                                <option value="{{ zone_name }}">
+                                <option value="{{ zone_name }}"
+                                        {% if zone_name == last_zone_name %}selected{% endif %}>
                                     {{ zone_name }}
                                 </option>
                             {% endfor %}

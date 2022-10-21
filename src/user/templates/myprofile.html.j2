@@ -8,7 +8,7 @@
         </div>
         <table class="table">
           <tr>
-            <th>Account</th>
+            <th>Login name</th>
             <td>{{ me.name }}</td>
           </tr>
           <tr>
@@ -29,30 +29,35 @@
           </tr>
           <tr>
             <th>Logged in since</th>
-            <td>{{ logged_in_since }}</td>
+            <td>{{ logged_in_since.isoformat(timespec='seconds') }}</td>
           </tr>
           <tr>
             <th>Disk space used in your home</th>
-            <td class="{% if home_total_size > config['USER_MAX_HOME_SIZE'] %}text-danger{% else %}text-success{% endif %}">
-              {{ home_total_size | filesizeformat }}
-            </td>
-          </tr>
-        </table>
-      </div>
-    </div>
-    <div class="col">
-      <div class="card">
-        <div class="card-header">
-          <h1 class="bi bi-people display-1"></h1>
+            {% if home_total_size > config['USER_MAX_HOME_SIZE'] %}
+              <td class="text-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+              {% else %}
+                <td class="text-success">
+                {% endif %}
+                {{ home_total_size | filesizeformat }}
+              </td>
+            </tr>
+          </table>
         </div>
-        <ul class="list-group list-group-flush">
-          {% for group in my_groups %}
-            <li class="list-group-item">
-              <a href="{{ url_for('user_bp.group_members', group_name = group.name)}}">{{ group.name }}</a>
-            </li>
-          {% endfor %}
-        </ul>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-header">
+            <h1 class="bi bi-people display-1"></h1>
+          </div>
+          <ul class="list-group list-group-flush">
+            {% for group in my_groups %}
+              <li class="list-group-item">
+                <a href="{{ url_for('user_bp.group_members', group_name = group.name)}}">{{ group.name }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-{% endblock body %}
+  {% endblock body %}

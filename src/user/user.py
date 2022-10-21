@@ -96,7 +96,13 @@ def group_members(group_name):
 def login_basic():
     """ Basic login using username and password """
     if request.method == 'GET':
-        return render_template('login_basic.html.j2')
+        userid=''
+        last_zone_name=''
+        if 'userid' in session:
+            userid = session['userid']
+        if 'zone' in session:
+            last_zone_name = session['zone']
+        return render_template('login_basic.html.j2', userid=userid, last_zone_name=last_zone_name)
     if request.method== 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
