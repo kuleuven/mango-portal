@@ -12,7 +12,9 @@
             {% for config_name, config_value in config.items() %}
                 <tr>
                     <td>{{ config_name }}</td>
-                    <td>{{ config_value }}</td>
+                    <td>
+                        <pre>{{ config_value|pprint }}</pre>
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

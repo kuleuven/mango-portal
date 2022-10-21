@@ -25,4 +25,4 @@ def index():
 def node_sessions():
     """
     """
-    return render_template('node_sessions.html.j2', user_sessions = irods_session_pool.irods_user_sessions)
+    return render_template('node_sessions.html.j2', user_sessions = irods_session_pool.irods_user_sessions, cleanup_start = irods_session_pool.cleanup_old_sessions_thread.start_time )

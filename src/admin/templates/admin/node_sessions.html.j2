@@ -1,7 +1,6 @@
 {% extends "base.html.j2" %}
 {% block body %}
     {% include "admin_header.html.j2" %}
-
     <div class="row">
         <div class="col">
             <table class="table">
@@ -11,21 +10,25 @@
                         <th>Zone</th>
                         <th>Logged in since</th>
                         <th>Latest activity at</th>
-                        <th></th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for userid, user_session in user_sessions.items() %}
-                        <tr>
+                        <tr {% if g.irods_session.username == user_session.irods_session.username %}class="text-success"{% endif %}>
                             <td>{{ userid }}</td>
                             <td>{{ user_session.irods_session.zone }}</td>
-                            <td>{{ user_session.created }}</td>
-                            <td>{{ user_session.last_accessed }}</td>
-                            <td></td>
+                            <td>{{ user_session.created.isoformat(timespec='seconds') }}</td>
+                            <td>{{ user_session.last_accessed.isoformat(timespec='seconds') }}</td>
+                            <td>{{ 'Busy' if user_session.lock.locked() else 'Idle' }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+    </div>
+    <div class="row">
+        <p>Server up since: {{ g.mango_server_info['server_start'].isoformat(timespec='seconds') }}</p>
+        <p>Session cleanup thread since: {{ cleanup_start.isoformat(timespec='seconds') }}</p>
     </div>
 {% endblock body %}
