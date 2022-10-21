@@ -44,25 +44,17 @@ from metadata_schema.editor import metadata_schema_editor_bp
 from metadata_schema.form import metadata_schema_form_bp
 from admin.admin import admin_bp
 
-from irods.models import (
-    Collection,
-    DataObject,
-    DataObjectMeta,
-    CollectionMeta,
-    UserMeta,
-)
 from irods.session import iRODSSession
-from irods.query import Query
-from irods.column import Criterion, Like
+
 import platform
-import typing
 from irods_zones_config import irods_zones, DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
 import irods_session_pool
 from werkzeug.exceptions import HTTPException
-
+import logging
+import datetime
+import time
+import signal
 print(f"Flask version {flask.__version__}")
-
-
 
 app = Flask(__name__)
 
@@ -70,11 +62,16 @@ app = Flask(__name__)
 app.config.from_pyfile('config.py')
 app.config['irods_zones'] = irods_zones
 
-# global dict holding the irods sessions per user, identified either by their flsk session id or by a magic key 'localdev'
+# global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 irods_sessions = {}
 ## Allow cross origin requests for SPA/Ajax situations
 CORS(app)
 
+# get the root logger and set the
+rootlogger = logging.getLogger()
+rootlogger.setLevel(app.config.get('LOGGING_LEVEL', 'INFO'))
+
+mango_server_info = {'server_start': datetime.datetime.now()}
 # app.config["EXPLAIN_TEMPLATE_LOADING"] = True
 ## enable auto escape in jinja2 templates
 app.jinja_options["autoescape"] = lambda _: True
@@ -91,6 +88,8 @@ if not os.path.exists(app.config["CACHE_DIR"]):
 cache.init_app(app)
 with app.app_context():
     cache.clear()
+
+
 
 # Register blueprints
 with app.app_context():
@@ -130,6 +129,9 @@ def init_and_secure_views():
     g.flask_version = flask.__version__
     g.python_version = platform.python_version()
 
+    #check sessions cleanup daemon and spawn a new one if needed
+    irods_session_pool.check_and_restart_cleanup()
+
     if current_app.config["MANGO_AUTH"] == 'localdev':
         irods_session = None
         if not 'userid' in session:
@@ -146,8 +148,7 @@ def init_and_secure_views():
         print(f"Session id: {session['userid']}")
         user_home = f"/{g.irods_session.zone}/home/{irods_session.username}"
         zone_home = f"/{g.irods_session.zone}/home"
-        g.user_home = user_home
-        g.zone_home = zone_home
+
         return None
 
     if current_app.config["MANGO_AUTH"] == 'basic':
@@ -185,6 +186,7 @@ def init_and_secure_views():
             zone_home = f"/{g.irods_session.zone}/home"
             g.user_home = user_home
             g.zone_home = zone_home
+            g.mango_server_info = mango_server_info
             return None
         else:
             return redirect(url_for('user_bp.login_basic'))
@@ -219,63 +221,10 @@ def collection_tree_to_dict(collection):
         ]
     return d
 
-
-# app.jinja_options["variable_start_string"] = "@{"
-
-# Blueprint common
 @app.route("/")
 def index():
-    collection =  g.irods_session.collections.get(g.user_home)
-    collections = collection.subcollections
-    data_objects = collection.data_objects
-    # print(
-    #     f"Success, in zone {irods_session.zone} collections { collections } and objects { data_objects }",
-    #     file=sys.stderr,
-    # )
-    # app.logger.info(irods_session.__dict__)
-    # to_query = (
-    #     Query(g.irods_session, DataObject.id)
-    #     .filter(Criterion("=", DataObject.replica_number, 0))
-    #     .count(DataObject.id)
-    # )
-    # total_objects_result = to_query.execute()
-    # total_objects = int(total_objects_result[0][DataObject.id])
-    # for r in total_objects_result:
-    #     pprint(r)
-    # avu_query = Query(g.irods_session, (DataObjectMeta.id)).count(DataObjectMeta.id)
-
-    # total_avu_result = avu_query.execute()
-    # total_avu = int(total_avu_result[0][DataObjectMeta.id])
-
-    # avu_groups_query = Query(g.irods_session, (DataObjectMeta.name)).count(
-    #     DataObjectMeta.value
-    # )
-    # avu_groups_result = avu_groups_query.execute()
-
-    # avu_counts = []
-
-    # for r in avu_groups_result:
-    #     # pprint(r)
-    #     avu_counts.append(
-    #         {"name": r[DataObjectMeta.name], "total": int(r[DataObjectMeta.value])}
-    #     )
-
-    # return f"Result: {collections} collections and  {data_objects} data objects"
     return render_template(
         "index.html.j2",
-        # irodssession=g.irods_session,
-        # current_path=g.user_home.split("/"),
-        # zone=g.zone_home,
-        # collections=collections,
-        # data_objects=data_objects,
-        # session=g.irods_session,
-        # pformat=pformat,
-        # dir=dir,
-        # jinja_options=app.jinja_options,
-        # user=g.irods_session.username,
-        # total_objects=total_objects,
-        # total_avu=total_avu,
-        # avu_counts=sorted(avu_counts, key=itemgetter("total"), reverse=True),
     )
 
 

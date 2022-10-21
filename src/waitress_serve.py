@@ -12,8 +12,13 @@ import irods_session_pool
 
 if __name__ == '__main__':
 
+    logger = logging.getLogger("waitress")
+    logger.setLevel(logging.INFO)
+    service_port = str(os.environ.get("SERVICE_PORT", 80))
+
     # register a shutdown function
     def handle_sig(sig, frame):
+        global mango_server
         logging.warning(f"Got signal {sig}, start shutdown of mango server...")
         # stop cleaning old sessions
         logging.warning(f"Stopping cleanup thread ...")
@@ -25,15 +30,14 @@ if __name__ == '__main__':
         for session_id in list(irods_session_pool.irods_user_sessions):
             irods_session_pool.remove_irods_session(session_id)
             logging.warning(f"Removed sesssion {session_id}")
-
-        server.close()
+        # close server if run from waitress script
+        try:
+            mango_server.close()
+        except Exception:
+            pass
 
     for sig in (signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP):
         signal.signal(sig, handle_sig)
 
-    logger = logging.getLogger("waitress")
-    logger.setLevel(logging.INFO)
-    service_port = str(os.environ.get("SERVICE_PORT", 80))
-
-    server = create_server(app.app, host="*", port=service_port, threads=12)
-    server.run()
+    mango_server = create_server(app.app, host="*", port=service_port, threads=12)
+    mango_server.run()

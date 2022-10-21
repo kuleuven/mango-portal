@@ -294,10 +294,10 @@
                 {{ collection.owner_name }}
               </td>
               <td>
-                {{ collection.create_time }}
+                {{ collection.create_time.isoformat(timespec='seconds') }}
               </td>
               <td>
-                {{ collection.modify_time }}
+                {{ collection.modify_time.isoformat(timespec='seconds') }}
               </td>
               <td>
               </td>
@@ -318,10 +318,10 @@
                 <!--{{ data_object.__dict__ }}-->{{ data_object.owner_name }}
               </td>
               <td>
-                {{ data_object.create_time }}
+                {{ data_object.create_time.isoformat(timespec='seconds') }}
               </td>
               <td>
-                {{ data_object.modify_time }}
+                {{ data_object.modify_time.isoformat(timespec='seconds') }}
               </td>
               <td>
                 {{ data_object.size | filesizeformat }}

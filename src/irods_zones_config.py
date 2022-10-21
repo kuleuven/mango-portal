@@ -30,7 +30,7 @@ irods_zones = {
             'zone': 'kuleuven_tier1_pilot',
         },
         'ssl_settings' : {},
-        'admin_users': ['vsc33436']
+        'admin_users': ['vsc33436', 'x0116999']
         },
     'set': {
         'parameters' : {
@@ -38,7 +38,7 @@ irods_zones = {
             'zone': 'set',
         },
         'ssl_settings' : {},
-        'admin_users': ['u0123318']
+        'admin_users': ['u0123318', 'x0116999']
         },
     'gbiomed' : {
         'parameters' : {
@@ -46,7 +46,7 @@ irods_zones = {
             'zone': 'gbiomed',
         },
         'ssl_settings' : {},
-        'admin_users': ['u0123318']
+        'admin_users': ['u0123318', 'x0116999']
         },
     'gbiomed_eximious' : {
         'parameters' : {
@@ -54,7 +54,7 @@ irods_zones = {
             'zone': 'gbiomed_eximious',
         },
         'ssl_settings' : {},
-        'admin_users': ['u0123318']
+        'admin_users': ['u0123318', 'x0116999']
         },
     'gbiomed_fbi' : {
         'parameters' : {
@@ -62,7 +62,7 @@ irods_zones = {
             'zone': 'gbiomed_fbi',
         },
         'ssl_settings' : {},
-        'admin_users': ['u0123318']
+        'admin_users': ['u0123318', 'x0116999']
         },
     'ghum' : {
         'parameters' : {
@@ -70,7 +70,7 @@ irods_zones = {
             'zone': 'ghum',
         },
         'ssl_settings' : {},
-        'admin_users': ['u0123318']
+        'admin_users': ['u0123318', 'x0116999']
         },
     'demo' : {
         'parameters' : {
@@ -78,6 +78,6 @@ irods_zones = {
             'zone': 'icts_demo',
         },
         'ssl_settings' : {},
-        'admin_users': ['u0123318']
+        'admin_users': ['u0123318', 'x0116999']
         },
 }

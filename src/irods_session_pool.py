@@ -2,6 +2,7 @@ from irods.session import iRODSSession
 
 from threading import Lock, Thread, Event
 import datetime, time
+import logging
 
 class iRODSUSerSession(iRODSSession):
 
@@ -48,6 +49,8 @@ class SessionCleanupThread(Thread):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._stop = Event()
+        self.daemon = True
+        self.start_time=datetime.datetime.now()
     def stop(self):
         self._stop.set()
 
@@ -62,25 +65,19 @@ class SessionCleanupThread(Thread):
                 return
             irods_user_sessions = {k: v for k, v in irods_user_sessions.items() if (current_time - v.last_accessed).total_seconds() < TTL or v.lock.locked()}
             time.sleep(1)
+            # emit a heartbeat logging at most every 30 seconds
+            if int(time.time()) % 30 == 0:
+                logging.info(f"Cleanup heartbeat")
 
 
 cleanup_old_sessions_thread = SessionCleanupThread()
-cleanup_old_sessions_thread.daemon = True
 
 cleanup_old_sessions_thread.start()
 
-
-# clean_old_sessions_lock = Lock()
-# def clean_old_sessions():
-#     while True:
-#         with clean_old_sessions_lock:
-#             current_time = datetime.datetime.now()
-#             global irods_user_sessions
-#             # clean up inactive old sessions
-#             irods_user_sessions = {k: v for k, v in irods_user_sessions.items() if (current_time - v.last_accessed).total_seconds() < TTL or v.lock.locked()}
-
-#         time.sleep(2)
-
-
-# clean_old_sessions_lock_thread = Thread(target=clean_old_sessions, name='clean-old-irods-sessions', daemon=True)
-# clean_old_sessions_lock_thread.start()
+def check_and_restart_cleanup():
+    global cleanup_old_sessions_thread
+    cleanup_old_sessions_thread.join(0.0)
+    if not cleanup_old_sessions_thread.is_alive():
+        logging.info('Session cleanup: started a new thread since the daemon died')
+        cleanup_old_sessions_thread = SessionCleanupThread()
+        cleanup_old_sessions_thread.start()

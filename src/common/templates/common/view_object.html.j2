@@ -101,11 +101,11 @@
         </tr>
         <tr>
           <th>Created</th>
-          <td>{{ data_object.create_time }}</td>
+          <td>{{ data_object.create_time.isoformat(timespec='seconds') }}</td>
         </tr>
         <tr>
           <th>Modified</th>
-          <td>{{ data_object.modify_time }}</td>
+          <td>{{ data_object.modify_time.isoformat(timespec='seconds') }}</td>
         </tr>
         <tr>
           <th>Size</th>
