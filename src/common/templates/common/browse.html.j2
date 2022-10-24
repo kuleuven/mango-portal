@@ -1,5 +1,12 @@
 {% extends "base.html.j2" %}
 {% import "dialogs.html.j2" as dialogs %}
+{% block head %}
+  {{ super() }}
+  <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+  <link rel="stylesheet"
+        href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css"
+        type="text/css"/>
+{% endblock head %}
 {% block body %}
   <nav style="--bs-breadcrumb-divider: '&raquo;'" aria-label="breadcrumb">
     <ol class="breadcrumb">
@@ -28,19 +35,32 @@
         </button>
       </div>
       <div class="col-8 mr-auto">
-        <form action="{{ url_for('browse_bp.collection_upload_file')}}"
-              method="post"
-              enctype="multipart/form-data"
-              class="needs-validation"
-              novalidate>
+        {# <form action="{{ url_for('browse_bp.collection_upload_file')}}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <div class="input-group mb-3">
             <div class="invalid-feedback">A file to upload is required</div>
-            <input type="file" class="form-control" id="newfile" name="newfile" required />
+            <input type="file" class="form-control" id="newfile" name="file" required />
             <button type="submit" class="btn btn-primary">Upload</button>
             <input type="hidden" name="collection" value="{{ collection.path }}"/>
           </div>
-        </form>
+        </form> #}
+        <button class="btn btn-primary mb-2"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#multi-upload-form"
+                aria-expanded="false"
+                aria-controls="collapseExample">
+          Upload files..
+        </button>
+        <div id="multi-upload-form" class="collapse">
+          <form action="{{ url_for('browse_bp.collection_upload_file')}}"
+                class="dropzone"
+                id="mango-dropzone">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="collection" value="{{ collection.path }}"/>
+          </form>
+          <button class="btn btn-primary mt-2 float-end" id="submit-all">Submit all files</button>
+        </div>
       </div>
     </div>
   {% endif %}
@@ -214,7 +234,9 @@
                         data-bs-target="#addMetaData">
                   Add metadata
                 </button>
-                <h4 class="mt-4">Edit/add metadata via schema</h4>
+                <h4 class="mt-4">
+                  Edit/add metadata via schema
+                </h4>
                 <form class="row g-3 col-md-6 mt-4"
                       method="get"
                       action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
@@ -228,7 +250,9 @@
                       </option>
                     {% endfor %}
                   </select>
-                  <button type="submit" class="btn btn-primary">Edit</button>
+                  <button type="submit" class="btn btn-primary">
+                    Edit
+                  </button>
                 </form>
               {% else %}
                 <form class="row g-3 col-md-6 mt-4"
@@ -935,6 +959,33 @@ deleteMetaData.addEventListener('show.bs.modal', function (event) {
 // open the active tab if specified by simulating a click() :)
 var hash = window.location.hash;
 hash && document.querySelector('a[href="'+hash+'"]').click()
+
+
+// multi file upload Zone
+// Note that the name "mangoDropzone" is the camelized id of the form.
+Dropzone.options.mangoDropzone = {
+
+    // Configuration options go here
+    autoProcessQueue: false,
+    init: function () {
+      var submitButton = document.querySelector("#submit-all")
+      myDropzone =  this;
+      submitButton.addEventListener("click", function() {
+
+        myDropzone.processQueue();
+       // autoProcessQueue: true// Tell Dropzone to process all queued files.
+        });
+        // Set up any event handlers
+      //this.on("addedfile", function() {
+        // Show submit button here and/or inform user to click it.
+      //  submitButton.style.visibility = "visible"
+      //});
+      this.on('queuecomplete', function () {
+            location.reload();
+      });
+    }
+  };
+//Dropzone.discover();
 
   </script>
   {# <script async src="{{url_for('static', filename='js/form-validation.js')}}"></script> #}

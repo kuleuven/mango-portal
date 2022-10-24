@@ -67,12 +67,16 @@ def group_prefix_metadata_items(
     return grouped_metadata
 
 
-@cache.memoize(1200)
+#@cache.memoize(1200)
 def get_current_user_rights(current_user_name, item):
     access = []
-    for permission in g.irods_session.permissions.get(item, report_raw_acls=False):
+    permissions = g.irods_session.permissions.get(item, report_raw_acls=False)
+    pprint.pprint(permissions)
+    for permission in permissions:
+
         if current_user_name == permission.user_name:
             access += [permission.access_name]
+    pprint.pprint(access)
     return access
 
 
@@ -530,7 +534,7 @@ def collection_upload_file():
 
     collection = request.form["collection"]
     print(f"Requested upload file for collection {collection}")
-    f = request.files["newfile"]
+    f = request.files["file"]
     filename = "/tmp/" + f.filename
     f.save(filename)
 
