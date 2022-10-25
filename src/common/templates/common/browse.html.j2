@@ -6,6 +6,13 @@
   <link rel="stylesheet"
         href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css"
         type="text/css"/>
+  <style>
+  /* dropzone multi file upload css override*/
+  .dropzone .dz-preview .dz-progress {
+    height: 6px;
+    top: 85%;
+  }
+  </style>
 {% endblock head %}
 {% block body %}
   <nav style="--bs-breadcrumb-divider: '&raquo;'" aria-label="breadcrumb">
@@ -24,7 +31,7 @@
       <h2 class="mb-4">{{ collection.name }}</h2>
     </div>
   </div>
-  {% if ('own' in current_user_rights) or ('modify object' in current_user_rights) %}
+  {% if (('own' in current_user_rights) or ('modify object' in current_user_rights)) and not '/trash/' in collection.path %}
     <div class="d-flex justify-content-end">
       <div class="col-3 mr-auto">
         <button type="button"
@@ -47,14 +54,12 @@
         <button class="btn btn-primary mb-2"
                 type="button"
                 data-bs-toggle="collapse"
-                data-bs-target="#multi-upload-form"
-                aria-expanded="false"
-                aria-controls="collapseExample">
-          Upload files..
+                data-bs-target="#multi-upload-form">
+          Upload files ...
         </button>
         <div id="multi-upload-form" class="collapse">
           <form action="{{ url_for('browse_bp.collection_upload_file')}}"
-                class="dropzone"
+                class="dropzone rounded"
                 id="mango-dropzone">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="collection" value="{{ collection.path }}"/>
@@ -960,33 +965,26 @@ deleteMetaData.addEventListener('show.bs.modal', function (event) {
 var hash = window.location.hash;
 hash && document.querySelector('a[href="'+hash+'"]').click()
 
-
 // multi file upload Zone
 // Note that the name "mangoDropzone" is the camelized id of the form.
 Dropzone.options.mangoDropzone = {
 
-    // Configuration options go here
     autoProcessQueue: false,
     init: function () {
       var submitButton = document.querySelector("#submit-all")
-      myDropzone =  this;
+      ourDropzone =  this;
       submitButton.addEventListener("click", function() {
-
-        myDropzone.processQueue();
-       // autoProcessQueue: true// Tell Dropzone to process all queued files.
-        });
-        // Set up any event handlers
-      //this.on("addedfile", function() {
-        // Show submit button here and/or inform user to click it.
-      //  submitButton.style.visibility = "visible"
-      //});
+        ourDropzone.processQueue();
+      });
+      // if there are more than the parallel uploads parameter, ensure that all get uploaded
+      this.on("processing", function() { ourDropzone.options.autoProcessQueue = true; });
+      // reload the page at the end to show the uploaded files in iRODS
       this.on('queuecomplete', function () {
-            location.reload();
+        location.reload();
       });
     }
   };
-//Dropzone.discover();
+//Dropzone.discover(); // from version 6 (using version 5.x)
 
   </script>
-  {# <script async src="{{url_for('static', filename='js/form-validation.js')}}"></script> #}
 {% endblock javascript %}
