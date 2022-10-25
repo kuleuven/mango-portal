@@ -4,9 +4,12 @@ from threading import Lock, Thread, Event
 import datetime, time
 import logging
 
+# global pool of irods session as a dict of wrapped iRODSUSerSession objects
+irods_user_sessions = {}
+SESSION_TTL = 60 * 30 # 30 minutes
 class iRODSUSerSession(iRODSSession):
 
-    def __init__(self, irods_session):
+    def __init__(self, irods_session: iRODSSession):
         self.irods_session = irods_session
         self.lock = Lock()
         self.created = datetime.datetime.now()
@@ -14,10 +17,46 @@ class iRODSUSerSession(iRODSSession):
 
     def __del__(self):
         # release connections upon object destruction
+        logging.info(f"Session {self.irods_session.username} going away, bye!")
         self.irods_session.cleanup()
 
-# global pool of irods session as a dict of wrapped iRODSUSerSession objects
-irods_user_sessions = {}
+
+
+class SessionCleanupThread(Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._stop = Event()
+        self.daemon = True
+        self.start_time=datetime.datetime.now()
+    def stop(self):
+        self._stop.set()
+
+    def stopped(self):
+        return self._stop.isSet()
+
+    def run(self):
+
+        global irods_user_sessions
+        while True:
+            if self.stopped():
+                return
+
+            current_time = datetime.datetime.now()
+            irods_user_sessions = {session_id: user_session for session_id, user_session in irods_user_sessions.items()
+                if (current_time - user_session.last_accessed).total_seconds() < SESSION_TTL or user_session.lock.locked()}
+
+            # for session_id, user_session in irods_user_sessions.items():
+            #     session_age = (current_time - user_session.last_accessed).total_seconds()
+            #     logging.info(f"Inspecting for {session_id}: age={session_age}, lock state={user_session.lock.locked()}")
+            #     if session_age > SESSION_TTL and not user_session.lock.locked():
+            #         del irods_user_sessions[session_id]
+            #         logging.info(f"Removed {session_id}")
+            time.sleep(1)
+            # emit a heartbeat logging at most every 30 seconds
+            if int(time.time()) % 30 == 0:
+                logging.info(f"Cleanup heartbeat")
+
+
 
 def add_irods_session(session_id, irods_session):
     global irods_user_sessions
@@ -43,37 +82,6 @@ def remove_irods_session(session_id):
     if session_id in irods_user_sessions:
         del irods_user_sessions[session_id]
 
-
-TTL = 60 * 30 # 30 minutes
-class SessionCleanupThread(Thread):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._stop = Event()
-        self.daemon = True
-        self.start_time=datetime.datetime.now()
-    def stop(self):
-        self._stop.set()
-
-    def stopped(self):
-        return self._stop.isSet()
-
-    def run(self):
-        current_time = datetime.datetime.now()
-        global irods_user_sessions
-        while True:
-            if self.stopped():
-                return
-            irods_user_sessions = {k: v for k, v in irods_user_sessions.items() if (current_time - v.last_accessed).total_seconds() < TTL or v.lock.locked()}
-            time.sleep(1)
-            # emit a heartbeat logging at most every 30 seconds
-            if int(time.time()) % 30 == 0:
-                logging.info(f"Cleanup heartbeat")
-
-
-cleanup_old_sessions_thread = SessionCleanupThread()
-
-cleanup_old_sessions_thread.start()
-
 def check_and_restart_cleanup():
     global cleanup_old_sessions_thread
     cleanup_old_sessions_thread.join(0.0)
@@ -81,3 +89,6 @@ def check_and_restart_cleanup():
         logging.info('Session cleanup: started a new thread since the daemon died')
         cleanup_old_sessions_thread = SessionCleanupThread()
         cleanup_old_sessions_thread.start()
+
+cleanup_old_sessions_thread = SessionCleanupThread()
+cleanup_old_sessions_thread.start()
