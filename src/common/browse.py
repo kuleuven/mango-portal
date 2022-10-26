@@ -202,9 +202,11 @@ def collection_browse(collection):
         metadata_objects = query.execute()
 
     # end temp
+    view_template = 'browse.html.j2' if not co_path.startswith(f"/{g.irods_session.zone}/trash") else 'browse_trash.html.j2'
+    user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
 
     return render_template(
-        "browse.html.j2",
+        view_template,
         co_path=co_path,
         breadcrumbs=generate_breadcrumbs(co_path),
         collection=current_collection,
@@ -222,6 +224,7 @@ def collection_browse(collection):
         current_user_rights=get_current_user_rights(
             g.irods_session.username, current_collection
         ),
+        user_trash_path = user_trash_path,
     )
 
 
@@ -357,8 +360,10 @@ def view_object(data_object_path):
                 tzinfo=datetime.timezone.utc, microsecond=0
             ).isoformat()
 
+    view_template = 'view_object.html.j2' if not data_object_path.startswith(f"/{g.irods_session.zone}/trash") else 'view_object_trash.html.j2'
+
     return render_template(
-        "view_object.html.j2",
+        view_template,
         data_object=data_object,
         meta_data_items=meta_data_items,
         breadcrumbs=generate_breadcrumbs(data_object_path),
@@ -764,3 +769,21 @@ def set_inheritance(collection_path: str):
             request.referrer.split("#")[0] + request.values["redirect_hash"]
         )
     return redirect(request.referrer)
+
+@browse_bp.route("/trash/empty/user", methods=["POST"])
+def empty_user_trash():
+    user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
+    user_trash = g.irods_session.collections.get(user_trash_path)
+
+    for sub_collection in user_trash.subcollections:
+         g.irods_session.collections.remove(sub_collection.path, force=True)
+    for data_object in user_trash.data_objects:
+        g.irods_session.data_objects.get(data_object.path).unlink(force=True)
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(url_for('browse_bp.collection_browse', collection=user_trash_path))

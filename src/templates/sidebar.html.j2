@@ -23,7 +23,7 @@
     <li>
     <a href="{{ url_for('basic_search_bp.catalog_search')}}"
        class="nav-link px-2 text-truncate"><i class="bi bi-search fs-4"></i>
-    <span class="d-none d-sm-inline">Advanced search</span> </a>
+    <span class="d-none d-sm-inline">Search</span> </a>
 </li>
 <li>
 <a href="{{ url_for('user_bp.my_groups')}}"
@@ -38,7 +38,7 @@
 <li>
     <a href="/metadata-template" class="nav-link px-2 text-truncate">
         <i class="bi bi-list-columns-reverse fs-4"></i>
-        <span class="d-none d-sm-inline">Metadata templates</span>
+        <span class="d-none d-sm-inline">Metadata schemas</span>
     </a>
 </li>
 {% if g.irods_session.username in config['irods_zones'][g.irods_session.zone]['admin_users'] %}

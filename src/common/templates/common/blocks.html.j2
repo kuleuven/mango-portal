@@ -1,4 +1,4 @@
-{% macro permission_block(item_path, permissions, acl_users_dict, acl_counts, my_groups=[], group_filter_exclude=[], current_user_rights = [], recursive=false )%}
+{% macro permission_block(item_path, permissions, acl_users_dict, acl_counts, my_groups=[], group_filter_exclude=[], current_user_rights = [], recursive=false, read_only = false )%}
     <table class="table table-striped table-hover mt-2" id="permssions-table">
         <thead>
             <tr>
@@ -16,33 +16,35 @@
                     <td>{{ permission.access_name }}</td>
                     <td>{{ permission.user_zone }}</td>
                     <td>
-                        {% if config['ACL_PROTECT_OWN'] and permission.access_name == 'own' and acl_counts['own'] < 2 %}
-                            <p title="disabled: need at least 1 owner">
-                                <button type="submit"
-                                        class="btn btn-grey"
-                                        disabled
-                                        title="At least one owner required">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </p>
-                        {% elif 'own' in current_user_rights %}
-                            <form method="post"
-                                  action="{{ url_for('browse_bp.set_permissions', item_path=item_path) }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                <input type="hidden" name="groups" value="{{ permission.user_name }}" />
-                                <input type="hidden" name="permission_type" value="null" />
-                                <input type="hidden" name="redirect_hash" value="#permissions"/>
-                                <button type="submit" class="btn">
-                                    <i class="bi bi-trash text-danger"></i>
-                                </button>
-                            </form>
+                        {% if not read_only %}
+                            {% if config['ACL_PROTECT_OWN'] and permission.access_name == 'own' and acl_counts['own'] < 2 %}
+                                <p title="disabled: need at least 1 owner">
+                                    <button type="submit"
+                                            class="btn btn-grey"
+                                            disabled
+                                            title="At least one owner required">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </p>
+                            {% elif 'own' in current_user_rights %}
+                                <form method="post"
+                                      action="{{ url_for('browse_bp.set_permissions', item_path=item_path) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                    <input type="hidden" name="groups" value="{{ permission.user_name }}" />
+                                    <input type="hidden" name="permission_type" value="null" />
+                                    <input type="hidden" name="redirect_hash" value="#permissions"/>
+                                    <button type="submit" class="btn">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
                         {% endif %}
                     </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% if 'own' in current_user_rights %}
+    {% if 'own' in current_user_rights and not read_only %}
         <form method="post"
               action="{{ url_for('browse_bp.set_permissions', item_path=item_path) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -91,7 +93,7 @@
         </form>
     {% endif %}
 {% endmacro %}
-{% macro metadata_block(object_id, object_path, grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="collection") %}
+{% macro metadata_block(object_id, object_path, grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="collection", read_only=False) %}
     {% if grouped_metadata|length == 1 and config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata %}
         <table class="table table-striped table-hover mt-2">
             <tbody>
@@ -100,7 +102,7 @@
                         <th>{{ item.name }}</th>
                         <td>{{ item.value }}</td>
                         <td>{{ item.units if item.units is not none }}</td>
-                        {% if not item.name.startswith(readonly_prefixes) %}
+                        {% if not item.name.startswith(readonly_prefixes) and not read_only %}
                             <td>
                                 {% if not (item.units and item.units.startswith('analysis')) %}
                                     <a href="#"
@@ -132,28 +134,30 @@
                 {% endfor %}
             </tbody>
         </table>
-        <button type="button"
-                class="btn btn-primary"
-                data-bs-toggle="modal"
-                data-bs-target="#addMetaData">
-            Add metadata
-        </button>
-        <h4 class="mt-4">Edit/add metadata via schema</h4>
-        <form class="row g-3 col-md-6 mt-4"
-              method="get"
-              action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
-            <input type="hidden" name="item_type" value="{{ item_type }}" />
-            <input type="hidden" name="id" value="{{ object_id }}" />
-            <input type="hidden" name="object_path" value="{{ object_path }}" />
-            <select name="schema" class="form-select">
-                {% for schema_file in metadata_schema_filenames %}
-                    <option value="{{ schema_file }}">
-                        {{ schema_file[:-5] }}
-                    </option>
-                {% endfor %}
-            </select>
-            <button type="submit" class="btn btn-primary">Edit</button>
-        </form>
+        {% if not read_only %}
+            <button type="button"
+                    class="btn btn-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addMetaData">
+                Add metadata
+            </button>
+            <h4 class="mt-4">Edit/add metadata via schema</h4>
+            <form class="row g-3 col-md-6 mt-4"
+                  method="get"
+                  action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
+                <input type="hidden" name="item_type" value="{{ item_type }}" />
+                <input type="hidden" name="id" value="{{ object_id }}" />
+                <input type="hidden" name="object_path" value="{{ object_path }}" />
+                <select name="schema" class="form-select">
+                    {% for schema_file in metadata_schema_filenames %}
+                        <option value="{{ schema_file }}">
+                            {{ schema_file[:-5] }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">Edit</button>
+            </form>
+        {% endif %}
     {% else %}
         <!-- nav top bar -->
         <ul class="nav nav-pills mb-3 mt-3" id="schema-tab" role="tablist">
@@ -188,7 +192,7 @@
                                     </th>
                                     <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}">{{ item.value }}</td>
                                     <td>{{ item.units if item.units is not none }}</td>
-                                    {% if not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
+                                    {% if not read_only and  item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
                                         <td>
                                             {% if not (item.units and item.units.startswith('analysis')) %}
                                                 <a href="#"
@@ -220,7 +224,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    {% if schema == config['MANGO_NOSCHEMA_LABEL'] %}
+                    {% if schema == config['MANGO_NOSCHEMA_LABEL'] and not read_only %}
                         <button type="button"
                                 class="btn btn-primary"
                                 data-bs-toggle="modal"
@@ -245,7 +249,7 @@
                                 Edit
                             </button>
                         </form>
-                    {% elif schema != 'analysis' %}
+                    {% elif schema != 'analysis' and not read_only %}
                         <form class="row g-3 col-md-6 mt-4"
                               method="get"
                               action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
@@ -296,7 +300,7 @@
                             <td>
                                 {% if key in consolidated %}
                                     <i class="bi bi-check2-square text-primary"></i>
-                                {% else %}
+                                {% elif not read_only %}
                                     <input type="checkbox" name="consolidate" value='{{ {key:item} | tojson }}'/>
                                     {# note the single quotes required #}
                                 {% endif %}
@@ -306,7 +310,7 @@
                 {% endif %}
             {% endfor %}
         </table>
-        {% if consolidate %}
+        {% if consolidate and not read_only %}
             <div class="row mt-5">
                 <div class="col">
                     <button class="btn btn-primary float-end">

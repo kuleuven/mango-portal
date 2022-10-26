@@ -1,0 +1,188 @@
+{% extends "base.html.j2" %}
+{% import "dialogs.html.j2" as dialogs %}
+{% import "blocks.html.j2" as block_macros %}
+{% block body %}
+  <nav style="--bs-breadcrumb-divider: '>'" aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      {% for element in breadcrumbs[:-1] %}
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
+        </li>
+      {% endfor %}
+      <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li>
+    </ol>
+  </nav>
+  <div class="row">
+    <div class="col-8">
+      <h2 class="mb-4">{{ data_object.name }}</h2>
+    </div>
+    <div class="col-4 display-6">
+      <div class="d-flex justify-content-end">
+        <button type="button"
+                class="btn btn-danger float-end"
+                data-bs-toggle="modal"
+                data-bs-target="#empty_trash"
+                data-bs-field-ha="hihi"
+                data-bs-field-bo="hoho">
+          <i class="bi bi-trash"></i> Empty Trash
+        </button>
+        {{ dialogs.confirm_delete_dialog('empty_trash',url_for('browse_bp.empty_user_trash'),  mode='custom',  title='Permanently remove collections and files', btn_ok='Empty Trash' )}}
+      </div>
+    </div>
+  </div>
+  <ul class="nav nav-tabs mb-4" id="object_tab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a class="nav-link active"
+         href="#system"
+         id="system-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#system"
+         type="button"
+         role="tab"
+         aria-controls="home"
+         aria-selected="true">
+        System properties
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link"
+         href="#metadata"
+         id="meta-data-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#meta-data"
+         type="button"
+         role="tab"
+         aria-controls="meta-data"
+         aria-selected="false">
+        Metadata
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link"
+         href="#permissions"
+         id="permissions-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#item-permissions"
+         type="button"
+         role="tab"
+         aria-controls="collection-permissions"
+         aria-selected="false">
+        Permissions
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link"
+         href="#preview"
+         id="preview-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#preview"
+         type="button"
+         role="tab"
+         aria-controls="preview"
+         aria-selected="false">
+        Preview
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link"
+         href="#analysis"
+         id="analysis-tab"
+         data-bs-toggle="tab"
+         data-bs-target="#item-analysis"
+         type="button"
+         role="tab"
+         aria-controls="analysis"
+         aria-selected="false">
+        Analysis
+      </a>
+    </li>
+  </ul>
+  <div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active"
+         id="system"
+         role="tabpanel"
+         aria-labelledby="system-tab">
+      <table class="table table-striped table-hover">
+        <tr>
+          <th>Owner</th>
+          <td>{{ data_object.owner_name }}</td>
+        </tr>
+        <tr>
+          <th>Created</th>
+          <td>{{ data_object.create_time.isoformat(timespec='seconds') }}</td>
+        </tr>
+        <tr>
+          <th>Modified</th>
+          <td>{{ data_object.modify_time.isoformat(timespec='seconds') }}</td>
+        </tr>
+        <tr>
+          <th>Size</th>
+          <td>{{ data_object.size | filesizeformat }}</td>
+        </tr>
+        <tr>
+          <th>Internal id</th>
+          <td>{{ data_object.id }}</td>
+        </tr>
+        <tr>
+          <th>Status</th>
+          <td>{{ data_object.status }}</td>
+        </tr>
+        <tr>
+          <th>Replica number</th>
+          <td>{{ data_object.replica_number }}</td>
+        </tr>
+      </table>
+      <div class="row mt-5">
+        <div class="col">
+          <button type="button"
+                  class="btn btn-danger float-end"
+                  data-bs-toggle="modal"
+                  data-bs-target="#delete_object">
+            Delete Data Object
+          </button>
+        </div>
+      </div>
+      {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object'), title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-xl" )}}
+    </div>
+    <div class="tab-pane fade"
+         id="meta-data"
+         role="tabpanel"
+         aria-labelledby="meta-data-tab">
+      {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/"), grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="data_object", read_only = true)}}
+    </div>
+    <div class="tab-pane" id="item-permissions">
+      {{ block_macros.permission_block(data_object.path.lstrip("/"), permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights, read_only = true )}}
+    </div>
+    <div class="tab-pane fade"
+         id="preview"
+         role="tabpanel"
+         aria-labelledby="preview-tab">
+      {# to be moved to its own server side handler + template to include #}
+      {% if data_object.name.endswith(('jpg','jpeg','png', 'pdf', 'tif', 'tiff', 'gif')) %}
+        <div class="row">
+          <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path)}}"
+               class="w-50"
+               style="object-fit: contain"
+               alt="preview image"/>
+        </div>
+      {% else %}
+        <p>Preview not possible for this type</p>
+      {% endif %}
+    </div>
+    <div class="tab-pane" id="item-analysis">
+      {% if tika_result %}
+        {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata'), data_object_path=data_object.path, read_only=true) }}
+      {% endif %}
+      <div class="row">
+      </div>
+    </div>
+  </div>
+{% endblock body %}
+{% block javascript %}
+  {{ super() }}
+  <script>
+// open the active tab if specified by simulating a click() :)
+var hash = window.location.hash;
+hash && document.querySelector('a[href="'+hash+'"]').click()
+  </script>
+{% endblock javascript %}
