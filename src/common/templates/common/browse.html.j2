@@ -538,6 +538,7 @@
               class="row g-3 needs-validation"
               novalidate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="redirect_hash" value="#metadata"/>
           <div class="modal-body">
             <div class="mb-3">
               <label for="meta-data-name-add" class="col-form-label">

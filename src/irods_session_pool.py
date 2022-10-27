@@ -6,6 +6,8 @@ import logging
 
 # global pool of irods session as a dict of wrapped iRODSUSerSession objects
 irods_user_sessions = {}
+irods_node_logins = []
+
 SESSION_TTL = 60 * 30 # 30 minutes
 class iRODSUSerSession(iRODSSession):
 
@@ -52,8 +54,8 @@ class SessionCleanupThread(Thread):
             #         del irods_user_sessions[session_id]
             #         logging.info(f"Removed {session_id}")
             time.sleep(1)
-            # emit a heartbeat logging at most every 30 seconds
-            if int(time.time()) % 30 == 0:
+            # emit a heartbeat logging at most every 300 seconds
+            if int(time.time()) % 300 == 0:
                 logging.info(f"Cleanup heartbeat")
 
 

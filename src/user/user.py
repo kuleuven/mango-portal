@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import (
     Blueprint,
     current_app as app,
@@ -8,7 +9,6 @@ from flask import (
     request,
     session,
     url_for,
-    jsonify,
 )
 from irods.models import User
 from irods.session import iRODSSession
@@ -18,7 +18,7 @@ from irods.exception import PAM_AUTH_PASSWORD_FAILED
 from irods.user import iRODSUser, iRODSUserGroup, UserGroup
 from pprint import pprint, pformat
 import irods_session_pool
-import ssl
+import logging
 
 from irods_zones_config import irods_zones, DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
 
@@ -26,7 +26,6 @@ user_bp = Blueprint(
     "user_bp", __name__, static_folder="static/user", template_folder="templates"
 )
 # iRODSSession.query()
-
 
 @user_bp.route("/user/groups")
 def my_groups():
@@ -62,17 +61,17 @@ def my_profile():
     logged_in_since = irods_session_pool.irods_user_sessions[session['userid']].created
 
     home_total_size_in_bytes = 0
-    n_data_objs = 0
+    n_data_objects = 0
     try:
         collection = g.irods_session.collections.get(f"/{g.irods_session.zone}/home/{g.irods_session.username}")
         for info in collection.walk( ):
-            n_data_objs += len( info[2] )
+            n_data_objects += len( info[2] )
             home_total_size_in_bytes += sum( d.size for d in info[2] )
     except e:
         home_total_size_in_bytes = -1
 
 
-    return render_template("myprofile.html.j2", me=me, my_groups=my_groups, logged_in_since=logged_in_since, home_total_size=home_total_size_in_bytes)
+    return render_template("myprofile.html.j2", me=me, my_groups=my_groups, logged_in_since=logged_in_since, home_total_size=home_total_size_in_bytes, n_data_objects = n_data_objects)
 
 
 @user_bp.route("/group/members/<group_name>")
@@ -149,6 +148,9 @@ def login_basic():
         session['userid'] = username
         session['password'] = password
         session['zone'] = irods_session.zone
+
+        irods_session_pool.irods_node_logins += [{'userid': username, 'zone': irods_session.zone, 'login_time': datetime.now()}]
+        logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
 
         return redirect(url_for('index'))
 

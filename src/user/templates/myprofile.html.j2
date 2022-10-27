@@ -32,7 +32,15 @@
             <td>{{ logged_in_since.isoformat(timespec='seconds') }}</td>
           </tr>
           <tr>
-            <th>Disk space used in your home</th>
+            <th>
+              <i class="bi bi-house-heart"></i> Number of data objects
+            </th>
+            <td>{{ n_data_objects }}</td>
+          </tr>
+          <tr>
+            <th>
+              <i class="bi bi-house-heart"></i> Disk space used
+            </th>
             {% if home_total_size > config['USER_MAX_HOME_SIZE'] %}
               <td class="text-danger">
                 <i class="bi bi-exclamation-triangle"></i>

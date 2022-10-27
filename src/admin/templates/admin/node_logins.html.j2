@@ -1,0 +1,30 @@
+{% extends "base.html.j2" %}
+{% block body %}
+    {% include "admin_header.html.j2" %}
+    <h3>Logins since server started</h3>
+    <div class="row">
+        <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Userid</th>
+                        <th>Zone</th>
+                        <th>Logged in at</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for login in logins_since_server_start %}
+                        <tr {% if g.irods_session.username == login.userid %}class="text-success"{% endif %}>
+                            <td>{{ login.userid }}</td>
+                            <td>{{ login.zone }}</td>
+                            <td>{{ login.login_time.isoformat(timespec='seconds') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <p>Server up since: {{ g.mango_server_info['server_start'].isoformat(timespec='seconds') }}</p>
+    </div>
+{% endblock body %}
