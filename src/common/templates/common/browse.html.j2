@@ -18,7 +18,8 @@
   <nav style="--bs-breadcrumb-divider: '&raquo;'" aria-label="breadcrumb">
     <ol class="breadcrumb">
       <i class="bi bi-house-door-fill"> </i>&nbsp;
-      {% for element in breadcrumbs[:-1] %}
+      <li class="breadcrumb-item">{{ breadcrumbs[0]['label'] }}</li>
+      {% for element in breadcrumbs[1:-1] %}
         <li class="breadcrumb-item">
           <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
         </li>
@@ -226,7 +227,8 @@
                         </td>
                       {% else %}
                         <td></td>
-                        <td></td>
+                        <td>
+                        </td>
                       {% endif %}
                     </tr>
                   {% endfor %}
@@ -364,7 +366,7 @@
           {% endfor %}
         </tbody>
       </table>
-      {% if 'own' in current_user_rights and collection.path != g.user_home %}
+      {% if 'own' in current_user_rights and collection.path != g.user_home and breadcrumps|length > 2 %}
         <div class="row mt-5">
           <div class="col">
             <button type="button"
@@ -377,8 +379,9 @@
             </button>
           </div>
         </div>
+              {{ dialogs.confirm_delete_dialog('delete_collection', url_for('browse_bp.delete_collection'), title='Delete collection and contents', mode='listen-many', readonly_fields = [{'name' : 'collection_path', 'value': collection.path, 'label': 'Collection Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=breadcrumbs[-2]['url'])}], modal_class="modal-xl" )}}
+
       {% endif %}
-      {{ dialogs.confirm_delete_dialog('delete_collection', url_for('browse_bp.delete_collection'), title='Delete collection and contents', mode='listen-many', readonly_fields = [{'name' : 'collection_path', 'value': collection.path, 'label': 'Collection Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=breadcrumbs[-2]['url'])}], modal_class="modal-xl" )}}
     </div>
     <div class="tab-pane" id="collection-permissions">
       <div class="float-end">

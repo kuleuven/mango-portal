@@ -18,7 +18,8 @@
   <nav style="--bs-breadcrumb-divider: '&raquo;'" aria-label="breadcrumb">
     <ol class="breadcrumb">
       <i class="bi bi-house-door-fill"> </i>&nbsp;
-      {% for element in breadcrumbs[:-1] %}
+      <li class="breadcrumb-item">{{ breadcrumbs[0]['label'] }}</li>
+      {% for element in breadcrumbs[1:-1] %}
         <li class="breadcrumb-item">
           <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
         </li>
@@ -32,11 +33,7 @@
     </div>
   </div>
   <div class="d-flex justify-content-end">
-    <button type="button"
-            class="btn btn-danger float-end"
-            data-bs-toggle="modal"
-            data-bs-target="#empty_trash"
-            {{ 'disabled' if not sub_collections and not data_objects }}>
+    <button type="button" class="btn btn-danger float-end" data-bs-toggle="modal" data-bs-target="#empty_trash" {{ 'disabled' if not sub_collections and not data_objects }}>
       <i class="bi bi-trash"></i> Empty Trash
     </button>
     {{ dialogs.confirm_delete_dialog('empty_trash',url_for('browse_bp.empty_user_trash'),  mode='custom',  title='Permanently remove collections and files', btn_ok='Empty Trash' )}}
@@ -219,7 +216,7 @@
           {% endfor %}
         </tbody>
       </table>
-      {% if 'own' in current_user_rights and collection.path != user_trash_path %}
+      {% if 'own' in current_user_rights and collection.path != user_trash_path and breadcrumbs|length > 2 %}
         <div class="row mt-5">
           <div class="col">
             <button type="button"
