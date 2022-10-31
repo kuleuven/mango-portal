@@ -576,8 +576,8 @@ def add_collection():
 def ask_tika(data_object_path):
     """
     """
-    # save referral:
-    referral = str(request.referrer)
+    # impose referral:
+    referral = url_for('browse_bp.view_object', data_object_path = data_object_path )
     logging.info(f"Tika referral: {referral}")
 
     # FETCH FROM CONFIG INSTEAD
