@@ -9,3 +9,4 @@ buildDockerImage {
   imageName = 'mango'
   imageTag = 'latest'
 }
+
