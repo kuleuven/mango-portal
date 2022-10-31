@@ -38,6 +38,8 @@ import datetime
 import time
 from collections import Counter, namedtuple
 from cache import cache
+import logging
+
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
@@ -574,6 +576,10 @@ def add_collection():
 def ask_tika(data_object_path):
     """
     """
+    # save referral:
+    referral = str(request.referrer)
+    logging.info(f"Tika referral: {referral}")
+
     # FETCH FROM CONFIG INSTEAD
     tika_host = current_app.config['TIKA_URL'].rstrip('/')
     tika_url = f"{tika_host}/tika/text"
@@ -650,9 +656,9 @@ def ask_tika(data_object_path):
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
         return redirect(
-            request.referrer.split("#")[0] + request.values["redirect_hash"]
+            referral.split("#")[0] + request.values["redirect_hash"]
         )
-    return redirect(request.referrer)
+    return redirect(referral)
 
     # return render_template(
     #     "object_ask_tika.html.j2",
