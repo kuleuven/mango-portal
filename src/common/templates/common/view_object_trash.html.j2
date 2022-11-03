@@ -4,6 +4,7 @@
 {% block body %}
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
+      <i class="bi bi-house-door-fill"> </i>&nbsp;
       {% for element in breadcrumbs[:-1] %}
         <li class="breadcrumb-item">
           <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
