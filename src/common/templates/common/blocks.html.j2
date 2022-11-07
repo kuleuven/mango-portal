@@ -192,7 +192,7 @@
                                     </th>
                                     <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}">{{ item.value }}</td>
                                     <td>{{ item.units if item.units is not none }}</td>
-                                    {% if not read_only and  item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
+                                    {% if not read_only and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
                                         <td>
                                             {% if not (item.units and item.units.startswith('analysis')) %}
                                                 <a href="#"
