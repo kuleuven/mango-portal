@@ -366,7 +366,8 @@
           {% endfor %}
         </tbody>
       </table>
-      {% if 'own' in current_user_rights and collection.path != g.user_home and breadcrumps|length > 2 %}
+      {% if 'own' in current_user_rights and collection.path != g.user_home %}
+        {# and breadcrumbs|length > 2 %} #}
         <div class="row mt-5">
           <div class="col">
             <button type="button"
