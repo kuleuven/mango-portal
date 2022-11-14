@@ -205,6 +205,12 @@ def get_schema_prefix_from_filename(filename):
     else:
         return False
 
+def get_schema_prefix(schema_identifier = False, schema_filename = False):
+    if schema_identifier:
+        return f"{current_app.config['MANGO_PREFIX']}.{schema_identifier}"
+    if schema_filename:
+        return f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(schema_filename)}"
+
 
 @metadata_schema_form_bp.route("/metada-schema/edit", methods=["POST", "GET"])
 def edit_schema_metadata_for_item():
@@ -212,16 +218,16 @@ def edit_schema_metadata_for_item():
     """
     _parameters = request.values.to_dict()
 
-    print("Raw request data")
-    print(request.values)
-    print("request data as mutable dict")
-    pprint(_parameters)
+    # print("Raw request data")
+    # print(request.values)
+    # print("request data as mutable dict")
+    # pprint(_parameters)
     item_type = _parameters["item_type"]
     object_path = _parameters["object_path"]
     if not object_path.startswith("/"):
         object_path = "/" + object_path
     template_name = _parameters["schema"]
-    prefix = f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(template_name)}"
+    prefix = get_schema_prefix(schema_filename=template_name) #f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(template_name)}"
     form_dict={}
     json_template_dir = os.path.abspath("static/metadata-templates")
     with open(f"{json_template_dir}/{template_name}") as template_file:
@@ -266,6 +272,7 @@ def edit_schema_metadata_for_item():
         pprint(f"Key is: {_key}")
 
         form_values.add(_key, _value)
+    form_values.add('redirect_hash', '#metadata')
 
     for meta_data_item in catalog_item.metadata.items():
         if meta_data_item.name.startswith(prefix):
@@ -285,6 +292,7 @@ def edit_schema_metadata_for_item():
         setattr(schema_form_class, "schema", HiddenField())
         setattr(schema_form_class, "object_path", HiddenField())
         setattr(schema_form_class, "item_type", HiddenField())
+        setattr(schema_form_class, "redirect_hash", HiddenField())
         setattr(schema_form_class, "submit", SubmitField(label="Save"))
         schema_form = schema_form_class(form_values)
         return render_template(
@@ -297,9 +305,7 @@ def edit_schema_metadata_for_item():
     if request.method == "POST":
         """
         """
-        print("POST form data")
-        pprint(request.form)
-        print(f"saving metadata for {template_name}")
+
 
         # remove all relevant attributes for this schema
         # remove operations:
@@ -320,23 +326,57 @@ def edit_schema_metadata_for_item():
                 )
 
         catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
-        print(f"Path to redirect to is {catalog_item.path}")
 
         if item_type == "collection":
-            return redirect(
-                url_for("browse_bp.collection_browse", collection=catalog_item.path)
-            )
+            referral = url_for("browse_bp.collection_browse", collection=catalog_item.path)
         else:
+            referral = url_for("browse_bp.view_object", data_object_path=catalog_item.path)
+
+        if "redirect_route" in request.values:
+            return redirect(request.values["redirect_route"])
+        if "redirect_hash" in request.values:
             return redirect(
-                url_for("browse_bp.view_object", data_object_path=catalog_item.path)
+                referral.split("#")[0] + request.values["redirect_hash"]
             )
-
-            # form_values.add(meta_data_item.name, meta_data_item.value)
-
-    return redirect(request.referrer)
+        return redirect(request.referrer)
 
 
-@metadata_schema_form_bp.route("/metada-schema/delete", methods=["POST"])
+
+@metadata_schema_form_bp.route("/metadata-schema/delete", methods=["POST"])
 def delete_schema_metadata_for_item():
     """
     """
+    form_parameters = request.values.to_dict()
+    schema_identifier = form_parameters["schema_identifier"]
+    item_path = form_parameters["item_path"]
+    if not item_path.startswith("/"):
+        item_path = "/" + item_path
+    item_type = form_parameters["item_type"]
+
+    catalog_item = (
+        g.irods_session.data_objects.get(item_path)
+        if item_type == "data_object"
+        else g.irods_session.collections.get(item_path)
+    )
+    prefix = get_schema_prefix(schema_identifier=schema_identifier)
+
+    avu_operation_list = []
+    for meta_data_item in catalog_item.metadata.items():
+        if meta_data_item.name.startswith(prefix):
+            avu_operation_list.append(
+                AVUOperation(operation="remove", avu=meta_data_item)
+            )
+    catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
+
+    if item_type == "collection":
+        referral = url_for("browse_bp.collection_browse", collection=catalog_item.path)
+    else:
+        referral = url_for("browse_bp.view_object", data_object_path=catalog_item.path)
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            referral.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
