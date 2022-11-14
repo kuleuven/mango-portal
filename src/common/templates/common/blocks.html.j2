@@ -94,7 +94,7 @@
         </form>
     {% endif %}
 {% endmacro %}
-{% macro metadata_block(object_id, object_path, grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="collection", read_only=False) %}
+{% macro metadata_block(object_id, object_path, grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="collection", read_only=False, current_user_rights=[]) %}
     {% if grouped_metadata|length == 1 and config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata %}
         <table class="table table-striped table-hover mt-2">
             <tbody>
@@ -103,7 +103,7 @@
                         <th>{{ item.name }}</th>
                         <td>{{ item.value }}</td>
                         <td>{{ item.units if item.units is not none }}</td>
-                        {% if not item.name.startswith(readonly_prefixes) and not read_only %}
+                        {% if not item.name.startswith(readonly_prefixes) and not read_only and 'own' in current_user_rights %}
                             <td>
                                 {% if not (item.units and item.units.startswith('analysis')) %}
                                     <a href="#"
@@ -135,7 +135,7 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% if not read_only %}
+        {% if not read_only and 'own' in current_user_rights %}
             <button type="button"
                     class="btn btn-primary"
                     data-bs-toggle="modal"
@@ -193,7 +193,7 @@
                                     </th>
                                     <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}">{{ item.value }}</td>
                                     <td>{{ item.units if item.units is not none }}</td>
-                                    {% if not read_only and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
+                                    {% if not read_only and 'own' in current_user_rights and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
                                         <td>
                                             {% if not (item.units and item.units.startswith('analysis')) %}
                                                 <a href="#"
@@ -225,7 +225,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    {% if schema == config['MANGO_NOSCHEMA_LABEL'] and not read_only %}
+                    {% if schema == config['MANGO_NOSCHEMA_LABEL'] and not read_only and 'own' in current_user_rights %}
                         <button type="button"
                                 class="btn btn-primary"
                                 data-bs-toggle="modal"
@@ -250,7 +250,7 @@
                                 Edit
                             </button>
                         </form>
-                    {% elif schema != 'analysis' and not read_only %}
+                    {% elif schema != 'analysis' and not read_only and 'own' in current_user_rights %}
                         <div class="row mt-4">
                             <form class="col"
                                   method="get"
