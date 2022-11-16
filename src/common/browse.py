@@ -25,7 +25,7 @@ import mimetypes
 import tempfile
 from urllib.parse import unquote
 
-from lib.util import generate_breadcrumbs, flatten_josse_schema
+from lib.util import generate_breadcrumbs, flatten_josse_schema, get_collection_size
 import magic
 import os
 import glob
@@ -39,7 +39,7 @@ import time
 from collections import Counter, namedtuple
 from cache import cache
 import logging
-
+import irods_session_pool
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
@@ -74,9 +74,12 @@ def get_current_user_rights(current_user_name, item):
     access = []
     permissions = g.irods_session.permissions.get(item, report_raw_acls=False)
     pprint.pprint(permissions)
+    # group_names: workaround for non expanding user groups for data objects
+    group_names = []
+    if current_user_name in irods_session_pool.irods_user_sessions:
+        group_names = [group.name for group in irods_session_pool.irods_user_sessions[current_user_name].groups]
     for permission in permissions:
-
-        if current_user_name == permission.user_name:
+        if current_user_name == permission.user_name or permission.user_name in group_names:
             access += [permission.access_name]
     pprint.pprint(access)
     return access

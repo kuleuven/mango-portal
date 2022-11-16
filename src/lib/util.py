@@ -1,6 +1,5 @@
 import os
 
-
 def generate_breadcrumbs(path_string):
     breadcrumbs = []
     path_elements = path_string.strip("/").split("/")
@@ -59,6 +58,15 @@ def flatten_josse_schema(object_tuple, level=0, prefix="", result_dict={}):
                 "type": _property["type"],
             }
 
-    # print(f"level: {level}")
-    # pprint(result_dict)
     return result_dict
+
+def get_collection_size(collection):
+    total_size = 0
+    num_data_objects = 0
+    try:
+        for info in collection.walk( ):
+            num_data_objects += len( info[2] )
+            total_size += sum( d.size for d in info[2] )
+    except e:
+        total_size_in_bytes = -1
+    return {'total_size': total_size, 'num_data_objects': num_data_objects }

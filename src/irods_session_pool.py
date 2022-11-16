@@ -1,4 +1,5 @@
 from irods.session import iRODSSession
+from irods.user import iRODSUser, iRODSUserGroup, UserGroup, User
 
 from threading import Lock, Thread, Event
 import datetime, time
@@ -9,13 +10,21 @@ irods_user_sessions = {}
 irods_node_logins = []
 
 SESSION_TTL = 60 * 30 # 30 minutes
-class iRODSUSerSession(iRODSSession):
+class iRODSUserSession(iRODSSession):
 
     def __init__(self, irods_session: iRODSSession):
         self.irods_session = irods_session
         self.lock = Lock()
         self.created = datetime.datetime.now()
         self.last_accessed = datetime.datetime.now()
+        self.user = irods_session.users.get(irods_session.username)
+        my_groups = [
+            iRODSUserGroup(irods_session.user_groups, item)
+            for item in irods_session.query(UserGroup)
+            .filter(User.name == irods_session.username)
+            .all()
+        ]
+        self.groups = [group for group in my_groups if group.name != irods_session.username]
 
     def __del__(self):
         # release connections upon object destruction
@@ -62,7 +71,7 @@ class SessionCleanupThread(Thread):
 
 def add_irods_session(session_id, irods_session):
     global irods_user_sessions
-    irods_user_sessions[session_id] = iRODSUSerSession(irods_session)
+    irods_user_sessions[session_id] = iRODSUserSession(irods_session)
     irods_user_sessions[session_id].lock.acquire()
 
 
