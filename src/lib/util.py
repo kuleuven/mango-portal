@@ -70,3 +70,23 @@ def get_collection_size(collection):
     except e:
         total_size_in_bytes = -1
     return {'total_size': total_size, 'num_data_objects': num_data_objects }
+
+def current_user_is_naked_owner(irods_session, catalog_item):
+    permissions = irods_session.permissions.get(catalog_item, report_raw_acls=True)
+    for permission in permissions:
+        if irods_session.username == permission.user_name and permission.access_name == 'own':
+            return True
+    return False
+
+def mimic_atomic_operations(catalog_item, avu_operations):
+    for avu_operation in avu_operations:
+        if avu_operation.operation == 'remove':
+            catalog_item.metadata.remove(avu_operation.avu)
+        if avu_operation.operation == 'add':
+            catalog_item.metadata.add(avu_operation.avu)
+
+def execute_atomic_operations(irods_session, catalog_item, avu_operations):
+    if current_user_is_naked_owner(irods_session, catalog_item):
+        catalog_item.metadata.apply_atomic_operations(*avu_operations)
+    else:
+        mimic_atomic_operations(catalog_item, avu_operations)

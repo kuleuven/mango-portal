@@ -50,6 +50,7 @@ from slugify import slugify
 
 from pprint import pprint
 
+import lib.util
 from lib.util import flatten_josse_schema
 
 metadata_schema_form_bp = Blueprint(
@@ -325,7 +326,9 @@ def edit_schema_metadata_for_item():
                     AVUOperation(operation="add", avu=iRODSMeta(_key, _value))
                 )
 
-        catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
+        #catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
+        # workaround for a bug in 4.2.11
+        lib.util.execute_atomic_operations(g.irods_session, catalog_item, avu_operation_list)
 
         if item_type == "collection":
             referral = url_for("browse_bp.collection_browse", collection=catalog_item.path)
@@ -366,7 +369,10 @@ def delete_schema_metadata_for_item():
             avu_operation_list.append(
                 AVUOperation(operation="remove", avu=meta_data_item)
             )
-    catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
+
+    #catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
+    # workaround for a bug in 4.2.11
+    lib.util.execute_atomic_operations(g.irods_session, catalog_item, avu_operation_list)
 
     if item_type == "collection":
         referral = url_for("browse_bp.collection_browse", collection=catalog_item.path)

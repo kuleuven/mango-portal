@@ -188,7 +188,9 @@ def add_tika_metadata():
                 operation="add", avu=iRODSMeta(av_key, av_value, "analysis/tika")
             )
         )
-    data_object.metadata.apply_atomic_operations(*avu_operation_list)
+    #data_object.metadata.apply_atomic_operations(*avu_operation_list)
+    # workaround for a bug in 4.2.11
+    lib.util.execute_atomic_operations(g.irods_session, data_object, avu_operation_list)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
