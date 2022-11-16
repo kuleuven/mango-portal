@@ -13,6 +13,7 @@ from flask import (
 from irods import models, query, session
 from irods.meta import iRODSMeta, AVUOperation
 import json
+import lib.util
 
 metadata_bp = Blueprint("metadata_bp", __name__, template_folder="templates/metadata")
 
