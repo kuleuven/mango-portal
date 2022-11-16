@@ -40,6 +40,7 @@ from collections import Counter, namedtuple
 from cache import cache
 import logging
 import irods_session_pool
+from multidict import MultiDict
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
@@ -49,20 +50,20 @@ def group_prefix_metadata_items(
 ):
     """
     """
-    grouped_metadata = {no_schema_label: {}}
+    grouped_metadata = {no_schema_label: MultiDict() }
     if group_analysis_unit:
-        grouped_metadata['analysis'] = {}
+        grouped_metadata['analysis'] = MultiDict()
     for avu in metadata_items:
         if avu.name.startswith(mango_prefix) and avu.name.count(".") >= 2:
             (mango_schema_prefix, schema, avu_name) = avu.name.split(".", 2)
             # item.name = meta_name
             if schema not in grouped_metadata:
-                grouped_metadata[schema] = {}
-            grouped_metadata[schema][avu.name] = avu
+                grouped_metadata[schema] = MultiDict()
+            grouped_metadata[schema].add(avu.name, avu)
         elif (group_analysis_unit and avu.units and avu.units.startswith('analysis')):
-            grouped_metadata['analysis'][avu.name] = avu
+            grouped_metadata['analysis'].add(avu.name, avu)
         else:
-            grouped_metadata[no_schema_label][avu.name] = avu
+            grouped_metadata[no_schema_label].add(avu.name, avu)
     # if there are no consolidated metadata in the analysis group, delete the (empty) group
     if group_analysis_unit and len(grouped_metadata['analysis']) == 0:
         del grouped_metadata['analysis']
