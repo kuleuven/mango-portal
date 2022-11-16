@@ -125,17 +125,19 @@
           <td>{{ data_object.replica_number }}</td>
         </tr>
       </table>
-      <div class="row mt-5">
-        <div class="col">
-          <button type="button"
-                  class="btn btn-danger float-end"
-                  data-bs-toggle="modal"
-                  data-bs-target="#delete_object">
-            Delete Data Object
-          </button>
+      {% if 'own' in current_user_rights %}
+        <div class="row mt-5">
+          <div class="col">
+            <button type="button"
+                    class="btn btn-danger float-end"
+                    data-bs-toggle="modal"
+                    data-bs-target="#delete_object">
+              Delete Data Object
+            </button>
+          </div>
         </div>
-      </div>
-      {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object'), title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-xl" )}}
+        {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object'), title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-xl" )}}
+      {% endif %}
     </div>
     <div class="tab-pane fade"
          id="meta-data"
