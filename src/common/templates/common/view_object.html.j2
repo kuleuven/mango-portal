@@ -225,7 +225,7 @@
                   aria-label="Close">
           </button>
         </div>
-        <form action="{{ url_for('metadata_bp.edit_meta_data_collection')}}"
+        <form action="{{ url_for('metadata_bp.edit_meta_data')}}"
               method="post"
               enctype="multipart/form-data"
               class="row g-3 needs-validation"
@@ -270,7 +270,7 @@
             </div>
             <input type="hidden"
                    id="object-path-edit"
-                   name="collection-path"
+                   name="object-path"
                    value="{{ data_object.path }}"/>
             <input type="hidden"
                    id="target-type-edit"
