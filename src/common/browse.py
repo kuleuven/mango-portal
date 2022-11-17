@@ -41,7 +41,7 @@ from cache import cache
 import logging
 import irods_session_pool
 from multidict import MultiDict
-
+from operator import itemgetter
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
 
@@ -64,6 +64,10 @@ def group_prefix_metadata_items(
             grouped_metadata['analysis'].add(avu.name, avu)
         else:
             grouped_metadata[no_schema_label].add(avu.name, avu)
+    # sort the non schema lists by key
+    grouped_metadata[no_schema_label]=MultiDict(sorted(grouped_metadata[no_schema_label].items(),  key=itemgetter(0)))
+    if 'analysis' in grouped_metadata:
+        grouped_metadata['analysis']=MultiDict(sorted(grouped_metadata['analysis'].items(), key=itemgetter(0)))
     # if there are no consolidated metadata in the analysis group, delete the (empty) group
     if group_analysis_unit and len(grouped_metadata['analysis']) == 0:
         del grouped_metadata['analysis']
