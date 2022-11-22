@@ -218,6 +218,9 @@ def login_via_go_callback():
         session['password'] = password
         session['zone'] = irods_session.zone
 
+        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now()}]
+        logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
+
     except Exception as e:
         print(e)
         flash('Could not create iRODS session', category='danger')

@@ -2,6 +2,7 @@
 {% block body %}
     {% include "admin_header.html.j2" %}
     <div class="row">
+        <h3>Local active sessions on this node</h3>
         <div class="col">
             <table class="table">
                 <thead>
@@ -28,7 +29,7 @@
         </div>
     </div>
     <div class="row">
-        <p>Server up since: {{ g.mango_server_info['server_start'].isoformat(timespec='seconds') }}</p>
+        <p>Node up since: {{ g.mango_server_info['server_start'].isoformat(timespec='seconds') }}</p>
         <p>Session cleanup thread since: {{ cleanup_start.isoformat(timespec='seconds') }}</p>
     </div>
 {% endblock body %}
