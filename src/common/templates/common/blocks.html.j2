@@ -150,7 +150,7 @@
                 <input type="hidden" name="id" value="{{ object_id }}" />
                 <input type="hidden" name="object_path" value="{{ object_path }}" />
                 <select name="schema" class="form-select">
-                    {% for schema_file in metadata_schema_filenames %}
+                    {% for schema_file in metadata_schema_filenames if not schema_file == "uischema.json" %}
                         <option value="{{ schema_file }}">
                             {{ schema_file[:-5] }}
                         </option>
@@ -240,7 +240,7 @@
                             <input type="hidden" name="id" value="{{ object_id }}" />
                             <input type="hidden" name="object_path" value="{{ object_path }}"/>
                             <select name="schema" class="form-select">
-                                {% for schema_file in metadata_schema_filenames %}
+                                {% for schema_file in metadata_schema_filenames if not schema_file == "uischema.json" %}
                                     <option value="{{ schema_file }}">
                                         {{ schema_file[:-5] }}
                                     </option>

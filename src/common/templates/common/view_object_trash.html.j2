@@ -143,7 +143,7 @@
           </button>
         </div>
       </div>
-      {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object'), title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-xl" )}}
+      {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object'), title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-lg" )}}
     </div>
     <div class="tab-pane fade"
          id="meta-data"
