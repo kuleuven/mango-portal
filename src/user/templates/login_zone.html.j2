@@ -1,0 +1,36 @@
+{% extends "base_core.html.j2" %}
+{% block custom_style %}
+    <style>
+div#login-form {
+    background-image: url({{ url_for('static', filename='unsplash-mango.jpg') }});
+    background-color: rgba(255,255,255,0.8);
+    background-blend-mode: lighten;
+    /* You may add things like width, height, background-size... */
+}
+    </style>
+{% endblock custom_style %}
+{% block body %}
+    <div class="container">
+        <div class="row align-items-center justify-content-center">
+            <div class="col-md-9 rounded-3" id="login-form">
+                <h3>Login to Mango, your iRODS Active Data Portal</h3>
+                <p class="mb-4">Please select the zone you want to login to</p>
+                <form action="{{ url_for('user_bp.login_zone') }}"" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="form-group mb-3">
+                        <label for="irods_zone">iRODS zone</label>
+                        <select class="form-select" name="irods_zone" id="irods_zone">
+                            {% for zone_name in config['irods_zones'] %}
+                                <option value="{{ zone_name }}"
+                                        {% if zone_name == last_zone_name %}selected{% endif %}>
+                                    {{ zone_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <input type="submit" value="Log In" class="btn btn-block btn-primary mb-3"/>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock body %}

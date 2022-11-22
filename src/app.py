@@ -45,15 +45,15 @@ from metadata_schema.form import metadata_schema_form_bp
 from admin.admin import admin_bp
 
 from irods.session import iRODSSession
-
 import platform
 from irods_zones_config import irods_zones, DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
 import irods_session_pool
 from werkzeug.exceptions import HTTPException
 import logging
 import datetime
-import time
-import signal
+
+#from flask_debugtoolbar import DebugToolbarExtension
+
 print(f"Flask version {flask.__version__}")
 
 app = Flask(__name__)
@@ -89,6 +89,8 @@ cache.init_app(app)
 with app.app_context():
     cache.clear()
 
+# Add debug toolbar
+#toolbar = DebugToolbarExtension(app)
 
 
 # Register blueprints
@@ -121,7 +123,8 @@ def handle_exception(e):
 def init_and_secure_views():
     """
     """
-    if request.endpoint in ['static','user_bp.login_basic']:
+
+    if request.endpoint in ['static','user_bp.login_basic', 'user_bp.login_zone', 'user_bp.login_via_go_callback']:
         return None
 
     # some globals for feeding the templates
@@ -151,7 +154,7 @@ def init_and_secure_views():
 
         return None
 
-    if current_app.config["MANGO_AUTH"] == 'basic':
+    if current_app.config["MANGO_AUTH"] in ['basic', 'via_callback']:
         irods_session = None
         if not 'userid' in session:
             print(f"No user id in session, basic auth")
@@ -189,7 +192,10 @@ def init_and_secure_views():
             g.mango_server_info = mango_server_info
             return None
         else:
-            return redirect(url_for('user_bp.login_basic'))
+            if current_app.config["MANGO_AUTH"] == 'basic':
+                return redirect(url_for('user_bp.login_basic'))
+            if current_app.config["MANGO_AUTH"] == 'via_callback':
+                return redirect(url_for('user_bp.login_zone'))
 
 @app.after_request
 def release_irods_session_lock(response):
@@ -269,7 +275,7 @@ def api_collection_tree(collection):
     """
     """
     if collection is None or collection == "~":
-        collection = user_home
+        collection = g.user_home
     if not collection.startswith("/"):
         collection = "/" + collection
     current_collection = irods_session.collections.get(collection)

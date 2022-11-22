@@ -161,3 +161,66 @@ def logout_basic():
     if 'userid' in session:
         irods_session_pool.remove_irods_session(session['userid'])
     return redirect(url_for('user_bp.login_basic'))
+
+
+@user_bp.route('/user/login_zone', methods=["GET", "POST"])
+def login_zone():
+    """
+    """
+    if request.method == 'GET':
+        last_zone_name=''
+
+        if 'zone' in session:
+            last_zone_name = session['zone']
+        return render_template('login_zone.html.j2', last_zone_name=last_zone_name)
+
+    if request.method == 'POST':
+        host = request.host
+        scheme = request.scheme
+        zone = request.form.get('irods_zone')
+        if zone in irods_zones:
+            auth_uri = f"https://{irods_zones[zone]['parameters']['host']}/auth/iinit?redirect_uri={scheme}://{host}/user/login_zone_callback"
+            print(f"Auth uri: {auth_uri}")
+            return redirect(auth_uri)
+        else:
+            flash('Unknown zone', category='danger')
+            return render_template('login_zone.html.j2', )
+
+
+
+@user_bp.route('/user/login_zone_callback')
+def login_via_go_callback():
+    """
+    """
+
+    user_name = request.args.get('user_name', '')
+    password = request.args.get('password', '')
+    zone = request.args.get('zone_name', '')
+
+    if not user_name or not password or not zone:
+        flash('Could not obtain user name or password or zone name, did you select the right zone', category='danger')
+        return render_template('login_zone.html.j2')
+
+    try:
+        parameters = DEFAULT_IRODS_PARAMETERS.copy()
+        ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
+        parameters.update(irods_zones[zone]['parameters'])
+        ssl_settings.update(irods_zones[zone]['ssl_settings'])
+        irods_session = iRODSSession(
+            user=user_name,
+            password=password,
+            **parameters,
+            **ssl_settings
+        )
+
+        irods_session_pool.add_irods_session(user_name, irods_session)
+        session['userid'] = user_name
+        session['password'] = password
+        session['zone'] = irods_session.zone
+
+    except Exception as e:
+        print(e)
+        flash('Could not create iRODS session', category='danger')
+        return render_template('login_zone.html.j2')
+
+    return redirect(url_for('index'))
