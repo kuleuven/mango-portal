@@ -6,8 +6,8 @@
                     <div class="modal-message">
                         <div class="formEditorContainer d-flex flex-column">
                             <div class="p-2">
-                                <button class="btn btn-primary" type="button" @click="loadJSON()">Load JSON from PC</button>
-                                <input type="file" style="display: none" ref="fileInput" accept="application/JSON" @change="onFilePicked"/>
+                                <!-- <button class="btn btn-primary" type="button" @click="loadJSON()">Load JSON from PC</button>
+                                <input type="file" style="display: none" ref="fileInput" accept="application/JSON" @change="onFilePicked"/> -->
                                 <button class="btn btn-primary" @click="saveTemplate()">Save template</button>
                                 <button class="btn btn-primary" @click="$emit('cancel')">Cancel</button>
                             </div>

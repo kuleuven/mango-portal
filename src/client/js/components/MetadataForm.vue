@@ -1,10 +1,10 @@
 <template>
-    
+
     <div class="formContainer d-flex flex-column">
-        <div class="p-2">
+        <!-- <div class="p-2">
             <button class="sideMenuButton btn btn-primary" @click="loadJSON()">Load JSON</button>
             <input type="file" style="display: none" ref="fileInput" accept="application/JSON" @change="onFilePicked"/>
-        </div>
+        </div> -->
         <div class="p-2">
             <FormSchema id="metadata_form" :schema="schema" v-model="model" @submit.prevent="submit" :key="formKey" novalidate>
                     <button type="submit" class="btn btn-primary">Save</button>
@@ -174,7 +174,7 @@
                             }
                             // If the required field is empty the form fails
                             success = false;
-                        } 
+                        }
                         //Check if checkboxes input fails, special implementation so custom validation necessary
                         else if (formDivs[i].dataset.fsRequired==="true" && formDivs[i].dataset.fsField.indexOf("checkboxes") !== -1 && formDivs[i].dataset.fsKind !== "boolean"){
                             // If none of the checkboxes are checked it fails
