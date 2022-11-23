@@ -99,14 +99,14 @@
                         </div>
                     </div>
                 </div>
-                <div v-if="showArray" class="HTMLElement border rounded">
+                <!-- <div v-if="showArray" class="HTMLElement border rounded">
                     <button class="HTMLElementButton btn btn-primary" @click="$emit('addArray')">
                         Array
                     </button>
                     <div class="HTMLElementExample">
                         <FormSchema :schema="arraySchema"></FormSchema>
                     </div>
-                </div>
+                </div> -->
                 <button class="btn btn-primary" @click="$emit('cancel')">
                     Cancel
                 </button>
