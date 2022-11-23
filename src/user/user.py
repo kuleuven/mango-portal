@@ -20,7 +20,12 @@ from pprint import pprint, pformat
 import irods_session_pool
 import logging
 
-from irods_zones_config import irods_zones, DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
+from oic.oic import Client
+from oic.utils.authn.client import CLIENT_AUTHN_METHOD
+from oic.oic.message import RegistrationResponse, AuthorizationResponse
+from oic import rndstr
+
+from irods_zones_config import irods_zones, DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS, retrieve_password
 
 user_bp = Blueprint(
     "user_bp", __name__, static_folder="static/user", template_folder="templates"
@@ -225,5 +230,114 @@ def login_via_go_callback():
         print(e)
         flash('Could not create iRODS session', category='danger')
         return render_template('login_zone.html.j2')
+
+    return redirect(url_for('index'))
+
+@user_bp.route('/user/login_openid', methods=["GET", "POST"])
+def login_openid():
+    """
+    """
+
+    if request.method == 'GET':
+        last_zone_name=''
+
+        if 'zone' in session:
+            last_zone_name = session['zone']
+        return render_template('login_openid.html.j2', last_zone_name=last_zone_name)
+
+    if request.method == 'POST':
+        host = request.host
+        zone = request.form.get('irods_zone')
+
+        if zone in irods_zones and 'openid' in irods_zones[zone]:
+            client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
+            issuer_url = irods_zones[zone]['openid']['issuer_url']
+            provider_info = client.provider_config(issuer_url)
+            client_reg = RegistrationResponse(client_id=irods_zones[zone]['openid']['client_id'], client_secret=irods_zones[zone]['openid']['secret'])
+            client.store_registration_info(client_reg)
+
+            session["openid_state"] = rndstr()
+            session["openid_nonce"] = rndstr()
+            args = {
+                "client_id": client.client_id,
+                "response_type": "code",
+                "scope": ["openid"],
+                "nonce": session["openid_nonce"],
+                "redirect_uri": f"https://{host}/user/login_openid_callback/{zone}",
+                "state": session["openid_state"]
+            }
+
+            auth_req = client.construct_AuthorizationRequest(request_args=args)
+            auth_uri = auth_req.request(client.authorization_endpoint)
+
+            return redirect(auth_uri)
+        else:
+            flash('Unknown zone', category='danger')
+            return render_template('login_openid.html.j2', )
+
+
+@user_bp.route('/user/login_openid_callback/<zone>')
+def login_openid_callback(zone):
+    """
+    """
+    if not zone in irods_zones or 'openid' not in irods_zones[zone]:
+        flash('Not able to retrieve zone openid information', category='danger')
+        return render_template('login_openid.html.j2')
+
+    client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
+    issuer_url = irods_zones[zone]['openid']['issuer_url']
+    provider_info = client.provider_config(issuer_url)
+    client_reg = RegistrationResponse(client_id=irods_zones[zone]['openid']['client_id'], client_secret=irods_zones[zone]['openid']['secret'])
+    client.store_registration_info(client_reg)
+
+    query_string = request.query_string.decode('utf-8')
+    authn_resp = client.parse_response(AuthorizationResponse, info=query_string, sformat='urlencoded')
+
+    if authn_resp["state"] != session.pop('openid_state'):
+        flash('Invalid state', category='danger')
+        return render_template('login_openid.html.j2')
+
+    host = request.host
+    args = {
+        "code": authn_resp["code"],
+        "redirect_uri": f"https://{host}/user/login_openid_callback/{zone}",
+    }
+    token_resp = client.do_access_token_request(state=authn_resp["state"], request_args=args, authn_method="client_secret_basic")
+
+    id_token = token_resp['id_token']
+
+    if id_token['nonce'] != session.pop('openid_nonce'):
+        flash('Invalid nonce', category='danger')
+        return render_template('login_openid.html.j2')
+
+    userinfo = client.do_user_info_request(state=authn_resp["state"])
+    if userinfo['sub'] != id_token['sub']:
+        flash('The \'sub\' of userinfo does not match \'sub\' of ID Token.', category='danger')
+        return render_template('login_openid.html.j2')
+
+    user_name = userinfo['preferred_username']
+    password = retrieve_password(zone, user_name)
+
+    try:
+        parameters = DEFAULT_IRODS_PARAMETERS.copy()
+        ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
+        parameters.update(irods_zones[zone]['parameters'])
+        ssl_settings.update(irods_zones[zone]['ssl_settings'])
+        irods_session = iRODSSession(
+            user=user_name,
+            password=password,
+            **parameters,
+            **ssl_settings
+        )
+
+        irods_session_pool.add_irods_session(user_name, irods_session)
+        session['userid'] = user_name
+        session['password'] = password
+        session['zone'] = irods_session.zone
+
+    except Exception as e:
+        print(e)
+        flash('Could not create iRODS session', category='danger')
+        return render_template('login_openid.html.j2')
 
     return redirect(url_for('index'))

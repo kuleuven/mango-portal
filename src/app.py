@@ -124,7 +124,7 @@ def init_and_secure_views():
     """
     """
 
-    if request.endpoint in ['static','user_bp.login_basic', 'user_bp.login_zone', 'user_bp.login_via_go_callback']:
+    if request.endpoint in ['static','user_bp.login_basic', 'user_bp.login_openid', 'user_bp.login_zone', 'user_bp.login_openid_callback', 'user_bp.login_via_go_callback']:
         return None
 
     # some globals for feeding the templates
@@ -154,7 +154,7 @@ def init_and_secure_views():
 
         return None
 
-    if current_app.config["MANGO_AUTH"] in ['basic', 'via_callback']:
+    if current_app.config["MANGO_AUTH"] in ['basic', 'openid', 'via_callback']:
         irods_session = None
         if not 'userid' in session:
             print(f"No user id in session, basic auth")
@@ -194,6 +194,8 @@ def init_and_secure_views():
         else:
             if current_app.config["MANGO_AUTH"] == 'basic':
                 return redirect(url_for('user_bp.login_basic'))
+            if current_app.config["MANGO_AUTH"] == 'openid':
+                return redirect(url_for('user_bp.login_openid'))
             if current_app.config["MANGO_AUTH"] == 'via_callback':
                 return redirect(url_for('user_bp.login_zone'))
 
