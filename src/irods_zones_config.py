@@ -22,18 +22,25 @@ DEFAULT_SSL_PARAMETERS = {
     'ssl_context': ssl_context
 }
 
-openid_kuleuven = {
-    'client_id': os.environ.get('OIDC_CLIENT_ID', ''),
-    'secret': os.environ.get('OIDC_SECRET', ''),
-    'issuer_url': os.environ.get('OIDC_ISSUER_URL', ''),
+# Dict of openid providers, can be empty
+openid_providers = {
+    'kuleuven': {
+        'label': 'KU Leuven',
+        'client_id': os.environ.get('OIDC_CLIENT_ID', ''),
+        'secret': os.environ.get('OIDC_SECRET', ''),
+        'issuer_url': os.environ.get('OIDC_ISSUER_URL', ''),
+        'zones_for_user': lambda username : ['set', 'gbiomed', 'gbiomed_eximious', 'gbiomed_fbi', 'ghum', 'icts_demo']
+    },
+    'vsc': {
+        'label': 'VSC',
+        'client_id': 'blub',
+        'secret': 'blub',
+        'issuer_url': 'https://auth.vscentrum.be',
+        'zones_for_user': lambda username : ['kuleuven_tier1_pilot']
+    },
 }
 
-openid_vsc = {
-    'client_id': 'blub',
-    'secret': 'blub',
-    'issuer_url': 'https://auth.vscentrum.be',
-}
-
+# Dict of irods zones
 irods_zones = {
     'kuleuven_tier1_pilot': {
         'jobid': 'icts-p-hpc-irods-tier1-pilot',
@@ -42,9 +49,8 @@ irods_zones = {
             'zone': 'kuleuven_tier1_pilot',
         },
         'ssl_settings' : {},
-        'openid' : openid_vsc,
         'admin_users': ['vsc33436', 'x0116999']
-        },
+    },
     'set': {
         'jobid': 'icts-p-lnx-irods-set',
         'parameters' : {
@@ -52,9 +58,8 @@ irods_zones = {
             'zone': 'set',
         },
         'ssl_settings' : {},
-        'openid' : openid_kuleuven,
         'admin_users': ['u0123318', 'x0116999']
-        },
+    },
     'gbiomed' : {
         'jobid': 'icts-p-lnx-irods-gbiomed',
         'parameters' : {
@@ -62,9 +67,8 @@ irods_zones = {
             'zone': 'gbiomed',
         },
         'ssl_settings' : {},
-        'openid' : openid_kuleuven,
         'admin_users': ['u0123318', 'x0116999']
-        },
+    },
     'gbiomed_eximious' : {
         'jobid': 'icts-p-lnx-irods-gbiomed-eximious',
         'parameters' : {
@@ -72,9 +76,8 @@ irods_zones = {
             'zone': 'gbiomed_eximious',
         },
         'ssl_settings' : {},
-        'openid' : openid_kuleuven,
         'admin_users': ['u0123318', 'x0116999']
-        },
+    },
     'gbiomed_fbi' : {
         'jobid': 'icts-p-lnx-irods-gbiomed-fbi',
         'parameters' : {
@@ -82,9 +85,8 @@ irods_zones = {
             'zone': 'gbiomed_fbi',
         },
         'ssl_settings' : {},
-        'openid' : openid_kuleuven,
         'admin_users': ['u0123318', 'x0116999']
-        },
+    },
     'ghum' : {
         'jobid': 'icts-p-lnx-irods-ghum',
         'parameters' : {
@@ -92,20 +94,38 @@ irods_zones = {
             'zone': 'ghum',
         },
         'ssl_settings' : {},
-        'openid' : openid_kuleuven,
         'admin_users': ['u0123318', 'x0116999']
-        },
-    'demo' : {
+    },
+    'icts_demo' : {
         'jobid': 'icts-t-lnx-irods-demo',
         'parameters' : {
             'host': 'demo.irods.t.icts.kuleuven.be',
             'zone': 'icts_demo',
         },
         'ssl_settings' : {},
-        'openid' : openid_kuleuven,
         'admin_users': ['u0123318', 'x0116999']
-        },
+    },
 }
+
+# Callback to retrieve connection information for a certain zone and username.
+# If basic authentication is used, the password is passed as third argument.
+# If openid authentication is used, the password will be None.
+def irods_connection_info(login_method, zone, username, password=None):
+    if login_method == "openid":
+        password = retrieve_password(zone, username)
+
+    parameters = DEFAULT_IRODS_PARAMETERS.copy()
+    ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
+    parameters.update(irods_zones[zone]['parameters'])
+    ssl_settings.update(irods_zones[zone]['ssl_settings'])
+    
+    return {
+        'parameters': parameters,
+        'ssl_settings': ssl_settings,
+        'password': password,
+    }
+
+
 
 def api_url(jobid):
     if 'icts-p-' in jobid:

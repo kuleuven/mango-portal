@@ -46,7 +46,7 @@ from admin.admin import admin_bp
 
 from irods.session import iRODSSession
 import platform
-from irods_zones_config import irods_zones, DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
+from irods_zones_config import openid_providers, irods_zones, DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
 import irods_session_pool
 from werkzeug.exceptions import HTTPException
 import logging
@@ -60,6 +60,7 @@ app = Flask(__name__)
 
 
 app.config.from_pyfile('config.py')
+app.config['openid_providers'] = openid_providers
 app.config['irods_zones'] = irods_zones
 
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
@@ -124,7 +125,7 @@ def init_and_secure_views():
     """
     """
 
-    if request.endpoint in ['static','user_bp.login_basic', 'user_bp.login_openid', 'user_bp.login_zone', 'user_bp.login_openid_callback', 'user_bp.login_via_go_callback']:
+    if request.endpoint in ['static','user_bp.login_basic', 'user_bp.login_openid', 'user_bp.login_zone', 'user_bp.login_openid_callback', 'user_bp.login_openid_select_zone', 'user_bp.login_via_go_callback']:
         return None
 
     # some globals for feeding the templates
