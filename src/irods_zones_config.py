@@ -2,6 +2,9 @@ import os
 import ssl
 import requests
 
+API_URL = os.environ.get('API_URL', 'https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be')
+API_TOKEN = os.environ.get('API_TOKEN', '')
+
 DEFAULT_IRODS_PARAMETERS = {
     'port': 1247,
     'irods_authentication_scheme': 'PAM',
@@ -22,27 +25,7 @@ DEFAULT_SSL_PARAMETERS = {
     'ssl_context': ssl_context
 }
 
-# Dict of openid providers, can be empty
-# TODO: adapt zones_for_user and only present relevant zones for a user
-openid_providers = {
-    'kuleuven': {
-        'label': 'KU Leuven',
-        'client_id': os.environ.get('OIDC_CLIENT_ID', ''),
-        'secret': os.environ.get('OIDC_SECRET', ''),
-        'issuer_url': os.environ.get('OIDC_ISSUER_URL', ''),
-        'zones_for_user': lambda username : ['set', 'gbiomed', 'gbiomed_eximious', 'gbiomed_fbi', 'ghum', 'icts_demo']
-    },
-    'vsc': {
-        'label': 'VSC',
-        'client_id': 'blub',
-        'secret': 'blub',
-        'issuer_url': 'https://auth.vscentrum.be',
-        'zones_for_user': lambda username : ['kuleuven_tier1_pilot']
-    },
-}
-
 # Dict of irods zones
-# TODO: Replace by call to data-platform-api
 irods_zones = {
     'kuleuven_tier1_pilot': {
         'jobid': 'icts-p-hpc-irods-tier1-pilot',
@@ -109,10 +92,62 @@ irods_zones = {
     },
 }
 
-# Callback to retrieve connection information for a certain zone and username.
-# If basic authentication is used, the password is passed as third argument.
-# If openid authentication is used, the password will be None.
+def refresh_zone_info():
+    """
+    Refresh zone information
+    Update the irods_zone information with the zones retrieved from the data platform api.
+    """
+
+    if not API_URL or not API_TOKEN:
+        return
+    
+    header = {'Authorization': 'Bearer ' + API_TOKEN}
+    response = requests.get(f'{API_URL}/v1/irods/zones', headers=header)
+    response.raise_for_status()
+
+    zones = {}
+   
+    for zone_info in response.json():
+        zones[zone_info['zone']] = {
+            'jobid': zone_info['jobid'],
+            'parameters': {
+                'host': zone_info['fqdn'],
+                'zone': zone_info['zone'],
+            },
+            'ssl_settings': {},
+            'admin_users': ['u0123318', 'vsc33436', 'x0116999'],
+        }
+
+    irods_zones.clear()
+    irods_zones.update(zones)
+
+# TODO: only present relevant zones for a user
+def zones_for_user_lnx(username):
+    zones = []
+
+    for zone, info in irods_zones.items():
+        if '-lnx-' in info['jobid']:
+            zones.append(zone)
+    
+    return zones
+
+# TODO: only present relevant zones for a user
+def zones_for_user_vsc(username):
+    zones = []
+
+    for zone, info in irods_zones.items():
+        if '-hpc-' in info['jobid']:
+            zones.append(zone)
+    
+    return zones
+
 def irods_connection_info(login_method, zone, username, password=None):
+    """
+    Callback to retrieve connection information for a certain zone and username.
+    If basic authentication is used, the password is passed as third argument.
+    If openid authentication is used, the password will be None.
+    """
+
     parameters = DEFAULT_IRODS_PARAMETERS.copy()
     ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
     parameters.update(irods_zones[zone]['parameters'])
@@ -121,16 +156,14 @@ def irods_connection_info(login_method, zone, username, password=None):
     if login_method == "openid":
         jobid = irods_zones[zone]['jobid']
 
-        api_base = api_url(jobid)
-
-        header = {'Authorization': 'Bearer ' + os.environ.get('API_TOKEN', '')}
-        response = requests.post(f'{api_base}/v1/token', json={'username': username, 'permissions': ['user']}, headers=header)
+        header = {'Authorization': 'Bearer ' + API_TOKEN}
+        response = requests.post(f'{API_URL}/v1/token', json={'username': username, 'permissions': ['user']}, headers=header)
         response.raise_for_status()
 
         user_api_token = response.json()['token']
 
         header = {'Authorization': 'Bearer ' + user_api_token}
-        response = requests.get(f'{api_base}/v1/irods/zones/{jobid}/connection_info', headers=header)
+        response = requests.get(f'{API_URL}/v1/irods/zones/{jobid}/connection_info', headers=header)
         response.raise_for_status()
 
         info = response.json()
@@ -144,11 +177,23 @@ def irods_connection_info(login_method, zone, username, password=None):
         'password': password,
     }
 
+# Refresh zone information from api
+refresh_zone_info()
 
-def api_url(jobid):
-    if 'icts-p-' in jobid:
-        return f'https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be'
-    elif 'icts-q-' in jobid:
-        return f'https://icts-q-coz-data-platform-api.cloud.q.icts.kuleuven.be'
-    else:
-        return f'https://icts-t-coz-data-platform-api.cloud.t.icts.kuleuven.be'
+# Dict of openid providers, can be empty
+openid_providers = {
+    'kuleuven': {
+        'label': 'KU Leuven',
+        'client_id': os.environ.get('OIDC_CLIENT_ID', ''),
+        'secret': os.environ.get('OIDC_SECRET', ''),
+        'issuer_url': os.environ.get('OIDC_ISSUER_URL', ''),
+        'zones_for_user': zones_for_user_lnx,
+    },
+    'vsc': {
+        'label': 'VSC',
+        'client_id': 'blub',
+        'secret': 'blub',
+        'issuer_url': 'https://auth.vscentrum.be',
+        'zones_for_user': zones_for_user_vsc,
+    },
+}
