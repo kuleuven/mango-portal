@@ -23,6 +23,7 @@ DEFAULT_SSL_PARAMETERS = {
 }
 
 # Dict of openid providers, can be empty
+# TODO: adapt zones_for_user and only present relevant zones for a user
 openid_providers = {
     'kuleuven': {
         'label': 'KU Leuven',
@@ -41,6 +42,7 @@ openid_providers = {
 }
 
 # Dict of irods zones
+# TODO: Replace by call to data-platform-api
 irods_zones = {
     'kuleuven_tier1_pilot': {
         'jobid': 'icts-p-hpc-irods-tier1-pilot',
@@ -111,20 +113,36 @@ irods_zones = {
 # If basic authentication is used, the password is passed as third argument.
 # If openid authentication is used, the password will be None.
 def irods_connection_info(login_method, zone, username, password=None):
-    if login_method == "openid":
-        password = retrieve_password(zone, username)
-
     parameters = DEFAULT_IRODS_PARAMETERS.copy()
     ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
     parameters.update(irods_zones[zone]['parameters'])
     ssl_settings.update(irods_zones[zone]['ssl_settings'])
+
+    if login_method == "openid":
+        jobid = irods_zones[zone]['jobid']
+
+        api_base = api_url(jobid)
+
+        header = {'Authorization': 'Bearer ' + os.environ.get('API_TOKEN', '')}
+        response = requests.post(f'{api_base}/v1/token', json={'username': username, 'permissions': ['user']}, headers=header)
+        response.raise_for_status()
+
+        user_api_token = response.json()['token']
+
+        header = {'Authorization': 'Bearer ' + user_api_token}
+        response = requests.get(f'{api_base}/v1/irods/zones/{jobid}/connection_info', headers=header)
+        response.raise_for_status()
+
+        info = response.json()
+
+        parameters.update(info['irods_environment'])
+        password = info['token']
     
     return {
         'parameters': parameters,
         'ssl_settings': ssl_settings,
         'password': password,
     }
-
 
 
 def api_url(jobid):
@@ -134,20 +152,3 @@ def api_url(jobid):
         return f'https://icts-q-coz-data-platform-api.cloud.q.icts.kuleuven.be'
     else:
         return f'https://icts-t-coz-data-platform-api.cloud.t.icts.kuleuven.be'
-
-def retrieve_password(zone, username):
-    jobid = irods_zones[zone]['jobid']
-
-    api_base = api_url(jobid)
-
-    header = {'Authorization': 'Bearer ' + os.environ.get('API_TOKEN', '')}
-    response = requests.post(f'{api_base}/v1/token', json={'username': username, 'permissions': ['user']}, headers=header)
-    response.raise_for_status()
-
-    user_api_token = response.json()['token']
-
-    header = {'Authorization': 'Bearer ' + user_api_token}
-    response = requests.get(f'{api_base}/v1/irods/zones/{jobid}/connection_info', headers=header)
-    response.raise_for_status()
-
-    return response.json()['token']
