@@ -164,6 +164,10 @@ def login_basic():
 def logout_basic():
     if 'userid' in session:
         irods_session_pool.remove_irods_session(session['userid'])
+
+    if app.config["MANGO_AUTH"] == 'openid':
+        return redirect(url_for('user_bp.login_openid'))
+    #default
     return redirect(url_for('user_bp.login_basic'))
 
 
@@ -250,9 +254,9 @@ def login_openid():
         if openid_provider not in openid_providers:
             flash('Unknown openid provider', category='danger')
             return render_template('login_openid.html.j2', )
-        
+
         provider_config = openid_providers[openid_provider]
-        
+
         client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
         issuer_url = provider_config['issuer_url']
         provider_info = client.provider_config(issuer_url)
@@ -285,7 +289,7 @@ def login_openid_callback(openid_provider):
     if openid_provider not in openid_providers:
         flash('Unknown openid provider', category='danger')
         return render_template('login_openid.html.j2', )
-    
+
     provider_config = openid_providers[openid_provider]
 
     client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
@@ -344,7 +348,7 @@ def login_openid_select_zone():
         zones = zones_for_user(session['openid_username'])
 
         return render_template('login_openid_select_zone.html.j2', zones=zones, last_zone_name=last_zone_name)
-    
+
     zone = request.form.get('irods_zone')
 
     user_name = session['openid_username']
@@ -363,6 +367,9 @@ def login_openid_select_zone():
         session['userid'] = user_name
         session['password'] = password
         session['zone'] = irods_session.zone
+
+        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now()}]
+        logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
 
     except Exception as e:
         print(e)
