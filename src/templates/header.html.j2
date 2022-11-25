@@ -46,7 +46,7 @@
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    {% if config['MANGO_AUTH'] == 'basic' %}
+                    {% if config['MANGO_AUTH'] in ['basic', 'openid'] %}
                         <li>
                             <a class="dropdown-item" href="{{ url_for('user_bp.logout_basic') }}">Sign out</a>
                         </li>
