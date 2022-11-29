@@ -15,7 +15,10 @@
                 <tbody>
                     {% for login in logins_since_server_start|reverse %}
                         <tr {% if g.irods_session.username == login.userid %}class="text-success"{% endif %}>
-                            <td>{{ login.userid }}</td>
+                            <td>
+                                {{ login.userid }}
+                                {% if login.user_name %}({{ login.user_name }}){% endif %}
+                            </td>
                             <td>{{ login.zone }}</td>
                             <td>{{ login.login_time.isoformat(timespec='seconds') }}</td>
                         </tr>
