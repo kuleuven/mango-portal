@@ -326,7 +326,7 @@ def login_openid_callback(openid_provider):
     # We are logged on
     session["openid_provider"] = openid_provider
     session["openid_username"] = userinfo['preferred_username']
-    session["user_info"] = userinfo
+    session["user_info"] = userinfo.__dict__
 
     return redirect(url_for('user_bp.login_openid_select_zone'))
 
