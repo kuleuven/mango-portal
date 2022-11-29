@@ -326,7 +326,8 @@ def login_openid_callback(openid_provider):
     # We are logged on
     session["openid_provider"] = openid_provider
     session["openid_username"] = userinfo['preferred_username']
-    session["user_info"] = userinfo.__dict__
+    session["openid_user_email"] = userinfo["email"]
+    session["openid_user_name"] = userinfo["name"]
 
     return redirect(url_for('user_bp.login_openid_select_zone'))
 
@@ -369,7 +370,7 @@ def login_openid_select_zone():
         session['password'] = password
         session['zone'] = irods_session.zone
 
-        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now()}]
+        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now(), 'user_name': session['openid_user_name'] if 'openid_user_name' in session else ''} ]
         logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
 
     except Exception as e:

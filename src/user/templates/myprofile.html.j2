@@ -11,6 +11,12 @@
             <th>Login name</th>
             <td>{{ me.name }}</td>
           </tr>
+          {% if 'openid_user_name' in session %}
+            <tr>
+              <th>Name</th>
+              <td>{{ session['openid_user_name'] }}</td>
+            </tr>
+          {% endif %}
           <tr>
             <th>Zone</th>
             <td>{{ me.zone }}</td>
@@ -43,31 +49,31 @@
             <th>
               <i class="bi bi-house-heart h4"></i> Disk space used
             </th>
-            {% if home_total_size > config['USER_MAX_HOME_SIZE'] %}
+            {# {% if home_total_size > config['USER_MAX_HOME_SIZE'] %}
               <td class="text-danger">
                 <i class="bi bi-exclamation-triangle"></i>
-              {% else %}
-                <td class="text-success">
-                {% endif %}
-                {{ home_total_size | filesizeformat }}
-              </td>
-            </tr>
-          </table>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card">
-          <div class="card-header">
-            <h1 class="bi bi-people display-1"></h1>
-          </div>
-          <ul class="list-group list-group-flush">
-            {% for group in my_groups %}
-              <li class="list-group-item">
-                <a href="{{ url_for('user_bp.group_members', group_name = group.name)}}">{{ group.name }}</a>
-              </li>
-            {% endfor %}
-          </ul>
-        </div>
+              {% else %} #}
+            <td class="text-success">
+              {# {% endif %} #}
+              {{ home_total_size | filesizeformat }}
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
-  {% endblock body %}
+    <div class="col">
+      <div class="card">
+        <div class="card-header">
+          <h1 class="bi bi-people display-1"></h1>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for group in my_groups %}
+            <li class="list-group-item">
+              <a href="{{ url_for('user_bp.group_members', group_name = group.name)}}">{{ group.name }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+{% endblock body %}
