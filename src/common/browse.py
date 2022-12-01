@@ -467,6 +467,7 @@ def download_object(data_object_path):
         stream_with_context(data_object_chunks()),
         mimetype=object_type,
         direct_passthrough=True,
+        headers={'Content-Disposition': 'attachment'}
     )
 
 
