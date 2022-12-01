@@ -30,13 +30,13 @@ class iRODSUserSession(iRODSSession):
         self.groups = [group for group in my_groups if group.name != irods_session.username]
         self.group_ids = [group.id for group in self.groups]
 
-        if 'openid_user_name' in session and not 'full_name' in self.user.metadata.keys():
-            self.user.metadata.set(iRODSMeta('full_name', session['openid_user_name']))
-            #heuristic, don't bother setting email unless the name is absent
-            if 'openid_user_email' in session:
-                self.user.metadata.set(iRODSMeta('email', session['openid_user_email']))
+        # if 'openid_user_name' in session and not 'full_name' in self.user.metadata.keys():
+        #     self.user.metadata.set(iRODSMeta('full_name', session['openid_user_name']))
+        #     #heuristic, don't bother setting email unless the name is absent
+        #     if 'openid_user_email' in session:
+        #         self.user.metadata.set(iRODSMeta('email', session['openid_user_email']))
 
-            logging.info(f"Identified {irods_session.username} as {session['openid_user_name']} via openid login")
+        #     logging.info(f"Identified {irods_session.username} as {session['openid_user_name']} via openid login")
 
     def __del__(self):
         # release connections upon object destruction
