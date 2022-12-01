@@ -32,6 +32,7 @@ class iRODSUserSession(iRODSSession):
 
         if 'openid_user_name' in session and not 'full_name' in self.user.metadata.keys():
             self.user.metadata.set(iRODSMeta('full_name', session['openid_user_name']))
+            #heuristic, don't bother setting email unless the name is absent
             if 'openid_user_email' in session:
                 self.user.metadata.set(iRODSMeta('email', session['openid_user_email']))
 

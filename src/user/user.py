@@ -326,8 +326,10 @@ def login_openid_callback(openid_provider):
     # We are logged on
     session["openid_provider"] = openid_provider
     session["openid_username"] = userinfo['preferred_username']
-    session["openid_user_email"] = userinfo["email"]
-    session["openid_user_name"] = userinfo["name"]
+    if 'email' in userinfo:
+        session["openid_user_email"] = userinfo["email"]
+    if 'name' in userinfo:
+        session["openid_user_name"] = userinfo["name"]
 
     return redirect(url_for('user_bp.login_openid_select_zone'))
 
