@@ -19,7 +19,7 @@
     </div>
     <div class="col-1 display-6">
       {% if data_object.size < 20000000000 %}
-        <a href="{{ url_for('browse_bp.download_object', data_object_path = data_object.path)}}"><i class="bi bi-download"></i></a>
+        <a href="{{ url_for('browse_bp.download_object', data_object_path = data_object.path.lstrip('/'))}}"><i class="bi bi-download"></i></a>
       {% endif %}
     </div>
   </div>
