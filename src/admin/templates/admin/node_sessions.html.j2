@@ -19,9 +19,7 @@
                         <tr {% if g.irods_session.username == user_session.irods_session.username %}class="text-success"{% endif %}>
                             <td>
                                 {{ userid }}
-                                {% if get(user_session, 'openid_user_name', false) %}
-                                    ({{ user_session.openid_user_name }})
-                                {% endif %}
+                                {% if user_session.openid_user_name %}({{ user_session.openid_user_name }}){% endif %}
                             </td>
                             <td>{{ user_session.irods_session.zone }}</td>
                             <td>{{ user_session.created.isoformat(timespec='seconds') }}</td>
