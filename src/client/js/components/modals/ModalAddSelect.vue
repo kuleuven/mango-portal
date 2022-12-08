@@ -7,7 +7,7 @@
                 <div>
                     <form ref="addSelectForm" class="needs-validation" novalidate>
                         <div>
-                            <label for="selectId" class="form-label h6">ID for slect input</label>
+                            <label for="selectId" class="form-label h6">ID for select input</label>
                             <input class="form-control" id="selectId" v-model="selectId" required>
                             <div class="invalid-feedback">
                                 This field is required
