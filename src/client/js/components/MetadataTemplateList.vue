@@ -1,14 +1,14 @@
 <template>
     <div>
-        <h3 class="mb-3">My metadata templates</h3>
+        <h3 class="mb-3">Zone metadata schemas</h3>
         <div class="input-group mb-3" v-for="template in templates" :key="JSON.stringify(template)">
             <span class="input-group-text">{{template.name}}</span>
             <button class="btn btn-primary" type="button" @click="editTemplate(template.url, template.name)">Edit</button>
             <button class="btn btn-primary" type="button" @click="viewTemplate(template.url, template.name)">View</button>
-            <button class="btn btn-primary" type="button" @click="deleteTemplate(template.url, template.name)">Delete</button>
+            <!-- <button class="btn btn-primary" type="button" @click="deleteTemplate(template.url, template.name)">Delete</button> -->
         </div>
         <div class="mb-3">
-            <button class="btn btn-primary" type="button" @click="createTemplate()">Create new template</button>
+            <button class="btn btn-primary" type="button" @click="createTemplate()">Create new schema</button>
         </div>
         <ModalMetadataTemplateEditor v-if="showTemplateEditor" :url="apiUrl" :template="templateToEdit" :name="templateNameToEdit" @cancel="cancelEdit()"></ModalMetadataTemplateEditor>
         <ModalFormPreview v-else-if="showPreview" :schema="JSON.parse(templateToEdit)" @exit="showPreview=false"></ModalFormPreview>
@@ -61,9 +61,9 @@
                 axios
                 .get(url)
                 .then(response => {
-                    this.templateToEdit = JSON.stringify(response.data); 
-                    this.templateNameToEdit = name.substring(0,length); 
-                    this.apiUrl = this.updateUrl; 
+                    this.templateToEdit = JSON.stringify(response.data);
+                    this.templateNameToEdit = name.substring(0,length);
+                    this.apiUrl = this.updateUrl;
                     this.showTemplateEditor = true;
                 });
             },
@@ -71,7 +71,7 @@
                 axios
                 .get(url)
                 .then(response => {
-                    this.templateToEdit = JSON.stringify(response.data); 
+                    this.templateToEdit = JSON.stringify(response.data);
                     this.showPreview = true;
                 });
             },

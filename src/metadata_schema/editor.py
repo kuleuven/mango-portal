@@ -11,9 +11,11 @@ from flask import (
     Response,
     request,
     flash,
+    helpers
 )
 
 from irods.meta import iRODSMeta
+from irods.session import iRODSSession
 
 from PIL import Image
 from pdf2image import convert_from_path
@@ -38,7 +40,15 @@ metadata_schema_editor_bp = Blueprint(
 )
 
 
-json_template_dir = os.path.abspath("static/metadata-templates")
+schema_base_dir = os.path.abspath("storage")
+
+def get_metadata_schema_dir(irods_session: iRODSSession):
+    # check if it exists and if not, then create it
+    meta_data_schema_path = f"{schema_base_dir}/{irods_session.zone}/zone_schemas"
+    if not os.path.exists(meta_data_schema_path):
+        os.makedirs(meta_data_schema_path)
+    return meta_data_schema_path
+
 
 # Blueprint templates
 @metadata_schema_editor_bp.route("/metadata-template", methods=["GET"])
@@ -52,7 +62,7 @@ def metadata_template():
 def list_meta_data_templates():
     """
     """
-    template_files = glob.glob(json_template_dir + "/*.json")
+    template_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
     # template_files = glob.glob("static/metadata-templates/*.json")
     template_filenames = [
         base_file_name
@@ -64,25 +74,24 @@ def list_meta_data_templates():
         [
             {
                 "name": name,
-                "url": url_for("static", filename="metadata-templates/" + name),
+                "url": url_for("metadata_schema_editor_bp.get_schema", schema=name),
             }
             for name in template_filenames
         ]
     )
 
 
-"""
-Single get not needed for now, static resources
-@app.route("/metadata-template/get", methods=["GET"])
-def get_meta_data_template():
-    return redirect(request.referrer)
-"""
+@metadata_schema_editor_bp.route("/metadata-schema/get/<schema>")
+def get_schema(schema: str):
+    schema_path = get_metadata_schema_dir(g.irods_session) + f"/{schema}"
+    return helpers.send_file(schema_path)
+
 
 # Blueprint templates
 def save_metadata_template(filename, contents):
     # normalize the filename, lowercase, no weird characters
     filename = f"{slugify(filename[:-5])}.json"
-    with open("static/metadata-templates/" + filename, "w") as f:
+    with open(get_metadata_schema_dir(g.irods_session)+ "/" + filename, "w") as f:
         f.write(contents)
     return True
 
@@ -100,7 +109,6 @@ def update_meta_data_templates():
     return redirect(request.referrer)
 
 
-# Blueprint templates
 @metadata_schema_editor_bp.route("/metadata-template/new", methods=["POST"])
 @csrf.exempt
 def new_meta_data_template():
@@ -113,7 +121,6 @@ def new_meta_data_template():
     return redirect(request.referrer)
 
 
-# Blueprint templates
 @metadata_schema_editor_bp.route("/metadata-template/delete", methods=["POST"])
 @csrf.exempt
 def delete_meta_data_template():
