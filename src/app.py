@@ -43,6 +43,7 @@ from search.basic_search import basic_search_bp
 from metadata_schema.editor import metadata_schema_editor_bp
 from metadata_schema.form import metadata_schema_form_bp
 from admin.admin import admin_bp
+from mango_open_search.search import mango_open_search_bp
 
 from irods.session import iRODSSession
 import platform
@@ -104,6 +105,7 @@ with app.app_context():
     app.register_blueprint(metadata_schema_editor_bp)
     app.register_blueprint(metadata_schema_form_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(mango_open_search_bp)
 
 
 @app.context_processor
@@ -281,7 +283,7 @@ def api_collection_tree(collection):
         collection = g.user_home
     if not collection.startswith("/"):
         collection = "/" + collection
-    current_collection = irods_session.collections.get(collection)
+    current_collection = g.irods_session.collections.get(collection)
     return flask.jsonify([collection_tree_to_dict(current_collection)])
 
 

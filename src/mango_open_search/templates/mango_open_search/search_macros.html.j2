@@ -1,0 +1,17 @@
+{% macro index_collection_open_search(zone, collection_path, redirect_hash='') %}
+    <form action="{{ url_for('open_search_bp.index_collection') }}"
+          method="post"
+          class="form"
+          id="index_collection_open_search">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="zone" value="{{ zone }}" />
+        <input type="hidden" name="collection_path" value="{{ collection_path }}" />
+        {% if redirect_hash %}<input type="hidden" name="redirect_hash" value="{{ redirect_hash }}" />{% endif %}
+    </form>
+    <button class="btn btn-success"
+            type="submit"
+            form="index_collection_open_search"
+            value="submit">
+        Index collection
+    </button>
+{% endmacro %}

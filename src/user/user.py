@@ -72,7 +72,7 @@ def my_profile():
         for info in collection.walk( ):
             n_data_objects += len( info[2] )
             home_total_size_in_bytes += sum( d.size for d in info[2] )
-    except e:
+    except Exception:
         home_total_size_in_bytes = -1
 
 

@@ -1,0 +1,28 @@
+{% extends "base.html.j2" %}
+{% block body %}
+    <h4 class="mb-3">Search results ({{ search_results['hits']['total']['value'] }})</h4>
+    {% if search_results['hits']['total']['value'] == 0 %}
+        <img src="{{ url_for('static', filename='sorry-unsplash.jpg')}}"
+             width="70%"/>
+        <p>
+            Sorry, we could not find anything related to <i>'{{ search_string }}'</i>
+        </p>
+    {% endif %}
+    <ul class="list-group">
+        {% for search_result in search_results['hits']['hits'] %}
+            <li class="list-group-item">
+                {% if search_result['_source']['irods_item_type_simple'] == 'c' %}
+                    <i class="bi bi-folder fs-4"></i> <a href="{{ url_for('browse_bp.collection_browse', collection=search_result['_source']['irods_path'].lstrip('/'))}}">{{ search_result['_source']['irods_path'] }}</a>
+                {% else %}
+                    <i class="bi bi-file-earmark fs-4"></i> <a href="{{ url_for('browse_bp.view_object', data_object_path=search_result['_source']['irods_path'].lstrip('/'))}}">{{ search_result['_source']['irods_path'] }}</a>
+                {% endif %}
+                <p>
+                    {% for field in search_result['highlight'] %}{{ search_result['highlight'][field]|safe }}{% endfor %}
+                </p>
+                {# <a href="#">{{ search_result['_source']['irods_path'] }}</a> #}
+            </li>
+        {% endfor %}
+    </ul>
+    <p>Search time: {{ search_results['took'] }} ms</p>
+    {# <pre>{{ search_results | pprint }}</pre> #}
+{% endblock body %}
