@@ -20,15 +20,15 @@ class iRODSUserSession(iRODSSession):
         self.lock = Lock()
         self.created = datetime.datetime.now()
         self.last_accessed = datetime.datetime.now()
-        self.user = irods_session.users.get(irods_session.username)
+        self.irods_session.user = self.user = irods_session.users.get(irods_session.username)
         my_groups = [
             iRODSUserGroup(irods_session.user_groups, item)
             for item in irods_session.query(UserGroup)
             .filter(User.name == irods_session.username)
             .all()
         ]
-        self.groups = [group for group in my_groups if group.name != irods_session.username]
-        self.group_ids = [group.id for group in self.groups]
+        self.irods_session.groups = self.groups = [group for group in my_groups if group.name != irods_session.username]
+        self.irods_session.group_ids = self.group_ids = [group.id for group in self.groups]
         if 'openid_user_name' in session:
             self.openid_user_name = session['openid_user_name']
         if 'openid_user_email' in session:
@@ -47,6 +47,8 @@ class SessionCleanupThread(Thread):
         self._stop = Event()
         self.daemon = True
         self.start_time=datetime.datetime.now()
+        self.heartbeat_time = time.time()
+
     def stop(self):
         self._stop.set()
 
@@ -72,8 +74,10 @@ class SessionCleanupThread(Thread):
             #         logging.info(f"Removed {session_id}")
             time.sleep(1)
             # emit a heartbeat logging at most every 300 seconds
-            if int(time.time()) % 300 == 0:
-                logging.info(f"Cleanup heartbeat")
+            if time.time() - self.heartbeat_time > 300:
+                # reset the heartbeat reference time point
+                self.heartbeat_time = time.time()
+                logging.info(f"User session cleanup heartbeat")
 
 
 
