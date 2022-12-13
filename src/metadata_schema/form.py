@@ -52,6 +52,7 @@ from pprint import pprint
 
 import lib.util
 from lib.util import flatten_josse_schema
+from metadata_schema.editor import get_metadata_schema_dir
 
 metadata_schema_form_bp = Blueprint(
     "metadata_schema_form_bp", __name__, template_folder="templates/metadata_schema",
@@ -230,7 +231,8 @@ def edit_schema_metadata_for_item():
     template_name = _parameters["schema"]
     prefix = get_schema_prefix(schema_filename=template_name) #f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(template_name)}"
     form_dict={}
-    json_template_dir = os.path.abspath("static/metadata-templates")
+    json_template_dir = get_metadata_schema_dir(g.irods_session)
+
     with open(f"{json_template_dir}/{template_name}") as template_file:
         form_dict = json.load(template_file)
 

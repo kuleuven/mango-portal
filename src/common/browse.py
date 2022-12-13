@@ -44,6 +44,7 @@ from multidict import MultiDict
 from operator import itemgetter
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
+from metadata_schema.editor import get_metadata_schema_dir
 
 def group_prefix_metadata_items(
     metadata_items, mango_prefix, no_schema_label="other", group_analysis_unit=False,
@@ -126,11 +127,12 @@ def collection_browse(collection):
     sub_collections = current_collection.subcollections
     data_objects = current_collection.data_objects
 
-    schema_files = glob.glob("static/metadata-templates/*.json")
+    schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
+    # template_files = glob.glob("static/metadata-templates/*.json")
     metadata_schema_filenames = [
-        os.path.basename(_file)
-        for _file in schema_files
-        if os.path.basename(_file) != "uischema.json"
+        base_file_name
+        for template_file in schema_files
+        if (base_file_name := os.path.basename(template_file)) != "uischema.json"
     ]
 
     # metadata grouping  to be moved to proper function for re-use
@@ -146,7 +148,7 @@ def collection_browse(collection):
     ):
         pass
     else:
-        json_template_dir = os.path.abspath("static/metadata-templates")
+        json_template_dir = get_metadata_schema_dir(g.irods_session)
 
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
@@ -255,14 +257,13 @@ def view_object(data_object_path):
         no_schema_label = current_app.config['MANGO_NOSCHEMA_LABEL'],
         group_analysis_unit = group_analysis_unit,
     )
-    pprint.pprint(grouped_metadata)
-    schema_files = glob.glob("static/metadata-templates/*.json")
+    schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
+    # template_files = glob.glob("static/metadata-templates/*.json")
     metadata_schema_filenames = [
-        os.path.basename(_file)
-        for _file in schema_files
-        if os.path.basename(_file) != "uischema.json"
+        base_file_name
+        for template_file in schema_files
+        if (base_file_name := os.path.basename(template_file)) != "uischema.json"
     ]
-
     schema_labels = {}
     if (
         len(grouped_metadata) == 1
@@ -270,7 +271,7 @@ def view_object(data_object_path):
     ):
         pass
     else:
-        json_template_dir = os.path.abspath("static/metadata-templates")
+        json_template_dir = get_metadata_schema_dir(g.irods_session)
 
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
