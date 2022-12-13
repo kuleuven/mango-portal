@@ -357,7 +357,7 @@ def view_object(data_object_path):
 
     # end temp
     tika_result = {}
-    tika_storage = f"storage/tika_output/{g.irods_session.zone}"
+    tika_storage = f"storage/{g.irods_session.zone}/tika_output"
     tika_file_path = f"{tika_storage}/{data_object.id}.tika.json"
 
     if os.path.exists(tika_file_path) and data_object.modify_time < (
