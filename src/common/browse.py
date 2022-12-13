@@ -79,7 +79,7 @@ def group_prefix_metadata_items(
 def get_current_user_rights(current_user_name, item):
     access = []
     permissions = g.irods_session.permissions.get(item, report_raw_acls=False)
-    pprint.pprint(permissions)
+
     # group_names: workaround for non expanding user groups for data objects
     group_names = []
     if current_user_name in irods_session_pool.irods_user_sessions:
@@ -593,7 +593,7 @@ def ask_tika(data_object_path):
     # FETCH FROM CONFIG INSTEAD
     tika_host = current_app.config['TIKA_URL'].rstrip('/')
     tika_url = f"{tika_host}/tika/text"
-    tika_storage = f"storage/tika_output/{g.irods_session.zone}"
+    tika_storage = f"storage/{g.irods_session.zone}/tika_output"
     if not os.path.exists(tika_storage):
         os.makedirs(tika_storage)
     data_object_path = unquote(data_object_path)
@@ -682,7 +682,7 @@ def ask_tika(data_object_path):
 def object_preview(data_object_path):
     """
     """
-    thumbnail_storage = f"storage/{__name__}/{g.irods_session.zone}/object_preview"
+    thumbnail_storage = f"storage/{g.irods_session.zone}/{__name__}/object_preview"
     if not os.path.exists(thumbnail_storage):
         os.makedirs(thumbnail_storage)
     data_object_path = unquote(data_object_path)

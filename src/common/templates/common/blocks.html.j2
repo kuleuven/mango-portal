@@ -252,17 +252,19 @@
                         </form>
                     {% elif schema != 'analysis' and not read_only and 'own' in current_user_rights %}
                         <div class="row mt-4">
-                            <form class="col"
-                                  method="get"
-                                  action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
-                                <input type="hidden" name="item_type" value="{{ item_type }}" />
-                                <input type="hidden" name="id" value="{{ object_id }}" />
-                                <input type="hidden" name="object_path" value="{{ object_path }}" />
-                                <input name="schema" type="hidden" value="{{ schema }}.json" />
-                                <button type="submit" class="btn btn-primary">
-                                    Edit
-                                </button>
-                            </form>
+                            {% if schema+'.json' in metadata_schema_filenames %}
+                                <form class="col"
+                                      method="get"
+                                      action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item')}}">
+                                    <input type="hidden" name="item_type" value="{{ item_type }}" />
+                                    <input type="hidden" name="id" value="{{ object_id }}" />
+                                    <input type="hidden" name="object_path" value="{{ object_path }}" />
+                                    <input name="schema" type="hidden" value="{{ schema }}.json" />
+                                    <button type="submit" class="btn btn-primary">
+                                        Edit
+                                    </button>
+                                </form>
+                            {% endif %}
                             <div class="col">
                                 <button type="button"
                                         class="btn btn-danger float-end"

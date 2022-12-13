@@ -267,7 +267,6 @@ def edit_schema_metadata_for_item():
         else g.irods_session.collections.get(object_path)
     )
     setattr(catalog_item, "item_type", item_type)
-    print("and now the metada data")
 
     form_values = MultiDict()
     # form_values.extend(_parameters)
