@@ -30,7 +30,8 @@ MANGO_OPEN_SEARCH_PASSWORD = os.environ.get('MANGO_OPEN_SEARCH_PASSWORD', 'admin
 MANGO_OPEN_SEARCH_INDEX_NAME = os.environ.get('MANGO_OPEN_SEARCH_INDEX_NAME', 'irods-global')
 
 MANGO_OPEN_SEARCH_AUTH = (MANGO_OPEN_SEARCH_USER, MANGO_OPEN_SEARCH_PASSWORD) #('irods-vscp', 'NTU1Y2M1YjU4YWQ4NjA2ZTQ2ODRkY2Jh')
-
+MANGO_INDEX_THREAD_SLEEP_TIME=5
+MANGO_INDEX_THREAD_HEARTBEAT_TIME=300
 # For now a single client
 # @todo: create a pool (object) of clients to use by multiple threads
 mango_open_search_client = OpenSearch(
@@ -82,7 +83,7 @@ def add_index_job(zone: str, job_type : str, item_path: str, item_type: str):
     type can be 'item', 'subtree'
     """
     global index_queue
-    index_queue.append({'zone': zone, 'job_type': job_type, 'item_path': item_path, 'item_type': item_type})
+    index_queue.append({'zone': zone, 'job_type': job_type, 'item_path': item_path, 'item_type': item_type, 'time': datetime.datetime.now()})
 
 zone_index_sessions = {}
 
@@ -270,9 +271,10 @@ def index_children(irods_session: iRODSSession, collection_path: str, schedule_s
 
 
 
-def execute_index_job(zone: str, job_type: str, item_type, item_path):
+def execute_index_job(zone: str, job_type: str, item_type, item_path, time):
     if not job_type in ALLOWED_JOB_TYPES:
         return
+    _ = time # not used, but present in the **parameter expansion calling this function
 
     irods_session_for_zone = get_zone_index_session(zone)
     if not irods_session_for_zone:
@@ -296,11 +298,17 @@ class IndexingThread(Thread):
         self.start_time=datetime.datetime.now()
         self.heartbeat_time = time.time()
         logging.info(f"Indexing thread created")
+        self.status = 'active'
+
     def stop(self):
         self._stop.set()
 
     def stopped(self):
         return self._stop.isSet()
+
+    def set_status(self, status='sleep'):
+        self.status = status
+
 
     def run(self):
 
@@ -312,9 +320,22 @@ class IndexingThread(Thread):
 
             current_time = datetime.datetime.now()
 
-            if len(index_queue) > 0:
+            if len(index_queue) > 0 and  self.status == 'active':
                 logging.info(f"Indexing {index_queue[0]}")
                 execute_index_job(**index_queue.pop(0))
+
+            if self.status == 'sleep':
+                pass
+            if self.status == 'flush':
+                index_queue = []
+
+            if self.status == 'flush_sleep':
+                index_queue = []
+                self.set_status('sleep')
+
+            if self.status == 'flush_active':
+                index_queue = []
+                self.set_status('active')
 
 
             # irods_user_sessions = {session_id: user_session for session_id, user_session in irods_user_sessions.items()
@@ -326,16 +347,16 @@ class IndexingThread(Thread):
             #     if session_age > SESSION_TTL and not user_session.lock.locked():
             #         del irods_user_sessions[session_id]
             #         logging.info(f"Removed {session_id}")
-            time.sleep(5)
+            time.sleep(MANGO_INDEX_THREAD_SLEEP_TIME)
             # emit a heartbeat logging at most every 300 seconds
-            if time.time() - self.heartbeat_time > 300:
+            if time.time() - self.heartbeat_time > MANGO_INDEX_THREAD_HEARTBEAT_TIME:
                 # reset the heartbeat reference time point
                 self.heartbeat_time = time.time()
                 logging.info(f"Indexing thread heartbeat")
 
 
 # debug start indexing hard coded path
-add_index_job(zone = 'kuleuven_tier1_pilot', job_type='subtree', item_path='/kuleuven_tier1_pilot/home/vsc33436', item_type='collection')
+#add_index_job(zone = 'kuleuven_tier1_pilot', job_type='subtree', item_path='/kuleuven_tier1_pilot/home/vsc33436', item_type='collection')
 
 indexing_thread = IndexingThread()
 indexing_thread.start()

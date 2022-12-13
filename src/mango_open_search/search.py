@@ -34,6 +34,7 @@ def index_collection():
     if "zone" in request.form:
         zone = request.form["collection_path"]
     else:
+        # select the second element because the first one is empty
         zone = collection_path.split("/")[1]
 
     add_index_job(
@@ -42,6 +43,14 @@ def index_collection():
     add_index_job(
         zone=zone, job_type="subtree", item_path=collection_path, item_type="collection"
     )
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
 
 
 @mango_open_search_bp.route("/open-search/search", methods=["GET"])

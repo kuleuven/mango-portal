@@ -1,0 +1,105 @@
+{% extends "base.html.j2" %}
+{% block body %}
+    <h3>Open search index plugin</h3>
+    <p>
+        Current status <b>{{ indexing_thread_status }}</b>
+    </p>
+    <div class="row">
+        <div class="col">
+            <form method="post"
+                  action="{{ url_for('mango_open_search_admin_bp.change_index_thread_status')}}"
+                  id="change_indexing_status">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <select name="status" class="form-select">
+                    <option value="active">
+                        Active
+                    </option>
+                    <option value="sleep">
+                        Sleep
+                    </option>
+                    <option value="flush_sleep">
+                        Flush jobs and sleep
+                    </option>
+                    <option value="flush_active">
+                        Flush jobs and run
+                    </option>
+                </select>
+            </form>
+            <button type="submit"
+                    form="change_indexing_status"
+                    class="btn btn-success mt-3">Change status</button>
+        </div>
+    </div>
+    <h3>Index queue</h3>
+    {% if result["queue_length"] > 0 %}
+        {% if 'all' in result %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Zone</th>
+                        <th>Job type</th>
+                        <th>Item path</th>
+                        <th>Item type</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in result['all'] %}
+                        <tr>
+                            <td>{{ item['zone'] }}</td>
+                            <td>{{ item['job_type'] }}</td>
+                            <td>{{ item['item_path'] }}</td>
+                            <td>{{ item['item_type'] }}</td>
+                            <td>{{ item['time'].isoformat(timespec='seconds') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            {% for result_block in ['oldest', 'newest'] %}
+                <h4>{{ result_block | capitalize }} {{ result[result_block] |length }}</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Zone</th>
+                            <th>Job type</th>
+                            <th>Item path</th>
+                            <th>Item type</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in result[result_block] %}
+                            <tr>
+                                <td>{{ item['zone'] }}</td>
+                                <td>{{ item['job_type'] }}</td>
+                                <td>{{ item['item_path'] }}</td>
+                                <td>{{ item['item_type'] }}</td>
+                                <td>{{ item['time'] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
+        {% endif %}
+    {% else %}
+        <p>No active jobs on this node</p>
+    {% endif %}
+    <div calss="row">
+        <div class="col">
+            <form method="post"
+                  action="{{ url_for('mango_open_search_bp.index_collection')}}"
+                  id="index_collection">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <select name="collection_path" class="form-select">
+                    {% for collection in available_collections %}
+                        <option value="{{ collection.path }}">
+                            {{ collection.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+            <button type="submit" form="index_collection" class="btn btn-success mt-3">Add collection to index jobs</button>
+        </div>
+    </div>
+{% endblock body %}
