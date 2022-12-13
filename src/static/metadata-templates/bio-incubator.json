@@ -1,1 +1,57 @@
-{"title":"bio-incubator","type":"object","required":["title"],"properties":{"title":{"type":"string","title":"Title"},"tre_checkboxes":{"type":"object","title":"Hello","properties":{"a":{"type":"boolean","title":"a"},"bb":{"type":"boolean","title":"bb"},"c":{"type":"boolean","title":"c"}}},"microscope_checkboxes":{"type":"object","title":"Microscope","properties":{"Leica":{"type":"boolean","title":"Leica"},"Nikon":{"type":"boolean","title":"Nikon"},"Bresser":{"type":"boolean","title":"Bresser"},"Putin":{"type":"boolean","title":"Putin"}}},"flo":{"type":"string","title":"FLO"}}}
+{
+    "title": "bio-incubator",
+    "type": "object",
+    "required": [
+        "title"
+    ],
+    "properties": {
+        "title": {
+            "type": "string",
+            "title": "Title"
+        },
+        "tre_checkboxes": {
+            "type": "object",
+            "title": "Hello",
+            "properties": {
+                "a": {
+                    "type": "boolean",
+                    "title": "a"
+                },
+                "bb": {
+                    "type": "boolean",
+                    "title": "bb"
+                },
+                "c": {
+                    "type": "boolean",
+                    "title": "c"
+                }
+            }
+        },
+        "microscope_checkboxes": {
+            "type": "object",
+            "title": "Microscope",
+            "properties": {
+                "Leica": {
+                    "type": "boolean",
+                    "title": "Leica"
+                },
+                "Nikon": {
+                    "type": "boolean",
+                    "title": "Nikon"
+                },
+                "Bresser": {
+                    "type": "boolean",
+                    "title": "Bresser"
+                },
+                "Putin": {
+                    "type": "boolean",
+                    "title": "Putin"
+                }
+            }
+        },
+        "flo": {
+            "type": "string",
+            "title": "FLO"
+        }
+    }
+}

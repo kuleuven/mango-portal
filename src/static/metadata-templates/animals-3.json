@@ -1,0 +1,47 @@
+{
+    "title": "animals",
+    "type": "object",
+    "required": [],
+    "properties": {
+        "name": {
+            "type": "string",
+            "title": "name"
+        },
+        "type_checkboxes": {
+            "type": "object",
+            "title": "type",
+            "properties": {
+                "Mammal": {
+                    "type": "boolean",
+                    "title": "Mammal"
+                },
+                "Bird": {
+                    "type": "boolean",
+                    "title": "Bird"
+                },
+                "Fish": {
+                    "type": "boolean",
+                    "title": "Fish"
+                }
+            }
+        },
+        "flies_checkboxes": {
+            "type": "object",
+            "title": "flies",
+            "properties": {
+                "Yes": {
+                    "type": "boolean",
+                    "title": "Yes"
+                },
+                "No": {
+                    "type": "boolean",
+                    "title": "No"
+                },
+                "Only on weekdays": {
+                    "type": "boolean",
+                    "title": "Only on weekdays"
+                }
+            }
+        }
+    }
+}

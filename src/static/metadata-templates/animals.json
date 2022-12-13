@@ -1,0 +1,38 @@
+{
+    "title": "animals",
+    "type": "object",
+    "required": [
+        "Nam",
+        "type-animal",
+        "flies"
+    ],
+    "properties": {
+        "Nam": {
+            "type": "string",
+            "title": "What is the name of the animal?"
+        },
+        "type-animal": {
+            "type": "string",
+            "enum": [
+                "Mammal",
+                "Bird",
+                "Fish "
+            ],
+            "title": "What is the type of the animal?"
+        },
+        "flies": {
+            "type": "string",
+            "enum": [
+                "Yes",
+                "No",
+                "Only on weekends"
+            ],
+            "title": "Does the animal fly?"
+        },
+        "date": {
+            "type": "string",
+            "format": "date",
+            "title": "date"
+        }
+    }
+}

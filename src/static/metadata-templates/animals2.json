@@ -1,0 +1,37 @@
+{
+    "title": "animals2",
+    "type": "object",
+    "required": [
+        "Name",
+        " type",
+        "flies"
+    ],
+    "properties": {
+        "Name": {
+            "type": "string",
+            "title": "Naam"
+        },
+        " type": {
+            "type": "string",
+            "enum": [
+                "Mammal",
+                "Bird",
+                "Fish",
+                "-",
+                "--"
+            ],
+            "title": "Type"
+        },
+        "flies": {
+            "type": "string",
+            "enum": [
+                "Yes",
+                "No",
+                "Only on weekdays",
+                "-",
+                "--"
+            ],
+            "title": "Flies"
+        }
+    }
+}

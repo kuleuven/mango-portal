@@ -1,0 +1,32 @@
+{
+    "title": "training-sara",
+    "type": "object",
+    "required": [],
+    "properties": {
+        "00002_checkboxes": {
+            "type": "object",
+            "title": "Italian Painter",
+            "properties": {
+                "Giotto": {
+                    "type": "boolean",
+                    "title": "Giotto"
+                },
+                "Perugino": {
+                    "type": "boolean",
+                    "title": "Perugino"
+                }
+            }
+        },
+        "0001": {
+            "type": "string",
+            "enum": [
+                "Poussin",
+                "Vernet",
+                "Delacroix",
+                "Watteau",
+                "Ingres"
+            ],
+            "title": "French-painter"
+        }
+    }
+}

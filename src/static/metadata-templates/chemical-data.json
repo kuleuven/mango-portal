@@ -1,0 +1,31 @@
+{
+    "title": "chemical_data",
+    "type": "object",
+    "required": [
+        "instrument_type"
+    ],
+    "properties": {
+        "date": {
+            "type": "string",
+            "format": "date",
+            "title": "date"
+        },
+        "instrument_type": {
+            "type": "string",
+            "enum": [
+                "Microscope",
+                "Telescope",
+                "Periscope"
+            ],
+            "title": "Instrument type used to generate the data"
+        },
+        "explosion": {
+            "type": "string",
+            "enum": [
+                "Yes",
+                "No"
+            ],
+            "title": "Did things explode?"
+        }
+    }
+}

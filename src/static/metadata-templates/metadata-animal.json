@@ -1,0 +1,35 @@
+{
+    "title": "Metadata_animal",
+    "type": "object",
+    "required": [
+        "animal_name",
+        "animal_type",
+        "animal_flies"
+    ],
+    "properties": {
+        "animal_name": {
+            "type": "string",
+            "title": "Please provide the animals' name"
+        },
+        "animal_type": {
+            "type": "string",
+            "enum": [
+                "Mammal",
+                "Bird",
+                "Fish"
+            ],
+            "title": "Please select the type of animal"
+        },
+        "animal_flies": {
+            "type": "string",
+            "enum": [
+                "Yes",
+                "No",
+                "Only on weekdays",
+                "Test",
+                "Test"
+            ],
+            "title": "Can the animal fly?"
+        }
+    }
+}

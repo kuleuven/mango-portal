@@ -1,0 +1,42 @@
+{
+    "title": "biology",
+    "type": "object",
+    "required": [
+        "01",
+        "02",
+        "004_checkboxes"
+    ],
+    "properties": {
+        "01": {
+            "type": "string",
+            "title": "Name"
+        },
+        "02": {
+            "type": "string",
+            "enum": [
+                "Mammal",
+                "Bird",
+                "Fish"
+            ],
+            "title": "Type"
+        },
+        "004_checkboxes": {
+            "type": "object",
+            "title": "Flies",
+            "properties": {
+                "Yes": {
+                    "type": "boolean",
+                    "title": "Yes"
+                },
+                "No": {
+                    "type": "boolean",
+                    "title": "No"
+                },
+                "On weekdays only": {
+                    "type": "boolean",
+                    "title": "On weekdays only"
+                }
+            }
+        }
+    }
+}

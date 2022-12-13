@@ -1,0 +1,95 @@
+{
+    "title": "REMBI-bioimage-archive",
+    "type": "object",
+    "required": [
+        "Title",
+        "PublicationDate",
+        "Description",
+        "StudyType",
+        "Organism"
+    ],
+    "properties": {
+        "Title": {
+            "type": "string",
+            "title": "Title"
+        },
+        "PublicationDate": {
+            "type": "string",
+            "format": "date",
+            "title": "Publication Date"
+        },
+        "Description": {
+            "type": "string",
+            "title": "Description"
+        },
+        "StudyType": {
+            "type": "string",
+            "enum": [
+                "imaging method",
+                "Image segmentation",
+                "Image cytometry",
+                "another option",
+                "yet another option"
+            ],
+            "title": "Study Time"
+        },
+        "Organism": {
+            "type": "string",
+            "enum": [
+                "mouse",
+                "human"
+            ],
+            "title": "Organism"
+        },
+        "Keywords": {
+            "type": "string",
+            "title": "Keywords"
+        },
+        "Contact": {
+            "type": "object",
+            "title": "Contact",
+            "required": [
+                "Name",
+                "Organization",
+                "Email"
+            ],
+            "properties": {
+                "Name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "Organization": {
+                    "type": "string",
+                    "title": "Organization"
+                },
+                "Email": {
+                    "type": "string",
+                    "format": "email",
+                    "title": "E-mail adress"
+                },
+                "ORCID": {
+                    "type": "string",
+                    "title": "ORCID"
+                },
+                "Role_checkboxes": {
+                    "type": "object",
+                    "title": "Role",
+                    "properties": {
+                        "Principal investigator": {
+                            "type": "boolean",
+                            "title": "Principal investigator"
+                        },
+                        "Chief scientist": {
+                            "type": "boolean",
+                            "title": "Chief scientist"
+                        },
+                        "Researcher": {
+                            "type": "boolean",
+                            "title": "Researcher"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

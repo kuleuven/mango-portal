@@ -1,0 +1,34 @@
+{
+    "title": "animals willeke",
+    "type": "object",
+    "required": [],
+    "properties": {
+        "1": {
+            "type": "string",
+            "title": "naam"
+        },
+        "2": {
+            "type": "string",
+            "enum": [
+                "Mammal",
+                "Bird",
+                "Fish"
+            ],
+            "title": "type"
+        },
+        "3_checkboxes": {
+            "type": "object",
+            "title": "flies",
+            "properties": {
+                "yes": {
+                    "type": "boolean",
+                    "title": "yes"
+                },
+                "no": {
+                    "type": "boolean",
+                    "title": "no"
+                }
+            }
+        }
+    }
+}
