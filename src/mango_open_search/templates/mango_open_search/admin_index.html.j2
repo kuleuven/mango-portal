@@ -1,10 +1,11 @@
 {% extends "base.html.j2" %}
 {% block body %}
     <h3>Open search index plugin</h3>
-    <p>
-        Current status <b>{{ indexing_thread_status }}</b>
-    </p>
-    <div class="row">
+    <div class="row border p-3">
+        <h4>Indexing thread status</h4>
+        <p>
+            Current status <b>{{ indexing_thread_status }}</b>
+        </p>
         <div class="col">
             <form method="post"
                   action="{{ url_for('mango_open_search_admin_bp.change_index_thread_status')}}"
@@ -30,35 +31,26 @@
                     class="btn btn-success mt-3">Change status</button>
         </div>
     </div>
-    <h3>Index queue</h3>
-    {% if result["queue_length"] > 0 %}
-        {% if 'all' in result %}
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Zone</th>
-                        <th>Job type</th>
-                        <th>Item path</th>
-                        <th>Item type</th>
-                        <th>Time</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in result['all'] %}
-                        <tr>
-                            <td>{{ item['zone'] }}</td>
-                            <td>{{ item['job_type'] }}</td>
-                            <td>{{ item['item_path'] }}</td>
-                            <td>{{ item['item_type'] }}</td>
-                            <td>{{ item['time'].isoformat(timespec='seconds') }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            {% for result_block in ['oldest', 'newest'] %}
-                <h4>{{ result_block | capitalize }} {{ result[result_block] |length }}</h4>
-                <table>
+    <div class="row p-3">
+        <h4>Client/server connection health</h4>
+        <p>
+            Query server: {{ ('<i class="bi-check-square text-success"></i>' if server_health['query'] else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
+        </p>
+        <p>
+            Ingest server: {{ ('<i class="bi-check-square text-success"></i>' if server_health['ingest'] else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
+        </p>
+        <form method="post"
+              action="{{ url_for('mango_open_search_admin_bp.refresh_clients') }}"
+              id="refresh_clients">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        </form>
+        <button type="submit" form="refresh_clients" class="btn btn-success mt-3">Refresh client/server connections</button>
+    </div>
+    <div class="row border p-3">
+        <h3>Index job queue</h3>
+        {% if result["queue_length"] > 0 %}
+            {% if 'all' in result %}
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Zone</th>
@@ -69,23 +61,59 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for item in result[result_block] %}
+                        {% for item in result['all'] %}
                             <tr>
                                 <td>{{ item['zone'] }}</td>
                                 <td>{{ item['job_type'] }}</td>
                                 <td>{{ item['item_path'] }}</td>
                                 <td>{{ item['item_type'] }}</td>
-                                <td>{{ item['time'] }}</td>
+                                <td>{{ item['time'].isoformat(timespec='seconds') }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-            {% endfor %}
+            {% else %}
+                {% for result_block in ['oldest', 'newest'] %}
+                    <h4>{{ result_block | capitalize }} {{ result[result_block] |length }}</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Zone</th>
+                                <th>Job type</th>
+                                <th>Item path</th>
+                                <th>Item type</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in result[result_block] %}
+                                <tr>
+                                    <td>{{ item['zone'] }}</td>
+                                    <td>{{ item['job_type'] }}</td>
+                                    <td>{{ item['item_path'] }}</td>
+                                    <td>{{ item['item_type'] }}</td>
+                                    <td>
+                                        {{ item['time'] }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endfor %}
+            {% endif %}
+        {% else %}
+            <p>
+                No active jobs on this node
+            </p>
         {% endif %}
-    {% else %}
-        <p>No active jobs on this node</p>
-    {% endif %}
+        <button class="btn btn-success mt-3 mb-3" onclick="window.location.reload();">
+            Refresh
+        </button>
+    </div>
     <div calss="row">
+        <h4 class="mt-4">
+            Launch ad hoc indexing job
+        </h4>
         <div class="col">
             <form method="post"
                   action="{{ url_for('mango_open_search_bp.index_collection')}}"
@@ -99,7 +127,9 @@
                     {% endfor %}
                 </select>
             </form>
-            <button type="submit" form="index_collection" class="btn btn-success mt-3">Add collection to index jobs</button>
+            <button type="submit" form="index_collection" class="btn btn-success mt-3">
+                Add collection to index jobs
+            </button>
         </div>
     </div>
 {% endblock body %}
