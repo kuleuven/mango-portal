@@ -352,7 +352,6 @@ class IndexingThread(Thread):
         while True:
             # stop doing anything if we are stopped (externally)
             if self.stopped():
-                logging.info(f"Sorry, I am stopped, ask Paul to redeploy")
                 return
 
             current_time = datetime.datetime.now()
@@ -362,22 +361,17 @@ class IndexingThread(Thread):
                 execute_index_job(**index_queue.pop(0))
 
             if self.status == 'sleep':
-                logging.info(f"Indexing thread in sleep mode")
                 pass
             if self.status == 'flush':
-                logging.info(f"Flushing index jobs")
                 index_queue = []
 
             if self.status == 'flush_sleep':
                 index_queue = []
                 self.set_status('sleep')
-                logging.info(f"Flushing index jobs and sleep")
 
             if self.status == 'flush_active':
                 index_queue = []
                 self.set_status('active')
-                logging.info(f"Flushing index jobs and activate")
-
 
 
             # irods_user_sessions = {session_id: user_session for session_id, user_session in irods_user_sessions.items()
@@ -390,9 +384,7 @@ class IndexingThread(Thread):
             #         del irods_user_sessions[session_id]
             #         logging.info(f"Removed {session_id}")
             time.sleep(MANGO_INDEX_THREAD_SLEEP_TIME)
-            logging.info(f"Awakening sleeping index thread")
-
-
+            
             if time.time() - self.open_search_session_refresh_time > MANGO_OPEN_SEARCH_SESSION_REFRESH_DELTA:
                 get_open_search_client(refresh=True)
                 logging.info(f"Refreshed open search server client connections")

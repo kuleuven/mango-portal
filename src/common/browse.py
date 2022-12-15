@@ -42,11 +42,6 @@ import logging
 import irods_session_pool
 from multidict import MultiDict
 from operator import itemgetter
-
-import signals
-
-
-
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
 from metadata_schema.editor import get_metadata_schema_dir
@@ -498,12 +493,6 @@ def delete_collection():
         force_delete = True
     # recursive remove
     g.irods_session.collections.remove(collection_path, force=force_delete)
-
-    if force_delete:
-        signals.collection_deleted.send(current_app._get_current_object(), collection_path = collection_path)
-    else:
-        signals.collection_trashed.send(current_app._get_current_object(), collection_path = collection_path)
-
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
@@ -527,13 +516,6 @@ def delete_data_object():
             else False
         )
     g.irods_session.data_objects.get(data_object_path).unlink(force=force_delete)
-
-    if force_delete:
-        signals.data_object_deleted.send(current_app._get_current_object(), data_object_path = data_object_path)
-    else:
-        signals.data_object_trashed.send(current_app._get_current_object(), data_object_path = data_object_path)
-
-
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
