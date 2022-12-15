@@ -23,6 +23,7 @@ pprint.pprint(irods_zones_config.irods_zones.keys())
 MANGO_OPEN_SEARCH_HOST = os.environ.get('MANGO_OPEN_SEARCH_HOST', 'localhost')
 MANGO_OPEN_SEARCH_HOST_QUERY = os.environ.get('MANGO_OPEN_SEARCH_HOST_QUERY', MANGO_OPEN_SEARCH_HOST)
 MANGO_OPEN_SEARCH_HOST_INGEST = os.environ.get('MANGO_OPEN_SEARCH_HOST_INGEST', MANGO_OPEN_SEARCH_HOST_QUERY)
+MANGO_HOSTNAME = os.environ.get('HOSTNAME', 'unknown')
 
 MANGO_OPEN_SEARCH_PORT = os.environ.get('MANGO_OPEN_SEARCH_PORT', 9200)
 MANGO_OPEN_SEARCH_USER = os.environ.get('MANGO_OPEN_SEARCH_USER', 'admin')
@@ -313,7 +314,7 @@ def execute_index_job(zone: str, job_type: str, item_type, item_path, time):
 
     irods_session_for_zone = get_zone_index_session(zone)
     if not irods_session_for_zone:
-        logging.warn("Cannot index, no valid irods indexing session, aborting, but adding job again to the queue")
+        logging.warn(f"Cannot index, no valid irods indexing session, aborting, but adding job again to the queue for node {MANGO_HOSTNAME}")
         add_index_job(zone = zone, job_type=job_type, item_type=item_type, item_path=item_path)
         return
     if job_type == 'item':
@@ -352,55 +353,44 @@ class IndexingThread(Thread):
         while True:
             # stop doing anything if we are stopped (externally)
             if self.stopped():
-                logging.info(f"Sorry, I am stopped, ask Paul to redeploy")
-                return
+                logging.info(f"Sorry, I ({MANGO_HOSTNAME} indexing thread) am stopped, ask Paul to redeploy")
+                break
 
             current_time = datetime.datetime.now()
 
-            if len(index_queue) > 0 and  self.status == 'active':
-                logging.info(f"Indexing {index_queue[0]}")
+            if ((queue_length := len(index_queue)) > 0) and  self.status == 'active':
+                logging.info(f"Indexing {index_queue[0]} from {queue_length} outstanding jobs on {MANGO_HOSTNAME}")
                 execute_index_job(**index_queue.pop(0))
 
             if self.status == 'sleep':
-                logging.info(f"Indexing thread in sleep mode")
+                logging.info(f"Indexing thread in sleep mode on {MANGO_HOSTNAME}")
                 pass
             if self.status == 'flush':
-                logging.info(f"Flushing index jobs")
+                logging.info(f"Flushing index jobs on {MANGO_HOSTNAME}")
                 index_queue = []
 
             if self.status == 'flush_sleep':
                 index_queue = []
                 self.set_status('sleep')
-                logging.info(f"Flushing index jobs and sleep")
+                logging.info(f"Flushing index jobs and sleep on {MANGO_HOSTNAME}")
 
             if self.status == 'flush_active':
                 index_queue = []
                 self.set_status('active')
-                logging.info(f"Flushing index jobs and activate")
+                logging.info(f"Flushing index jobs and activate on {MANGO_HOSTNAME}")
 
-
-
-            # irods_user_sessions = {session_id: user_session for session_id, user_session in irods_user_sessions.items()
-            #     if (current_time - user_session.last_accessed).total_seconds() < SESSION_TTL or user_session.lock.locked()}
-
-            # for session_id, user_session in irods_user_sessions.items():
-            #     session_age = (current_time - user_session.last_accessed).total_seconds()
-            #     logging.info(f"Inspecting for {session_id}: age={session_age}, lock state={user_session.lock.locked()}")
-            #     if session_age > SESSION_TTL and not user_session.lock.locked():
-            #         del irods_user_sessions[session_id]
-            #         logging.info(f"Removed {session_id}")
             time.sleep(MANGO_INDEX_THREAD_SLEEP_TIME)
-            logging.info(f"Awakening sleeping index thread")
-
+            #logging.info(f"Awakening sleeping index thread")
 
             if time.time() - self.open_search_session_refresh_time > MANGO_OPEN_SEARCH_SESSION_REFRESH_DELTA:
                 get_open_search_client(refresh=True)
-                logging.info(f"Refreshed open search server client connections")
+                self.open_search_session_refresh_time = time.time()
+                logging.info(f"Refreshed open search server client connections on {MANGO_HOSTNAME}")
             # emit a heartbeat logging at most every 300 seconds
             if time.time() - self.heartbeat_time > MANGO_INDEX_THREAD_HEARTBEAT_DELTA:
                 # reset the heartbeat reference time point
                 self.heartbeat_time = time.time()
-                logging.info(f"Indexing thread heartbeat")
+                logging.info(f"Indexing thread heartbeat on {MANGO_HOSTNAME}")
 
 
 # debug start indexing hard coded path

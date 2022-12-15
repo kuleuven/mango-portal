@@ -19,12 +19,14 @@ from mango_open_search import (
     MANGO_OPEN_SEARCH_INDEX_NAME,
     index_queue,
     indexing_thread,
+    MANGO_INDEX_THREAD_SLEEP_TIME,
+    IndexingThread,
     ping_open_search_servers,
 )
 from opensearchpy import client
 
 from irods.collection import iRODSCollection
-import logging
+import logging, time
 
 mango_open_search_admin_bp = Blueprint(
     "mango_open_search_admin_bp", __name__, template_folder="templates"
@@ -69,6 +71,23 @@ def change_index_thread_status():
 @mango_open_search_admin_bp.route('/mango-open-search/admin/refresh-clients', methods=['POST'])
 def refresh_clients():
     get_open_search_client(refresh=True)
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
+
+@mango_open_search_admin_bp.route('/mango-open-search/admin/restart-indexing-thread', methods=['POST'])
+def refresh_indexing_thread():
+    global indexing_thread
+    indexing_thread.stop()
+    time.sleep(MANGO_INDEX_THREAD_SLEEP_TIME+1)
+    indexing_thread = IndexingThread()
+    indexing_thread.start()
+
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])

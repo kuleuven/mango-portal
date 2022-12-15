@@ -8,6 +8,7 @@
         </p>
         <div class="col">
             <form method="post"
+                  class="align-bottom"
                   action="{{ url_for('mango_open_search_admin_bp.change_index_thread_status')}}"
                   id="change_indexing_status">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -30,6 +31,18 @@
                     form="change_indexing_status"
                     class="btn btn-success mt-3">Change status</button>
         </div>
+        <div class="col align-bottom">
+            <form method="post"
+                  action="{{ url_for('mango_open_search_admin_bp.refresh_indexing_thread')}}"
+                  id="refresh_indexing_thread">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            </form>
+            <button type="submit"
+                    form="refresh_indexing_thread"
+                    class="btn btn-success mt-3 align-bottom">
+                Restart indexing thread
+            </button>
+        </div>
     </div>
     <div class="row p-3">
         <h4>Client/server connection health</h4>
@@ -47,7 +60,7 @@
         <button type="submit" form="refresh_clients" class="btn btn-success mt-3">Refresh client/server connections</button>
     </div>
     <div class="row border p-3">
-        <h3>Index job queue</h3>
+        <h3>Index job queue ({{ result["queue_length"] }})</h3>
         {% if result["queue_length"] > 0 %}
             {% if 'all' in result %}
                 <table class="table">
@@ -91,7 +104,9 @@
                                     <td>{{ item['zone'] }}</td>
                                     <td>{{ item['job_type'] }}</td>
                                     <td>{{ item['item_path'] }}</td>
-                                    <td>{{ item['item_type'] }}</td>
+                                    <td>
+                                        {{ item['item_type'] }}
+                                    </td>
                                     <td>
                                         {{ item['time'] }}
                                     </td>
