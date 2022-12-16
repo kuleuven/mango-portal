@@ -18,6 +18,8 @@ from irods.meta import iRODSMeta
 from irods.access import iRODSAccess
 import irods.keywords
 from irods.user import iRODSUserGroup, UserGroup, User
+from irods.data_object import iRODSDataObject
+from irods.collection import iRODSCollection
 
 from PIL import Image
 from pdf2image import convert_from_path
@@ -493,6 +495,12 @@ def delete_collection():
         force_delete = True
     # recursive remove
     g.irods_session.collections.remove(collection_path, force=force_delete)
+
+    if force_delete:
+        signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+    else:
+        signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
@@ -516,6 +524,13 @@ def delete_data_object():
             else False
         )
     g.irods_session.data_objects.get(data_object_path).unlink(force=force_delete)
+
+    if force_delete:
+        signals.data_object_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object_path)
+    else:
+        signals.data_object_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object_path)
+
+
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
@@ -557,7 +572,9 @@ def collection_upload_file():
 
     # current_collection = irods_session.collections.get(collection)
     g.irods_session.data_objects.put(filename, collection + "/" + f.filename)
-    data_object = g.irods_session.data_objects.get(f"{collection}/{f.filename}")
+    data_object : iRODSDataObject = g.irods_session.data_objects.get(f"{collection}/{f.filename}")
+
+    signals.data_object_added.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object.path)
 
     os.unlink(filename)
 
@@ -579,6 +596,18 @@ def add_collection():
     # parent_collection = irods_session.collections.get(parent_collection_path)
     g.irods_session.collections.create(f"{parent_collection_path}/{collection_name}")
 
+    if '/' in collection_name:
+        new_collection_tree_root = f"{parent_collection_path}/{collection_name.split('/')[0]}"
+        signals.subtree_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = new_collection_tree_root)
+    else:
+        signals.collection_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = f"{parent_collection_path}/{collection_name}")
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
     return redirect(request.referrer)
 
 
@@ -758,6 +787,8 @@ def set_permissions(item_path: str):
         print(e)
         abort(500, "failed to set permissions")
 
+    signals.permissions_changed.send(current_app._get_current_object(), irods_session = g.irods_session, item_path=item_path, recursive = recursive)
+
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
@@ -777,6 +808,8 @@ def set_inheritance(collection_path: str):
         g.irods_session.permissions.set(iRODSAccess("inherit", collection_path))
     else:
         g.irods_session.permissions.set(iRODSAccess("noinherit", collection_path))
+
+    signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=collection_path)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
