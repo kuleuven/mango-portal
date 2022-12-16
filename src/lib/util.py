@@ -90,3 +90,10 @@ def execute_atomic_operations(irods_session, catalog_item, avu_operations):
         catalog_item.metadata.apply_atomic_operations(*avu_operations)
     else:
         mimic_atomic_operations(catalog_item, avu_operations)
+
+def get_type_for_path(irods_session, item_path):
+    try:
+        _ = irods_session.collections.get(item_path)
+        return 'collection'
+    except Exception:
+        return 'data_object'

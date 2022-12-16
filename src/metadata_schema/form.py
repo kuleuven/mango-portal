@@ -54,6 +54,8 @@ import lib.util
 from lib.util import flatten_josse_schema
 from metadata_schema.editor import get_metadata_schema_dir
 
+import signals
+
 metadata_schema_form_bp = Blueprint(
     "metadata_schema_form_bp", __name__, template_folder="templates/metadata_schema",
 )
@@ -332,6 +334,12 @@ def edit_schema_metadata_for_item():
         lib.util.execute_atomic_operations(g.irods_session, catalog_item, avu_operation_list)
 
         if item_type == "collection":
+            signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=object_path)
+        if item_type == "data_object":
+            signals.data_object_changed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path=object_path)
+
+#signals.data_object_changed(current_app._get_current_object(), data_object_path=data_object_path)
+        if item_type == "collection":
             referral = url_for("browse_bp.collection_browse", collection=catalog_item.path)
         else:
             referral = url_for("browse_bp.view_object", data_object_path=catalog_item.path)
@@ -376,9 +384,14 @@ def delete_schema_metadata_for_item():
     lib.util.execute_atomic_operations(g.irods_session, catalog_item, avu_operation_list)
 
     if item_type == "collection":
-        referral = url_for("browse_bp.collection_browse", collection=catalog_item.path)
+            signals.collection_changed.send(current_app._get_current_object(), collection_path=item_path)
+    if item_type == "data_object":
+        signals.data_object_changed.send(current_app._get_current_object(), data_object_path=item_path)
+
+    if item_type == "collection":
+        referral = url_for("browse_bp.collection_browse", irods_session = g.irods_session, collection=catalog_item.path)
     else:
-        referral = url_for("browse_bp.view_object", data_object_path=catalog_item.path)
+        referral = url_for("browse_bp.view_object", irods_session = g.irods_session, data_object_path=catalog_item.path)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
