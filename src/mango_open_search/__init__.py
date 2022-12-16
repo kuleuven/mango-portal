@@ -32,7 +32,8 @@ MANGO_OPEN_SEARCH_INDEX_NAME = os.environ.get('MANGO_OPEN_SEARCH_INDEX_NAME', 'i
 
 MANGO_OPEN_SEARCH_AUTH = (MANGO_OPEN_SEARCH_USER, MANGO_OPEN_SEARCH_PASSWORD)
 MANGO_INDEX_THREAD_SLEEP_TIME=5
-MANGO_INDEX_THREAD_HEARTBEAT_TIME=300
+MANGO_INDEX_THREAD_HEARTBEAT_DELTA=300
+MANGO_OPEN_SEARCH_SESSION_REFRESH_DELTA=3600
 # For now a single client
 # @todo: create a pool (object) of clients to use by multiple threads
 mango_open_search_client = OpenSearch(
@@ -110,14 +111,47 @@ def get_zone_index_session(zone: str):
         logging.info(f"Failed getting indexing session for zone {zone}")
         return None
 
-def get_open_search_client(type='query'):
+def get_open_search_client(type='query', refresh = False ):
     # to be changed to a pooled version when running multiple threads
     global mango_open_search_client
     global mango_open_search_client_ingest
+
+    if refresh:
+        mango_open_search_client = OpenSearch(
+        hosts = [{'host': MANGO_OPEN_SEARCH_HOST_QUERY, 'port': MANGO_OPEN_SEARCH_PORT}],
+        http_compress = False, # enables gzip compression for request bodies
+        http_auth = MANGO_OPEN_SEARCH_AUTH,
+        # client_cert = client_cert_path,
+        # client_key = client_key_path,
+        use_ssl = True,
+        verify_certs = False,
+        ssl_assert_hostname = False,
+        ssl_show_warn = False,
+        #ca_certs = ca_certs_path
+    )
+
+# create a dedicated open search index client for this node
+        mango_open_search_client_ingest = OpenSearch(
+            hosts = [{'host': MANGO_OPEN_SEARCH_HOST_INGEST, 'port': MANGO_OPEN_SEARCH_PORT}],
+            http_compress = False, # enables gzip compression for request bodies
+            http_auth = MANGO_OPEN_SEARCH_AUTH,
+            # client_cert = client_cert_path,
+            # client_key = client_key_path,
+            use_ssl = True,
+            verify_certs = False,
+            ssl_assert_hostname = False,
+            ssl_show_warn = False,
+            #ca_certs = ca_certs_path
+        )
+
     if type == 'ingest':
         return mango_open_search_client_ingest
     return mango_open_search_client
 
+
+def ping_open_search_servers():
+    return {'query': get_open_search_client('query').ping(),
+            'ingest': get_open_search_client('ingest').ping() }
 # simple caching strategy
 path_ids = {}
 
@@ -454,6 +488,7 @@ class IndexingThread(Thread):
         self.daemon = True
         self.start_time=datetime.datetime.now()
         self.heartbeat_time = time.time()
+        self.open_search_session_refresh_time = time.time()
         logging.info(f"Indexing thread created")
         self.status = 'active'
 
@@ -513,7 +548,7 @@ class IndexingThread(Thread):
                 self.open_search_session_refresh_time = time.time()
                 logging.info(f"Refreshed open search server client connections on {MANGO_HOSTNAME}")
             # emit a heartbeat logging at most every 300 seconds
-            if time.time() - self.heartbeat_time > MANGO_INDEX_THREAD_HEARTBEAT_TIME:
+            if time.time() - self.heartbeat_time > MANGO_INDEX_THREAD_HEARTBEAT_DELTA:
                 # reset the heartbeat reference time point
                 self.heartbeat_time = time.time()
                 logging.info(f"Indexing thread heartbeat on {MANGO_HOSTNAME}")
