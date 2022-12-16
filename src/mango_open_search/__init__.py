@@ -12,8 +12,8 @@ import requests
 import irods_zones_config
 from threading import Lock, Thread, Event
 import datetime, time, logging
-
-
+from lib import util
+import signals
 
 API_URL = os.environ.get('API_URL', 'https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be')
 API_TOKEN = os.environ.get('API_TOKEN', '')
@@ -78,14 +78,14 @@ def get_index_session_params_via_api(zone: str):
 
 index_queue = []
 
-ALLOWED_JOB_TYPES = ['item', 'subtree']
+ALLOWED_JOB_TYPES = ['index_item', 'index_subtree', 'delete_item', 'delete_subtree']
 
-def add_index_job(zone: str, job_type : str, item_path: str, item_type: str):
+def add_index_job(zone: str, job_type : str, item_path: str, item_type: str, item_id=0):
     """
     type can be 'item', 'subtree'
     """
     global index_queue
-    index_queue.append({'zone': zone, 'job_type': job_type, 'item_path': item_path, 'item_type': item_type, 'time': datetime.datetime.now()})
+    index_queue.append({'zone': zone, 'job_type': job_type, 'item_path': item_path, 'item_type': item_type, 'time': datetime.datetime.now(), 'item_id': item_id})
 
 zone_index_sessions = {}
 
@@ -170,6 +170,8 @@ def get_path_id(irods_session: iRODSSession, path: str):
             return False
     return path_ids[path]
 
+def get_open_search_doc_id(zone: str, item_type: str,  item_id: int, ):
+    return f"{zone}_{item_type}_{item_id}"
 
 def get_basic_index_doc_for_item(irods_session: iRODSSession, item : iRODSCollection | iRODSDataObject, **options):
     """
@@ -236,7 +238,7 @@ def get_basic_index_doc_for_item(irods_session: iRODSSession, item : iRODSCollec
     fields['irods_parent_path_ids'] = parent_collection_path_ids
     fields['irods_parent_paths'] = parent_collection_paths
 
-    fields['_id'] = f"{fields['irods_zone_name']}_{fields['irods_item_type_simple']}_{fields['irods_id']}"
+    fields['_id'] = get_open_search_doc_id(zone = fields['irods_zone_name'],item_type=fields['irods_item_type_simple'],item_id=fields['irods_id'])
 
     return fields
 
@@ -289,25 +291,124 @@ def index_item(irods_session: iRODSSession, item_type:str, item_path:str):
         return response
 
     except Exception:
+        logging.info(f"Failed indexing {item_type} {item_path}")
         return None
 
 def index_children(irods_session: iRODSSession, collection_path: str, schedule_sub_collections = True):
-    #try:
-    collection = irods_session.collections.get(collection_path)
-    print(f"Got collection from {collection_path}, now bulk indexing")
-    actions = generate_docs_for_children(irods_session, collection, action = 'index')
-    #pprint.pprint(actions)
-    response = helpers.bulk(get_open_search_client(type='ingest'), actions)
+    try:
+        collection = irods_session.collections.get(collection_path)
+        logging.info(f"Got collection from {collection_path}, now bulk indexing")
+        actions = generate_docs_for_children(irods_session, collection, action = 'index')
+        response = helpers.bulk(get_open_search_client(type='ingest'), actions)
 
-    if schedule_sub_collections:
-        for sub_collection in collection.subcollections:
-            add_index_job(zone = irods_session.zone, job_type='subtree', item_path=sub_collection.path, item_type='collection')
+        if schedule_sub_collections:
+            for sub_collection in collection.subcollections:
+                add_index_job(zone = irods_session.zone, job_type='subtree', item_path=sub_collection.path, item_type='collection')
 
+        return response
+    except Exception as e:
+        logging.info(f"Failed indexing children of {collection_path}: {e}")
+        return False
+
+def delete_item(zone: str, item_id: int, item_type:str):
+    id = get_open_search_doc_id(zone=zone, item_type=item_type, item_id=item_id)
+    response = get_open_search_client(type='ingest').delete(
+        index = MANGO_OPEN_SEARCH_INDEX_NAME,
+        id = id
+        )
+    return response
+
+def delete_item_by_path(zone: str, item_path):
+    query_body = {
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "irods_path": item_path,
+                        }
+                    },
+                    {
+                        "bool": {
+                            "filter": [
+                                {
+                                    "term": {
+                                        "irods_zone_name": zone
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                ]
+            }
+        }
+    }
+    response = get_open_search_client(type = 'ingest').delete_by_query(index=MANGO_OPEN_SEARCH_INDEX_NAME, body=query_body )
     return response
 
 
+def delete_subtree_by_id (zone: str, path_item_id: int):
+    query_body = {
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "irods_parent_path_ids": path_item_id,
+                        }
+                    },
+                    {
+                        "bool": {
+                            "filter": [
+                                {
+                                    "term": {
+                                        "irods_zone_name": zone
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                ]
+            }
+        }
+    }
 
-def execute_index_job(zone: str, job_type: str, item_type, item_path, time):
+    delete_item(zone=zone, item_id=path_item_id, item_type='collection')
+    response = get_open_search_client(type = 'ingest').delete_by_query(index=MANGO_OPEN_SEARCH_INDEX_NAME, body=query_body )
+    return response
+
+def delete_subtree_by_path (zone: str, item_path):
+    query_body = {
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "multi_match": {
+                            "query": item_path,
+                            "fields": ["irods_parent_paths", "irods_path"],
+                        }
+                    },
+                    {
+                        "bool": {
+                            "filter": [
+                                {
+                                    "term": {
+                                        "irods_zone_name": zone
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                ]
+            }
+        }
+    }
+
+    response = get_open_search_client(type = 'ingest').delete_by_query(index=MANGO_OPEN_SEARCH_INDEX_NAME, body=query_body )
+    return response
+
+
+def execute_index_job(zone: str, job_type: str, item_type, item_path, item_id, time):
     if not job_type in ALLOWED_JOB_TYPES:
         return
     _ = time # not used, but present in the **parameter expansion calling this function
@@ -315,14 +416,69 @@ def execute_index_job(zone: str, job_type: str, item_type, item_path, time):
     irods_session_for_zone = get_zone_index_session(zone)
     if not irods_session_for_zone:
         logging.warn(f"Cannot index, no valid irods indexing session, aborting, but adding job again to the queue for node {MANGO_HOSTNAME}")
-        add_index_job(zone = zone, job_type=job_type, item_type=item_type, item_path=item_path)
+        add_index_job(zone = zone, job_type=job_type, item_type=item_type, item_path=item_path, item_id=item_id)
         return
-    if job_type == 'item':
+    if job_type == 'index_item':
         result = index_item(irods_session_for_zone, item_type, item_path)
-    if job_type == 'subtree' and item_type == 'collection':
+    if job_type == 'index_subtree' and item_type == 'collection':
         result = index_children(irods_session_for_zone, item_path, schedule_sub_collections=True)
+    if job_type == 'delete_item':
+        result = delete_item_by_path(zone=zone, item_path =item_path)
+    if job_type == 'delete_subtree':
+        result = delete_subtree_by_path(zone=zone, item_path=item_path)
 
 
+def collection_modified_listener(sender, **parameters):
+    if not ('collection_path' in parameters) or not ('irods_session' in parameters):
+        return
+    add_index_job(zone=parameters['irods_session'].zone, job_type='index_item', item_type='collection', item_path=parameters['collection_path'])
+
+def data_object_modified_listener(sender, **parameters):
+    if not ('data_object_path' in parameters) or not ('irods_session' in parameters):
+        return
+    add_index_job(zone=parameters['irods_session'].zone, job_type='index_item', item_type='data_object', item_path = parameters['data_object_path'] )
+
+def collection_deleted_listener(sender, **parameters):
+    if not ('collection_path' in parameters) or not ('irods_session' in parameters):
+        return
+    add_index_job(zone=parameters['irods_session'].zone, job_type='delete_subtree', item_type='collection', item_path=parameters['collection_path'])
+
+def data_object_deleted_listener(sender, **parameters):
+    if not ('data_object_path' in parameters) or not ('irods_session' in parameters):
+        return
+    add_index_job(zone=parameters['irods_session'].zone, job_type='delete_item', item_type='data_object', item_path=parameters['data_object_path'])
+
+def subtree_added_listener(sender, **parameters):
+    if not ('collection_path' in parameters) or not ('irods_session' in parameters):
+        return
+    add_index_job(zone=parameters['irods_session'].zone, job_type='index_item', item_type='collection', item_path=parameters['collection_path'])
+    add_index_job(zone=parameters['irods_session'].zone, job_type='index_subtree', item_type='collection', item_path=parameters['collection_path'])
+
+def permissions_changed_listener(sender, **parameters):
+    if not ('item_path' in parameters) or not ('irods_session' in parameters):
+        return
+    if 'recursive' in parameters and parameters["recursive"]:
+        # it must be a collection for recursive to be true
+        add_index_job(zone=parameters['irods_session'].zone, job_type='index_item', item_type='collection', item_path=parameters['item_path'])
+        add_index_job(zone=parameters['irods_session'].zone, job_type='index_subtree', item_type='collection', item_path=parameters['item_path'])
+        return
+    item_type = util.get_type_for_path(parameters["irods_session"], parameters["item_path"])
+    add_index_job(add_index_job(zone=parameters['irods_session'].zone, job_type='index_item', item_type=item_type, item_path=parameters['item_path']))
+
+
+signals.collection_added.connect(collection_modified_listener)
+signals.collection_changed.connect(collection_modified_listener)
+signals.collection_deleted.connect(collection_deleted_listener)
+signals.collection_trashed.connect(collection_deleted_listener)
+
+signals.subtree_added.connect(subtree_added_listener)
+
+signals.data_object_added.connect(data_object_modified_listener)
+signals.data_object_changed.connect(data_object_modified_listener)
+signals.data_object_deleted.connect(data_object_deleted_listener)
+signals.data_object_trashed.connect(data_object_deleted_listener)
+
+signals.permissions_changed.connect(permissions_changed_listener)
 
 #Indexing thread :)
 
@@ -360,7 +516,13 @@ class IndexingThread(Thread):
 
             if ((queue_length := len(index_queue)) > 0) and  self.status == 'active':
                 logging.info(f"Indexing {index_queue[0]} from {queue_length} outstanding jobs on {MANGO_HOSTNAME}")
-                execute_index_job(**index_queue.pop(0))
+                current_job = index_queue[0].copy()
+                try:
+                    execute_index_job(**index_queue.pop(0))
+                except Exception as e:
+                    logging.warn('Failed indexing, adding job to the queue again')
+                    index_queue += [current_job]
+
 
             if self.status == 'sleep':
                 logging.info(f"Indexing thread in sleep mode on {MANGO_HOSTNAME}")

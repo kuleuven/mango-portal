@@ -52,6 +52,7 @@ def index():
         result=result,
         available_collections = home_collection.subcollections,
         indexing_thread_status = indexing_thread.status,
+        indexing_thread_health = indexing_thread.is_alive(),
         server_health = ping_open_search_servers()
         )
 

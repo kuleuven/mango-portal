@@ -33,7 +33,7 @@ def add_meta_data_collection():
     collection = g.irods_session.collections.get(collection_path)
     collection.metadata.add(avu_name, avu_value, avu_units)
     # print(avu_name, avu_value, avu_units, collection_path, sep="|")
-    signals.collection_changed(current_app._get_current_object(), collection_path=collection_path)
+    signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=collection_path)
 
     flash(f"Successfully added metadata to {collection.name}", "success")
     if "redirect_route" in request.values:
@@ -62,7 +62,7 @@ def edit_meta_data_collection():
     collection.metadata.remove(orig_avu_name, orig_avu_value, orig_avu_units)
     collection.metadata.add(avu_name, avu_value, avu_units)
 
-    signals.collection_changed(current_app._get_current_object(), collection_path=collection_path)
+    signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=collection_path)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -87,7 +87,7 @@ def delete_meta_data_collection():
     collection = g.irods_session.collections.get(collection_path)
     collection.metadata.remove(avu_name, avu_value, avu_units)
 
-    signals.collection_changed(current_app._get_current_object(), collection_path=collection_path)
+    signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=collection_path)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -112,7 +112,7 @@ def add_meta_data():
     data_object.metadata.add(avu_name, avu_value, avu_units)
     # print(avu_name, avu_value, avu_units, data_object_path, sep="|")
 
-    signals.data_object_changed(current_app._get_current_object(), data_object_path=data_object_path)
+    signals.data_object_changed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path=data_object_path)
 
     flash(f"Successfully added metadata to {data_object.name}", "success")
     if "redirect_route" in request.values:
@@ -141,7 +141,7 @@ def edit_meta_data():
     data_object.metadata.remove(orig_avu_name, orig_avu_value, orig_avu_units)
     data_object.metadata.add(avu_name, avu_value, avu_units)
 
-    signals.data_object_changed(current_app._get_current_object(), data_object_path=data_object_path)
+    signals.data_object_changed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path=data_object_path)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -165,7 +165,7 @@ def delete_meta_data():
     data_object = g.irods_session.data_objects.get(data_object_path)
     data_object.metadata.remove(avu_name, avu_value, avu_units)
 
-    signals.data_object_changed(current_app._get_current_object(), data_object_path=data_object_path)
+    signals.data_object_changed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path=data_object_path)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -200,7 +200,7 @@ def add_tika_metadata():
     # workaround for a bug in 4.2.11
     lib.util.execute_atomic_operations(g.irods_session, data_object, avu_operation_list)
 
-    signals.data_object_changed(current_app._get_current_object(), data_object_path=data_object_path)
+    signals.data_object_changed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path=data_object_path)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])

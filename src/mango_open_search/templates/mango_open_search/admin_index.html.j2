@@ -31,7 +31,10 @@
                     form="change_indexing_status"
                     class="btn btn-success mt-3">Change status</button>
         </div>
-        <div class="col align-bottom">
+        <div class="col">
+            <p>
+                Indexing thread health : {{ ('<i class="bi-check-square text-success"></i>' if indexing_thread_health else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
+            </p>
             <form method="post"
                   action="{{ url_for('mango_open_search_admin_bp.refresh_indexing_thread')}}"
                   id="refresh_indexing_thread">

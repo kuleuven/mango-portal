@@ -38,10 +38,10 @@ def index_collection():
         zone = collection_path.split("/")[1]
 
     add_index_job(
-        zone=zone, job_type="item", item_path=collection_path, item_type="collection"
+        zone=zone, job_type="index_item", item_path=collection_path, item_type="collection"
     )
     add_index_job(
-        zone=zone, job_type="subtree", item_path=collection_path, item_type="collection"
+        zone=zone, job_type="index_subtree", item_path=collection_path, item_type="collection"
     )
 
     if "redirect_route" in request.values:

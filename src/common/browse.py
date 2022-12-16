@@ -502,9 +502,9 @@ def delete_collection():
     g.irods_session.collections.remove(collection_path, force=force_delete)
 
     if force_delete:
-        signals.collection_deleted.send(current_app._get_current_object(), collection_path = collection_path)
+        signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
     else:
-        signals.collection_trashed.send(current_app._get_current_object(), collection_path = collection_path)
+        signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -531,9 +531,9 @@ def delete_data_object():
     g.irods_session.data_objects.get(data_object_path).unlink(force=force_delete)
 
     if force_delete:
-        signals.data_object_deleted.send(current_app._get_current_object(), data_object_path = data_object_path)
+        signals.data_object_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object_path)
     else:
-        signals.data_object_trashed.send(current_app._get_current_object(), data_object_path = data_object_path)
+        signals.data_object_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object_path)
 
 
     if "redirect_route" in request.values:
@@ -579,7 +579,7 @@ def collection_upload_file():
     g.irods_session.data_objects.put(filename, collection + "/" + f.filename)
     data_object : iRODSDataObject = g.irods_session.data_objects.get(f"{collection}/{f.filename}")
 
-    signals.data_object_added.send(current_app._get_current_object(), data_object_path = data_object.path)
+    signals.data_object_added.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object.path)
 
     os.unlink(filename)
 
@@ -603,9 +603,9 @@ def add_collection():
 
     if '/' in collection_name:
         new_collection_tree_root = f"{parent_collection_path}/{collection_name.split('/')[0]}"
-        signals.subtree_added(current_app._get_current_object(), collection_path = new_collection_tree_root)
+        signals.subtree_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = new_collection_tree_root)
     else:
-        signals.collection_added(current_app._get_current_object(), collection_path = f"{parent_collection_path}/{collection_name}")
+        signals.collection_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = f"{parent_collection_path}/{collection_name}")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -792,7 +792,7 @@ def set_permissions(item_path: str):
         print(e)
         abort(500, "failed to set permissions")
 
-    signals.permissions_changed(current_app._get_current_object(), item_path=item_path, recursive = recursive)
+    signals.permissions_changed.send(current_app._get_current_object(), irods_session = g.irods_session, item_path=item_path, recursive = recursive)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -814,7 +814,7 @@ def set_inheritance(collection_path: str):
     else:
         g.irods_session.permissions.set(iRODSAccess("noinherit", collection_path))
 
-    signals.collection_changed(current_app._get_current_object(), collection_path=collection_path)
+    signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=collection_path)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
