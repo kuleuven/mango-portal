@@ -47,10 +47,12 @@ def index():
 
     home_collection : iRODSCollection = g.irods_session.collections.get(f"/{g.irods_session.zone}/home")
 
+    available_collections = [home_collection] + home_collection.subcollections
+
     return render_template(
         'mango_open_search/admin_index.html.j2',
         result=result,
-        available_collections = home_collection.subcollections,
+        available_collections = available_collections,
         indexing_thread_status = indexing_thread.status,
         indexing_thread_health = indexing_thread.is_alive(),
         server_health = ping_open_search_servers()
