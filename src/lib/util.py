@@ -1,6 +1,10 @@
 import os
+from irods.collection import iRODSCollection
+from irods.data_object import iRODSDataObject
+from irods.session import iRODSSession
 
-def generate_breadcrumbs(path_string):
+
+def generate_breadcrumbs(path_string: str):
     breadcrumbs = []
     path_elements = path_string.strip("/").split("/")
     for idx, path_element in enumerate(path_elements):
@@ -10,7 +14,7 @@ def generate_breadcrumbs(path_string):
     return breadcrumbs
 
 
-def collection_tree_to_dict(collection):
+def collection_tree_to_dict(collection: iRODSCollection):
     (_, label) = os.path.split(collection.path)
     d = {"id": collection.path, "label": label}
     if collection.subcollections:
@@ -26,9 +30,9 @@ def strip_suffix(_string: str, _suffix: str):
         _string = _string[: -len(_suffix)]
     return _string
 
+
 def flatten_josse_schema(object_tuple, level=0, prefix="", result_dict={}):
-    """
-    """
+    """ """
     (_key, _dict) = object_tuple
     for p_key, _property in _dict["properties"].items():
         # Preprocessing/sanitizing
@@ -60,40 +64,55 @@ def flatten_josse_schema(object_tuple, level=0, prefix="", result_dict={}):
 
     return result_dict
 
-def get_collection_size(collection):
+
+def get_collection_size(collection: iRODSCollection):
     total_size = 0
     num_data_objects = 0
     try:
-        for info in collection.walk( ):
-            num_data_objects += len( info[2] )
-            total_size += sum( d.size for d in info[2] )
-    except e:
+        for info in collection.walk():
+            num_data_objects += len(info[2])
+            total_size += sum(d.size for d in info[2])
+    except Exception:
         total_size_in_bytes = -1
-    return {'total_size': total_size, 'num_data_objects': num_data_objects }
+    return {"total_size": total_size, "num_data_objects": num_data_objects}
 
-def current_user_is_naked_owner(irods_session, catalog_item):
+
+def current_user_is_naked_owner(irods_session: iRODSSession, catalog_item):
     permissions = irods_session.permissions.get(catalog_item, report_raw_acls=True)
     for permission in permissions:
-        if irods_session.username == permission.user_name and permission.access_name == 'own':
+        if (
+            irods_session.username == permission.user_name
+            and permission.access_name == "own"
+        ):
             return True
     return False
 
-def mimic_atomic_operations(catalog_item, avu_operations):
+
+def mimic_atomic_operations(
+    catalog_item: iRODSDataObject | iRODSCollection, avu_operations
+):
     for avu_operation in avu_operations:
-        if avu_operation.operation == 'remove':
+        if avu_operation.operation == "remove":
             catalog_item.metadata.remove(avu_operation.avu)
-        if avu_operation.operation == 'add':
+        if avu_operation.operation == "add":
             catalog_item.metadata.add(avu_operation.avu)
 
-def execute_atomic_operations(irods_session, catalog_item, avu_operations):
+
+# Workaround for a bug if current user is not an explicit owner, atomic operations fail in PRC 1.1.5
+def execute_atomic_operations(
+    irods_session: iRODSSession,
+    catalog_item: iRODSDataObject | iRODSCollection,
+    avu_operations,
+):
     if current_user_is_naked_owner(irods_session, catalog_item):
         catalog_item.metadata.apply_atomic_operations(*avu_operations)
     else:
         mimic_atomic_operations(catalog_item, avu_operations)
 
-def get_type_for_path(irods_session, item_path):
+
+def get_type_for_path(irods_session: iRODSSession, item_path: str):
     try:
         _ = irods_session.collections.get(item_path)
-        return 'collection'
+        return "collection"
     except Exception:
-        return 'data_object'
+        return "data_object"
