@@ -2,7 +2,8 @@
 {% import "dialogs.html.j2" as dialogs %}
 {% import "blocks.html.j2" as block_macros %}
 {% block body %}
-  <nav aria-label="breadcrumb">
+  <nav aria-label="breadcrumb"
+       class="navbar-light bg-light sticky-top pb-2 pt-1">
     <ol class="breadcrumb">
       <i class="bi bi-house-door-fill"> </i>&nbsp;
       {% for element in breadcrumbs[:-1] %}

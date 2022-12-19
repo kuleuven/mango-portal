@@ -16,17 +16,19 @@
   </style>
 {% endblock head %}
 {% block body %}
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-      <i class="bi bi-house-door-fill"> </i>&nbsp;
-      {#<li class="breadcrumb-item">{{ breadcrumbs[0]['label'] }}</li>#}
-      {% for element in breadcrumbs[:-1] %}
-        <li class="breadcrumb-item">
-          <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
-        </li>
-      {% endfor %}
-      <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li>
-    </ol>
+  <nav aria-label="breadcrumb" class="navbar-light bg-light sticky-top pb-2 pt-1">
+    <div class="text-bg-light">
+      <ol class="breadcrumb">
+        <i class="bi bi-house-door-fill"> </i>&nbsp;
+        {#<li class="breadcrumb-item">{{ breadcrumbs[0]['label'] }}</li>#}
+        {% for element in breadcrumbs[:-1] %}
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
+          </li>
+        {% endfor %}
+        <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li>
+      </ol>
+    </div>
   </nav>
   <div class="row">
     <div class="col-12 mr-auto">
