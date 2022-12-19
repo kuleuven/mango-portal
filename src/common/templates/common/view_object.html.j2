@@ -103,11 +103,11 @@
         </tr>
         <tr>
           <th>Created</th>
-          <td>{{ data_object.create_time.isoformat(timespec='seconds') }}</td>
+          <td>{{ data_object.create_time | localize_datetime }}</td>
         </tr>
         <tr>
           <th>Modified</th>
-          <td>{{ data_object.modify_time.isoformat(timespec='seconds') }}</td>
+          <td>{{ data_object.modify_time | localize_datetime }}</td>
         </tr>
         <tr>
           <th>Size</th>
@@ -121,10 +121,10 @@
           <th>Status</th>
           <td>{{ data_object.status }}</td>
         </tr>
-        <tr>
+        {# <tr>
           <th>Replica number</th>
           <td>{{ data_object.replica_number }}</td>
-        </tr>
+        </tr> #}
       </table>
       {% if 'own' in current_user_rights %}
         <div class="row mt-5">

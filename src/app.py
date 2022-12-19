@@ -6,21 +6,18 @@ from flask import (
     request,
     url_for,
     render_template,
-    flash,
-    make_response,
     Blueprint,
     session,
     current_app,
 )
 from cache import cache
 import os
-import glob
 import flask
-import sys
 from pprint import pformat
 from flask_cors import CORS
 import json
 import irods
+import pytz
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -222,11 +219,17 @@ def release_irods_session_lock(response):
 
 # custom filters
 
+@app.template_filter("localize_datetime")
+def localize_datetime(value, format="%Y-%m-%dT%H:%M:%S"):
+    tz = pytz.timezone('Europe/Brussels') # timezone you want to convert to from UTC
+    utc = pytz.timezone('UTC')
+    value = utc.localize(value, is_dst=None).astimezone(pytz.utc)
+    local_dt = value.astimezone(tz)
+    return local_dt.strftime(format)
 
 @app.template_filter("format_timestamp")
 def format_timestamp(ts):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
-
 
 @app.template_filter("format_time")
 def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
