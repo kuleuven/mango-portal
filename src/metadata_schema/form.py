@@ -34,6 +34,7 @@ from wtforms import (
     TimeField,
     HiddenField,
     SelectMultipleField,
+    TextAreaField,
 )
 import wtforms.widgets
 from werkzeug.datastructures import MultiDict
@@ -76,6 +77,8 @@ def josse_process_property(property_tuple, required=False, prefix=""):
                 return URLField(label=_property["title"], validators=_validators)
             if _property["format"] == "time":
                 return TimeField(label=_property["title"], validators=_validators)
+            if _property["format"] == "textarea":
+                return TextAreaField(label=_property["title"], validators = _validators)
         else:
             return StringField(label=_property["title"], validators=_validators)
     if _property["type"] == "number":

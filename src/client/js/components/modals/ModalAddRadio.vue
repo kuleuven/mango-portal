@@ -8,14 +8,16 @@
                     <form ref="addRadioForm" class="needs-validation" novalidate>
                         <div>
                             <label for="radioId" class="form-label h6">ID for radio input</label>
-                            <input class="form-control" id="radioId" v-model="radioId" required>
+                            <input class="form-control" id="radioId" v-model="radioId"
+                            placeholder="Use lowercase, no spaces, no special characters other than '_'" required>
                             <div class="invalid-feedback">
                                 This field is required
                             </div>
                         </div>
                         <div>
                             <label for="radioLabel" class="form-label h6">Label for radio input</label>
-                            <input class="form-control" id="radioLabel" v-model="radioLabel" required>
+                            <input class="form-control" id="radioLabel" v-model="radioLabel"
+                            placeholder="The text presented to the user as the name of this field, may include spaces and mixed case" required>
                             <div class="invalid-feedback">
                                 This field is required
                             </div>

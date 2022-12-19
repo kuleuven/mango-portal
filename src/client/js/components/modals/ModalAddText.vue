@@ -8,14 +8,16 @@
                     <form ref="addTextForm" class="needs-validation" novalidate>
                         <div>
                             <label for="textId" class="form-label h6">ID for text input</label>
-                            <input class="form-control" id="textId" v-model="textId" required>
+                            <input class="form-control" id="textId" v-model="textId"
+                            placeholder="Use lowercase, no spaces, no special characters other than '_'" required>
                             <div class="invalid-feedback">
                                 This field is required
                             </div>
                         </div>
                         <div>
                             <label for="textLabel" class="form-label h6">Label for text input</label>
-                            <input class="form-control" id="textLabel" v-model="textLabel" required>
+                            <input class="form-control" id="textLabel" v-model="textLabel"
+                            placeholder="The text presented to the user as the name of this field, may include spaces and mixed case" required>
                             <div class="invalid-feedback">
                                 This field is required
                             </div>
@@ -77,6 +79,15 @@
                                 "title":this.textLabel
                             }
                         };
+                    case "LongText":
+                        return {
+                            [this.textId]: {
+                                "type": "string",
+                                "format": "textarea",
+                                "title": this.textLabel
+                            }
+                        };
+
                     case "Number":
                         return {
                             [this.textId]: {

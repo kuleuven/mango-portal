@@ -24,14 +24,16 @@
                         <form ref="addArrayForm" class="needs-validation" novalidate>
                             <div>
                                 <label for="arrayId" class="form-label h6">ID for array input</label>
-                                <input class="form-control" id="arrayId" v-model="arrayId" required>
+                                <input class="form-control" id="arrayId" v-model="arrayId"
+                                placeholder="Use lowercase, no spaces, no special characters other than '_'" required>
                                 <div class="invalid-feedback">
                                     This field is required
                                 </div>
                             </div>
                             <div>
                                 <label for="arrayLabel" class="form-label h6">Label for array input</label>
-                                <input class="form-control" id="arrayLabel" v-model="arrayLabel" required>
+                                <input class="form-control" id="arrayLabel" v-model="arrayLabel"
+                                placeholder="The text presented to the user as the name of this field, may include spaces and mixed case" required>
                                 <div class="invalid-feedback">
                                     This field is required
                                 </div>
@@ -100,7 +102,7 @@
                 if (this.elementChosen == null){
                    this.$refs.noFormSelectedFeedback.style = "display: block; padding-left: 0";
                    success = false;
-                } 
+                }
                 // check if the minimum number of items is smaller than or equal to the maximum number of items
                 var numberInputs = this.$refs.addArrayForm.querySelectorAll("input[type=number]");
                 if (this.minItems > this.maxItems){

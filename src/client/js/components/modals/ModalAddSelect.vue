@@ -8,14 +8,16 @@
                     <form ref="addSelectForm" class="needs-validation" novalidate>
                         <div>
                             <label for="selectId" class="form-label h6">ID for select input</label>
-                            <input class="form-control" id="selectId" v-model="selectId" required>
+                            <input class="form-control" id="selectId" v-model="selectId"
+                            placeholder="Use lowercase, no spaces, no special characters other than '_'" required>
                             <div class="invalid-feedback">
                                 This field is required
                             </div>
                         </div>
                         <div>
                             <label for="selectLabel" class="form-label h6">Label for select input</label>
-                            <input class="form-control" id="selectLabel" v-model="selectLabel" required>
+                            <input class="form-control" id="selectLabel" v-model="selectLabel"
+                            placeholder="The text presented to the user as the name of this field, may include spaces and mixed case" required>
                             <div class="invalid-feedback">
                                 This field is required
                             </div>

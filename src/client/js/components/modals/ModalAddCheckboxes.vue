@@ -8,14 +8,16 @@
                     <form ref="addCheckboxesForm" class="needs-validation" novalidate>
                         <div>
                             <label for="checkboxesId" class="form-label h6">ID for checkboxes input</label>
-                            <input class="form-control" id="checkboxesId" v-model="checkboxesId" required>
+                            <input class="form-control" id="checkboxesId" v-model="checkboxesId"
+                            placeholder="Use lowercase, no spaces, no special characters other than '_'" required>
                             <div class="invalid-feedback">
                                 This field is required
                             </div>
                         </div>
                         <div>
                             <label for="checkboxesLabel" class="form-label h6">Label for checkboxes input</label>
-                            <input class="form-control" id="checkboxesLabel" v-model="checkboxesLabel" required>
+                            <input class="form-control" id="checkboxesLabel" v-model="checkboxesLabel"
+                            placeholder="The text presented to the user as the name of this field, may include spaces and mixed case" required>
                             <div class="invalid-feedback">
                                 This field is required
                             </div>

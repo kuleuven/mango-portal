@@ -42,14 +42,16 @@
                         <form ref="addObjectForm" class="needs-validation" novalidate>
                             <div>
                                 <label for="objectId" class="form-label h6">ID for object input</label>
-                                <input class="form-control" id="objectId" v-model="objectId" required>
+                                <input class="form-control" id="objectId" v-model="objectId"
+                                placeholder="Use lowercase, no spaces, no special characters other than '_'" required>
                                 <div class="invalid-feedback">
                                     This field is required
                                 </div>
                             </div>
                             <div>
                                 <label for="objectLabel" class="form-label h6">Label for object input</label>
-                                <input class="form-control" id="objectLabel" v-model="objectLabel" required>
+                                <input class="form-control" id="objectLabel" v-model="objectLabel"
+                                placeholder="The text presented to the user as the name of this field, may include spaces and mixed case" required>
                                 <div class="invalid-feedback">
                                     This field is required
                                 </div>
