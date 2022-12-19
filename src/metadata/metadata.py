@@ -63,6 +63,7 @@ def edit_meta_data_collection():
     collection.metadata.add(avu_name, avu_value, avu_units)
 
     signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=collection_path)
+    flash(f"Successfully edited metadata for {collection.name}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -88,6 +89,7 @@ def delete_meta_data_collection():
     collection.metadata.remove(avu_name, avu_value, avu_units)
 
     signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=collection_path)
+    flash(f"Successfully deleted metadata from {collection.name}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -142,6 +144,7 @@ def edit_meta_data():
     data_object.metadata.add(avu_name, avu_value, avu_units)
 
     signals.data_object_changed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path=data_object_path)
+    flash(f"Successfully edited metadata for {data_object.name}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -167,6 +170,7 @@ def delete_meta_data():
 
     signals.data_object_changed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path=data_object_path)
 
+    flash(f"Successfully deleted metadata from {data_object.name}", "success")
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
@@ -200,7 +204,9 @@ def add_tika_metadata():
     # workaround for a bug in 4.2.11
     lib.util.execute_atomic_operations(g.irods_session, data_object, avu_operation_list)
 
+    flash(f"Successfully added Tika metadata for {data_object.name}", "success")
     signals.data_object_changed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path=data_object_path)
+
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])

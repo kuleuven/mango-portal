@@ -500,8 +500,10 @@ def delete_collection():
 
     if force_delete:
         signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+        flash(f"Successfully deleted {collection_path}", "success")
     else:
         signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+        flash(f"Collection {collection_path} moved to trash", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -529,8 +531,10 @@ def delete_data_object():
 
     if force_delete:
         signals.data_object_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object_path)
+        flash(f"Successfully deleted {data_object_path}", "success")
     else:
         signals.data_object_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object_path)
+        flash(f"Data object {data_object_path} moved to trash", "success")
 
 
     if "redirect_route" in request.values:
@@ -603,6 +607,7 @@ def add_collection():
         signals.subtree_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = new_collection_tree_root)
     else:
         signals.collection_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = f"{parent_collection_path}/{collection_name}")
+        flash(f"Collection {collection_name} added to {parent_collection_path}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -678,6 +683,7 @@ def ask_tika(data_object_path):
                 result["X-TIKA:content"] = result["X-TIKA:content"].strip()
                 with open(tika_file_path, mode="w") as tika_file:
                     json.dump(result, fp=tika_file)
+                flash(f"Data object {data_object_path} analyzed with Tika", "success")
 
             except Exception as e:
                 result = {"error": f"Something went wrong asking Tika about me: {e}"}
@@ -790,6 +796,7 @@ def set_permissions(item_path: str):
         abort(500, "failed to set permissions")
 
     signals.permissions_changed.send(current_app._get_current_object(), irods_session = g.irods_session, item_path=item_path, recursive = recursive)
+    flash(f"Permissions changed for {item_path}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -812,6 +819,7 @@ def set_inheritance(collection_path: str):
         g.irods_session.permissions.set(iRODSAccess("noinherit", collection_path))
 
     signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=collection_path)
+    flash(f"Inheritance updated for {collection_path}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -830,6 +838,8 @@ def empty_user_trash():
          g.irods_session.collections.remove(sub_collection.path, force=True)
     for data_object in user_trash.data_objects:
         g.irods_session.data_objects.get(data_object.path).unlink(force=True)
+
+    flash(f"Emptied your trash can", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
