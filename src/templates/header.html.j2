@@ -29,7 +29,8 @@
                            type="search"
                            class="form-control"
                            {% if request.args.get('search_string') %} value="{{ request.args.get('search_string') }}" {% endif %}
-                           placeholder="Search ..."/>
+                           placeholder="Search ..."
+                           required/>
                 </form>
             {% endif %}
             <div class="flex-shrink-0 dropdown">
