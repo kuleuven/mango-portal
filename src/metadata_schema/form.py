@@ -77,10 +77,10 @@ def josse_process_property(property_tuple, required=False, prefix=""):
                 return URLField(label=_property["title"], validators=_validators)
             if _property["format"] == "time":
                 return TimeField(label=_property["title"], validators=_validators)
-            if _property["format"] == "textarea":
-                return TextAreaField(label=_property["title"], validators = _validators)
         else:
             return StringField(label=_property["title"], validators=_validators)
+    if _property["type"] == "textarea":
+            return TextAreaField(label=_property["title"], validators = _validators, render_kw={'class': 'form-control', 'rows': 5, 'maxlength': 1500})
     if _property["type"] == "number":
         range_args = {}
         if "minimum" in _property:
@@ -245,27 +245,7 @@ def edit_schema_metadata_for_item():
     flat_form_dict = flatten_josse_schema(
         ("", form_dict), level=0, prefix=prefix, result_dict={}
     )
-    print("flat form dict")
-    pprint(flat_form_dict)
 
-    # filters = []
-
-    # if item_type == "data_object":
-    #     filters += [Criterion("=", DataObject.replica_number, 0)]
-
-    # filters += [Criterion("=", DataObject.id, _parameters["id"])]
-    #     if item_type == "data_object"
-    #     else [Criterion("=", Collection.id, _parameters["id"])]
-
-    # item = DataObject if item_type == "data_object" else Collection
-    # pprint(filters)
-
-    # pprint(filters)
-
-    # item_query = Query(g.irods_session, item).filter(*filters)
-    # query_result = item_query.one()
-    # if item_type == 'data_object':
-    #     pprint(query_result[DataObject.path])
     catalog_item = (
         g.irods_session.data_objects.get(object_path)
         if item_type == "data_object"
@@ -283,14 +263,8 @@ def edit_schema_metadata_for_item():
 
     for meta_data_item in catalog_item.metadata.items():
         if meta_data_item.name.startswith(prefix):
-            # if flat_form_dict[meta_data_item.name]["type"] == "checkboxes":
-            #     try:
-            #         meta_data_item.value = json.loads(_value)
-            #     except:
-            #         pass
-            form_values.add(meta_data_item.name, meta_data_item.value)
-    # print("data from irods:")
-    # pprint(form_values)
+
+            form_values.add(meta_data_item.name, meta_data_item.value.replace("<br/>", "\n"))
 
     if request.method == "GET":
 
@@ -319,6 +293,7 @@ def edit_schema_metadata_for_item():
         avu_operation_list = []
         for meta_data_item in catalog_item.metadata.items():
             if meta_data_item.name.startswith(prefix):
+
                 avu_operation_list.append(
                     AVUOperation(operation="remove", avu=meta_data_item)
                 )
@@ -326,13 +301,17 @@ def edit_schema_metadata_for_item():
 
             if _key.startswith(prefix) and _value:
                 if flat_form_dict[_key]["type"] == "checkboxes":
-
                     _value = json.dumps(_value)
+                if flat_form_dict[_key]["type"] == "textarea":
+                    # the value is transformed to replace newlines as iRODS cannot handle this.
+                    # Most likely this is only for schemas which can have textarea boxes
+                    _value = "<br/>".join(_value.splitlines())
+
                 avu_operation_list.append(
-                    AVUOperation(operation="add", avu=iRODSMeta(_key, _value))
+                    AVUOperation(operation="add", avu=iRODSMeta(_key, _value ))
                 )
 
-        #catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
+        catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
         # workaround for a bug in 4.2.11
         lib.util.execute_atomic_operations(g.irods_session, catalog_item, avu_operation_list)
 

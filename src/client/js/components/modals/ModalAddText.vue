@@ -82,8 +82,7 @@
                     case "LongText":
                         return {
                             [this.textId]: {
-                                "type": "string",
-                                "format": "textarea",
+                                "type": "textarea",
                                 "title": this.textLabel
                             }
                         };

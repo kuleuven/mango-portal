@@ -18,6 +18,7 @@ from flask_cors import CORS
 import json
 import irods
 import pytz
+import bleach
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -218,6 +219,10 @@ def release_irods_session_lock(response):
 
 
 # custom filters
+@app.template_filter("bleach_clean")
+def bleach_clean(suspect, **kwargs):
+    return bleach.clean(suspect, **kwargs)
+
 
 @app.template_filter("localize_datetime")
 def localize_datetime(value, format="%Y-%m-%dT%H:%M:%S"):
