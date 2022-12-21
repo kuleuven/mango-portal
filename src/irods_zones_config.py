@@ -124,9 +124,10 @@ def refresh_zone_info():
             "ssl_settings": {},
             #"admin_users": ["u0123318", "vsc33436", "x0116999"],
         }
-        for extra_zone_config in ['logo', 'splash_image', 'admin_users']:
-            if extra_zone_config in irods_zones[zone_info["zone"]]:
-                zones[zone_info["zone"]][extra_zone_config] = irods_zones[zone_info["zone"]][extra_zone_config]
+        if zone_info["zone"] in irods_zones:
+            for extra_zone_config in ['logo', 'splash_image', 'admin_users']:
+                if extra_zone_config in irods_zones[zone_info["zone"]]:
+                    zones[zone_info["zone"]][extra_zone_config] = irods_zones[zone_info["zone"]][extra_zone_config]
 
     irods_zones.clear()
     irods_zones.update(zones)
