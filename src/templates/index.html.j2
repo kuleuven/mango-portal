@@ -1,34 +1,31 @@
-
 {% extends "base.html.j2" %}
-
 {% block body %}
-                <h2>Welcome to Mango, your active data portal</h2>
-
-                <img src="{{ url_for('static', filename='unsplash-mango.jpg') }}" width="70%" class="bi-align-center">
-				{# <img src="{{ url_for('static', filename='data-repository.webp') }}" width="70%" class="bi-align-center"> #}
-				<p>
-				{% for path_element in current_path %}
-
-				{% endfor %}
-				</p>
-
-				{# <h5>Test links</h5>
+    <h2>Welcome to Mango, your active data portal</h2>
+    <div class="row">
+        <img src="{{ url_for('static', filename='mango-logo.png') }}"
+             width="70%"
+             class="bi-align-center">
+    </div>
+    {# <img src="{{ url_for('static', filename='data-repository.webp') }}"
+      width="70%"
+      class="bi-align-center"> #}
+    <p>
+        {% for path_element in current_path %}{% endfor %}
+    </p>
+    {# <h5>Test links</h5>
 				<ul>
 					<li><a href="{{url_for('metadata_schema_form_bp.form_test')}}">Schema form rendering test</a>
-				</ul> #}
-
-{# <p> Total objects: {{total_objects}}</p>
-<p> Total attributes: {{total_avu}} </p>
+</ul> #}
+    {# <p>Total objects: {{total_objects}}</p>
+<p>Total attributes: {{total_avu}}</p>
 <table class="table">
 <thead><tr><th>avu name<th><th>count</th><tr></thead>
 <tbody>
-{% for item in avu_counts %}
-<tr><td>{{item['name']}}</td><td>{{ item['total']}}</td></tr>
-{% endfor %}
+{% for item in avu_counts %}<tr><td>{{item['name']}}</td><td>{{ item['total']}}</td></tr>{% endfor %}
 
 </tbody>
 </table> #}
-  {# {% for collection in collections  %}
+    {# {% for collection in collections  %}
   <tr>
 	<td><i class="bi bi-folder fs-4"></i> {{collection.name}}</td>
 	<td><!--{{ collection.__dict__ }}--></td>
@@ -36,9 +33,8 @@
 	<td></td>
   </tr>
 
-  {% endfor %} #}
-
-  {# {% for data_object in data_objects  %}
+{% endfor %} #}
+    {# {% for data_object in data_objects  %}
   <tr>
 	<td><i class="bi bi-file fs-4"></i> {{data_object.name}}</td>
 	<td><!--{{ data_object.__dict__ }}--></td>
@@ -47,7 +43,5 @@
   </tr>
 
 
-  {% endfor %} #}
-
-
+{% endfor %} #}
 {% endblock body %}
