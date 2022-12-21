@@ -106,6 +106,7 @@ irods_zones = {
         "admin_users": ["vsc33436", "x0116999"],
         'logo': 'vsc-combi.webp', # path in static folder
         'splash_image' : 'portal2.jpg',
+    }
 }
 
 
