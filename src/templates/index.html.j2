@@ -1,11 +1,20 @@
 {% extends "base.html.j2" %}
 {% block body %}
-    <h2>Welcome to Mango, your active data portal</h2>
-    <div class="row">
-        <img src="{{ url_for('static', filename='mango-logo.png') }}"
-             width="70%"
-             class="bi-align-center">
-    </div>
+    {% if 'splash_image' in config.irods_zones[g.irods_session.zone]  %}
+        <h2>Welcome to your {{ g.irods_session.zone }} active data portal</h2>
+        <div class="row">
+            <img src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['splash_image']) }}"
+                 width="70%"
+                 class="bi-align-center">
+        </div>
+    {% else %}
+        <h2>Welcome to Mango, your active data portal</h2>
+        <div class="row">
+            <img src="{{ url_for('static', filename='mango-logo.png') }}"
+                 width="70%"
+                 class="bi-align-center">
+        </div>
+    {% endif %}
     {# <img src="{{ url_for('static', filename='data-repository.webp') }}"
       width="70%"
       class="bi-align-center"> #}

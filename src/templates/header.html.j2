@@ -4,24 +4,24 @@
         <div class="row">
             <a href="{{ url_for('index')}}"
                class="d-flex align-items-center col-3 mb-2 mb-lg-0 link-dark text-decoration-none">
-                {# <img class="logo"
-      alt="logo"
-      src="{{ url_for('static', filename='mango-tree.png') }}"
-      height="60"
-      style="margin: -10px 0;"/> #}
-                <img class="logo"
-                     alt="logo"
-                     src="{{ url_for('static', filename='logo.svg') }}"
-                     width="137"
-                     style="margin: -10px 10px;">
-                <img class="logo"
-                     alt="logo"
-                     src="{{ url_for('static', filename='mango-logo.svg') }}"
-                     width="137"
-                     style="margin: -10px 0;">
-                {#  <span class="ml-3 fs-4"> &nbsp; FOZ-Data<span> #}
-                {#<img src="{{ url_for('static', filename='vsc-combi.webp') }}"
-     style="max-height: 50px">#}
+                {% if 'logo' in config.irods_zones[g.irods_session.zone] %}
+                    <img class="logo"
+                         alt="logo"
+                         src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
+                         width="137"
+                         style="margin: -10px;">
+                {% else %}
+                    <img class="logo"
+                         alt="logo"
+                         src="{{ url_for('static', filename='logo.svg') }}"
+                         width="137"
+                         style="margin: -10px 10px;">
+                    <img class="logo"
+                         alt="logo"
+                         src="{{ url_for('static', filename='mango-logo.svg') }}"
+                         width="137"
+                         style="margin: -10px 0;">
+                {% endif %}
             </a>
             <div class="col-6"></div>
         </div>

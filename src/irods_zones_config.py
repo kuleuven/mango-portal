@@ -39,6 +39,8 @@ irods_zones = {
         },
         "ssl_settings": {},
         "admin_users": ["vsc33436", "x0116999"],
+        'logo': 'vsc-combi.webp', # path in static folder
+        'splash_image' : 'portal2.jpg',
     },
     "set": {
         "jobid": "icts-p-lnx-irods-set",
@@ -120,8 +122,11 @@ def refresh_zone_info():
                 "zone": zone_info["zone"],
             },
             "ssl_settings": {},
-            "admin_users": ["u0123318", "vsc33436", "x0116999"],
+            #"admin_users": ["u0123318", "vsc33436", "x0116999"],
         }
+        for extra_zone_config in ['logo', 'splash_image', 'admin_users']:
+            if extra_zone_config in irods_zones[zone_info["zone"]]:
+                zones[zone_info["zone"]][extra_zone_config] = irods_zones[zone_info["zone"]][extra_zone_config]
 
     irods_zones.clear()
     irods_zones.update(zones)
