@@ -96,17 +96,6 @@ irods_zones = {
         "ssl_settings": {},
         "admin_users": ["u0123318", "x0116999"],
     },
-    "kuleuven_tier1_poc": {
-        "jobid": "icts-q-hpc-irods-tier1-poc",
-        "parameters": {
-            "host": "tier1-pilot.irods-q.hpc.kuleuven.be",
-            "zone": "kuleuven_tier1_poc",
-        },
-        "ssl_settings": {},
-        "admin_users": ["vsc33436", "x0116999"],
-        'logo': 'vsc-combi.webp', # path in static folder
-        'splash_image' : 'portal2.jpg',
-    }
 }
 
 
