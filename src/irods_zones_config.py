@@ -96,6 +96,11 @@ irods_zones = {
         "ssl_settings": {},
         "admin_users": ["u0123318", "x0116999"],
     },
+    "kuleuven_tier1_poc": {
+        "admin_users": ["vsc33436", "x0116999"],
+        'logo': 'vsc-combi.webp', # path in static folder
+        'splash_image' : 'portal2.jpg',
+    }
 }
 
 
@@ -124,10 +129,11 @@ def refresh_zone_info():
             "ssl_settings": {},
             #"admin_users": ["u0123318", "vsc33436", "x0116999"],
         }
+
         if zone_info["zone"] in irods_zones:
-            for extra_zone_config in ['logo', 'splash_image', 'admin_users']:
-                if extra_zone_config in irods_zones[zone_info["zone"]]:
-                    zones[zone_info["zone"]][extra_zone_config] = irods_zones[zone_info["zone"]][extra_zone_config]
+            extra_zone_configs = [extra_zone_config for extra_zone_config in irods_zones[zone_info["zone"]].keys() if extra_zone_config not in ['job_id', 'parameters', 'ssl_settings']]
+            for extra_zone_config in extra_zone_configs:
+                zones[zone_info["zone"]][extra_zone_config] = irods_zones[zone_info["zone"]][extra_zone_config]
 
     irods_zones.clear()
     irods_zones.update(zones)
