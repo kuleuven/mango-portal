@@ -34,7 +34,7 @@ oic==1.4.0
 opensearch-py==2.0.0
 pathspec==0.10.1
 pdf2image==1.16.0
-Pillow==9.2.0
+Pillow==9.3.0
 prettytable==3.4.1
 pycparser==2.21
 pycryptodomex==3.15.0
