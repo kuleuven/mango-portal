@@ -9,4 +9,4 @@ export SERVICE_PORT=8080
 export spOption="mango_portal"
 # development mode for hot reloading changed files
 # export FLASK_DEBUG=True
-python waitress_serve.py&
+hupper --shutdown-interval 5  -m  waitress_serve
