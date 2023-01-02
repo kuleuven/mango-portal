@@ -34,7 +34,7 @@
                            type="search"
                            class="form-control"
                            {% if request.args.get('search_string') %} value="{{ request.args.get('search_string') }}" {% endif %}
-                           placeholder="Search ..."
+                           placeholder="Search file names, collection names, owner names and selected metadata fields..."
                            required/>
                 </form>
             {% endif %}
