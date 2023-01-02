@@ -307,7 +307,7 @@ def aggregate_fields(fields: dict):
     match_all = ""
     for field_name in fields:
         for partial in match_text_partials:
-            if partial in field_name:
+            if partial in field_name.lower():
                 match_all = " ".join([match_all, fields[field_name]])
     fields["match_all"] = match_all
     return fields
