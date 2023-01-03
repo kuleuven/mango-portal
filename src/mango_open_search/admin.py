@@ -11,6 +11,7 @@ from flask import (
     Response,
     request,
     flash,
+    json
 )
 
 from mango_open_search import (
@@ -32,35 +33,41 @@ mango_open_search_admin_bp = Blueprint(
     "mango_open_search_admin_bp", __name__, template_folder="templates"
 )
 
-@mango_open_search_admin_bp.route('/mango-open-search/admin')
+
+@mango_open_search_admin_bp.route("/mango-open-search/admin")
 def index():
     result = {}
     global index_queue
     if (queue_length := len(index_queue)) > 50:
         logging.info(f"queue length: {queue_length}")
-        result = {'oldest': index_queue[:10], 'newest': index_queue[-10:]}
+        result = {"oldest": index_queue[:10], "newest": index_queue[-10:]}
     else:
         logging.info(f"queue length: {queue_length}")
-        result = {'all': index_queue}
+        result = {"all": index_queue}
 
     result["queue_length"] = queue_length
 
-    home_collection : iRODSCollection = g.irods_session.collections.get(f"/{g.irods_session.zone}/home")
+    home_collection: iRODSCollection = g.irods_session.collections.get(
+        f"/{g.irods_session.zone}/home"
+    )
 
     available_collections = [home_collection] + home_collection.subcollections
 
     return render_template(
-        'mango_open_search/admin_index.html.j2',
+        "mango_open_search/admin_index.html.j2",
         result=result,
-        available_collections = available_collections,
-        indexing_thread_status = indexing_thread.status,
-        indexing_thread_health = indexing_thread.is_alive(),
-        server_health = ping_open_search_servers()
-        )
+        available_collections=available_collections,
+        indexing_thread_status=indexing_thread.status,
+        indexing_thread_health=indexing_thread.is_alive(),
+        server_health=ping_open_search_servers(),
+    )
 
-@mango_open_search_admin_bp.route('/mango-open-search/admin/change-index-status', methods=['POST'])
+
+@mango_open_search_admin_bp.route(
+    "/mango-open-search/admin/change-index-status", methods=["POST"]
+)
 def change_index_thread_status():
-    if 'status' in request.form and (status := request.form['status']) :
+    if "status" in request.form and (status := request.form["status"]):
         indexing_thread.set_status(status)
 
     if "redirect_route" in request.values:
@@ -71,7 +78,10 @@ def change_index_thread_status():
         )
     return redirect(request.referrer)
 
-@mango_open_search_admin_bp.route('/mango-open-search/admin/refresh-clients', methods=['POST'])
+
+@mango_open_search_admin_bp.route(
+    "/mango-open-search/admin/refresh-clients", methods=["POST"]
+)
 def refresh_clients():
     get_open_search_client(refresh=True)
 
@@ -83,14 +93,16 @@ def refresh_clients():
         )
     return redirect(request.referrer)
 
-@mango_open_search_admin_bp.route('/mango-open-search/admin/restart-indexing-thread', methods=['POST'])
+
+@mango_open_search_admin_bp.route(
+    "/mango-open-search/admin/restart-indexing-thread", methods=["POST"]
+)
 def refresh_indexing_thread():
     global indexing_thread
     indexing_thread.stop()
-    time.sleep(MANGO_INDEX_THREAD_SLEEP_TIME+1)
+    time.sleep(MANGO_INDEX_THREAD_SLEEP_TIME + 1)
     indexing_thread = IndexingThread()
     indexing_thread.start()
-
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])

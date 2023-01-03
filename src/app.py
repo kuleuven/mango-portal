@@ -39,6 +39,7 @@ from metadata_schema.form import metadata_schema_form_bp
 from admin.admin import admin_bp
 from mango_open_search.search import mango_open_search_bp
 from mango_open_search.admin import mango_open_search_admin_bp
+from mango_open_search.api import mango_open_search_api_bp
 
 import platform
 
@@ -106,8 +107,10 @@ with app.app_context():
     app.register_blueprint(metadata_schema_editor_bp)
     app.register_blueprint(metadata_schema_form_bp)
     app.register_blueprint(admin_bp)
+    # TODO The following are actually plugins and should be registered dynamically instead of hardcoded
     app.register_blueprint(mango_open_search_bp)
     app.register_blueprint(mango_open_search_admin_bp)
+    app.register_blueprint(mango_open_search_api_bp)
 
 
 @app.context_processor
