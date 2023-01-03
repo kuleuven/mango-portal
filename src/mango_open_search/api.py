@@ -75,3 +75,10 @@ def get_collection_stats(collection_path: str):
     )
     # dict becomes content type application/json
     return result
+
+@mango_open_search_api_bp.route(
+    "/mango-open-search/api/index-stats"
+)
+def get_index_stats():
+    stats = get_open_search_client(type="query").indices.stats(index=MANGO_OPEN_SEARCH_INDEX_NAME)
+    return stats

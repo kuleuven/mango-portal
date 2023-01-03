@@ -13,8 +13,6 @@ You need to have a valid and initialised iRODS environment for your account, the
 
 The current version is developed with python 3.10, but 3.8 and 3.9 probably will work as well. See also the section on changing the python version below.
 
-
-
 Create a python virtual environment in the root of this repository checkout and install the required modules, for example
 
 ```sh
@@ -35,7 +33,26 @@ $ npm install
 $ npm run build
 ```
 
-### Starting the development server
+### Starting the development server (waitress version, recommended)
+
+Make sure you activated the virtual environment
+
+Launch the flask development server from the src directory:
+```sh
+$ cd src
+$ ./run_waitress.sh
+```
+or
+
+```sh
+$ src/run_waitress.sh
+```
+
+This will start waitress as used in the production deployments, but adds a listener for reloading the app when you change files locally.
+
+Point your browser to `http://localhost:8080`
+
+### Starting the development server (built in, deprecated)
 
 Make sure you activated the virtual environment
 
