@@ -101,7 +101,7 @@
                 {% for item in grouped_metadata[config['MANGO_NOSCHEMA_LABEL']].values() %}
                     <tr>
                         <th>{{ item.name }}</th>
-                        <td>{{ item.value }}</td>
+                        <td class="text-break">{{ item.value }}</td>
                         <td>{{ item.units if item.units is not none }}</td>
                         {% if not item.name.startswith(readonly_prefixes) and not read_only and 'own' in current_user_rights %}
                             <td>
@@ -191,7 +191,8 @@
                                     <th class="text-start">
                                         <span title="{{ item.name }}">{{ schema_labels[schema][item.name]['label'] if (schema_labels[schema] and schema_labels[schema][item.name]) else item.name }}</span>
                                     </th>
-                                    <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}">
+                                    <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}"
+                                        class="text-break">
                                         {{ item.value | bleach_clean(tags=['br']) | safe }}
                                     </td>
                                     <td class="text-left">{{ item.units if item.units is not none }}</td>
@@ -309,7 +310,7 @@
                         <th>
                             {{ key }}
                         </th>
-                        <td>
+                        <td class="text-break">
                             {{ item }}
                         </td>
                         {% if consolidate %}

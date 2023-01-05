@@ -18,6 +18,7 @@ from mango_open_search import (
     # add_index_job,
     get_open_search_client,
     MANGO_OPEN_SEARCH_INDEX_NAME,
+    get_zone_index_session,
     # index_queue,
     # indexing_thread,
     # MANGO_INDEX_THREAD_SLEEP_TIME,
@@ -41,15 +42,20 @@ def get_collection_stats(collection_path: str):
     if not collection_path.startswith("/"):
         collection_path = f"/{collection_path}"
     logging.info(f"Requesting stats for sub collection : {collection_path}")
-    collection = g.irods_session.collections.get(collection_path)
-    # zone = g.irods_session.zone
+    # Extract the zone from the collection path
+    zone = collection_path.split('/')[1]
+    # get the operator/admin session for this zone
+
+    irods_session_operator=get_zone_index_session(zone)
+    collection = irods_session_operator.collections.get(collection_path)
+
     query_body = {
         "size": 0,
         "query": {
             "bool": {
                 "filter": [
                     {"term": {"irods_parent_path_ids": collection.id}},
-                    {"term": {"irods_zone_name": g.irods_session.zone}}
+                    {"term": {"irods_zone_name": zone}}
                 ],
             }
         },

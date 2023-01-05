@@ -37,7 +37,7 @@ MANGO_OPEN_SEARCH_INDEX_NAME = os.environ.get(
 )
 
 MANGO_OPEN_SEARCH_AUTH = (MANGO_OPEN_SEARCH_USER, MANGO_OPEN_SEARCH_PASSWORD)
-MANGO_INDEX_THREAD_SLEEP_TIME = 5
+MANGO_INDEX_THREAD_SLEEP_TIME = 2
 MANGO_INDEX_THREAD_HEARTBEAT_DELTA = 300
 MANGO_OPEN_SEARCH_SESSION_REFRESH_DELTA = 3600
 # For now a single client
@@ -590,14 +590,14 @@ def permissions_changed_listener(sender, **parameters):
     item_type = util.get_type_for_path(
         parameters["irods_session"], parameters["item_path"]
     )
+
     add_index_job(
-        add_index_job(
-            zone=parameters["irods_session"].zone,
-            job_type="index_item",
-            item_type=item_type,
-            item_path=parameters["item_path"],
-        )
+        zone=parameters["irods_session"].zone,
+        job_type="index_item",
+        item_type=item_type,
+        item_path=parameters["item_path"],
     )
+
 
 
 signals.collection_added.connect(collection_modified_listener)
