@@ -9,10 +9,6 @@ class InputField {
         this.mode = 'add'; // whether the form has to be created or edited ("mod")
     }
 
-    get form() {
-        return this.create_form();
-    }
-
     get json() {
         return this.to_json();
     }
@@ -33,6 +29,8 @@ class InputField {
 
     render(schema) {
         this.id = `${this.form_type}-${schema.id}`;
+        this.create_form();
+
         let new_form = Field.quick("div", "border HTMLElement rounded");
 
         let new_button = Field.quick("button", "btn btn-primary HTMLElementButton", this.button_title);
@@ -48,59 +46,61 @@ class InputField {
     }
 
     setup_form() {
-        let form = new BasicForm(this.id);
-        form.add_input(
-            `ID for ${this.form_type}`, `${this.id}-id`,
-            "Use lowercase, no spaces, no special characters other than '_'.",
-            this.field_id);
-        form.add_input(
-            `Label for ${this.form_type}`, `${this.id}-label`,
-            "Description of the input field.",
-            this.title);
-        return form;
+        this.form_field = new BasicForm(this.id);
+        this.form_field.add_input(
+            `ID for ${this.form_type} (underlying label)`, `${this.id}-id`,
+            {description : "Use lowercase, no spaces, no special characters other than '_'.",
+            value : this.field_id}
+            );
+        this.form_field.add_input(
+            `Label for ${this.form_type} (display name)`, `${this.id}-label`,
+            {description : "This is what an user will see when inserting metadata.",
+            value : this.title});
     }
 
-    end_form(form) {
+    end_form() {
         // Add require switch and submit button to form
-        form.form.appendChild(document.createElement('br'));
-        form.add_requirer(this.id, this.required);
-        let switch_input = form.form.querySelector('.form-switch').querySelector('input');
+        this.form_field.form.appendChild(document.createElement('br'));
+        this.form_field.add_requirer(this.id, this.required);
+        let switch_input = this.form_field.form.querySelector('.form-switch').querySelector('input');
         switch_input.addEventListener('change', () => {
             this.required = !this.required;
             this.required ? switch_input.setAttribute('checked', '') : switch_input.removeAttribute('checked');
         });
-        form.add_submitter("Submit");
+        this.form_field.add_submitter("Submit");
 
     }
 
     create_modal(schema) {
         let modal_id = `${this.mode}-${this.id}`;
         let edit_modal = new Modal(modal_id, `Add ${this.button_title}`, `title-${this.form_type}`);
-        edit_modal.create_modal([this.form], 'lg');
+        let form = this.form_field.form;
+        edit_modal.create_modal([form], 'lg');
         this.modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modal_id));
-        let modal = document.getElementById(`${this.mode}-${this.id}`);
-        let form = modal.querySelector(`#form-${this.id}`)
+        // let modal = document.getElementById(`${this.mode}-${this.id}`);
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             if (!form.checkValidity()) {
                 e.stopPropagation();
                 form.classList.add('was-validated');
             } else {
-                this.register_fields(schema, form);
+                this.register_fields(schema);
                 form.classList.remove('was-validated');
                 this.modal.toggle();
-                // let parent_modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(schema.modal_id));
-                // parent_modal.toggle();
+                if (schema.constructor.name == 'ObjectEditor') {
+                    let parent_modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(schema.card_id));
+                    parent_modal.toggle();
+                }                
             }
         }, false);
     }
 
-    register_fields(schema, form) {
+    register_fields(schema) {
         // Read data from the modal form
         // With this form we create a new instance of the class with the output of the form
         // and give it to the schema as a created field
         // Then we reset this form so we can create more fields
-        let data = new FormData(form);
+        let data = new FormData(this.form_field.form);
         let old_id = this.id;
         let new_id = data.get(`${this.id}-id`);
         if (old_id == new_id) {
@@ -110,6 +110,7 @@ class InputField {
         } else {
             let clone = new this.constructor(this.parent_modal);
             clone.field_id = new_id;
+            clone.form_field = this.form_field;
             clone.title = data.get(`${this.id}-label`);
 
             clone.required = this.required;
@@ -117,10 +118,19 @@ class InputField {
 
             clone.id = this.id // temporarily, to recover data
             clone.viewer_title = clone.title;
+
+            if (this.constructor.name == 'ObjectInput') {
+                // this will have to change to adapt to creating filled-schemas (attached to new ids)
+                clone.editor = this.editor;
+                console.log(clone.editor)
+                delete this.editor;
+                this.create_editor();
+            }
+           
             clone.recover_fields(data);
             clone.viewer_title = clone.form_type === "text" ? clone.viewer_title : clone.title;
             clone.id = clone.field_id;
-            this.reset(form); // specific
+            this.reset(); // specific
 
             if (this.mode == 'mod') {
                 schema.replace_field(old_id, clone);
@@ -136,8 +146,8 @@ class InputField {
         return new MovingViewer(this, schema);
     }
 
-    reset(form) {
-        form.reset();
+    reset() {
+        this.form_field.form.reset();
     }
 }
 
@@ -169,7 +179,8 @@ class TypedInput extends InputField {
         return input;
     }
 
-    reset(form) {
+    reset() {
+        let form = this.form_field.form;
         if (form.querySelectorAll('.form-container').length > 3) {
             form.removeChild(document.getElementById(`div-${this.id}-min`));
             form.removeChild(document.getElementById(`div-${this.id}-max`));
@@ -177,18 +188,29 @@ class TypedInput extends InputField {
         form.reset();
     }
 
-    manage_min_max(form, format) {
+    manage_min_max(format) {
         // Add or remove the fields to set minimum and maximum value when input is numeric
         let has_values = Object.keys(this.values).indexOf('minimum') > -1;
+        
+        let min_id = `${this.id}-min`;
+        let max_id = `${this.id}-max`;
+            
         if (format == "number") {
-            form.add_input("Minimum", `${this.id}-min`, '0', has_values ? this.values.minimum : false);
-            form.form.querySelector(`#${this.id}-min`).type = 'number';
-            form.add_input("Maximum", `${this.id}-max`, '100', has_values ? this.values.maximum : false);
-            form.form.querySelector(`#${this.id}-max`).type = 'number';
+            this.form_field.add_input("Minimum", min_id,
+                {placeholder : '0',
+                value : has_values ? this.values.minimum : false});
+                this.form_field.form.querySelector('#' + min_id).type = 'number';
+                this.form_field.form.querySelector('#' + min_id).setAttribute('step', 'any');
+
+                this.form_field.add_input("Maximum", max_id,
+                {placeholder : '100',
+                value : has_values ? this.values.maximum : false});
+                this.form_field.form.querySelector('#' + max_id).type = 'number';
+                this.form_field.form.querySelector('#' + max_id).setAttribute('step', 'any');
         } else {
-            if (form.form.querySelectorAll('.form-container').length > 3) {
-                form.form.removeChild(document.getElementById(`div-${this.id}-min`));
-                form.form.removeChild(document.getElementById(`div-${this.id}-max`));
+            if (this.form_field.form.querySelectorAll('.form-container').length > 3) {
+                this.form_field.form.removeChild(document.getElementById(`div-${min_id}`));
+                this.form_field.form.removeChild(document.getElementById(`div-${max_id}`));
             }
             if (has_values) {
                 delete this.values.minimum;
@@ -198,16 +220,15 @@ class TypedInput extends InputField {
     }
 
     create_form() {
-        let form = this.setup_form();
+        this.setup_form();
         let text_options = ["text", "text box", "date", "email", "time", "url", "number"];
-        form.add_select("Text type", `${this.id}-format`, text_options, this.values.format);
-        this.manage_min_max(form, this.values.format);
-        form.form.querySelector(".form-select").addEventListener('change', () => {
-            let selected = form.form.elements[`${this.id}-format`].value;
-            this.manage_min_max(form, selected)
+        this.form_field.add_select("Text type", `${this.id}-format`, text_options, this.values.format);
+        this.manage_min_max(this.values.format);
+        this.form_field.form.querySelector(".form-select").addEventListener('change', () => {
+            let selected = this.form_field.form.elements[`${this.id}-format`].value;
+            this.manage_min_max(selected)
         });
-        this.end_form(form);
-        return form.form;
+        this.end_form();
     }
 
     recover_fields(data) {
@@ -237,28 +258,36 @@ class ObjectInput extends InputField {
         return inner_input;
     }
 
-    create_form() {
-        let form = this.setup_form();
-        this.editor = new ObjectEditor(form);
-        form.form.appendChild(this.editor.button);
+    create_editor() {
+        this.editor = new ObjectEditor(this.form_field, this);
         this.editor.modal = this.modal;
         this.editor.display_options("objectTemplates");
+    }
 
-        this.end_form(form);
-        return form.form;
+    create_form() {
+        this.setup_form();
+        this.create_editor();
+        this.form_field.form.appendChild(this.editor.button);
+        this.end_form();
     }
 
     recover_fields(data) {
+        console.log(this.editor)
         // I'm not so sure about this one...
-        this.values.required = this.editor.required;
-        this.values.properties = this.editor.properties;
+        this.required_fields = [];
+        this.properties = {};
+        this.editor.field_ids.forEach((field_id) => {
+            let field = this.fields[field_id];
+            this.properties[field_id] = field.json;
+            if (field.required) {
+                this.required_fields.push(field_id);
+            }
+        });
     }
 
-    // add_fields(basic, data) {
-    //     basic.required = this.editor.required;
-    //     basic.properties = this.editor.properties;
-    //     return basic;
-    // }
+    to_json() {
+        this.editor.json;
+    }
 }
 
 class MultipleInput extends InputField {
@@ -267,13 +296,13 @@ class MultipleInput extends InputField {
     }
 
     create_form() {
-        let form = this.setup_form();
-        form.add_moving_options("Select option", this.values);
-        this.end_form(form);
-        return form.form;
+        this.setup_form();
+        this.form_field.add_moving_options("Select option", this.values);
+        this.end_form();
     }
 
-    reset(form) {
+    reset() {
+        let form = this.form_field.form;s
         while (form.querySelectorAll(".blocked").length > 2) {
             MovingChoice.remove_div(form.querySelector(".blocked"));
         }
@@ -381,32 +410,3 @@ class CheckboxInput extends MultipleInput {
     }
 
 }
-
-// class SwitchInput extends MultipleInput {
-//     constructor() {
-//         super();
-//         this.form_type = "radio";
-//         this.title = "Switch";
-//     }
-
-//     ex_input() {
-//         let inner_input = document.createElement("div");
-//         inner_input.className = "form-check form-switch";
-
-//         let subinput = document.createElement("input");
-//         subinput.className = "form-check-input";
-//         subinput.type = "checkbox";
-//         subinput.id = "switch-example";
-//         subinput.setAttribute("checked", "");
-
-//         let new_label = document.createElement("label");
-//         new_label.className = "form-check-label";
-//         new_label.setAttribute("for", "switch-example");
-//         new_label.innerHTML = "On/off";
-
-//         inner_input.appendChild(subinput);
-//         inner_input.appendChild(new_label);
-//         return inner_input;
-//     }
-
-// }

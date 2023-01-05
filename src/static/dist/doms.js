@@ -18,6 +18,7 @@ class MovingField {
         // Each field will have an id and a label / title
         // This creates a div with, a label and three buttons: up, down and remove
         this.label = BasicForm.labeller(label_text, `mover-${idx}`);
+        this.idx = idx;
         this.sub_div = Field.quick("div", "form-field");
         this.up = this.add_btn('up', 'arrow-up-circle', () => this.move_up());
         this.down = this.add_btn('down', 'arrow-down-circle', () => this.move_down());
@@ -58,7 +59,6 @@ class MovingViewer extends MovingField {
             );
         
         this.div = Field.quick("div", "viewer");
-        this.idx = form.id;
         this.div.id = form.id;
         this.input_tag = form.viewer_input();
         this.edit = this.add_btn('edit', 'pencil');
@@ -146,7 +146,6 @@ class MovingChoice extends MovingField {
     constructor(label_text, idx, value = false) {
         super(label_text, idx);
         this.div = Field.quick("div", "blocked");
-        this.idx = idx;
         this.value = value;
         this.div.id = `block-${idx}`;
         this.input_tag = this.add_input();
@@ -243,7 +242,9 @@ class BasicForm {
         return label;
     }
 
-    add_input(label_text, input_id, placeholder = "Some text", value = false) {
+    add_input(label_text, input_id,
+        {description = false, placeholder = "Some text",
+        value = false, validation_message = "This field is compulsory"} = {}) {
         // Create and append a required text input
         let input_tag = Field.quick("input", "form-control");
         input_tag.id = input_id;
@@ -259,12 +260,19 @@ class BasicForm {
         // })
         let label = BasicForm.labeller(label_text, input_id)
 
-        let validator = Field.quick('div', 'invalid-feedback', 'This field is compulsory.');
+        let validator = Field.quick('div', 'invalid-feedback', validation_message);
 
         let input_div = Field.quick('div', 'mb-3 form-container');
         input_div.id = 'div-' + input_id;
         input_div.appendChild(label);
         input_div.appendChild(input_tag);
+
+        if (description) {
+            let input_desc = Field.quick('div', 'form-text', description);
+            input_desc.id = 'help-' + input_id;
+            input_div.appendChild(input_desc);
+        }
+
         input_div.appendChild(validator);
 
         if (this.form.childNodes.length == 0 || this.form.lastChild.classList.contains('form-container')) {

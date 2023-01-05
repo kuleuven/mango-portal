@@ -1,14 +1,5 @@
 let container = document.getElementById('metadata_template_list_container');
 
-// let editing_schema = new Schema('schemaEditor');
-// editing_schema.init_modal();
-// let button = Field.quick('button', 'btn btn-primary', 'Create schema');
-// button.id = 'new-schema';
-// button.setAttribute('data-bs-toggle', 'modal');
-// button.setAttribute('data-bs-target', '#schemaEditor');
-
-// container.appendChild(button);
-
 container.className = 'accordion accordion-flush';
 // first the button
 let starting_schema = new Schema('schema-editor');

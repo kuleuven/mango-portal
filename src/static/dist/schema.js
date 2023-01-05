@@ -58,6 +58,7 @@ class ComplexField {
         // Register a created form field, add it to the fields dictionary and view it
         this.field_ids.splice(this.new_field_idx, 0, form_object.id);
         this.fields[form_object.id] = form_object;
+        console.log(this.card_id);
 
         let clicked_button = document.getElementById(this.card_id).querySelectorAll('.adder')[this.new_field_idx];
         let below = clicked_button.nextSibling;
@@ -124,9 +125,11 @@ class ComplexField {
 }
 
 class ObjectEditor extends ComplexField {
-    constructor(parent_form) {
+    constructor(parent_form, parent) {
         super('objectChoice');
         this.form = parent_form;
+        this.card_id = `${parent.mode}-${parent.id}`;
+        this.id_field = `${parent.id}-id`
     }
 
     get button() {
@@ -135,7 +138,7 @@ class ObjectEditor extends ComplexField {
 
     get name() {
         let data = new FormData(this.form.form);
-        return data.get('object-label');
+        return data.get(this.id_field);
     }
 }
 
