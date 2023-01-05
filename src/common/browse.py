@@ -600,14 +600,19 @@ def add_collection():
     parent_collection_path = request.form["parent_collection_path"]
     collection_name = request.form["collection_name"]
     # parent_collection = irods_session.collections.get(parent_collection_path)
-    g.irods_session.collections.create(f"{parent_collection_path}/{collection_name}")
+    full_path = f"{parent_collection_path}/{collection_name}"
+    try:
+        g.irods_session.collections.get(full_path)
+        flash(f"Collection {collection_name} already exists", "warning")
+    except Exception as e:
+        g.irods_session.collections.create(full_path)
 
-    if '/' in collection_name:
-        new_collection_tree_root = f"{parent_collection_path}/{collection_name.split('/')[0]}"
-        signals.subtree_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = new_collection_tree_root)
-    else:
-        signals.collection_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = f"{parent_collection_path}/{collection_name}")
-        flash(f"Collection {collection_name} added to {parent_collection_path}", "success")
+        if '/' in collection_name:
+            new_collection_tree_root = f"{parent_collection_path}/{collection_name.split('/')[0]}"
+            signals.subtree_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = new_collection_tree_root)
+        else:
+            signals.collection_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = f"{parent_collection_path}/{collection_name}")
+            flash(f"Collection {collection_name} added to {parent_collection_path}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
