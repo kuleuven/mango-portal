@@ -35,6 +35,7 @@ from wtforms import (
     HiddenField,
     SelectMultipleField,
     TextAreaField,
+    FloatField,
 )
 import wtforms.widgets
 from werkzeug.datastructures import MultiDict
@@ -81,6 +82,8 @@ def josse_process_property(property_tuple, required=False, prefix=""):
             return StringField(label=_property["title"], validators=_validators)
     if _property["type"] == "textarea":
             return TextAreaField(label=_property["title"], validators = _validators, render_kw={'class': 'form-control', 'rows': 5, 'maxlength': 1500})
+    if _property["type"] == "float":
+         return FloatField(label=_property["title"], validators=_validators)
     if _property["type"] == "number":
         range_args = {}
         if "minimum" in _property:
