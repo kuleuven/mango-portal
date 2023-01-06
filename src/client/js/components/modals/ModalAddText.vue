@@ -100,7 +100,8 @@
                     case "Float":
                         return {
                             [this.textId]: {
-                                "type":"float",
+                                "type": "string",
+                                "format": "float",
                                 "title":this.textLabel,
                             }
                         };

@@ -78,6 +78,8 @@ def josse_process_property(property_tuple, required=False, prefix=""):
                 return URLField(label=_property["title"], validators=_validators)
             if _property["format"] == "time":
                 return TimeField(label=_property["title"], validators=_validators)
+            if _property["format"] == "float":
+                return FloatField(label=_property["title"], validators=_validators)
         else:
             return StringField(label=_property["title"], validators=_validators)
     if _property["type"] == "textarea":
