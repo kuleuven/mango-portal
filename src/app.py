@@ -224,14 +224,21 @@ def release_irods_session_lock(response):
 
 
 # custom filters
+
+# intersection of 2 iterables
+@app.template_filter("intersection")
+def intersection(set1, set2):
+    return set(set1).intersection(set(set2))
+
+# html and js escape dangerous content
 @app.template_filter("bleach_clean")
 def bleach_clean(suspect, **kwargs):
     return bleach.clean(suspect, **kwargs)
 
-
+# return date into local time zone
 @app.template_filter("localize_datetime")
-def localize_datetime(value, format="%Y-%m-%dT%H:%M:%S"):
-    tz = pytz.timezone('Europe/Brussels') # timezone you want to convert to from UTC
+def localize_datetime(value, format="%Y-%m-%d %H:%M:%S", local_timezone='Europe/Brussels'):
+    tz = pytz.timezone(local_timezone) # timezone you want to convert to from UTC
     utc = pytz.timezone('UTC')
     value = utc.localize(value, is_dst=None).astimezone(pytz.utc)
     local_dt = value.astimezone(tz)

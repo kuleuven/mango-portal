@@ -611,7 +611,7 @@ def add_collection():
             new_collection_tree_root = f"{parent_collection_path}/{collection_name.split('/')[0]}"
             signals.subtree_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = new_collection_tree_root)
         else:
-            signals.collection_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = f"{parent_collection_path}/{collection_name}")
+            signals.collection_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = full_path)
             flash(f"Collection {collection_name} added to {parent_collection_path}", "success")
 
     if "redirect_route" in request.values:
@@ -657,7 +657,7 @@ def ask_tika(data_object_path):
     else:
 
         try:
-            ping_tika = requests.get(tika_host)
+            #ping_tika = requests.get(tika_host)
             destination = f"/tmp/irods-{data_object.id}.download"
 
             options = {irods.keywords.FORCE_FLAG_KW: True}

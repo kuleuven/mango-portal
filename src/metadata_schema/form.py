@@ -316,7 +316,7 @@ def edit_schema_metadata_for_item():
                     AVUOperation(operation="add", avu=iRODSMeta(_key, _value ))
                 )
 
-        catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
+        #catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
         # workaround for a bug in 4.2.11
         lib.util.execute_atomic_operations(g.irods_session, catalog_item, avu_operation_list)
 

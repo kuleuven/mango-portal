@@ -1,4 +1,5 @@
 {% import "dialogs.html.j2" as dialogs %}
+{% set own_or_write = ['own', 'modify', 'modify object', 'modify_object', 'write'] %}
 {% macro permission_block(item_path, permissions, acl_users_dict, acl_counts, my_groups=[], group_filter_exclude=[], current_user_rights = [], recursive=false, read_only = false )%}
     <table class="table table-striped table-hover mt-2" id="permssions-table">
         <thead>
@@ -103,7 +104,7 @@
                         <th>{{ item.name }}</th>
                         <td class="text-break">{{ item.value }}</td>
                         <td>{{ item.units if item.units is not none }}</td>
-                        {% if not item.name.startswith(readonly_prefixes) and not read_only and 'own' in current_user_rights %}
+                        {% if not item.name.startswith(readonly_prefixes) and not read_only and (current_user_rights | intersection(own_or_write)) %}
                             <td>
                                 {% if not (item.units and item.units.startswith('analysis')) %}
                                     <a href="#"
@@ -135,7 +136,7 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% if not read_only and 'own' in current_user_rights %}
+        {% if not read_only and (current_user_rights | intersection(own_or_write)) %}
             <button type="button"
                     class="btn btn-primary"
                     data-bs-toggle="modal"
@@ -196,7 +197,7 @@
                                         {{ item.value | bleach_clean(tags=['br']) | safe }}
                                     </td>
                                     <td class="text-left">{{ item.units if item.units is not none }}</td>
-                                    {% if not read_only and 'own' in current_user_rights and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
+                                    {% if not read_only and (current_user_rights | intersection(own_or_write)) and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
                                         <td>
                                             {% if not (item.units and item.units.startswith('analysis')) %}
                                                 <a href="#"
@@ -228,7 +229,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    {% if schema == config['MANGO_NOSCHEMA_LABEL'] and not read_only and 'own' in current_user_rights %}
+                    {% if schema == config['MANGO_NOSCHEMA_LABEL'] and not read_only and (current_user_rights | intersection(own_or_write)) %}
                         <button type="button"
                                 class="btn btn-primary"
                                 data-bs-toggle="modal"
@@ -253,7 +254,7 @@
                                 Edit
                             </button>
                         </form>
-                    {% elif schema != 'analysis' and not read_only and 'own' in current_user_rights %}
+                    {% elif schema != 'analysis' and not read_only and (current_user_rights | intersection(own_or_write)) %}
                         <div class="row mt-4">
                             {% if schema+'.json' in metadata_schema_filenames %}
                                 <form class="col"
