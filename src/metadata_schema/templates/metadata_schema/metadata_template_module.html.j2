@@ -2,8 +2,10 @@
 {% block body %}
     <main>
         <div id="metadata_template_list_container">
-            {# <metadata-template-list new-url="{{ url_for('metadata_schema_editor_bp.new_meta_data_template')}}" update-url="{{ url_for('metadata_schema_editor_bp.update_meta_data_templates')}}" template-list-url="{{ url_for('metadata_schema_editor_bp.list_meta_data_templates')}}" new-template-url="/static/metadata-templates/"></metadata-template-list> #}
-        </div>
+        {% set first = "metadata_schema_editor_bp" %}
+        {% set mdt = "meta_data_template" %}
+        <url-list new="{{ url_for('{}.new_{}'.format(first, mdt)) }}" update="{{ url_for('{}.update_{}s'.format(first, mdt)) }}" list="{{ url_for('{}.list_{}s'.format(first, mdt)) }}" new2="/static/metadata-templates/"></url-list>
+            {# <metadata-template-list new-url="{{ url_for('metadata_schema_editor_bp.new_meta_data_template')}}" update-url="{{ url_for('metadata_schema_editor_bp.update_meta_data_templates')}}" template-list-url="{{ url_for('metadata_schema_editor_bp.list_meta_data_templates')}}" new-template-url="/static/metadata-templates/"></metadata-template-list>        </div> #}
         {% for file in ['doms', 'fields', 'schema', 'init'] %}
         <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
         {% endfor %}
