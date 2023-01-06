@@ -317,7 +317,7 @@ def edit_schema_metadata_for_item():
                 )
 
         #catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
-        # workaround for a bug in 4.2.11
+        # workaround for a bug in 4.2.11: only 'own' can execute atomic operations
         lib.util.execute_atomic_operations(g.irods_session, catalog_item, avu_operation_list)
 
         if item_type == "collection":

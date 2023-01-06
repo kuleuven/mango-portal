@@ -191,6 +191,23 @@ def ping_open_search_servers():
     }
 
 
+# def update_mapping_schema():
+#     mappings = {
+#         "mappings": {
+#             "dynamic_templates": [
+#                 {
+#                     "keyword": {
+#                         "match": "*_kw",
+#                         "mapping": {"type": "keyword"},
+#                     }
+#                 },
+#                 {"text": {"match": "*_t", "mapping": {"type": "text"}}},
+#             ]
+#         }
+#     }
+#     return
+
+
 # simple caching strategy
 path_ids = {}
 
