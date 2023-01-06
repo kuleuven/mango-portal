@@ -37,3 +37,17 @@ div.blocked {
     font-weight: bold;
     padding-top: 0.3em;
 }
+
+.list-mover {
+    padding: 0;
+}
+
+.mover-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.viewer {
+    margin-top: 0.5rem;
+}
+

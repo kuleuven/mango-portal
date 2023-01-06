@@ -33,7 +33,6 @@ class ComplexField {
                 base_data.required.push(field_id);
             }
         });
-        console.log(this.field_ids);
         return base_data;
     }
 
@@ -89,8 +88,8 @@ class ComplexField {
         // TODO have checks so we don't just replace everything
         this.fields[form_object.id] = form_object;
         let viewer = document.getElementById(this.card_id).querySelector('#' + form_object.id);
-        viewer.querySelector('label').innerHTML = form_object.required ? form_object.viewer_title + '*' : form_object.viewer_title;
-        let form_field = viewer.querySelector('.form-field');
+        viewer.querySelector('h5').innerHTML = form_object.required ? form_object.title + '*' : form_object.title;
+        let form_field = viewer.querySelector('.card-body');
         let new_input = form_object.viewer_input();
         form_field.replaceChild(new_input, form_field.firstChild);
         console.log(this.json);
@@ -113,7 +112,7 @@ class ComplexField {
         button.setAttribute("data-bs-target", `#${this.choice_id}`);
 
         button.addEventListener('click', () => {
-            this.new_field_idx = div.previousSibling.className == 'viewer' ?
+            this.new_field_idx = div.previousSibling.classList.contains('viewer') ?
             this.field_ids.indexOf(div.previousSibling.id) + 1 :
             0;
         });
@@ -178,6 +177,7 @@ class Schema extends ComplexField {
                     viewer.nextSibling.remove();
                     viewer.remove();
                 });
+                form.form.classList.remove('was-validated');
 
                 this.card.toggle();
 
