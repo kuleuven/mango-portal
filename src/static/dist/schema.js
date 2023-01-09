@@ -43,6 +43,7 @@ class ComplexField {
         this.field_ids = Object.keys(data.properties);
         for (let entry of Object.entries(data.properties)) {
             let new_field = InputField.choose_class(entry);
+            new_field.create_modal(this);
             new_field.required = data.required.indexOf(entry[0]) > -1;
             this.fields[entry[0]] = new_field;
         }
@@ -65,12 +66,7 @@ class ComplexField {
         });
     }
 
-    add_field(form_object) {
-        // Register a created form field, add it to the fields dictionary and view it
-        this.field_ids.splice(this.new_field_idx, 0, form_object.id);
-        this.fields[form_object.id] = form_object;
-        console.log(this.card_id);
-
+    view_field(form_object) {
         let clicked_button = document.getElementById(this.card_id).querySelectorAll('.adder')[this.new_field_idx];
         let below = clicked_button.nextSibling;
         let moving_viewer = form_object.view(this);
@@ -92,6 +88,13 @@ class ComplexField {
                 viewers[viewers.length - 2].querySelector('.down').removeAttribute('disabled');
             }
         }
+    }
+
+    add_field(form_object) {
+        // Register a created form field, add it to the fields dictionary and view it
+        this.field_ids.splice(this.new_field_idx, 0, form_object.id);
+        this.fields[form_object.id] = form_object;
+        this.view_field(form_object);
 
         console.log(this.json);
     }
@@ -185,9 +188,11 @@ class ObjectEditor extends ComplexField {
 }
 
 class Schema extends ComplexField {
-    constructor(card_id, name = null) {
+    constructor(card_id, container_id) {
         super('formChoice');
         this.card_id = card_id;
+        this._name = card_id;
+        this.container = container_id;
     }
 
     get name() {
@@ -197,7 +202,8 @@ class Schema extends ComplexField {
 
     set name(name) {
         this._name = name;
-        let form_title = document.getElementById(this.card_id)
+        let form_title = document.getElementById(this.card_id);
+        console.log(form_title);
         if (form_title != null) {
             form_title.querySelector("#template-name").value = this._name;
         }
@@ -207,7 +213,7 @@ class Schema extends ComplexField {
         return this.card.div;
     }
 
-    init_card() {
+    create_editor() {
         this.display_options('formTemplates');
         let form = new BasicForm('schema');
         form.add_input("Metadata template name", "template-name", "first-schema");
@@ -232,18 +238,81 @@ class Schema extends ComplexField {
                 form.form.classList.remove('was-validated');
 
                 this.card.toggle();
-
-                // this.modal.toggle();
             }            
-
         });
+        return form;
+    }
 
+    create_creator() {
+        let form = this.create_editor();
         this.card = new AccordionItem(this.card_id, 'New schema', 'metadata_template_list_container', true);
-        this.card.fill(form.form)
+        document.getElementById(this.container).appendChild(this.accordion_item);
+        this.card.append(form.form);
+    }
+
+    create_navbar() {
+        // design navbar
+        this.nav_bar = Field.quick('ul', 'nav justify-content-end nav-pills');
+        this.nav_bar.role = 'tablist';
+        this.nav_bar.id = 'pills-tab-' + this._name;
+        
+        let view_li = Field.quick('li', 'nav-item');
+        let view_button = Field.quick('a', 'nav-link active', 'View');
+        view_button.id = 'view-tab-' + this._name;
+        view_button.setAttribute('data-bs-toggle', 'pill');
+        view_button.setAttribute('data-bs-target', `#view-pane-${this._name}`);
+        view_button.type = 'button';
+        view_button.role = 'tab';
+        view_button.setAttribute('aria-controls', `view-pane-${this._name}`);
+        this.nav_bar.appendChild(view_li);
+        view_li.appendChild(view_button);
+        
+        let edit_li = Field.quick('li', 'nav-item');
+        let edit_button = Field.quick('a', 'nav-link', 'Edit');
+        edit_button.id = 'edit-tab-' + this._name;
+        edit_button.setAttribute('data-bs-toggle', 'pill');
+        edit_button.setAttribute('data-bs-target', `#edit-pane-${this._name}`);
+        edit_button.type = 'button';
+        edit_button.role = 'tab';
+        edit_button.setAttribute('aria-controls', `edit-pane-${this._name}`);
+        this.nav_bar.appendChild(edit_li);
+        edit_li.appendChild(edit_button);
+
+        // design tabs
+        this.tab_content = Field.quick('div', 'tab-content');
+        let viewer_tab = Field.quick('div', 'tab-pane fade show active');
+        viewer_tab.id = 'view-pane-' + this._name;
+        viewer_tab.role = 'tabpanel';
+        viewer_tab.setAttribute('aria-labelledby', 'view-tab-' + this._name);
+        viewer_tab.tabIndex = '0';
+
+        let viewer = ComplexField.create_viewer(this);
+        viewer_tab.appendChild(viewer);
+        
+        let editor_tab = Field.quick('div', 'tab-pane fade');
+        editor_tab.id = 'edit-pane-' + this._name;
+        editor_tab.role = 'tabpanel';
+        editor_tab.setAttribute('aria-labelledby', 'edit-tab-' + this._name);
+        editor_tab.tabIndex = '0';
+        
+        let form = this.create_editor();
+        form.form.querySelector('#template-name').value = this._name;
+        editor_tab.appendChild(form.form);
+
+        this.tab_content.appendChild(viewer_tab);
+        this.tab_content.appendChild(editor_tab);
+
     }
 
     view() {
         this.card = new AccordionItem(this.card_id, this._name, 'metadata_template_list_container');
-        this.card.fill(ComplexField.create_viewer(this));
+        document.getElementById(this.container).appendChild(this.accordion_item);
+        this.create_navbar();
+        this.card.append(this.nav_bar);
+        this.card.append(this.tab_content);
+        this.field_ids.forEach((field_id, idx) => {
+            this.new_field_idx = idx;
+            this.view_field(this.fields[field_id]);
+        })
     }
 }

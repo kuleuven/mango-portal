@@ -1,10 +1,10 @@
-let container = document.getElementById('metadata_template_list_container');
+const container_id = 'metadata_template_list_container';
+const container = document.getElementById(container_id);
 
 container.className = 'accordion accordion-flush';
 // first the button
-let starting_schema = new Schema('schema-editor');
-starting_schema.init_card();
-container.appendChild(starting_schema.accordion_item);
+let starting_schema = new Schema('schema-editor', container_id);
+starting_schema.create_creator();
 
 let url_tag = document.getElementsByTagName('url-list')[0];
 let url_list = url_tag.attributes;
@@ -28,7 +28,7 @@ url_tag.remove();
 // 		let template_card = new AccordionItem(name, name + ' schema', 'metadata_template_list_container');
 // 		let card_text = `Here you can edit the <em>${name}</em> schema; its url is <code>${template.url}</code>.`;
 // 		let card_contents = Field.quick('p', 'mb-2', card_text); // with new Schema() or whatever
-// 		template_card.fill(card_contents);
+// 		template_card.append(card_contents);
 // 		container.appendChild(template_card.div);
 // 	}
 // 	const temp_url = '/static/metadata-templates/basic.json';
@@ -48,10 +48,9 @@ const temp_url = '/static/metadata-templates/basic.json';
 function read_schema() {
 	let response = JSON.parse(this.responseText);
 	console.log(response);
-	let schema = new Schema('basic');
+	let schema = new Schema('basic', container_id);
 	schema.from_json(response);
 	schema.view();
-	container.appendChild(schema.accordion_item);
 }
 
 const schema_rq = new XMLHttpRequest();

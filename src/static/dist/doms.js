@@ -520,21 +520,28 @@ class AccordionItem {
 		header_button.ariaControls = this.id;
 		header.appendChild(header_button);
 		
-		this.body = Field.quick('div', 'accordion-collapse collapse');
-		this.body.id = this.id;
-		this.body.setAttribute('aria-labelledby', this.id + '-header');
-		this.body.setAttribute('data-bs-parent', '#' + this.parent);
+		let body = Field.quick('div', 'accordion-collapse collapse');
+		body.id = this.id;
+		body.setAttribute('aria-labelledby', this.id + '-header');
+		body.setAttribute('data-bs-parent', '#' + this.parent);
+        this.card_body = Field.quick('div', 'accordion-body');
+        body.appendChild(this.card_body);
 
 		this.div.appendChild(header);
-		this.div.appendChild(this.body);
+		this.div.appendChild(body);
 		
-        this.collapse = new bootstrap.Collapse(this.body, { toggle: false });
+        this.collapse = new bootstrap.Collapse(body, { toggle: false });
 	}
-	fill(content) {
-		let card_body = Field.quick('div', 'accordion-body');
-		card_body.appendChild(content);
-		this.body.appendChild(card_body);
+
+	append(element, i = null) {
+        let elements = this.card_body.childNodes;
+        if (i == null || i >= elements.childNodes.length - 1) {
+            this.card_body.appendChild(element);
+        } else {
+            this.card_body.insertBefore(element, elements[i+1]);
+        }
 	}
+    
     toggle() {
         this.collapse.toggle();
     }

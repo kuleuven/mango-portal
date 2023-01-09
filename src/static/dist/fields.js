@@ -78,7 +78,6 @@ class InputField {
         let modal_id = `${this.mode}-${this.id}`;
         let edit_modal = new Modal(modal_id, `Add ${this.button_title}`, `title-${this.form_type}`);
         let form = this.form_field.form;
-        console.log(form)
         edit_modal.create_modal([form], 'lg');
         this.modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modal_id));
         let modal_dom = document.getElementById(modal_id);
@@ -190,9 +189,10 @@ class InputField {
         } else {
             new_field = new TypedInput();
         }
-        new_field.from_json(data);
         new_field.field_id = id;
         new_field.id = id;
+        new_field.mode = 'mod';
+        new_field.from_json(data);
         return new_field;
     }
 
