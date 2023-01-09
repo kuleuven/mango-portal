@@ -13,11 +13,13 @@ class ComplexField {
         };
         this.field_ids = []; // ids of the forms as they are added
         this.fields = {}; // dictionary where forms will be added
+        this._name = name;
     }
 
     get json() {
         return this.to_json();
     }
+
 
     to_json() {
         let base_data = {
@@ -34,6 +36,16 @@ class ComplexField {
             }
         });
         return base_data;
+    }
+
+    from_json(data) {
+        this.name = data.title;
+        this.field_ids = Object.keys(data.properties);
+        for (let entry of Object.entries(data.properties)) {
+            let new_field = InputField.choose_class(entry);
+            new_field.required = data.required.indexOf(entry[0]) > -1;
+            this.fields[entry[0]] = new_field;
+        }
     }
 
     display_options(templates_area) {
@@ -120,6 +132,30 @@ class ComplexField {
         return div;
     }
 
+    static create_viewer(schema) {
+        let div = Field.quick('div', 'input-view');
+        schema.field_ids.forEach((field_id) => {
+            let subfield = schema.fields[field_id];
+            let small_div = Field.quick('div', 'mini-viewer');
+            let label;
+            if (subfield.constructor.name == 'ObjectInput') {
+                label = Field.quick('h5', 'border-bottom border-secondary');
+                label.innerHTML = subfield.required ? subfield.title + '*' : subfield.title;
+                label.id = `viewer-${subfield.id}`;
+                small_div.className = small_div.className + ' border border-1 border-secondary rounded p-3 my-1'
+            } else {
+                label = BasicForm.labeller(
+                    subfield.required ? subfield.title + '*' : subfield.title,
+                    `viewer-${subfield.id}`
+                );
+            }            
+            let input = subfield.viewer_input();
+            small_div.appendChild(label);
+            small_div.appendChild(input);
+            div.appendChild(small_div);
+        });
+        return div;
+    }
 
 }
 
@@ -137,18 +173,34 @@ class ObjectEditor extends ComplexField {
 
     get name() {
         let data = new FormData(this.form.form);
-        return data.get(this.id_field);
+        this._name = data.get(this.id_field);
+        return this._name;
     }
+    
+    set name(name) {
+        this._name = name;
+        return;
+    }
+
 }
 
 class Schema extends ComplexField {
-    constructor(card_id) {
+    constructor(card_id, name = null) {
         super('formChoice');
         this.card_id = card_id;
-        this.init_card();
     }
+
     get name() {
-        return document.getElementById(this.card_id).querySelector("#template-name").value;
+        this._name = document.getElementById(this.card_id).querySelector("#template-name").value;
+        return this._name;
+    }
+
+    set name(name) {
+        this._name = name;
+        let form_title = document.getElementById(this.card_id)
+        if (form_title != null) {
+            form_title.querySelector("#template-name").value = this._name;
+        }
     }
 
     get accordion_item() {
@@ -188,5 +240,10 @@ class Schema extends ComplexField {
 
         this.card = new AccordionItem(this.card_id, 'New schema', 'metadata_template_list_container', true);
         this.card.fill(form.form)
+    }
+
+    view() {
+        this.card = new AccordionItem(this.card_id, this._name, 'metadata_template_list_container');
+        this.card.fill(ComplexField.create_viewer(this));
     }
 }

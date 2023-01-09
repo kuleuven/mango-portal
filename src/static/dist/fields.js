@@ -131,7 +131,7 @@ class InputField {
             schema.update_field(this);
             return this;
         } else {
-            let clone = new this.constructor(this.parent_modal);
+            let clone = new this.constructor();
             clone.field_id = new_id;
             clone.form_field = this.form_field;
             clone.title = data.get(`${this.id}-label`);
@@ -174,6 +174,32 @@ class InputField {
     reset() {
         this.form_field.reset();
     }
+
+    static choose_class([id, data] = []) {
+        let properties = Object.keys(data);
+        let new_field;
+        if (properties.indexOf('properties') > -1) {
+            // it's checkbox or object
+            if (Object.values(data.properties)[0].type == 'boolean') {
+                new_field = new CheckboxInput();
+            } else {
+                new_field = new ObjectInput();
+            }
+        } else if (properties.indexOf('enum') > -1) {
+            new_field = new SelectInput();
+        } else {
+            new_field = new TypedInput();
+        }
+        new_field.from_json(data);
+        new_field.field_id = id;
+        new_field.id = id;
+        return new_field;
+    }
+
+    from_json(data) {
+        this.title = data.title;
+        this.create_form();
+    }
 }
 
 class TypedInput extends InputField {
@@ -213,6 +239,20 @@ class TypedInput extends InputField {
             delete json.format;
         }
         return json;
+    }
+
+    from_json(data) {
+        super.from_json(data);
+        let par_text;
+        if (data.type == 'integer' | data.type == 'float' ) {
+            this.type = data.type == 'integer' ? 'number' : data.type;
+            this.values = { 'minimum' : data.minimum, 'maximum' : data.maximum};
+            par_text = `${this.type} between ${data.minimum} and ${data.maximum}`
+        } else {
+            this.values = { 'format' : data.format };
+            par_text = data.format;
+        }
+        this.viewer_subtitle = `Input type: ${par_text}`;
     }
 
     reset() {
@@ -312,20 +352,7 @@ class ObjectInput extends InputField {
     }
 
     viewer_input() {
-        let div = Field.quick('div', 'input-view');
-        this.editor.field_ids.forEach((field_id) => {
-            let subfield = this.editor.fields[field_id];
-            let small_div = Field.quick('div', 'mini-viewer');
-            let label = BasicForm.labeller(
-                subfield.required ? subfield.title + '*' : subfield.title,
-                `viewer-${subfield.id}`
-            );
-            let input = subfield.viewer_input();
-            small_div.appendChild(label);
-            small_div.appendChild(input);
-            div.appendChild(small_div);
-        });
-        return div;
+        return ComplexField.create_viewer(this.editor);
     }
 
     create_form() {
@@ -351,6 +378,13 @@ class ObjectInput extends InputField {
 
     to_json() {
         this.editor.json;
+        this.title = this.editor.name;
+    }
+
+    from_json(data) {
+        super.from_json(data);
+        this.create_editor();
+        this.editor.from_json(data);
     }
 }
 
@@ -397,6 +431,7 @@ class SelectInput extends MultipleInput {
     }
 
     viewer_input() {
+        let input_div = document.createElement("div");
         let inner_input = Field.quick("select", "form-select input-view");
         for (let option of this.values.enum) {
             let new_option = document.createElement("option");
@@ -404,7 +439,8 @@ class SelectInput extends MultipleInput {
             new_option.innerHTML = option;
             inner_input.appendChild(new_option);
         }
-        return inner_input;
+        input_div.appendChild(inner_input);
+        return input_div;
     }
 
     recover_fields(data) {
@@ -413,6 +449,11 @@ class SelectInput extends MultipleInput {
                 this.values.enum.push(pair[1]);
             }
         }
+    }
+
+    from_json(data) {
+        super.from_json(data);
+        this.values = { 'enum' : data.enum };
     }
 }
 
@@ -474,4 +515,8 @@ class CheckboxInput extends MultipleInput {
         }
     }
 
+    from_json(data) {
+        super.from_json(data);
+        this.values = {'properties' : data.properties };
+    }
 }
