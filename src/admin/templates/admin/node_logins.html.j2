@@ -28,6 +28,6 @@
         </div>
     </div>
     <div class="row">
-        <p>Node up since: {{ g.mango_server_info['server_start'].isoformat(timespec='seconds') }}</p>
+        <p>Node {{ config['HOSTNAME'] }} up since: {{ g.mango_server_info['server_start'].isoformat(timespec='seconds') }}</p>
     </div>
 {% endblock body %}

@@ -164,9 +164,12 @@ def login_basic():
 def logout_basic():
     if 'userid' in session:
         irods_session_pool.remove_irods_session(session['userid'])
+        del session['password']
 
     if app.config["MANGO_AUTH"] == 'openid':
         return redirect(url_for('user_bp.login_openid'))
+    if app.config["MANGO_AUTH"] == "via_callback":
+        return redirect(url_for("user_bp.login_zone"))
     #default
     return redirect(url_for('user_bp.login_basic'))
 

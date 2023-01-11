@@ -174,7 +174,7 @@ def init_and_secure_views():
     if current_app.config["MANGO_AUTH"] in ["basic", "openid", "via_callback"]:
         irods_session = None
         if not "userid" in session:
-            print(f"No user id in session, basic auth")
+            print(f"No user id in session, need auth")
         if "userid" in session:
             irods_session = irods_session_pool.get_irods_session(session["userid"])
         if not irods_session and "password" in session and "zone" in session:

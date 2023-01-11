@@ -387,8 +387,8 @@ def index_item(irods_session: iRODSSession, item_type: str, item_path: str):
         )
         return response
 
-    except Exception:
-        logging.warn(f"Failed indexing {item_type} {item_path}")
+    except Exception as e:
+        logging.warn(f"Failed indexing {item_type} {item_path}: {e}")
         return None
 
 
