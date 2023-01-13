@@ -11,6 +11,8 @@
 .spyproject
 .spyproject/
 .vscode
+.VSCodeCounter
+.VSCodeCounter/
 
 # Packages
 *.egg

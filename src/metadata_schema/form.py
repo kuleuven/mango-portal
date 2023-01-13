@@ -35,6 +35,7 @@ from wtforms import (
     HiddenField,
     SelectMultipleField,
     TextAreaField,
+    FloatField,
 )
 import wtforms.widgets
 from werkzeug.datastructures import MultiDict
@@ -77,10 +78,14 @@ def josse_process_property(property_tuple, required=False, prefix=""):
                 return URLField(label=_property["title"], validators=_validators)
             if _property["format"] == "time":
                 return TimeField(label=_property["title"], validators=_validators)
+            if _property["format"] == "float":
+                return FloatField(label=_property["title"], validators=_validators)
         else:
             return StringField(label=_property["title"], validators=_validators)
     if _property["type"] == "textarea":
             return TextAreaField(label=_property["title"], validators = _validators, render_kw={'class': 'form-control', 'rows': 5, 'maxlength': 1500})
+    if _property["type"] == "float":
+         return FloatField(label=_property["title"], validators=_validators)
     if _property["type"] == "number":
         range_args = {}
         if "minimum" in _property:
@@ -311,8 +316,8 @@ def edit_schema_metadata_for_item():
                     AVUOperation(operation="add", avu=iRODSMeta(_key, _value ))
                 )
 
-        catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
-        # workaround for a bug in 4.2.11
+        #catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
+        # workaround for a bug in 4.2.11: only 'own' can execute atomic operations
         lib.util.execute_atomic_operations(g.irods_session, catalog_item, avu_operation_list)
 
         if item_type == "collection":

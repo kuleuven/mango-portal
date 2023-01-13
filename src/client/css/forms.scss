@@ -119,6 +119,12 @@ div[data-fs-input=number]>input {
     width: fit-content;
 }
 
+div[data-fs-input=float]>input {
+    @extend .form-control;
+    width: fit-content;
+}
+
+
 // style for email input
 div[data-fs-input=email]>input {
     @extend .form-control;

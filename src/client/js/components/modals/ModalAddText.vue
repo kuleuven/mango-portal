@@ -27,7 +27,8 @@
                             <select class="form-select" id="textType" v-model="textType" required>
                                 <option value="Text" selected>Text</option>
                                 <option value="LongText">Text box</option>
-                                <option value="Number">Number</option>
+                                <option value="Number">Number (integer)</option>
+                                <option value="Float">Floating point</option>
                                 <option value="Date">Date</option>
                                 <option value="Email">Email</option>
                                 <option value="Time">Time</option>
@@ -94,6 +95,14 @@
                                 "title":this.textLabel,
                                 "minimum":this.min,
                                 "maximum":this.max,
+                            }
+                        };
+                    case "Float":
+                        return {
+                            [this.textId]: {
+                                "type": "string",
+                                "format": "float",
+                                "title":this.textLabel,
                             }
                         };
                     case "Date":

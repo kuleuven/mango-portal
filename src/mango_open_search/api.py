@@ -62,7 +62,7 @@ def get_collection_stats(collection_path: str):
         "aggs": {
             "children_d": {
                 "filter": {"term": {"irods_item_type_simple": "d"}},
-                "aggs": {"data_object_stats" :
+                "aggs": {"data_object_stats_size" :
                  {"stats": {"field": "size"}}
                 }
             },

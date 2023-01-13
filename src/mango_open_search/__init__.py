@@ -191,6 +191,23 @@ def ping_open_search_servers():
     }
 
 
+# def update_mapping_schema():
+#     mappings = {
+#         "mappings": {
+#             "dynamic_templates": [
+#                 {
+#                     "keyword": {
+#                         "match": "*_kw",
+#                         "mapping": {"type": "keyword"},
+#                     }
+#                 },
+#                 {"text": {"match": "*_t", "mapping": {"type": "text"}}},
+#             ]
+#         }
+#     }
+#     return
+
+
 # simple caching strategy
 path_ids = {}
 
@@ -370,8 +387,8 @@ def index_item(irods_session: iRODSSession, item_type: str, item_path: str):
         )
         return response
 
-    except Exception:
-        logging.warn(f"Failed indexing {item_type} {item_path}")
+    except Exception as e:
+        logging.warn(f"Failed indexing {item_type} {item_path}: {e}")
         return None
 
 
