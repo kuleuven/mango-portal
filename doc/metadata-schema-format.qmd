@@ -1,0 +1,154 @@
+---
+title: "Metadata schema format"
+format:
+    html:
+        embed-resources: true
+        theme: default
+date: 2023-01-13
+date-modified: today
+author: Mariana Montes
+number-sections: true
+toc: true
+---
+
+<!-- Can I embed a file? -->
+
+# Main structure
+
+A metadata schema will be stored in a json file with a series of nested key-value pairs.
+At the top level, there is only one pair, with the id of the schema as key and the contents of the schema as values:
+
+```json
+{
+    "sample-schema" : {
+        "title" : "Book schema as an example",
+        "properties" : ...
+    }
+}
+```
+
+The value of the "properties" element is itself a series of key-value pairs indicating fields of the metadata schema. The key is the id of the field (how it is defined in the namespace of the schema) and the value is itself an object, i.e. a series of key-value pairs with the different attributes of each field.
+
+@sec-attr will define the main attributes that all objects in a schema file may contains. @sec-items will describe the different kinds of fields and their specific attributes. Finally @sec-full includes a full example of a sample schema, from which the rest of the examples of this document are extracted.
+
+::: callout-tip
+The order of the attributes is not important, but the order of the *fields* inside `properties` will define the order they take when rendering the form.
+:::
+
+## General Attributes {#sec-attr}
+
+title
+
+:    All objects in a metadata schema should include the `title` attribute, which indicates a human-readable label for the form when filling in the schema.
+
+type
+
+:    In addition, all objects (except for the schema itself??) need a `type` attribute that indicates the kind of field they represent. The possible values are described in @sec-items.
+
+required
+
+:    Any object that represents a field may contain an optional boolean `required` attribute indicating whether the field is required in the form or not. If this attribute is missing, it is read as "false".
+
+repeatable
+
+:    Any object that represents a field may contain an optional boolean `repeatable` attribute. If "true", the field may be used multiple times to assign the same attribute name with different values as metadata of the same collection or data object. If this attribute is missing, it is read as "false".
+
+# Types of items {#sec-items}
+
+In terms of data format, there are three main kinds of fields that can be included in a metadata schema: scalar fields, multiple-option fields and objects. Scalar fields, described in @sec-scalar, include any form of text or numeric input for which a pattern or range may be defined but not, strictly, the possible values. Multiple-option fields (@sec-multiple) include any field that provides a specific selection of possible answers. Finally, the objects, described in @sec-object, are mini-schemas: collections of fields of other kinds related to each other.
+
+## Scalar fields {#sec-scalar}
+
+The prototypical example of a scalar field is a simple text field, such as "title" below:
+
+```json
+"title" : {
+    "type" : "text",
+    "title" : "Book title",
+    "required" : "true"
+}
+```
+
+Next to the basic "text" value for the `type` attribute, we can also use other values that add specific restrictions to the input field: "date", "time", "email", or "url".
+For a longer-form, non-restricted string output, the "textarea" value is also an option.
+<!-- The range of possible formats will be expanded in the future. -->
+
+For numeric inputs, the possible types are "integer" or "float". Objects with these types also have two extra key-value pairs indicating the range of allowed values:
+
+```json
+"copies_published": {
+    "type": "integer",
+    "title": "Number of copies published",
+    "minimum": "100",
+    "maximum": "500000"
+},
+"market_price": {
+    "type": "float",
+    "title": "Market price (in euros)",
+    "minimum": "0.99",
+    "maximum": "999.99"
+}
+```
+
+## Multiple options {#sec-multiple}
+
+Multiple-option fields are indicated with the `type` "select". Their common property is a restricted selection of possible values for the metadata field they define. These values are indicated as a list in the `values` attribute:
+
+```json
+"ebook": {
+    "type": "select",
+    "multiple": "false",
+    "ui": "radio",
+    "values": [
+        "Available",
+        "Unavailable"
+        ],
+    "title": "Is there an e-book?",
+    "required": "true"
+}
+```
+
+In addition, they require two more fields that define the conditions and user-facing format of the field.
+
+multiple
+
+:    Boolean value. If true, then more than one of the provided options can be selected. If false, only one of them can be chosen.
+
+ui
+
+:    The possible values are "dropdown", "checkbox" (if `multiple` is "true") or "radio" (if `multiple` is "false"). They indicate what the field should look like in the actual implementation.
+
+## Objects {#sec-object}
+
+Objects are indicated with the `type` "object" and, like schemas, have a `properties` attribute containing the fields that comprise it. The value of `properties` has the same format as the `properties` of a schema.
+
+```json
+"author": {
+    "type": "object",
+    "title": "Author",
+    "properties": {
+        "name": {
+            "type": "text",
+            "title": "Name and Surname",
+            "required": "true"
+        },
+        "age": {
+            "type": "integer",
+            "title": "Age",
+            "minimum": "12",
+            "maximum": "99"
+        },
+        "email": {
+            "type": "email",
+            "title": "Email address",
+            "required": "true"
+        }
+    },
+    "required": "true",
+    "repeatable": "true"
+    }
+```
+
+# Full example {#sec-full}
+
+{{< include _basic.md >}}
