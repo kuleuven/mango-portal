@@ -25,17 +25,15 @@ class ComplexField {
         let base_data = {
             title: this.name,
             type: "object",
-            required: [],
             properties: {}
         }
         this.field_ids.forEach((field_id) => {
             let field = this.fields[field_id];
             base_data.properties[field_id] = field.json;
-            if (field.required) {
-                base_data.required.push(field_id);
-            }
         });
-        return base_data;
+        let json = {};
+        json[this.name] = base_data;
+        return json;
     }
 
     from_json(data) {
@@ -44,7 +42,6 @@ class ComplexField {
         for (let entry of Object.entries(data.properties)) {
             let new_field = InputField.choose_class(entry);
             new_field.create_modal(this);
-            new_field.required = data.required.indexOf(entry[0]) > -1;
             this.fields[entry[0]] = new_field;
         }
     }
@@ -67,6 +64,7 @@ class ComplexField {
     }
 
     view_field(form_object) {
+        console.log(this.card_id);
         let clicked_button = document.getElementById(this.card_id).querySelectorAll('.adder')[this.new_field_idx];
         let below = clicked_button.nextSibling;
         let moving_viewer = form_object.view(this);
@@ -104,6 +102,12 @@ class ComplexField {
         this.fields[form_object.id] = form_object;
         let viewer = document.getElementById(this.card_id).querySelector('#' + form_object.id);
         viewer.querySelector('h5').innerHTML = form_object.required ? form_object.title + '*' : form_object.title;
+        let rep_icon = Field.quick('i', 'bi bi-stack');
+        if (form_object.repeatable) {
+            viewer.querySelector('h5').appendChild(rep_icon);
+        } else if (viewer.querySelector('.bi-stack') != null) {
+            viewer.querySelector('h5').removeChild(rep_icon);
+        }
         let form_field = viewer.querySelector('.card-body');
         let new_input = form_object.viewer_input();
         form_field.replaceChild(new_input, form_field.firstChild);
@@ -164,7 +168,7 @@ class ComplexField {
 
 class ObjectEditor extends ComplexField {
     constructor(parent_form, parent) {
-        super('objectChoice');
+        super('objectChoice' + parent.id);
         this.form = parent_form;
         this.card_id = `${parent.mode}-${parent.id}`;
         this.id_field = `${parent.id}-id`
@@ -188,11 +192,12 @@ class ObjectEditor extends ComplexField {
 }
 
 class Schema extends ComplexField {
-    constructor(card_id, container_id) {
+    constructor(card_id, container_id, url) {
         super('formChoice');
         this.card_id = card_id;
         this._name = card_id;
         this.container = container_id;
+        this.url = url
     }
 
     get name() {
@@ -203,7 +208,6 @@ class Schema extends ComplexField {
     set name(name) {
         this._name = name;
         let form_title = document.getElementById(this.card_id);
-        console.log(form_title);
         if (form_title != null) {
             form_title.querySelector("#template-name").value = this._name;
         }
@@ -229,7 +233,8 @@ class Schema extends ComplexField {
                 form.form.classList.add('was-validated');
             } else {
                 // save form!
-                console.log(this.json);
+                // console.log(this.json);
+                this.post();
                 form.reset();
                 form.form.querySelectorAll('.viewer').forEach((viewer) => {
                     viewer.nextSibling.remove();
@@ -314,5 +319,16 @@ class Schema extends ComplexField {
             this.new_field_idx = idx;
             this.view_field(this.fields[field_id]);
         })
+    }
+
+    post() {
+        const to_post = new FormData();
+        to_post.append('template_name', this.name + ".json");
+        to_post.append('template_json', JSON.stringify(this.json));
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', this.url, true);
+        xhr.send(to_post);
+        console.log(this.name, ' posted.');
     }
 }

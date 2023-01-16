@@ -47,6 +47,7 @@ class MovingViewer extends MovingField {
     constructor(form, schema) {
         super(form.id);
         this.title = form.required ? form.title + '*' : form.title;
+        this.repeatable = form.repeatable;
         this.div = Field.quick("div", "card border-primary viewer");
         this.div.id = form.id;
         this.body = form.viewer_input();
@@ -62,6 +63,10 @@ class MovingViewer extends MovingField {
         let header = Field.quick('div', 'card-header mover-header');
         let header_title = document.createElement('h5');
         header_title.innerHTML = this.title;
+        if (this.repeatable) {
+            header_title.appendChild(Field.quick('i', 'bi bi-stack px-2'));
+        }
+        
         let header_buttons = Field.quick('div', 'btn-list');
         for (let button of [this.up, this.down, this.edit, this.rem]) {
             header_buttons.appendChild(button);
@@ -388,25 +393,33 @@ class BasicForm {
        this.form.appendChild(plus_div);
     }
 
-    add_requirer(id, required = false) {
+    add_requirer(id, required = false, repeatable = false) {
         // Add a radio switch to select a field as required
+        // I'm adding the radio switch for "repeatable" here as well
         let div = Field.quick("div", "col-3 mt-2");
         let subdiv = Field.quick("div", "form-check form-switch form-check-inline");
         
-        let label = Field.quick("label", "form-check-label", "Require");
-        label.id = `label-${id}-required`;
-        label.setAttribute('for', `required-${id}`);
+        let switches = [
+            { 'id' : 'required', 'text' : 'Require', 'value' : required },
+            { 'id' : 'repeatable', 'text' : 'Make repeatable', 'value' : repeatable }
+        ]
 
-        let input = Field.quick("input", "form-check-input");
-        input.type = "checkbox";
-        input.role = "switch"
-        input.id = `${id}-required`;
-        if (required) {
-            input.setAttribute('checked', '');
+        for (let sw of switches) {
+            let label = Field.quick("label", "form-check-label", sw.text);
+            label.id = `label-${id}-${sw.id}`;
+            label.setAttribute('for', `${sw.id}-${id}`);
+    
+            let input = Field.quick("input", "form-check-input");
+            input.type = "checkbox";
+            input.role = "switch"
+            input.id = `${id}-${sw.id}`;
+            if (sw.value) {
+                input.setAttribute('checked', '');
+            }
+    
+            subdiv.appendChild(label);
+            subdiv.appendChild(input);
         }
-
-        subdiv.appendChild(label);
-        subdiv.appendChild(input);
         
         div.appendChild(subdiv);
         this.form.appendChild(div);
@@ -422,6 +435,10 @@ class BasicForm {
 
     reset() {
         this.form.reset();
+        let checkboxes = this.form.querySelectorAll('[type="checkbox"]');
+        for (let checkbox of checkboxes) {
+            checkbox.removeAttribute('checked');
+        }
         this.form.classList.remove('was-validated');
     }
 

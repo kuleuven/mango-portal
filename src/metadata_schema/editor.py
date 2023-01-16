@@ -62,8 +62,8 @@ def metadata_template():
 def list_meta_data_templates():
     """
     """
-    # template_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
-    template_files = glob.glob("static/metadata-templates/*.json")
+    template_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
+    # template_files = glob.glob("static/metadata-templates/*.json")
     template_filenames = [
         base_file_name
         for template_file in template_files

@@ -2,10 +2,10 @@ class InputField {
     constructor() {
         this.description = ""; // description to show in the options viewer
         this.dummy_title = "Title"; // dummy title in options viewer (probably could go)
-        this.type = "string"; // basic "type" when rendering the json
         this.required = false; // whether the field is required
         this.values = {}; // values to return in the json
         this.mode = 'add'; // whether the form has to be created or edited ("mod")
+        this.repeatable = false;
     }
 
     get json() {
@@ -13,7 +13,10 @@ class InputField {
     }
 
     to_json() {
-        return { title: this.title, type: this.type, ...this.values };
+        let json = { title: this.title, type: this.type, ...this.values };
+        if (this.required) json.required = this.required;
+        if (this.repeatable) json.repeatable = this.repeatable;
+        return json;
     }
 
     create_example() {
@@ -64,12 +67,19 @@ class InputField {
     end_form() {
         // Add require switch and submit button to form
         this.form_field.form.appendChild(document.createElement('br'));
-        this.form_field.add_requirer(this.id, this.required);
-        let switch_input = this.form_field.form.querySelector('.form-switch').querySelector('input');
-        switch_input.addEventListener('change', () => {
+        this.form_field.add_requirer(this.id, this.required, this.repeatable);
+
+        let req_input = this.form_field.form.querySelector(`#${this.id}-required`);
+        req_input.addEventListener('change', () => {
             this.required = !this.required;
-            this.required ? switch_input.setAttribute('checked', '') : switch_input.removeAttribute('checked');
+            this.required ? req_input.setAttribute('checked', '') : req_input.removeAttribute('checked');
         });
+        let rep_input = this.form_field.form.querySelector(`#${this.id}-repeatable`);
+        rep_input.addEventListener('change', () => {
+            this.repeatable = !this.repeatable;
+            this.repeatable ? rep_input.setAttribute('checked', '') : rep_input.removeAttribute('checked');
+        });
+        
         this.form_field.add_submitter("Submit");
 
     }
@@ -134,9 +144,13 @@ class InputField {
             clone.field_id = new_id;
             clone.form_field = this.form_field;
             clone.title = data.get(`${this.id}-label`);
+            console.log(clone.title);
 
             clone.required = this.required;
             this.required = false;
+
+            clone.repeatable = this.repeatable;
+            this.repeatable = false;
 
             clone.id = this.id // temporarily, to recover data
 
@@ -175,17 +189,12 @@ class InputField {
     }
 
     static choose_class([id, data] = []) {
-        let properties = Object.keys(data);
         let new_field;
-        if (properties.indexOf('properties') > -1) {
-            // it's checkbox or object
-            if (Object.values(data.properties)[0].type == 'boolean') {
-                new_field = new CheckboxInput();
-            } else {
-                new_field = new ObjectInput();
-            }
-        } else if (properties.indexOf('enum') > -1) {
-            new_field = new SelectInput();
+        if (data.type == 'object') {
+            new_field = new ObjectInput();
+        } else if (data.type == 'select') {
+            console.log(data.multiple);
+            new_field = data.multiple ? new CheckboxInput() : new SelectInput();
         } else {
             new_field = new TypedInput();
         }
@@ -198,6 +207,7 @@ class InputField {
 
     from_json(data) {
         this.title = data.title;
+        this.type = data.type;
         this.create_form();
     }
 }
@@ -205,11 +215,14 @@ class InputField {
 class TypedInput extends InputField {
     constructor() {
         super();
-        this.form_type = "text";
-        this.button_title = "Text input";
-        this.description = "Text options: regular text, number (integer or float), date, time, e-mail or URL.<br>"
-        this.values = { format: "text" };
+        this.type = "text";
+        this.values = {};
     }
+
+    form_type = "text";
+    form_type = "text";
+    button_title = "Text input";
+    description = "Text options: regular text, number (integer or float), date, time, e-mail or URL.<br>"    
 
     ex_input() {
         let inner_input = Field.quick("input", "form-control");
@@ -221,9 +234,9 @@ class TypedInput extends InputField {
         let div = document.createElement('div');
         let subtitle = Field.quick('p', 'card-subtitle', this.viewer_subtitle);
         let input;
-        if (this.values.format != 'text box') {
+        if (this.type != 'textarea') {
             input = Field.quick("input", "form-control input-view");
-            input.type = this.values.format == 'float' | this.values.format == 'integer' ? 'number' : this.values.format;
+            input.type = this.type == 'float' | this.type == 'integer' ? 'number' : this.type;
         } else {
             input = Field.quick("textarea", "form-control input-view");
         }
@@ -234,7 +247,7 @@ class TypedInput extends InputField {
     }
 
     to_json() {
-        let json = { title: this.title, type: this.type, ...this.values };
+        let json = super.to_json();
         if (this.type == 'number' || this.type == 'float') {
             delete json.format;
         }
@@ -243,14 +256,10 @@ class TypedInput extends InputField {
 
     from_json(data) {
         super.from_json(data);
-        let par_text;
-        if (data.type == 'integer' | data.type == 'float' ) {
-            this.type = data.type == 'integer' ? 'number' : data.type;
+        let par_text = this.type;
+        if (this.type == 'integer' | this.type == 'float' ) {
             this.values = { 'minimum' : data.minimum, 'maximum' : data.maximum};
             par_text = `${this.type} between ${data.minimum} and ${data.maximum}`
-        } else {
-            this.values = { 'format' : data.format };
-            par_text = data.format;
         }
         this.viewer_subtitle = `Input type: ${par_text}`;
     }
@@ -261,8 +270,9 @@ class TypedInput extends InputField {
             form.removeChild(document.getElementById(`div-${this.id}-min`));
             form.removeChild(document.getElementById(`div-${this.id}-max`));
         }
-        form.reset();
-        form.classList.remove('was-validated');
+        super.reset();
+        // form.reset();
+        // form.classList.remove('was-validated');
     }
 
     manage_min_max(format) {
@@ -304,9 +314,9 @@ class TypedInput extends InputField {
 
     create_form() {
         this.setup_form();
-        let text_options = ["text", "text box", "date", "email", "time", "url", "integer", "float"];
-        this.form_field.add_select("Text type", `${this.id}-format`, text_options, this.values.format);
-        this.manage_min_max(this.values.format);
+        let text_options = ["text", "textarea", "date", "email", "time", "url", "integer", "float"];
+        this.form_field.add_select("Text type", `${this.id}-format`, text_options, this.type);
+        this.manage_min_max(this.type);
         this.form_field.form.querySelector(".form-select").addEventListener('change', () => {
             let selected = this.form_field.form.elements[`${this.id}-format`].value;
             this.manage_min_max(selected)
@@ -315,16 +325,13 @@ class TypedInput extends InputField {
     }
 
     recover_fields(data) {
-        let format = data.get(`${this.id}-format`);
-        let par_text = format;
-        if (format === "integer" | format == 'float') {
+        this.type = data.get(`${this.id}-format`);
+        let par_text = this.type;
+        if (this.type === "integer" | this.type == 'float') {
             this.values.minimum = data.get(`${this.id}-min`);
             this.values.maximum = data.get(`${this.id}-max`);
             // this.type = "number";
-            this.type = format == 'integer' ? 'number' : format;
-            par_text = `${format} between ${this.values.minimum} and ${this.values.maximum}`
-        } else {
-            this.values.format = format;
+            par_text = `${this.type} between ${this.values.minimum} and ${this.values.maximum}`
         }
         this.viewer_subtitle = `Input type: ${par_text}`;
     }
@@ -365,20 +372,19 @@ class ObjectInput extends InputField {
     recover_fields(data) {
         console.log(this.editor)
         // I'm not so sure about this one...
-        this.required_fields = [];
         this.properties = {};
         this.editor.field_ids.forEach((field_id) => {
             let field = this.editor.fields[field_id];
             this.properties[field_id] = field.json;
-            if (field.required) {
-                this.required_fields.push(field_id);
-            }
         });
     }
 
     to_json() {
-        this.editor.json;
-        this.title = this.editor.name;
+        let json = Object.values(this.editor.json)[0];
+        json.title = this.title;
+        if (this.required) json.required = this.required;
+        if (this.repeatable) json.repeatable = this.repeatable;
+        return json;
     }
 
     from_json(data) {
@@ -391,6 +397,8 @@ class ObjectInput extends InputField {
 class MultipleInput extends InputField {
     constructor() {
         super();
+        this.type = "select";
+        this.values.values = [];
     }
 
     create_form() {
@@ -404,10 +412,23 @@ class MultipleInput extends InputField {
         while (form.querySelectorAll(".blocked").length > 2) {
             MovingChoice.remove_div(form.querySelector(".blocked"));
         }
-        form.reset();
-        form.classList.remove('was-validated');
+        super.reset();
+        // form.reset();
+        // form.classList.remove('was-validated');
     }
 
+    recover_fields(data) {
+        for (let pair of data.entries()) {
+            if (pair[0].startsWith("mover")) {
+                this.values.values.push(pair[1]);
+            }
+        }
+    }
+
+    from_json(data) {
+        super.from_json(data);
+        this.values = { 'values' : data.values, 'multiple' : data.multiple, 'ui' : data.ui };
+    }
 }
 
 class SelectInput extends MultipleInput {
@@ -415,8 +436,10 @@ class SelectInput extends MultipleInput {
         super();
         this.form_type = "selection";
         this.button_title = "Select input";
-        this.values.enum = [];
+        this.values.multiple = false;
+        this.values.ui = 'radio';
     }
+    uis = ['dropdown', 'radio'];
 
     ex_input() {
         let inner_input = Field.quick("select", "form-select");
@@ -433,7 +456,7 @@ class SelectInput extends MultipleInput {
     viewer_input() {
         let input_div = document.createElement("div");
         let inner_input = Field.quick("select", "form-select input-view");
-        for (let option of this.values.enum) {
+        for (let option of this.values.values) {
             let new_option = document.createElement("option");
             new_option.value = option;
             new_option.innerHTML = option;
@@ -442,19 +465,6 @@ class SelectInput extends MultipleInput {
         input_div.appendChild(inner_input);
         return input_div;
     }
-
-    recover_fields(data) {
-        for (let pair of data.entries()) {
-            if (pair[0].startsWith("mover")) {
-                this.values.enum.push(pair[1]);
-            }
-        }
-    }
-
-    from_json(data) {
-        super.from_json(data);
-        this.values = { 'enum' : data.enum };
-    }
 }
 
 class CheckboxInput extends MultipleInput {
@@ -462,9 +472,10 @@ class CheckboxInput extends MultipleInput {
         super();
         this.form_type = "checkbox";
         this.button_title = "Checkboxes";
-        this.type = "object";
-        this.values.properties = {};
+        this.values.multiple = true;
+        this.values.ui = 'checkbox';
     }
+    uis = ['dropdown', 'checkbox'];
 
     ex_input() {
         let inner_input = document.createElement("div");
@@ -488,7 +499,7 @@ class CheckboxInput extends MultipleInput {
 
     viewer_input() {
         let inner_input = document.createElement("div");
-        for (let option of Object.keys(this.values.properties)) {
+        for (let option of this.values.values) {
             let new_option = Field.quick("div", "form-check");
 
             let new_input = Field.quick("input", "form-check-input");
@@ -504,19 +515,5 @@ class CheckboxInput extends MultipleInput {
             inner_input.appendChild(new_option);
         }
         return inner_input;
-    }
-    recover_fields(data) {
-        for (let pair of data.entries()) {
-            if (pair[0].startsWith("mover")) {
-                this.values.properties[pair[1]] = {
-                    type: "boolean", title: pair[1]
-                }
-            }
-        }
-    }
-
-    from_json(data) {
-        super.from_json(data);
-        this.values = {'properties' : data.properties };
     }
 }
