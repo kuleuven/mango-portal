@@ -39,5 +39,5 @@ if __name__ == '__main__':
     for sig in (signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP):
         signal.signal(sig, handle_sig)
 
-    mango_server = create_server(app.app, host="*", port=service_port, threads=12)
+    mango_server = create_server(app.app, host="*", port=service_port, threads=8)
     mango_server.run()
