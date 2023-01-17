@@ -150,9 +150,6 @@ class ComplexField {
             if (subfield.constructor.name == 'ObjectInput') {
                 label = Field.quick('h5', 'border-bottom border-secondary');
                 label.innerHTML = subfield.required ? subfield.title + '*' : subfield.title;
-                if (subfield.repeatable) {
-                    label.appendChild(Field.quick('i', 'bi bi-stack px-2'));
-                }
                 label.id = `viewer-${subfield.id}`;
                 small_div.className = small_div.className + ' border border-1 border-secondary rounded p-3 my-1'
             } else {
@@ -160,7 +157,10 @@ class ComplexField {
                     subfield.required ? subfield.title + '*' : subfield.title,
                     `viewer-${subfield.id}`
                 );
-            }            
+            }
+            if (subfield.repeatable) {
+                label.appendChild(Field.quick('i', 'bi bi-stack px-2'));
+            }     
             let input = subfield.viewer_input();
             small_div.appendChild(label);
             small_div.appendChild(input);

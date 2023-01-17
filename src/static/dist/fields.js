@@ -68,18 +68,28 @@ class InputField {
     end_form() {
         // Add require switch and submit button to form
         this.form_field.form.appendChild(document.createElement('br'));
-        this.form_field.add_requirer(this.id, this.required, this.repeatable);
-
+        let this_class = this.constructor.name;
+        let repeatable = !(this_class == 'SelectInput' | this_class == 'CheckboxInput')
+        let switchnames = ['required'];
+        let switches = {required : this.required};
+        if (repeatable) {
+            switchnames.push('repeatable')
+            switches.repeatable = this.repeatable
+        }
+        this.form_field.add_switches(this.id, switchnames, switches);
+        
         let req_input = this.form_field.form.querySelector(`#${this.id}-required`);
         req_input.addEventListener('change', () => {
             this.required = !this.required;
             this.required ? req_input.setAttribute('checked', '') : req_input.removeAttribute('checked');
         });
-        let rep_input = this.form_field.form.querySelector(`#${this.id}-repeatable`);
-        rep_input.addEventListener('change', () => {
-            this.repeatable = !this.repeatable;
-            this.repeatable ? rep_input.setAttribute('checked', '') : rep_input.removeAttribute('checked');
-        });
+        if (repeatable) {
+            let rep_input = this.form_field.form.querySelector(`#${this.id}-repeatable`);
+            rep_input.addEventListener('change', () => {
+                this.repeatable = !this.repeatable;
+                this.repeatable ? rep_input.setAttribute('checked', '') : rep_input.removeAttribute('checked');
+            });    
+        }
         
         this.form_field.add_submitter("Submit");
 

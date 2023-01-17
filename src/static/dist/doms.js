@@ -391,18 +391,20 @@ class BasicForm {
        this.form.appendChild(plus_div);
     }
 
-    add_requirer(id, required = false, repeatable = false) {
+    add_switches(id, switchnames = ['required', 'repeatable'],
+    {required = false, repeatable = false} = {}) {
         // Add a radio switch to select a field as required
         // I'm adding the radio switch for "repeatable" here as well
         let div = Field.quick("div", "col-3 mt-2");
         let subdiv = Field.quick("div", "form-check form-switch form-check-inline");
         
-        let switches = [
-            { 'id' : 'required', 'text' : 'Require', 'value' : required },
-            { 'id' : 'repeatable', 'text' : 'Make repeatable', 'value' : repeatable }
-        ]
+        let switches = {
+            'required' : { 'id' : 'required', 'text' : 'Require', 'value' : required },
+            'repeatable' : { 'id' : 'repeatable', 'text' : 'Make repeatable', 'value' : repeatable }
+        }
 
-        for (let sw of switches) {
+        for (let sname of switchnames) {
+            let sw = switches[sname];
             let label = Field.quick("label", "form-check-label", sw.text);
             label.id = `label-${id}-${sw.id}`;
             label.setAttribute('for', `${sw.id}-${id}`);
