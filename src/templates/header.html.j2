@@ -9,21 +9,20 @@
                          alt="logo"
                          src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
                          width="137"
-                         style="margin: -10px;">
+                         style="margin: -10px;"/>
                 {% else %}
                     <img class="logo"
                          alt="logo"
                          src="{{ url_for('static', filename='logo.svg') }}"
                          width="137"
-                         style="margin: -10px 10px;">
+                         style="margin: -10px 10px;"/>
                     <img class="logo"
                          alt="logo"
                          src="{{ url_for('static', filename='mango-logo.svg') }}"
                          width="137"
-                         style="margin: -10px 0;">
+                         style="margin: -10px 0;"/>
                 {% endif %}
             </a>
-            <div class="col-6"></div>
         </div>
         <div class="d-flex align-items-center">
             {% if config['MANGO_GLOBAL_SEARCH_ACTION'] %}
