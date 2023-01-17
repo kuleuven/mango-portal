@@ -90,7 +90,7 @@ def get_schema(schema: str):
 # Blueprint templates
 def save_metadata_template(filename, contents):
     # normalize the filename, lowercase, no weird characters
-    filename = f"{slugify(filename[:-5])}.json"
+    filename = f"{slugify(filename)}.json"
     with open(get_metadata_schema_dir(g.irods_session)+ "/" + filename, "w") as f:
         f.write(contents)
     return True

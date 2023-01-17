@@ -346,7 +346,7 @@ class Schema extends ComplexField {
 
     post(json_contents) {
         const to_post = new FormData();
-        to_post.append('template_name', this._name + ".json");
+        to_post.append('template_name', this._name);
         to_post.append('template_json', JSON.stringify(json_contents));
         
         const xhr = new XMLHttpRequest();
