@@ -51,10 +51,9 @@ class MovingViewer extends MovingField {
         this.div = Field.quick("div", "card border-primary viewer");
         this.div.id = form.id;
         this.body = form.viewer_input();
-        this.edit = this.add_btn('edit', 'pencil');
-        this.edit.setAttribute('data-bs-toggle', 'modal');
-        this.edit.setAttribute('data-bs-target', `#mod-${form.id}`);
-
+        let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(`mod-${form.id}-${form.schema_name}`));
+        this.edit = this.add_btn('edit', 'pencil', () => modal.toggle());
+        
         this.assemble();
         this.schema = schema;        
     }
@@ -81,6 +80,10 @@ class MovingViewer extends MovingField {
         this.div.appendChild(body);
 
     }
+
+    // open_editor(modal) {
+    //     modal.toggle();
+    // }
 
     move_down() {
         // Method to move a viewing field downwards
@@ -340,15 +343,10 @@ class BasicForm {
         return input;
     }
 
-    add_moving_options(label_text, starting_values) {
+    add_moving_options(label_text, starting_values = []) {
         // List the first two moving fields (or existing fields) in the selection editor
         // And with a plus button to keep adding
-        let options = [];
-        if (Object.keys(starting_values).indexOf('enum') > -1) {
-            options = starting_values.enum;
-        } else if (Object.keys(starting_values).indexOf('properties') > -1) {
-            options = Object.keys(starting_values.properties);
-        }
+        let options = starting_values;
         let has_values = options.length > 0;
         if (!has_values) {
             options = [0, 1];
@@ -431,6 +429,10 @@ class BasicForm {
         button.type = "submit";
         div.appendChild(button);
         this.form.appendChild(div);
+    }
+
+    add_submit_action(action) {
+        this.form.querySelector("[type='submit']").addEventListener('click', action);
     }
 
     reset() {

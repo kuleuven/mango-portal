@@ -43,7 +43,7 @@ class TemplateReader extends MangoRequest {
 
     parse_response() {
         this.addEventListener('load', () => {
-            let schema = new Schema('basic', this.container_id, this.url_new);
+            let schema = new Schema(this.filename.split('.')[0], this.container_id, this.url_new);
             schema.from_json(Object.values(this.json)[0]);
             schema.view();
         })

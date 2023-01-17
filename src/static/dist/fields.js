@@ -1,11 +1,12 @@
 class InputField {
-    constructor() {
+    constructor(schema_name) {
         this.description = ""; // description to show in the options viewer
         this.dummy_title = "Title"; // dummy title in options viewer (probably could go)
         this.required = false; // whether the field is required
         this.values = {}; // values to return in the json
         this.mode = 'add'; // whether the form has to be created or edited ("mod")
         this.repeatable = false;
+        this.schema_name = schema_name;
     }
 
     get json() {
@@ -39,7 +40,7 @@ class InputField {
         this.create_modal(schema)
 
         new_button.setAttribute("data-bs-toggle", "modal");
-        new_button.setAttribute("data-bs-target", `#add-${this.id}`);
+        new_button.setAttribute("data-bs-target", `#add-${this.id}-${this.schema_name}`);
 
         new_form.appendChild(new_button);
         new_form.appendChild(this.create_example());
@@ -85,15 +86,14 @@ class InputField {
     }
 
     create_modal(schema) {
-        let modal_id = `${this.mode}-${this.id}`;
+        let modal_id = `${this.mode}-${this.id}-${this.schema_name}`;
         let edit_modal = new Modal(modal_id, `Add ${this.button_title}`, `title-${this.form_type}`);
         let form = this.form_field.form;
         edit_modal.create_modal([form], 'lg');
         this.modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modal_id));
         let modal_dom = document.getElementById(modal_id);
 
-        // let modal = document.getElementById(`${this.mode}-${this.id}`);
-        form.addEventListener('submit', (e) => {
+        this.form_field.add_submit_action((e) => {
             e.preventDefault();
             if (!form.checkValidity()) {
                 e.stopPropagation();
@@ -109,7 +109,7 @@ class InputField {
                 }
                 modal_dom.querySelector('.modal-body').appendChild(form);
 
-                let clone_modal_id = `${clone.mode}-${clone.id}`;
+                let clone_modal_id = `${clone.mode}-${clone.id}-${clone.schema_name}`;
                 if (clone_modal_id != modal_id) {
                     let clone_modal_dom = document.getElementById(clone_modal_id);
                     let clone_form = clone.form_field.form;
@@ -140,11 +140,10 @@ class InputField {
             schema.update_field(this);
             return this;
         } else {
-            let clone = new this.constructor();
+            let clone = new this.constructor(schema.initial_name);
             clone.field_id = new_id;
             clone.form_field = this.form_field;
             clone.title = data.get(`${this.id}-label`);
-            console.log(clone.title);
 
             clone.required = this.required;
             this.required = false;
@@ -169,10 +168,12 @@ class InputField {
                 schema.replace_field(old_id, clone);
             } else {
                 clone.mode = 'mod';
+                
+                clone.create_form();
+
+                clone.create_modal(schema);
                 schema.add_field(clone);
 
-                clone.create_form();
-                clone.create_modal(schema);
             }
             return clone;
         }
@@ -188,15 +189,14 @@ class InputField {
         this.form_field.reset();
     }
 
-    static choose_class([id, data] = []) {
+    static choose_class(schema_name, [id, data] = []) {
         let new_field;
         if (data.type == 'object') {
-            new_field = new ObjectInput();
+            new_field = new ObjectInput(schema_name);
         } else if (data.type == 'select') {
-            console.log(data.multiple);
-            new_field = data.multiple ? new CheckboxInput() : new SelectInput();
+            new_field = data.multiple ? new CheckboxInput(schema_name) : new SelectInput(schema_name);
         } else {
-            new_field = new TypedInput();
+            new_field = new TypedInput(schema_name);
         }
         new_field.field_id = id;
         new_field.id = id;
@@ -208,13 +208,15 @@ class InputField {
     from_json(data) {
         this.title = data.title;
         this.type = data.type;
-        this.create_form();
+        if (data.required) this.required = data.required;
+        if (data.repeatable) this.repeatable = data.repeatable;
+
     }
 }
 
 class TypedInput extends InputField {
-    constructor() {
-        super();
+    constructor(schema_name) {
+        super(schema_name);
         this.type = "text";
         this.values = {};
     }
@@ -262,6 +264,7 @@ class TypedInput extends InputField {
             par_text = `${this.type} between ${data.minimum} and ${data.maximum}`
         }
         this.viewer_subtitle = `Input type: ${par_text}`;
+        this.create_form();
     }
 
     reset() {
@@ -339,8 +342,8 @@ class TypedInput extends InputField {
 }
 
 class ObjectInput extends InputField {
-    constructor() {
-        super();
+    constructor(schema_name) {
+        super(schema_name);
         this.form_type = "object";
         this.button_title = "Object";
         this.dummy_title = "";
@@ -353,8 +356,8 @@ class ObjectInput extends InputField {
     }
 
     create_editor() {
-        this.editor = new ObjectEditor(this.form_field, this);
-        this.editor.modal = this.modal;
+        this.editor = new ObjectEditor(this.form_field.form.id, this);
+        // this.editor.modal = this.modal;
         this.editor.display_options("objectTemplates");
     }
 
@@ -370,7 +373,6 @@ class ObjectInput extends InputField {
     }
 
     recover_fields(data) {
-        console.log(this.editor)
         // I'm not so sure about this one...
         this.properties = {};
         this.editor.field_ids.forEach((field_id) => {
@@ -389,21 +391,23 @@ class ObjectInput extends InputField {
 
     from_json(data) {
         super.from_json(data);
-        this.create_editor();
+        this.create_form();
         this.editor.from_json(data);
     }
 }
 
 class MultipleInput extends InputField {
-    constructor() {
-        super();
+    constructor(schema_name) {
+        super(schema_name);
         this.type = "select";
         this.values.values = [];
     }
 
+    repeatable = false;
+
     create_form() {
         this.setup_form();
-        this.form_field.add_moving_options("Select option", this.values);
+        this.form_field.add_moving_options("Select option", this.values.values);
         this.end_form();
     }
 
@@ -418,6 +422,7 @@ class MultipleInput extends InputField {
     }
 
     recover_fields(data) {
+        this.values.values = [];
         for (let pair of data.entries()) {
             if (pair[0].startsWith("mover")) {
                 this.values.values.push(pair[1]);
@@ -428,12 +433,13 @@ class MultipleInput extends InputField {
     from_json(data) {
         super.from_json(data);
         this.values = { 'values' : data.values, 'multiple' : data.multiple, 'ui' : data.ui };
+        this.create_form();
     }
 }
 
 class SelectInput extends MultipleInput {
-    constructor() {
-        super();
+    constructor(schema_name) {
+        super(schema_name);
         this.form_type = "selection";
         this.button_title = "Select input";
         this.values.multiple = false;
@@ -468,8 +474,8 @@ class SelectInput extends MultipleInput {
 }
 
 class CheckboxInput extends MultipleInput {
-    constructor() {
-        super();
+    constructor(schema_name) {
+        super(schema_name);
         this.form_type = "checkbox";
         this.button_title = "Checkboxes";
         this.values.multiple = true;
