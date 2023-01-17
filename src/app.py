@@ -29,7 +29,7 @@ from pprint import pprint
 from operator import itemgetter
 
 # Blueprints
-from user.user import user_bp
+from kernel.user.user import user_bp
 from common.error import error_bp
 from common.browse import browse_bp
 from metadata.metadata import metadata_bp
