@@ -226,7 +226,8 @@ class Schema extends ComplexField {
         this.display_options('formTemplates');
         let form = new BasicForm(this.card_id);
         form.add_input("Metadata template name", this.card_id + '-name', {
-            placeholder : "schema-name"
+            placeholder : "schema-name", validation_message: "This field is compulsory, please only use lower case letters and '-'.",
+            pattern: "[a-z-]+"
         });
 
         let button = this.create_button();

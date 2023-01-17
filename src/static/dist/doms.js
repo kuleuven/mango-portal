@@ -265,14 +265,17 @@ class BasicForm {
         return label;
     }
 
-    add_input(label_text, input_id,
-        {description = false, placeholder = "Some text",
-        value = false, validation_message = "This field is compulsory"} = {}) {
+    add_input(label_text, input_id, {
+        description = false, placeholder = "Some text",
+        value = false, validation_message = "This field is compulsory",
+        pattern = ".*"
+        } = {}) {
         // Create and append a required text input
         let input_tag = Field.quick("input", "form-control");
         input_tag.id = input_id;
         input_tag.name = input_id;
         input_tag.type = "text";
+        input_tag.pattern = pattern;
         input_tag.placeholder = placeholder;
         input_tag.setAttribute("required", "")
         if (value) {

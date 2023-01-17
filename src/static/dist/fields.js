@@ -54,7 +54,8 @@ class InputField {
             `ID for ${this.form_type} (underlying label)`, `${this.id}-id`,
             {
                 description: "Use lowercase, no spaces, no special characters other than '_'.",
-                value: this.field_id
+                value: this.field_id, validation_message: "This field is compulsory. Use only lowercase and '_'.",
+                pattern: "[a-z_]+"
             }
         );
         this.form_field.add_input(
@@ -299,20 +300,32 @@ class TypedInput extends InputField {
             this.form_field.add_input("Minimum", min_id,
                 {
                     placeholder: '0',
-                    value: has_values ? this.values.minimum : false
+                    value: has_values ? this.values.minimum : false,
+                    validation_message: "This field is compulsory and the value must be lower than the maximum."
                 });
             this.form_field.form.querySelector('#' + min_id).type = 'number';
 
             this.form_field.add_input("Maximum", max_id,
                 {
                     placeholder: '100',
-                    value: has_values ? this.values.maximum : false
+                    value: has_values ? this.values.maximum : false,
+                    validation_message: "This field is compulsory and the value must be lower than the minimum."
                 });
             this.form_field.form.querySelector('#' + max_id).type = 'number';
+            let min_button = this.form_field.form.querySelector('#'  + min_id)
+            let max_button = this.form_field.form.querySelector('#'  + max_id)
+            
             if (format == 'float') {
-                this.form_field.form.querySelector('#' + min_id).setAttribute('step', 'any');
-                this.form_field.form.querySelector('#' + max_id).setAttribute('step', 'any');
+                min_button.setAttribute('step', 'any');
+                max_button.setAttribute('step', 'any');
             }
+
+            min_button.addEventListener('change', () => {
+                max_button.min = min_button.value;
+            });
+            max_button.addEventListener('change', () => {
+                min_button.max = max_button.value;
+            })
         } else {
             if (this.form_field.form.querySelectorAll('.form-container').length > 3) {
                 this.form_field.form.removeChild(document.getElementById(`div-${min_id}`));
