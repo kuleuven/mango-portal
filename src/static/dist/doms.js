@@ -8,7 +8,41 @@ class Field {
         }
         return el;
     }
-    
+    static dropdown_example(multiple = false) {
+        let inner_input = Field.quick("select", "form-select");
+        if (multiple) {
+            inner_input.setAttribute('multiple', '');
+        }
+        // inner_input.setAttribute("multiple", "");
+        for (let i = 1; i < 4; i++) {
+            let new_option = document.createElement("option");
+            new_option.value = `${i}`;
+            new_option.innerHTML = `Option ${i}.`;
+            inner_input.appendChild(new_option);
+        }
+        return inner_input;
+    }
+
+    static checkbox_radio_example(multiple = true) {
+        let inner_input = document.createElement("div");
+        for (let i = 1; i < 4; i++) {
+            let new_option = Field.quick("div", "form-check input-view");
+
+            let new_input = Field.quick("input", "form-check-input");
+            new_input.type = multiple ? "checkbox" : "radio";
+            new_input.value = i;
+            new_input.id = `check-${i}`;
+
+            let new_label = Field.quick('label', "form-check-label", `Option ${i}.`);
+            new_label.setAttribute("for", `check-${i}`);
+
+            new_option.appendChild(new_input);
+            new_option.appendChild(new_label);
+            inner_input.appendChild(new_option);
+        }
+        return inner_input;
+    }
+
 }
 class MovingField {
     // Parent class for a form element that can move around
@@ -449,6 +483,7 @@ class BasicForm {
         this.form.classList.remove('was-validated');
     }
 
+    
 }
 
 // create a modal - needs both the constructor and .create_modal()

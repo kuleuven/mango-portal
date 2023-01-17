@@ -21,7 +21,7 @@ class InputField {
     }
 
     create_example() {
-        let example = Field.quick("div", "ex", this.description);
+        let example = Field.quick("div", "ex my-2", this.description);
 
         let inner_label = Field.quick("label", "form-label h6", this.dummy_title);
 
@@ -53,9 +53,9 @@ class InputField {
         this.form_field.add_input(
             `ID for ${this.form_type} (underlying label)`, `${this.id}-id`,
             {
-                description: "Use lowercase, no spaces, no special characters other than '_'.",
-                value: this.field_id, validation_message: "This field is compulsory. Use only lowercase and '_'.",
-                pattern: "[a-z_]+"
+                description: "Use lowercase or numbers, no spaces, no special characters other than '_'.",
+                value: this.field_id, validation_message: "This field is compulsory. Use only lowercase, numbers, and '_'.",
+                pattern: "[a-z0-9_]+"
             }
         );
         this.form_field.add_input(
@@ -471,15 +471,16 @@ class SelectInput extends MultipleInput {
     uis = ['dropdown', 'radio'];
 
     ex_input() {
-        let inner_input = Field.quick("select", "form-select");
-        // inner_input.setAttribute("multiple", "");
-        for (let i = 1; i < 4; i++) {
-            let new_option = document.createElement("option");
-            new_option.value = `${i}`;
-            new_option.innerHTML = `Option ${i}.`;
-            inner_input.appendChild(new_option);
-        }
-        return inner_input;
+        let columns = Field.quick('div', 'row');
+        let dropdown = Field.dropdown_example(false);
+        let radio = Field.checkbox_radio_example(false);
+        let col1 = Field.quick('div', 'col-6');
+        col1.appendChild(dropdown);
+        let col2 = Field.quick('div', 'col-6');
+        col2.appendChild(radio);
+        columns.appendChild(col1);
+        columns.appendChild(col2);
+        return columns;
     }
 
     viewer_input() {
@@ -507,23 +508,16 @@ class CheckboxInput extends MultipleInput {
     uis = ['dropdown', 'checkbox'];
 
     ex_input() {
-        let inner_input = document.createElement("div");
-        for (let i = 1; i < 4; i++) {
-            let new_option = Field.quick("div", "form-check input-view");
-
-            let new_input = Field.quick("input", "form-check-input");
-            new_input.type = "checkbox";
-            new_input.value = i;
-            new_input.id = `check-${i}`;
-
-            let new_label = Field.quick('label', "form-check-label", `Option ${i}.`);
-            new_label.setAttribute("for", `check-${i}`);
-
-            new_option.appendChild(new_input);
-            new_option.appendChild(new_label);
-            inner_input.appendChild(new_option);
-        }
-        return inner_input;
+        let columns = Field.quick('div', 'row');
+        let dropdown = Field.dropdown_example(true);
+        let radio = Field.checkbox_radio_example(true);
+        let col1 = Field.quick('div', 'col-6');
+        col1.appendChild(dropdown);
+        let col2 = Field.quick('div', 'col-6');
+        col2.appendChild(radio);
+        columns.appendChild(col1);
+        columns.appendChild(col2);
+        return columns;
     }
 
     viewer_input() {
