@@ -4,12 +4,10 @@ properties([
         disableConcurrentBuilds(),
 ])
 
-node (){
+def publish = env.BRANCH_NAME == 'development'
 buildDockerImage {
   namespace = 'foz'
   imageName = 'mango'
   imageTag = 'latest'
-  noPublish = env.BRANCH_NAME != 'development'
-  noNode = true
-}
+  noPublish = !publish
 }
