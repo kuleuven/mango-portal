@@ -30,8 +30,8 @@ from operator import itemgetter
 
 # Blueprints
 from kernel.user.user import user_bp
-from common.error import error_bp
-from common.browse import browse_bp
+from kernel.common.error import error_bp
+from kernel.common.browse import browse_bp
 from metadata.metadata import metadata_bp
 from search.basic_search import basic_search_bp
 from metadata_schema.editor import metadata_schema_editor_bp
