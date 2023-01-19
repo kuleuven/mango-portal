@@ -8,24 +8,29 @@ class Field {
         }
         return el;
     }
-    static dropdown_example(multiple = false) {
+
+    static example_values = ['A', 'B', 'C'];
+
+    static dropdown(multiple = false, values = false) {
         let inner_input = Field.quick("select", "form-select");
         if (multiple) {
             inner_input.setAttribute('multiple', '');
         }
+        values = values ? values : Field.example_values;
         // inner_input.setAttribute("multiple", "");
-        for (let i = 1; i < 4; i++) {
+        for (let i of values) {
             let new_option = document.createElement("option");
-            new_option.value = `${i}`;
-            new_option.innerHTML = `Option ${i}.`;
+            new_option.value = i;
+            new_option.innerHTML = i;
             inner_input.appendChild(new_option);
         }
         return inner_input;
     }
 
-    static checkbox_radio_example(multiple = true) {
+    static checkbox_radio(multiple = true, values = false) {
+        values = values ? values : Field.example_values;
         let inner_input = document.createElement("div");
-        for (let i = 1; i < 4; i++) {
+        for (let i of values) {
             let new_option = Field.quick("div", "form-check input-view");
 
             let new_input = Field.quick("input", "form-check-input");
@@ -33,7 +38,7 @@ class Field {
             new_input.value = i;
             new_input.id = `check-${i}`;
 
-            let new_label = Field.quick('label', "form-check-label", `Option ${i}.`);
+            let new_label = Field.quick('label', "form-check-label", i);
             new_label.setAttribute("for", `check-${i}`);
 
             new_option.appendChild(new_input);
@@ -429,15 +434,17 @@ class BasicForm {
     }
 
     add_switches(id, switchnames = ['required', 'repeatable'],
-    {required = false, repeatable = false} = {}) {
+    {required = false, repeatable = false, dropdown = false} = {}) {
         // Add a radio switch to select a field as required
-        // I'm adding the radio switch for "repeatable" here as well
+        // I'm adding the radio switch for "repeatable" and "dropdown" here as well
+        // For multiple choice fields, add 'dropdown' to switchnames and the Object.
         let div = Field.quick("div", "col-3 mt-2");
         let subdiv = Field.quick("div", "form-check form-switch form-check-inline");
         
         let switches = {
             'required' : { 'id' : 'required', 'text' : 'Require', 'value' : required },
-            'repeatable' : { 'id' : 'repeatable', 'text' : 'Make repeatable', 'value' : repeatable }
+            'repeatable' : { 'id' : 'repeatable', 'text' : 'Make repeatable', 'value' : repeatable },
+            'dropdown' : { 'id' : 'dropdown', 'text' : 'As dropdown', 'value' : dropdown}
         }
 
         for (let sname of switchnames) {
@@ -482,7 +489,6 @@ class BasicForm {
         }
         this.form.classList.remove('was-validated');
     }
-
     
 }
 

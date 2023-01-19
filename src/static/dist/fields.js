@@ -74,8 +74,11 @@ class InputField {
         let switchnames = ['required'];
         let switches = {required : this.required};
         if (repeatable) {
-            switchnames.push('repeatable')
-            switches.repeatable = this.repeatable
+            switchnames.push('repeatable');
+            switches.repeatable = this.repeatable;
+        } else {
+            switchnames.push('dropdown');
+            switches.dropdown = this.values.ui == 'dropdown';
         }
         this.form_field.add_switches(this.id, switchnames, switches);
         
@@ -89,6 +92,12 @@ class InputField {
             rep_input.addEventListener('change', () => {
                 this.repeatable = !this.repeatable;
                 this.repeatable ? rep_input.setAttribute('checked', '') : rep_input.removeAttribute('checked');
+            });    
+        } else {
+            let dd_input = this.form_field.form.querySelector(`#${this.id}-dropdown`);
+            dd_input.addEventListener('change', () => {
+                this.values.ui = this.values.ui == 'dropdown' ? this.dropdown_alt : 'dropdown';
+                this.values.ui == 'dropdown' ? dd_input.setAttribute('checked', '') : dd_input.removeAttribute('checked');
             });    
         }
         
@@ -427,6 +436,26 @@ class MultipleInput extends InputField {
     }
 
     repeatable = false;
+    
+    ex_input() {
+        let columns = Field.quick('div', 'row');
+        let dropdown = Field.dropdown(this.values.multiple);
+        let radio = Field.checkbox_radio(this.values.multiple);
+        let col1 = Field.quick('div', 'col-6');
+        col1.appendChild(dropdown);
+        let col2 = Field.quick('div', 'col-6');
+        col2.appendChild(radio);
+        columns.appendChild(col1);
+        columns.appendChild(col2);
+        return columns;
+    }
+
+    viewer_input() {
+        let div = this.values.ui == 'dropdown' ?
+            Field.dropdown(this.values.multiple, this.values.values) :
+            Field.checkbox_radio(this.values.multiple, this.values.values);
+        return div;
+    }
 
     create_form() {
         this.setup_form();
@@ -468,33 +497,8 @@ class SelectInput extends MultipleInput {
         this.values.multiple = false;
         this.values.ui = 'radio';
     }
-    uis = ['dropdown', 'radio'];
+    dropdown_alt = 'radio';
 
-    ex_input() {
-        let columns = Field.quick('div', 'row');
-        let dropdown = Field.dropdown_example(false);
-        let radio = Field.checkbox_radio_example(false);
-        let col1 = Field.quick('div', 'col-6');
-        col1.appendChild(dropdown);
-        let col2 = Field.quick('div', 'col-6');
-        col2.appendChild(radio);
-        columns.appendChild(col1);
-        columns.appendChild(col2);
-        return columns;
-    }
-
-    viewer_input() {
-        let input_div = document.createElement("div");
-        let inner_input = Field.quick("select", "form-select input-view");
-        for (let option of this.values.values) {
-            let new_option = document.createElement("option");
-            new_option.value = option;
-            new_option.innerHTML = option;
-            inner_input.appendChild(new_option);
-        }
-        input_div.appendChild(inner_input);
-        return input_div;
-    }
 }
 
 class CheckboxInput extends MultipleInput {
@@ -505,38 +509,6 @@ class CheckboxInput extends MultipleInput {
         this.values.multiple = true;
         this.values.ui = 'checkbox';
     }
-    uis = ['dropdown', 'checkbox'];
+    dropdown_alt = 'checkbox';
 
-    ex_input() {
-        let columns = Field.quick('div', 'row');
-        let dropdown = Field.dropdown_example(true);
-        let radio = Field.checkbox_radio_example(true);
-        let col1 = Field.quick('div', 'col-6');
-        col1.appendChild(dropdown);
-        let col2 = Field.quick('div', 'col-6');
-        col2.appendChild(radio);
-        columns.appendChild(col1);
-        columns.appendChild(col2);
-        return columns;
-    }
-
-    viewer_input() {
-        let inner_input = document.createElement("div");
-        for (let option of this.values.values) {
-            let new_option = Field.quick("div", "form-check");
-
-            let new_input = Field.quick("input", "form-check-input");
-            new_input.type = "checkbox";
-            new_input.value = option;
-            new_input.id = `check-${option}`;
-
-            let new_label = Field.quick('label', "form-check-label", option);
-            new_label.setAttribute("for", `check-${option}`);
-
-            new_option.appendChild(new_input);
-            new_option.appendChild(new_label);
-            inner_input.appendChild(new_option);
-        }
-        return inner_input;
-    }
 }
