@@ -13,7 +13,7 @@ from flask import (
     flash,
 )
 
-from mango_open_search import (
+from . import (
     add_index_job,
     get_open_search_client,
     MANGO_OPEN_SEARCH_INDEX_NAME,

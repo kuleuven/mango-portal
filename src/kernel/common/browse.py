@@ -46,7 +46,7 @@ from multidict import MultiDict
 from operator import itemgetter
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
-from metadata_schema.editor import get_metadata_schema_dir
+from kernel.metadata_schema.editor import get_metadata_schema_dir
 import signals
 
 

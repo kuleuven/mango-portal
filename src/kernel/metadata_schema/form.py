@@ -54,7 +54,7 @@ from pprint import pprint
 
 import lib.util
 from lib.util import flatten_josse_schema
-from metadata_schema.editor import get_metadata_schema_dir
+from .editor import get_metadata_schema_dir
 
 import signals
 
