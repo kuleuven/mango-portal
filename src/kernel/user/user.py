@@ -76,7 +76,7 @@ def my_profile():
         home_total_size_in_bytes = -1
 
 
-    return render_template("myprofile.html.j2", me=me, my_groups=my_groups, logged_in_since=logged_in_since, home_total_size=home_total_size_in_bytes, n_data_objects = n_data_objects)
+    return render_template("user/myprofile.html.j2", me=me, my_groups=my_groups, logged_in_since=logged_in_since, home_total_size=home_total_size_in_bytes, n_data_objects = n_data_objects)
 
 
 @user_bp.route("/group/members/<group_name>")
@@ -93,7 +93,7 @@ def group_members(group_name):
         status = "Error"
 
     return render_template(
-        "group_members.html.j2", group_name=group_name, members=members, status=status
+        "user/group_members.html.j2", group_name=group_name, members=members, status=status
     )
 
 @user_bp.route("/user/login", methods=["GET", "POST"])
@@ -183,7 +183,7 @@ def login_zone():
 
         if 'zone' in session:
             last_zone_name = session['zone']
-        return render_template('login_zone.html.j2', last_zone_name=last_zone_name)
+        return render_template('user/login_zone.html.j2', last_zone_name=last_zone_name)
 
     if request.method == 'POST':
         host = request.host
@@ -232,7 +232,7 @@ def login_via_go_callback():
     except Exception as e:
         print(e)
         flash('Could not create iRODS session', category='danger')
-        return render_template('login_zone.html.j2')
+        return render_template('user/login_zone.html.j2')
 
     return redirect(url_for('index'))
 
@@ -248,7 +248,7 @@ def login_openid():
 
         if 'openid_provider' in session:
             last_openid_provider = session['openid_provider']
-        return render_template('login_openid.html.j2', last_openid_provider=last_openid_provider)
+        return render_template('user/login_openid.html.j2', last_openid_provider=last_openid_provider)
 
     if request.method == 'POST':
         host = request.host
@@ -291,7 +291,7 @@ def login_openid_callback(openid_provider):
 
     if openid_provider not in openid_providers:
         flash('Unknown openid provider', category='danger')
-        return render_template('login_openid.html.j2', )
+        return render_template('user/login_openid.html.j2', )
 
     provider_config = openid_providers[openid_provider]
 
@@ -306,7 +306,7 @@ def login_openid_callback(openid_provider):
 
     if authn_resp["state"] != session.pop('openid_state'):
         flash('Invalid state', category='danger')
-        return render_template('login_openid.html.j2')
+        return render_template('user/login_openid.html.j2')
 
     host = request.host
     args = {
@@ -324,7 +324,7 @@ def login_openid_callback(openid_provider):
     userinfo = client.do_user_info_request(state=authn_resp["state"])
     if userinfo['sub'] != id_token['sub']:
         flash('The \'sub\' of userinfo does not match \'sub\' of ID Token.', category='danger')
-        return render_template('login_openid.html.j2')
+        return render_template('user/login_openid.html.j2')
 
     # We are logged on
     session["openid_provider"] = openid_provider
@@ -354,7 +354,7 @@ def login_openid_select_zone():
 
         zones = zones_for_user(session['openid_username'])
 
-        return render_template('login_openid_select_zone.html.j2', zones=zones, last_zone_name=last_zone_name)
+        return render_template('user/login_openid_select_zone.html.j2', zones=zones, last_zone_name=last_zone_name)
 
     zone = request.form.get('irods_zone')
 
@@ -381,6 +381,6 @@ def login_openid_select_zone():
     except Exception as e:
         print(e)
         flash('Could not create iRODS session', category='danger')
-        return render_template('login_openid_select_zone.html.j2')
+        return render_template('user/login_openid_select_zone.html.j2')
 
     return redirect(url_for('index'))
