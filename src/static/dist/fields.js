@@ -489,6 +489,7 @@ class MultipleInput extends InputField {
     }
 }
 
+// The classes above can probably be removed
 class SelectInput extends MultipleInput {
     constructor(schema_name) {
         super(schema_name);

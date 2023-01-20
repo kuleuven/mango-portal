@@ -148,7 +148,6 @@ class MovingViewer extends MovingField {
         
         this.schema.field_ids.splice(form_index, 1);
         this.schema.field_ids.splice(form_index + 1, 0, this.idx);
-        console.log(this.schema.field_ids);
     }
 
     move_up() {
@@ -169,7 +168,6 @@ class MovingViewer extends MovingField {
         }
         this.schema.field_ids.splice(form_index, 1);
         this.schema.field_ids.splice(form_index - 1, 0, this.idx);
-        console.log(this.schema.field_ids);
     }
 
     remove() {
@@ -187,7 +185,6 @@ class MovingViewer extends MovingField {
         this.div.parentNode.removeChild(this.below);
         this.div.parentNode.removeChild(this.div);
         this.schema.field_ids.splice(form_index, 1);
-        console.log(this.schema.field_ids);
     }
 
 }

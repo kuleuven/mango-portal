@@ -2,7 +2,7 @@
 class ComplexField {
     constructor(choice_id, name) {
         this.type = "object";
-        this.choice_id = choice_id;
+        this.choice_id = `${choice_id}-${name}`;
         this.id = Math.round(Math.random() * 100);
         this.initials = {
             typed: new TypedInput(name),
