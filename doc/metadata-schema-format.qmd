@@ -11,8 +11,6 @@ number-sections: true
 toc: true
 ---
 
-<!-- Can I embed a file? -->
-
 # Main structure
 
 A metadata schema will be stored in a json file with a series of nested key-value pairs.
@@ -148,6 +146,23 @@ Objects are indicated with the `type` "object" and, like schemas, have a `proper
     "repeatable": "true"
     }
 ```
+
+# Additions to come
+
+As we implement the lifecycle requirements, some things in the schema format will change. I will add them here until they are actually implemented:
+
+- The `title` field will be called `name` instead. It will be possible to assign a descriptive name/label to a schema (other than the filename).
+
+- The following two fields will be added to the schema's object (as siblings to `name`):
+
+    + `version`, with the version as value. We will use the format of semantic versioning, but for users who are not comfortable with it (and maybe at the beginning) we'll only use the major versions (1.0.0, 2.0.0...).
+
+    + `status`, with possible values "draft", "published" and "archived"
+
+We also plan the option to create child schemas, i.e. schemas that start out as copies of published schemas but have a different name and may have constant/default fields and extra fields. In that case, the schema would have an additional `parent` field with the name of the parent schema, for reference.
+
+Another feature we are thinking of is allowing fields to have default or constant values. A default value would be the value the metadata field will take if no other value is provided, but it can be changed. A constant value is one that will always have the same value in any implementation of the schema, and cannot be changed (it's read-only).
+For that purpose, fields will have the optional fields `default` and `constant`.
 
 # Full example {#sec-full}
 

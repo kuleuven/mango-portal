@@ -1,0 +1,118 @@
+---
+title: "Metadata schema format"
+format:
+    html:
+        embed-resources: true
+        theme: default
+date: 2023-01-24
+date-modified: today
+author: Mariana Montes
+number-sections: true
+toc: true
+---
+
+::: callout-warning
+This is work in progress!
+:::
+
+# Folder structure
+
+```md
+<!-- inside mango folder, structure TBD -->
+project_collection
+|_ subcollection1
+|_ subcollection2
+|_ schemas
+	|_ schema-1
+	|   |_schema-1-v1.0.0-published.json
+	|   |_schema-1-v2.0.0-draft.json
+	|_ schema-2
+	    |_schema-2-v1.0.0.json
+	    |_schema-2-v2.0.0-published.json
+```
+
+- Should the versioning be semantic versioning or just major versions?
+	- Implement scaffolding for semantic versioning but at the beginning and by default only increase major versions
+- The schema collection can have metadata indicating which of the versions is the published one (if any)
+
+```json
+"schema-1" : {
+	"title" : "My first schema ever", // add that to editor AND rename as "label"
+	"version" : "1.0.0", // also as iRODS metadata ("version")
+	"status" : "published", // also as iRODS metadata ("status")
+	"properties": {...}
+}
+```
+
+# Stages
+## Draft status
+- first status, as soon as a schema is created and submitted
+- it can be edited
+	- by the user who created it
+	- the owner can give writing permissions to others, UNDER WARNING
+- it can be viewed
+	- by anyone with read permissions in the root folder of the project (by default every project member)
+	- with option to refine
+- it cannot be used to apply metadata
+- it can be deleted
+	- according to the permissions of the object
+- it is stored in the schema's folder
+	- the status is indicated in the filename with "-draft" after the version number
+	- the status is indicated as metadata and inside the json: `status: draft`
+	- it also has metadata and a json field indicating the version that it would become, e.g. `version: 1.0.0`
+
+## Published status
+- only after purposefully publishing it
+- it cannot be edited. Attempts to edit it will create new versions (the button will say "create new version")
+	- it is also possible to create a child, which is a new schema with this schema as "parent" and the contents as base contents
+- it can be viewed
+	- by anyone with read permissions (by default every project member)
+	- the owner can extend the read permissions
+- it can be used to apply metadata
+- it cannot be deleted but it can be archived
+- it is stored in the schema's folder
+	- the status is indicated as metadata and inside the json: `status: published`
+	- it also has metadata and a json field indicating the version, e.g. `version: 1.0.0`
+	- there is only ONE published version at a time - indicated as metadata of the parent collection too
+
+## Archived status
+(previously "deprecated")
+- after purposefully archiving it, once a new version is created, or once the project is over, if it is not a public schema
+- it cannot be edited
+- it can be viewed
+	- by anyone with read permissions (by default every project member)
+- it cannot be used to apply metadata
+- it cannot be deleted unless there is no data annotated with it. It NEVER WILL BE.
+- it is stored in the schema's folder
+	- the status is indicated as metadata and inside the json: `status: archived`
+	- it also has metadata and a json field indicating the version, e.g. `version: 1.0.0`
+
+## Summary
+
+` ` | draft | published | archived
+------ | ---- | ----- | ------
+when :| after creating | after publishing | after archiving / publishing new versions / when project is over
+can be edited | ✔ | ❌| ❌
+can be viewed | ✔ | ✔ | ✔
+can be applied | ❌| ✔ | ❌
+can be deleted | ✔ | ❌| ❌
+
+
+# Mango portal
+## Metadata schema editor
+- A project member sees all the schemas they have access to, and for each of them, the current draft (if it exists) and the latest published version.
+	- On demand they can see other (archived) versions - "advanced view"
+
+- Only draft schemas can be edited, and not necessarily by everyone
+- All VISIBILE schemas will have a badge indicating their lifecycle status and version
+
+- Here is where users can change the status of a schema:
+	- publish draft schemas
+	- delete draft schemas
+	- give other users writing access to draft schemas
+	- create new versions of published schemas (=create new drafts)
+	- archive published schemas
+	- delete unused schemas - if there is no data linked to it
+
+## Metadata schema implementation
+- Only published schemas will be visible

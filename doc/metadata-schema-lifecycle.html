@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Mariana Montes">
-<meta name="dcterms.date" content="2023-01-13">
+<meta name="dcterms.date" content="2023-01-24">
 
 <title>Metadata schema format</title>
 <style>
@@ -2609,18 +2609,19 @@ vertical-align: -.125em;
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#main-structure" id="toc-main-structure" class="nav-link active" data-scroll-target="#main-structure"><span class="toc-section-number">1</span>  Main structure</a>
+  <li><a href="#folder-structure" id="toc-folder-structure" class="nav-link active" data-scroll-target="#folder-structure"><span class="toc-section-number">1</span>  Folder structure</a></li>
+  <li><a href="#stages" id="toc-stages" class="nav-link" data-scroll-target="#stages"><span class="toc-section-number">2</span>  Stages</a>
   <ul class="collapse">
-  <li><a href="#sec-attr" id="toc-sec-attr" class="nav-link" data-scroll-target="#sec-attr"><span class="toc-section-number">1.1</span>  General Attributes</a></li>
+  <li><a href="#draft-status" id="toc-draft-status" class="nav-link" data-scroll-target="#draft-status"><span class="toc-section-number">2.1</span>  Draft status</a></li>
+  <li><a href="#published-status" id="toc-published-status" class="nav-link" data-scroll-target="#published-status"><span class="toc-section-number">2.2</span>  Published status</a></li>
+  <li><a href="#archived-status" id="toc-archived-status" class="nav-link" data-scroll-target="#archived-status"><span class="toc-section-number">2.3</span>  Archived status</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span class="toc-section-number">2.4</span>  Summary</a></li>
   </ul></li>
-  <li><a href="#sec-items" id="toc-sec-items" class="nav-link" data-scroll-target="#sec-items"><span class="toc-section-number">2</span>  Types of items</a>
+  <li><a href="#mango-portal" id="toc-mango-portal" class="nav-link" data-scroll-target="#mango-portal"><span class="toc-section-number">3</span>  Mango portal</a>
   <ul class="collapse">
-  <li><a href="#sec-scalar" id="toc-sec-scalar" class="nav-link" data-scroll-target="#sec-scalar"><span class="toc-section-number">2.1</span>  Scalar fields</a></li>
-  <li><a href="#sec-multiple" id="toc-sec-multiple" class="nav-link" data-scroll-target="#sec-multiple"><span class="toc-section-number">2.2</span>  Multiple options</a></li>
-  <li><a href="#sec-object" id="toc-sec-object" class="nav-link" data-scroll-target="#sec-object"><span class="toc-section-number">2.3</span>  Objects</a></li>
+  <li><a href="#metadata-schema-editor" id="toc-metadata-schema-editor" class="nav-link" data-scroll-target="#metadata-schema-editor"><span class="toc-section-number">3.1</span>  Metadata schema editor</a></li>
+  <li><a href="#metadata-schema-implementation" id="toc-metadata-schema-implementation" class="nav-link" data-scroll-target="#metadata-schema-implementation"><span class="toc-section-number">3.2</span>  Metadata schema implementation</a></li>
   </ul></li>
-  <li><a href="#additions-to-come" id="toc-additions-to-come" class="nav-link" data-scroll-target="#additions-to-come"><span class="toc-section-number">3</span>  Additions to come</a></li>
-  <li><a href="#sec-full" id="toc-sec-full" class="nav-link" data-scroll-target="#sec-full"><span class="toc-section-number">4</span>  Full example</a></li>
   </ul>
 </nav>
 </div>
@@ -2645,7 +2646,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 13, 2023</p>
+      <p class="date">January 24, 2023</p>
     </div>
   </div>
   
@@ -2661,261 +2662,182 @@ vertical-align: -.125em;
 
 </header>
 
-<section id="main-structure" class="level1" data-number="1">
-<h1 data-number="1"><span class="header-section-number">1</span> Main structure</h1>
-<p>A metadata schema will be stored in a json file with a series of nested key-value pairs. At the top level, there is only one pair, with the id of the schema as key and the contents of the schema as values:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;sample-schema&quot;</span> <span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;title&quot;</span> <span class="fu">:</span> <span class="st">&quot;Book schema as an example&quot;</span><span class="fu">,</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;properties&quot;</span> <span class="fu">:</span> <span class="er">...</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>The value of the “properties” element is itself a series of key-value pairs indicating fields of the metadata schema. The key is the id of the field (how it is defined in the namespace of the schema) and the value is itself an object, i.e. a series of key-value pairs with the different attributes of each field.</p>
-<p><a href="#sec-attr">Section 1.1</a> will define the main attributes that all objects in a schema file may contains. <a href="#sec-items">Section 2</a> will describe the different kinds of fields and their specific attributes. Finally <a href="#sec-full">Section 4</a> includes a full example of a sample schema, from which the rest of the examples of this document are extracted.</p>
-<div class="callout-tip callout callout-style-default callout-captioned">
+<div class="callout-warning callout callout-style-default callout-captioned">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-caption-container flex-fill">
-Tip
+Warning
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>The order of the attributes is not important, but the order of the <em>fields</em> inside <code>properties</code> will define the order they take when rendering the form.</p>
+<p>This is work in progress!</p>
 </div>
 </div>
-<section id="sec-attr" class="level2" data-number="1.1">
-<h2 data-number="1.1" class="anchored" data-anchor-id="sec-attr"><span class="header-section-number">1.1</span> General Attributes</h2>
-<dl>
-<dt>title</dt>
-<dd>
-<p>All objects in a metadata schema should include the <code>title</code> attribute, which indicates a human-readable label for the form when filling in the schema.</p>
-</dd>
-<dt>type</dt>
-<dd>
-<p>In addition, all objects (except for the schema itself??) need a <code>type</code> attribute that indicates the kind of field they represent. The possible values are described in <a href="#sec-items">Section 2</a>.</p>
-</dd>
-<dt>required</dt>
-<dd>
-<p>Any object that represents a field may contain an optional boolean <code>required</code> attribute indicating whether the field is required in the form or not. If this attribute is missing, it is read as “false”.</p>
-</dd>
-<dt>repeatable</dt>
-<dd>
-<p>Any object that represents a field may contain an optional boolean <code>repeatable</code> attribute. If “true”, the field may be used multiple times to assign the same attribute name with different values as metadata of the same collection or data object. If this attribute is missing, it is read as “false”.</p>
-</dd>
-</dl>
-</section>
-</section>
-<section id="sec-items" class="level1" data-number="2">
-<h1 data-number="2"><span class="header-section-number">2</span> Types of items</h1>
-<p>In terms of data format, there are three main kinds of fields that can be included in a metadata schema: scalar fields, multiple-option fields and objects. Scalar fields, described in <a href="#sec-scalar">Section 2.1</a>, include any form of text or numeric input for which a pattern or range may be defined but not, strictly, the possible values. Multiple-option fields (<a href="#sec-multiple">Section 2.2</a>) include any field that provides a specific selection of possible answers. Finally, the objects, described in <a href="#sec-object">Section 2.3</a>, are mini-schemas: collections of fields of other kinds related to each other.</p>
-<section id="sec-scalar" class="level2" data-number="2.1">
-<h2 data-number="2.1" class="anchored" data-anchor-id="sec-scalar"><span class="header-section-number">2.1</span> Scalar fields</h2>
-<p>The prototypical example of a scalar field is a simple text field, such as “title” below:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;title&quot;</span> <span class="er">:</span> <span class="fu">{</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;type&quot;</span> <span class="fu">:</span> <span class="st">&quot;text&quot;</span><span class="fu">,</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span> <span class="fu">:</span> <span class="st">&quot;Book title&quot;</span><span class="fu">,</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;required&quot;</span> <span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Next to the basic “text” value for the <code>type</code> attribute, we can also use other values that add specific restrictions to the input field: “date”, “time”, “email”, or “url”. For a longer-form, non-restricted string output, the “textarea” value is also an option. <!-- The range of possible formats will be expanded in the future. --></p>
-<p>For numeric inputs, the possible types are “integer” or “float”. Objects with these types also have two extra key-value pairs indicating the range of allowed values:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;copies_published&quot;:</span> <span class="fu">{</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;integer&quot;</span><span class="fu">,</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Number of copies published&quot;</span><span class="fu">,</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;minimum&quot;</span><span class="fu">:</span> <span class="st">&quot;100&quot;</span><span class="fu">,</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;maximum&quot;</span><span class="fu">:</span> <span class="st">&quot;500000&quot;</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span><span class="er">,</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;market_price&quot;:</span> <span class="fu">{</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;float&quot;</span><span class="fu">,</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Market price (in euros)&quot;</span><span class="fu">,</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;minimum&quot;</span><span class="fu">:</span> <span class="st">&quot;0.99&quot;</span><span class="fu">,</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;maximum&quot;</span><span class="fu">:</span> <span class="st">&quot;999.99&quot;</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="sec-multiple" class="level2" data-number="2.2">
-<h2 data-number="2.2" class="anchored" data-anchor-id="sec-multiple"><span class="header-section-number">2.2</span> Multiple options</h2>
-<p>Multiple-option fields are indicated with the <code>type</code> “select”. Their common property is a restricted selection of possible values for the metadata field they define. These values are indicated as a list in the <code>values</code> attribute:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;ebook&quot;:</span> <span class="fu">{</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;select&quot;</span><span class="fu">,</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;multiple&quot;</span><span class="fu">:</span> <span class="st">&quot;false&quot;</span><span class="fu">,</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;ui&quot;</span><span class="fu">:</span> <span class="st">&quot;radio&quot;</span><span class="fu">,</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;values&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Available&quot;</span><span class="ot">,</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Unavailable&quot;</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        <span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Is there an e-book?&quot;</span><span class="fu">,</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>In addition, they require two more fields that define the conditions and user-facing format of the field.</p>
-<dl>
-<dt>multiple</dt>
-<dd>
-<p>Boolean value. If true, then more than one of the provided options can be selected. If false, only one of them can be chosen.</p>
-</dd>
-<dt>ui</dt>
-<dd>
-<p>The possible values are “dropdown”, “checkbox” (if <code>multiple</code> is “true”) or “radio” (if <code>multiple</code> is “false”). They indicate what the field should look like in the actual implementation.</p>
-</dd>
-</dl>
-</section>
-<section id="sec-object" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="sec-object"><span class="header-section-number">2.3</span> Objects</h2>
-<p>Objects are indicated with the <code>type</code> “object” and, like schemas, have a <code>properties</code> attribute containing the fields that comprise it. The value of <code>properties</code> has the same format as the <code>properties</code> of a schema.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;author&quot;:</span> <span class="fu">{</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;object&quot;</span><span class="fu">,</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Author&quot;</span><span class="fu">,</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;properties&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;text&quot;</span><span class="fu">,</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Name and Surname&quot;</span><span class="fu">,</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">},</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;age&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;integer&quot;</span><span class="fu">,</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Age&quot;</span><span class="fu">,</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;minimum&quot;</span><span class="fu">:</span> <span class="st">&quot;12&quot;</span><span class="fu">,</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;maximum&quot;</span><span class="fu">:</span> <span class="st">&quot;99&quot;</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">},</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;email&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;email&quot;</span><span class="fu">,</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Email address&quot;</span><span class="fu">,</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">}</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">},</span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span><span class="fu">,</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;repeatable&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-</section>
-<section id="additions-to-come" class="level1" data-number="3">
-<h1 data-number="3"><span class="header-section-number">3</span> Additions to come</h1>
-<p>As we implement the lifecycle requirements, some things in the schema format will change. I will add them here until they are actually implemented:</p>
+<section id="folder-structure" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Folder structure</h1>
+<div class="sourceCode" id="cb1"><pre class="sourceCode md code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- inside mango folder, structure </span><span class="al">TBD</span><span class="co"> --&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>project_collection</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>|_ subcollection1</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>|_ subcollection2</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>|_ schemas</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    |_ schema-1</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    |   |_schema-1-v1.0.0-published.json</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    |   |_schema-1-v2.0.0-draft.json</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    |_ schema-2</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        |_schema-2-v1.0.0.json</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        |_schema-2-v2.0.0-published.json</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <ul>
-<li><p>The <code>title</code> field will be called <code>name</code> instead. It will be possible to assign a descriptive name/label to a schema (other than the filename).</p></li>
-<li><p>The following two fields will be added to the schema’s object (as siblings to <code>name</code>):</p>
+<li>Should the versioning be semantic versioning or just major versions?
 <ul>
-<li><p><code>version</code>, with the version as value. We will use the format of semantic versioning, but for users who are not comfortable with it (and maybe at the beginning) we’ll only use the major versions (1.0.0, 2.0.0…).</p></li>
-<li><p><code>status</code>, with possible values “draft”, “published” and “archived”</p></li>
+<li>Implement scaffolding for semantic versioning but at the beginning and by default only increase major versions</li>
+</ul></li>
+<li>The schema collection can have metadata indicating which of the versions is the published one (if any)</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="er">&quot;schema-1&quot;</span> <span class="er">:</span> <span class="fu">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;title&quot;</span> <span class="fu">:</span> <span class="st">&quot;My first schema ever&quot;</span><span class="fu">,</span> <span class="er">//</span> <span class="er">add</span> <span class="er">that</span> <span class="er">to</span> <span class="er">editor</span> <span class="er">AND</span> <span class="er">rename</span> <span class="er">as</span> <span class="dt">&quot;label&quot;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;version&quot;</span> <span class="fu">:</span> <span class="st">&quot;1.0.0&quot;</span><span class="fu">,</span> <span class="er">//</span> <span class="er">also</span> <span class="er">as</span> <span class="er">iRODS</span> <span class="er">metadata</span> <span class="er">(</span><span class="dt">&quot;version&quot;</span><span class="er">)</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;status&quot;</span> <span class="fu">:</span> <span class="st">&quot;published&quot;</span><span class="fu">,</span> <span class="er">//</span> <span class="er">also</span> <span class="er">as</span> <span class="er">iRODS</span> <span class="er">metadata</span> <span class="er">(</span><span class="dt">&quot;status&quot;</span><span class="er">)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;properties&quot;</span><span class="fu">:</span> <span class="fu">{</span><span class="er">...</span><span class="fu">}</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="stages" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Stages</h1>
+<section id="draft-status" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="draft-status"><span class="header-section-number">2.1</span> Draft status</h2>
+<ul>
+<li>first status, as soon as a schema is created and submitted</li>
+<li>it can be edited
+<ul>
+<li>by the user who created it</li>
+<li>the owner can give writing permissions to others, UNDER WARNING</li>
+</ul></li>
+<li>it can be viewed
+<ul>
+<li>by anyone with read permissions in the root folder of the project (by default every project member)</li>
+<li>with option to refine</li>
+</ul></li>
+<li>it cannot be used to apply metadata</li>
+<li>it can be deleted
+<ul>
+<li>according to the permissions of the object</li>
+</ul></li>
+<li>it is stored in the schema’s folder
+<ul>
+<li>the status is indicated in the filename with “-draft” after the version number</li>
+<li>the status is indicated as metadata and inside the json: <code>status: draft</code></li>
+<li>it also has metadata and a json field indicating the version that it would become, e.g. <code>version: 1.0.0</code></li>
 </ul></li>
 </ul>
-<p>We also plan the option to create child schemas, i.e. schemas that start out as copies of published schemas but have a different name and may have constant/default fields and extra fields. In that case, the schema would have an additional <code>parent</code> field with the name of the parent schema, for reference.</p>
-<p>Another feature we are thinking of is allowing fields to have default or constant values. A default value would be the value the metadata field will take if no other value is provided, but it can be changed. A constant value is one that will always have the same value in any implementation of the schema, and cannot be changed (it’s read-only). For that purpose, fields will have the optional fields <code>default</code> and <code>constant</code>.</p>
 </section>
-<section id="sec-full" class="level1" data-number="4">
-<h1 data-number="4"><span class="header-section-number">4</span> Full example</h1>
-<div class="sourceCode" id="cb6"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;sample-schema&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Book schema as an example&quot;</span><span class="fu">,</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;properties&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;text&quot;</span><span class="fu">,</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Book title&quot;</span><span class="fu">,</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;cover_colors&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;select&quot;</span><span class="fu">,</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;multiple&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span><span class="fu">,</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;ui&quot;</span><span class="fu">:</span> <span class="st">&quot;checkbox&quot;</span><span class="fu">,</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Colors in the cover&quot;</span><span class="fu">,</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;values&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;red&quot;</span><span class="ot">,</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;blue&quot;</span><span class="ot">,</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;green&quot;</span><span class="ot">,</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;yellow&quot;</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>                <span class="ot">]</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;publisher&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;select&quot;</span><span class="fu">,</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;multiple&quot;</span><span class="fu">:</span> <span class="st">&quot;false&quot;</span><span class="fu">,</span></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;ui&quot;</span><span class="fu">:</span> <span class="st">&quot;dropdown&quot;</span><span class="fu">,</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;values&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Penguin House&quot;</span><span class="ot">,</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Tor&quot;</span><span class="ot">,</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Corgi&quot;</span><span class="ot">,</span></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Nightshade books&quot;</span></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>                <span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Publishing house&quot;</span><span class="fu">,</span></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;author&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;object&quot;</span><span class="fu">,</span></span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Author&quot;</span><span class="fu">,</span></span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;properties&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;text&quot;</span><span class="fu">,</span></span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Name and Surname&quot;</span><span class="fu">,</span></span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">},</span></span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">&quot;age&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;integer&quot;</span><span class="fu">,</span></span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Age&quot;</span><span class="fu">,</span></span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;minimum&quot;</span><span class="fu">:</span> <span class="st">&quot;12&quot;</span><span class="fu">,</span></span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;maximum&quot;</span><span class="fu">:</span> <span class="st">&quot;99&quot;</span></span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">},</span></span>
-<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">&quot;email&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;email&quot;</span><span class="fu">,</span></span>
-<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Email address&quot;</span><span class="fu">,</span></span>
-<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>                        <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">}</span></span>
-<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>                <span class="fu">},</span></span>
-<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span><span class="fu">,</span></span>
-<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;repeatable&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;ebook&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;select&quot;</span><span class="fu">,</span></span>
-<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;multiple&quot;</span><span class="fu">:</span> <span class="st">&quot;false&quot;</span><span class="fu">,</span></span>
-<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;ui&quot;</span><span class="fu">:</span> <span class="st">&quot;radio&quot;</span><span class="fu">,</span></span>
-<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;values&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Available&quot;</span><span class="ot">,</span></span>
-<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Unavailable&quot;</span></span>
-<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a>                <span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Is there an e-book?&quot;</span><span class="fu">,</span></span>
-<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;genre&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;select&quot;</span><span class="fu">,</span></span>
-<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;multiple&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span><span class="fu">,</span></span>
-<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;ui&quot;</span><span class="fu">:</span> <span class="st">&quot;dropdown&quot;</span><span class="fu">,</span></span>
-<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;values&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Speculative fiction&quot;</span><span class="ot">,</span></span>
-<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Mystery&quot;</span><span class="ot">,</span></span>
-<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Non-fiction&quot;</span><span class="ot">,</span></span>
-<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Encyclopaedia&quot;</span><span class="ot">,</span></span>
-<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Memoir&quot;</span><span class="ot">,</span></span>
-<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Literary fiction&quot;</span></span>
-<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a>                <span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Genre&quot;</span></span>
-<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;publishing_date&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;date&quot;</span><span class="fu">,</span></span>
-<span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Publishing date&quot;</span><span class="fu">,</span></span>
-<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;required&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span><span class="fu">,</span></span>
-<span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;repeatable&quot;</span><span class="fu">:</span> <span class="st">&quot;true&quot;</span></span>
-<span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;copies_published&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-91"><a href="#cb6-91" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;integer&quot;</span><span class="fu">,</span></span>
-<span id="cb6-92"><a href="#cb6-92" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Number of copies published&quot;</span><span class="fu">,</span></span>
-<span id="cb6-93"><a href="#cb6-93" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;minimum&quot;</span><span class="fu">:</span> <span class="st">&quot;100&quot;</span><span class="fu">,</span></span>
-<span id="cb6-94"><a href="#cb6-94" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;maximum&quot;</span><span class="fu">:</span> <span class="st">&quot;500000&quot;</span></span>
-<span id="cb6-95"><a href="#cb6-95" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-96"><a href="#cb6-96" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;market_price&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-97"><a href="#cb6-97" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;float&quot;</span><span class="fu">,</span></span>
-<span id="cb6-98"><a href="#cb6-98" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Market price (in euros)&quot;</span><span class="fu">,</span></span>
-<span id="cb6-99"><a href="#cb6-99" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;minimum&quot;</span><span class="fu">:</span> <span class="st">&quot;0.99&quot;</span><span class="fu">,</span></span>
-<span id="cb6-100"><a href="#cb6-100" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;maximum&quot;</span><span class="fu">:</span> <span class="st">&quot;999.99&quot;</span></span>
-<span id="cb6-101"><a href="#cb6-101" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-102"><a href="#cb6-102" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;website&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-103"><a href="#cb6-103" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;url&quot;</span><span class="fu">,</span></span>
-<span id="cb6-104"><a href="#cb6-104" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Website&quot;</span></span>
-<span id="cb6-105"><a href="#cb6-105" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
-<span id="cb6-106"><a href="#cb6-106" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;synopsis&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb6-107"><a href="#cb6-107" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;textbox&quot;</span><span class="fu">,</span></span>
-<span id="cb6-108"><a href="#cb6-108" aria-hidden="true" tabindex="-1"></a>                <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Synopsis&quot;</span></span>
-<span id="cb6-109"><a href="#cb6-109" aria-hidden="true" tabindex="-1"></a>            <span class="fu">}</span></span>
-<span id="cb6-110"><a href="#cb6-110" aria-hidden="true" tabindex="-1"></a>        <span class="fu">}</span></span>
-<span id="cb6-111"><a href="#cb6-111" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
-<span id="cb6-112"><a href="#cb6-112" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="published-status" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="published-status"><span class="header-section-number">2.2</span> Published status</h2>
+<ul>
+<li>only after purposefully publishing it</li>
+<li>it cannot be edited. Attempts to edit it will create new versions (the button will say “create new version”)
+<ul>
+<li>it is also possible to create a child, which is a new schema with this schema as “parent” and the contents as base contents</li>
+</ul></li>
+<li>it can be viewed
+<ul>
+<li>by anyone with read permissions (by default every project member)</li>
+<li>the owner can extend the read permissions</li>
+</ul></li>
+<li>it can be used to apply metadata</li>
+<li>it cannot be deleted but it can be archived</li>
+<li>it is stored in the schema’s folder
+<ul>
+<li>the status is indicated as metadata and inside the json: <code>status: published</code></li>
+<li>it also has metadata and a json field indicating the version, e.g. <code>version: 1.0.0</code></li>
+<li>there is only ONE published version at a time - indicated as metadata of the parent collection too</li>
+</ul></li>
+</ul>
+</section>
+<section id="archived-status" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="archived-status"><span class="header-section-number">2.3</span> Archived status</h2>
+<p>(previously “deprecated”) - after purposefully archiving it, once a new version is created, or once the project is over, if it is not a public schema - it cannot be edited - it can be viewed - by anyone with read permissions (by default every project member) - it cannot be used to apply metadata - it cannot be deleted unless there is no data annotated with it. It NEVER WILL BE. - it is stored in the schema’s folder - the status is indicated as metadata and inside the json: <code>status: archived</code> - it also has metadata and a json field indicating the version, e.g. <code>version: 1.0.0</code></p>
+</section>
+<section id="summary" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="summary"><span class="header-section-number">2.4</span> Summary</h2>
+<table class="table">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 19%">
+<col style="width: 23%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><code></code></th>
+<th>draft</th>
+<th>published</th>
+<th>archived</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>when :</td>
+<td>after creating</td>
+<td>after publishing</td>
+<td>after archiving / publishing new versions / when project is over</td>
+</tr>
+<tr class="even">
+<td>can be edited</td>
+<td>✔</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr class="odd">
+<td>can be viewed</td>
+<td>✔</td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+<tr class="even">
+<td>can be applied</td>
+<td>❌</td>
+<td>✔</td>
+<td>❌</td>
+</tr>
+<tr class="odd">
+<td>can be deleted</td>
+<td>✔</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="mango-portal" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Mango portal</h1>
+<section id="metadata-schema-editor" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="metadata-schema-editor"><span class="header-section-number">3.1</span> Metadata schema editor</h2>
+<ul>
+<li><p>A project member sees all the schemas they have access to, and for each of them, the current draft (if it exists) and the latest published version.</p>
+<ul>
+<li>On demand they can see other (archived) versions - “advanced view”</li>
+</ul></li>
+<li><p>Only draft schemas can be edited, and not necessarily by everyone</p></li>
+<li><p>All VISIBILE schemas will have a badge indicating their lifecycle status and version</p></li>
+<li><p>Here is where users can change the status of a schema:</p>
+<ul>
+<li>publish draft schemas</li>
+<li>delete draft schemas</li>
+<li>give other users writing access to draft schemas</li>
+<li>create new versions of published schemas (=create new drafts)</li>
+<li>archive published schemas</li>
+<li>delete unused schemas - if there is no data linked to it</li>
+</ul></li>
+</ul>
+</section>
+<section id="metadata-schema-implementation" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="metadata-schema-implementation"><span class="header-section-number">3.2</span> Metadata schema implementation</h2>
+<ul>
+<li>Only published schemas will be visible</li>
+</ul>
+</section>
 </section>
 
 </main>
