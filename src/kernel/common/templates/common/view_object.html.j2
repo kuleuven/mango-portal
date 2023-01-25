@@ -154,7 +154,7 @@
          role="tabpanel"
          aria-labelledby="preview-tab">
       {# to be moved to its own server side handler + template to include #}
-      {% if data_object.name.endswith(('jpg','jpeg','png', 'pdf', 'tif', 'tiff', 'gif')) %}
+      {% if data_object.name.lower().endswith(('jpg','jpeg','png', 'pdf', 'tif', 'tiff', 'gif')) %}
         <div class="row">
           <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path)}}"
                class="w-50"

@@ -91,7 +91,7 @@ def get_current_user_rights(current_user_name, item):
     for permission in permissions:
         if current_user_name == permission.user_name or permission.user_name in group_names:
             access += [permission.access_name]
-    pprint.pprint(access)
+    #pprint.pprint(access)
     return access
 
 
@@ -190,6 +190,13 @@ def collection_browse(collection):
     permissions = g.irods_session.permissions.get(
         current_collection, report_raw_acls=True, acl_users=acl_users
     )
+    print(f"Older permissions")
+    pprint.pprint(permissions)
+
+    permissions2 = g.irods_session.acls.get(current_collection)
+    print(f"New acls")
+    pprint.pprint(permissions2)
+
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
@@ -320,6 +327,14 @@ def view_object(data_object_path):
     permissions = g.irods_session.permissions.get(
         data_object, report_raw_acls=True, acl_users=acl_users
     )
+    print(f"Older permissions")
+    pprint.pprint(permissions)
+
+    permissions2 = g.irods_session.acls.get(data_object)
+    print(f"New acls")
+    pprint.pprint(permissions2)
+
+
     # Workaround for a bug with report_raw_acls for data objects where every ACL is listed twice
     PermissionTuple = namedtuple(
         "PermissionTuple", ["user_name", "access_name", "user_zone"]
@@ -752,7 +767,7 @@ def object_preview(data_object_path):
                     local_file.write(file_chunk)
                     position += bytes_read
 
-            if data_object.name.endswith(("pdf")):
+            if data_object.name.lower().endswith(("pdf")):
                 with tempfile.TemporaryDirectory() as path:
                     image = convert_from_path(
                         f"/tmp/irods-download-{data_object.name}",
@@ -764,14 +779,17 @@ def object_preview(data_object_path):
                     )[0]
 
             else:
-                image = Image.open(f"/tmp/irods-download-{data_object.name}")
-                image.thumbnail((400, 400))
-            image.save(f"{thumbnail_storage}/{data_object.id}.png")
+                try:
+                    image = Image.open(f"/tmp/irods-download-{data_object.name}")
+                    image.thumbnail((400, 400))
+                    image.save(f"{thumbnail_storage}/{data_object.id}.png")
+                except Exception as e:
+                    logging.info(f"failed generating preview for {data_object_path}")
             os.unlink(local_path)
         if os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
             return send_file(f"{thumbnail_storage}/{data_object.id}.png", "image/png")
         else:
-            return send_file("static/too-large.jpg", "image/jpeg")
+            return send_file("static/generate_preview_failed.png", "image/png")
 
 
 @browse_bp.route("/permission/set/<path:item_path>", methods=["POST"])
