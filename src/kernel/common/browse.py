@@ -190,12 +190,12 @@ def collection_browse(collection):
     permissions = g.irods_session.permissions.get(
         current_collection, report_raw_acls=True, acl_users=acl_users
     )
-    print(f"Older permissions")
-    pprint.pprint(permissions)
+    # print(f"Older permissions")
+    # pprint.pprint(permissions)
 
-    permissions2 = g.irods_session.acls.get(current_collection)
-    print(f"New acls")
-    pprint.pprint(permissions2)
+    # permissions2 = g.irods_session.acls.get(current_collection)
+    # print(f"New acls")
+    # pprint.pprint(permissions2)
 
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
@@ -327,12 +327,12 @@ def view_object(data_object_path):
     permissions = g.irods_session.permissions.get(
         data_object, report_raw_acls=True, acl_users=acl_users
     )
-    print(f"Older permissions")
-    pprint.pprint(permissions)
+    # print(f"Older permissions")
+    # pprint.pprint(permissions)
 
-    permissions2 = g.irods_session.acls.get(data_object)
-    print(f"New acls")
-    pprint.pprint(permissions2)
+    # permissions2 = g.irods_session.acls.get(data_object)
+    # print(f"New acls")
+    # pprint.pprint(permissions2)
 
 
     # Workaround for a bug with report_raw_acls for data objects where every ACL is listed twice
