@@ -258,12 +258,31 @@ def view_object(data_object_path):
     MIME_TYPE_ATTRIBUTE_NAME = f"{current_app.config['MANGO_PREFIX']}.mime_type"
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
-    data_object = g.irods_session.data_objects.get(data_object_path)
+    data_object : iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
 
-    meta_data_items = data_object.metadata.items()
+    #meta_data_items = data_object.metadata.items()
+    #if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
+    try:
+        mime_avu = data_object.metadata.get_one(MIME_TYPE_ATTRIBUTE_NAME)
+    except:
+        try:
+            with data_object.open("r") as f:
+                blub = f.read(50 * 1024) #read max 50k from data object
+            mime_type = magic.from_buffer(blub, mime=True)
+            mime_avu = iRODSMeta(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
+            data_object.metadata.set(mime_avu)
+            #meta_data_items.append(mime_avu)
+            logging.info(f"mime-type was not set for object {data_object.path}, so we blubbed a bit into magic")
+
+        except:
+            flash(
+                f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
+                "warning",
+            )
+    acl_users = []
     group_analysis_unit = True
     grouped_metadata = group_prefix_metadata_items(
-        data_object.metadata(timestamps=True).items(),
+        meta_data_items := data_object.metadata(timestamps=True).items(),
         current_app.config["MANGO_PREFIX"],
         no_schema_label = current_app.config['MANGO_NOSCHEMA_LABEL'],
         group_analysis_unit = group_analysis_unit,
@@ -306,22 +325,6 @@ def view_object(data_object_path):
         #pprint.pprint(grouped_metadata['other'].items())
         consolidated_analysis_metadata_names = [avu.name for avu in grouped_metadata[current_app.config["MANGO_NOSCHEMA_LABEL"]].values() if avu.units and avu.units.startswith('analysis')]
     # see if the mime type is present in the metadata, if not
-    if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
-        try:
-            with data_object.open("r") as f:
-                blub = f.read(50 * 1024)
-            mime_type = magic.from_buffer(blub, mime=True)
-            mime_avu = iRODSMeta(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
-            data_object.metadata.add(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
-            meta_data_items.append(mime_avu)
-            print(
-                f"mime-type was not set for object {data_object.id}, so we blubbed a bit into magic"
-            )
-        except:
-            flash(
-                f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
-                "warning",
-            )
     acl_users = []
 
     permissions = g.irods_session.permissions.get(
