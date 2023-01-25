@@ -69,7 +69,6 @@
         </div>
       {% endif %}
     {% endwith %}
-    {# <main class="container-fluid pb-3 flex-grow-1 d-flex flex-column flex-sm-row overflow-auto"> #}
     <main class="container">
       <div class="row flex-grow-sm-1 flex-grow-0">
         {% include "sidebar.html.j2" %}
@@ -86,16 +85,6 @@
     <script src="{{url_for('static', filename='js/form-validation.js')}}"></script>
     {% block javascript %}
       <script>
-      window.setTimeout(function () {
-        var alertNodes = document.getElementsByClassName('alert-success')
-
-        for (var i = 0; i < alertNodes.length; i++) {
-          //var alert = bootstrap.Alert.getInstance(alertNodes[i].outerHTML)
-          //alert.close()
-          alertNodes[i].remove()
-        }
-
-      }, 3000);
       // Activate toast mechanism
       var toastElList = [].slice.call(document.querySelectorAll('.toast'))
       var toastList = toastElList.map(function (toastEl) {
