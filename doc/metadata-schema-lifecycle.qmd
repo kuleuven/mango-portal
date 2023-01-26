@@ -77,6 +77,7 @@ project_collection
 
 ## Archived status
 (previously "deprecated")
+
 - after purposefully archiving it, once a new version is created, or once the project is over, if it is not a public schema
 - it cannot be edited
 - it can be viewed
