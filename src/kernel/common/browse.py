@@ -91,7 +91,7 @@ def get_current_user_rights(current_user_name, item):
     for permission in permissions:
         if current_user_name == permission.user_name or permission.user_name in group_names:
             access += [permission.access_name]
-    pprint.pprint(access)
+    #pprint.pprint(access)
     return access
 
 
@@ -190,6 +190,13 @@ def collection_browse(collection):
     permissions = g.irods_session.permissions.get(
         current_collection, report_raw_acls=True, acl_users=acl_users
     )
+    # print(f"Older permissions")
+    # pprint.pprint(permissions)
+
+    # permissions2 = g.irods_session.acls.get(current_collection)
+    # print(f"New acls")
+    # pprint.pprint(permissions2)
+
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
@@ -251,12 +258,31 @@ def view_object(data_object_path):
     MIME_TYPE_ATTRIBUTE_NAME = f"{current_app.config['MANGO_PREFIX']}.mime_type"
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
-    data_object = g.irods_session.data_objects.get(data_object_path)
+    data_object : iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
 
-    meta_data_items = data_object.metadata.items()
+    #meta_data_items = data_object.metadata.items()
+    #if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
+    try:
+        mime_avu = data_object.metadata.get_one(MIME_TYPE_ATTRIBUTE_NAME)
+    except:
+        try:
+            with data_object.open("r") as f:
+                blub = f.read(50 * 1024) #read max 50k from data object
+            mime_type = magic.from_buffer(blub, mime=True)
+            mime_avu = iRODSMeta(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
+            data_object.metadata.set(mime_avu)
+            #meta_data_items.append(mime_avu)
+            logging.info(f"mime-type was not set for object {data_object.path}, so we blubbed a bit into magic")
+
+        except:
+            flash(
+                f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
+                "warning",
+            )
+    acl_users = []
     group_analysis_unit = True
     grouped_metadata = group_prefix_metadata_items(
-        data_object.metadata(timestamps=True).items(),
+        meta_data_items := data_object.metadata(timestamps=True).items(),
         current_app.config["MANGO_PREFIX"],
         no_schema_label = current_app.config['MANGO_NOSCHEMA_LABEL'],
         group_analysis_unit = group_analysis_unit,
@@ -299,27 +325,19 @@ def view_object(data_object_path):
         #pprint.pprint(grouped_metadata['other'].items())
         consolidated_analysis_metadata_names = [avu.name for avu in grouped_metadata[current_app.config["MANGO_NOSCHEMA_LABEL"]].values() if avu.units and avu.units.startswith('analysis')]
     # see if the mime type is present in the metadata, if not
-    if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
-        try:
-            with data_object.open("r") as f:
-                blub = f.read(50 * 1024)
-            mime_type = magic.from_buffer(blub, mime=True)
-            mime_avu = iRODSMeta(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
-            data_object.metadata.add(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
-            meta_data_items.append(mime_avu)
-            print(
-                f"mime-type was not set for object {data_object.id}, so we blubbed a bit into magic"
-            )
-        except:
-            flash(
-                f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
-                "warning",
-            )
     acl_users = []
 
     permissions = g.irods_session.permissions.get(
         data_object, report_raw_acls=True, acl_users=acl_users
     )
+    # print(f"Older permissions")
+    # pprint.pprint(permissions)
+
+    # permissions2 = g.irods_session.acls.get(data_object)
+    # print(f"New acls")
+    # pprint.pprint(permissions2)
+
+
     # Workaround for a bug with report_raw_acls for data objects where every ACL is listed twice
     PermissionTuple = namedtuple(
         "PermissionTuple", ["user_name", "access_name", "user_zone"]
@@ -752,7 +770,7 @@ def object_preview(data_object_path):
                     local_file.write(file_chunk)
                     position += bytes_read
 
-            if data_object.name.endswith(("pdf")):
+            if data_object.name.lower().endswith(("pdf")):
                 with tempfile.TemporaryDirectory() as path:
                     image = convert_from_path(
                         f"/tmp/irods-download-{data_object.name}",
@@ -764,14 +782,17 @@ def object_preview(data_object_path):
                     )[0]
 
             else:
-                image = Image.open(f"/tmp/irods-download-{data_object.name}")
-                image.thumbnail((400, 400))
-            image.save(f"{thumbnail_storage}/{data_object.id}.png")
+                try:
+                    image = Image.open(f"/tmp/irods-download-{data_object.name}")
+                    image.thumbnail((400, 400))
+                    image.save(f"{thumbnail_storage}/{data_object.id}.png")
+                except Exception as e:
+                    logging.info(f"failed generating preview for {data_object_path}")
             os.unlink(local_path)
         if os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
             return send_file(f"{thumbnail_storage}/{data_object.id}.png", "image/png")
         else:
-            return send_file("static/too-large.jpg", "image/jpeg")
+            return send_file("static/generate_preview_failed.png", "image/png")
 
 
 @browse_bp.route("/permission/set/<path:item_path>", methods=["POST"])

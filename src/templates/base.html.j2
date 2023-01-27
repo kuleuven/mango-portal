@@ -2,9 +2,9 @@
 <html lang="en">
   <head>
     {% block head %}
-      <meta charset="utf-8"/>
+      <meta charset="utf-8" />
       <title>Your iRODS portal</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
       <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}"
             rel="stylesheet"/>
       <link rel="shortcut icon"
@@ -15,8 +15,8 @@
             href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css"/>
       <link href="{{ url_for('static', filename='dist/index.css') }}"
             rel="stylesheet"/>
-      {# <link href="{{ url_for('static', filename='css/ipack.css') }}"
-       rel="stylesheet"> #}
+      {#
+  <link href="{{ url_for('static', filename='css/ipack.css') }}" rel="stylesheet"> #}
       <style>
 <!-- prevent the scrollbar to make page content jump horizonthally -->
 
@@ -36,6 +36,10 @@
   color: #6c757d;
   content: var(--bs-breadcrumb-divider, "\00bb") /* rtl: var(--bs-breadcrumb-divider, "/") */;
 }
+
+.toast {
+  --bs-toast-max-width: 550px;
+}
       </style>
     {% endblock head %}
   </head>
@@ -44,24 +48,31 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
       <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
       {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show"
-               data-category="{{ category }}"
-               role="alert">
-            {{ message }}
-            <button type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Close"></button>
-          </div>
-        {% endfor %}
+        <div class="toast-container top-10 start-50 translate-middle-x">
+          {% for category, message in messages %}
+            <div class="toast"
+                 {% if category !="success" %} data-bs-autohide="false" {% else %} data-bs-delay="5000" {% endif %}
+                 role="alert"
+                 aria-live="assertive"
+                 aria-atomic="true">
+              <div class="toast-header text-bg-{{ category }} border-0">
+                <strong class="me-auto">{{ category | capitalize }}</strong>
+                <small>ManGO</small>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+              </div>
+              <div class="toast-body">{{ message }}</div>
+            </div>
+          {% endfor %}
+        </div>
       {% endif %}
     {% endwith %}
-    {# <main class="container-fluid pb-3 flex-grow-1 d-flex flex-column flex-sm-row overflow-auto"> #}
     <main class="container">
       <div class="row flex-grow-sm-1 flex-grow-0">
         {% include "sidebar.html.j2" %}
-        {#  <div class="col-8 overflow-auto h-100"> #}
+        {# <div class="col-8 overflow-auto h-100"> #}
         <div class="col-9">
           <div class="bg-light border rounded-3 p-3">
             {% block body %}{# THE MEAT #}{% endblock %}
@@ -74,16 +85,15 @@
     <script src="{{url_for('static', filename='js/form-validation.js')}}"></script>
     {% block javascript %}
       <script>
-  window.setTimeout(function() {
-      var alertNodes = document.getElementsByClassName('alert-success')
+      // Activate toast mechanism
+      var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+      var toastList = toastElList.map(function (toastEl) {
+        // Creates an array of toasts (it only initializes them)
+        return new bootstrap.Toast(toastEl)
+      });
+      toastList.forEach(toast => toast.show());
 
-      for (var i = 0; i < alertNodes.length; i++) {
-          //var alert = bootstrap.Alert.getInstance(alertNodes[i].outerHTML)
-          //alert.close()
-          alertNodes[i].remove()
-      }
-
-  }, 3000);
+      // console.log(toastList);
       </script>
     {% endblock javascript %}
   </body>

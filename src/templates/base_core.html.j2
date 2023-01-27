@@ -26,6 +26,9 @@
     content:" *";
     color: red;
   }
+  .toast {
+  --bs-toast-max-width: 550px;
+  }
     </style>
     {% block custom_style %}
     {% endblock custom_style %}
@@ -37,17 +40,25 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
           <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
           {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }} alert-dismissible fade show"
-                   data-category="{{ category }}"
-                   role="alert">
-                {{ message }}
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="alert"
-                        aria-label="Close"></button>
-              </div>
-            {% endfor %}
+            <div class="toast-container top-10 start-50 translate-middle-x">
+              {% for category, message in messages %}
+                <div class="toast"
+                     {% if category !="success" %} data-bs-autohide="false" {% else %} data-bs-delay="5000" {% endif %}
+                     role="alert"
+                     aria-live="assertive"
+                     aria-atomic="true">
+                  <div class="toast-header text-bg-{{ category }} border-0">
+                    <strong class="me-auto">{{ category | capitalize }}</strong>
+                    <small>ManGO</small>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="toast"
+                            aria-label="Close"></button>
+                  </div>
+                  <div class="toast-body">{{ message }}</div>
+                </div>
+              {% endfor %}
+            </div>
           {% endif %}
         {% endwith %}
         <div class="col-9">
@@ -61,16 +72,13 @@
     <script src="{{url_for('static', filename='js/form-validation.js')}}"></script>
     {% block javascript %}
       <script>
-  window.setTimeout(function() {
-      var alertNodes = document.getElementsByClassName('alert-success')
-
-      for (var i = 0; i < alertNodes.length; i++) {
-          //var alert = bootstrap.Alert.getInstance(alertNodes[i].outerHTML)
-          //alert.close()
-          alertNodes[i].remove()
-      }
-
-  }, 5000);
+  // Activate toast mechanism
+      var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+      var toastList = toastElList.map(function (toastEl) {
+        // Creates an array of toasts (it only initializes them)
+        return new bootstrap.Toast(toastEl)
+      });
+      toastList.forEach(toast => toast.show());
       </script>
     {% endblock javascript %}
   </body>
