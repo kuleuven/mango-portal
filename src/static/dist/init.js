@@ -12,7 +12,7 @@ url_tag.remove();
 container.className = 'accordion accordion-flush';
 // first the button
 let starting_schema = new Schema('schema-editor', container_id, urls.new);
-starting_schema.create_creator();
+starting_schema.create_creator('1.0.0');
 
 let templates_request = new TemplatesRequest(urls, container_id);
 templates_request.retrieve();

@@ -31,6 +31,8 @@ class ComplexField {
     to_json() {
         let base_data = {
             title: this.name,
+            version: this.version,
+            status: this.status,
             type: "object",
             properties: {}
         }
@@ -153,7 +155,7 @@ class ComplexField {
                 label.id = `viewer-${subfield.id}`;
                 small_div.className = small_div.className + ' border border-1 border-secondary rounded p-3 my-1'
             } else {
-                label = BasicForm.labeller(
+                label = Field.labeller(
                     subfield.required ? subfield.title + '*' : subfield.title,
                     `viewer-${subfield.id}`
                 );
@@ -272,76 +274,57 @@ class Schema extends ComplexField {
         return form;
     }
 
-    create_creator() {
+    create_creator(version) {
+        this.status = 'draft';
+        this.version = version;
         let form = this.create_editor();
-        this.card = new AccordionItem(this.card_id, 'New schema', 'metadata_template_list_container', true);
+        this.card = new AccordionItem(this.card_id, 'New schema', this.container, true);
         document.getElementById(this.container).appendChild(this.accordion_item);
         this.card.append(form.form);
     }
 
     create_navbar() {
         // design navbar
-        this.nav_bar = Field.quick('ul', 'nav justify-content-end nav-pills');
-        this.nav_bar.role = 'tablist';
-        this.nav_bar.id = 'pills-tab-' + this._name;
-        
-        let view_li = Field.quick('li', 'nav-item');
-        let view_button = Field.quick('button', 'nav-link active', 'View');
-        view_button.id = 'view-tab-' + this._name;
-        view_button.setAttribute('data-bs-toggle', 'tab');
-        view_button.setAttribute('data-bs-target', `#view-pane-${this._name}`);
-        view_button.type = 'button';
-        view_button.role = 'tab';
-        view_button.setAttribute('aria-controls', `view-pane-${this._name}`);
-        this.nav_bar.appendChild(view_li);
-        view_li.appendChild(view_button);
-        
-        let edit_li = Field.quick('li', 'nav-item');
-        let edit_button = Field.quick('button', 'nav-link', 'Edit');
-        edit_button.id = 'edit-tab-' + this._name;
-        edit_button.setAttribute('data-bs-toggle', 'tab');
-        edit_button.setAttribute('data-bs-target', `#edit-pane-${this._name}`);
-        edit_button.type = 'button';
-        edit_button.role = 'tab';
-        edit_button.setAttribute('aria-controls', `edit-pane-${this._name}`);
-        this.nav_bar.appendChild(edit_li);
-        edit_li.appendChild(edit_button);
-
-        // design tabs
-        this.tab_content = Field.quick('div', 'tab-content');
-        let viewer_tab = Field.quick('div', 'tab-pane fade show active');
-        viewer_tab.id = 'view-pane-' + this._name;
-        viewer_tab.role = 'tabpanel';
-        viewer_tab.setAttribute('aria-labelledby', 'view-tab-' + this._name);
-        viewer_tab.tabIndex = '0';
+        let nav_bar = new NavBar(this._name, ['justify-content-end', 'nav-pills']);
+        nav_bar.add_item('view', 'View', true);
 
         let viewer = ComplexField.create_viewer(this);
-        viewer_tab.appendChild(viewer);
+        nav_bar.add_tab_content('view', viewer);
         
-        let editor_tab = Field.quick('div', 'tab-pane fade');
-        editor_tab.id = 'edit-pane-' + this._name;
-        editor_tab.role = 'tabpanel';
-        editor_tab.setAttribute('aria-labelledby', 'edit-tab-' + this._name);
-        editor_tab.tabIndex = '0';
-        
-        let form = this.create_editor();
-        form.form.querySelector(`#${this.card_id}-name`).value = this._name;
-        editor_tab.appendChild(form.form);
+        if (this.status == 'draft') {
+            nav_bar.add_item('edit', 'Edit');
 
-        this.tab_content.appendChild(viewer_tab);
-        this.tab_content.appendChild(editor_tab);
+            let form = this.create_editor();
+            form.form.querySelector('input.form-control').value = this._name;
+            nav_bar.add_tab_content('edit', form.form);
+
+            nav_bar.add_item('discard', 'Discard');
+        } else if (this.status == 'published') {
+            nav_bar.add_item('new', 'New version');
+            nav_bar.add_item('child', 'Create child');
+            nav_bar.add_item('archive', 'Archive')
+        }
+        
+        this.nav_bar = nav_bar.nav_bar;
+        this.tab_content = nav_bar.tab_content;
 
     }
 
     view() {
-        this.card = new AccordionItem(this.card_id, this._name, 'metadata_template_list_container');
-        document.getElementById(this.container).appendChild(this.accordion_item);
+        console.log('This is version', this.version, 'of', this._name, 'which has status:', this.status);
+
         this.create_navbar();
-        this.card.append(this.nav_bar);
-        this.card.append(this.tab_content);
+        this.card = document.createElement('div')        
+        this.card.id = this.card_id;
+        this.card.appendChild(this.nav_bar);
+        this.card.appendChild(this.tab_content);
+        document.getElementById(this.container).appendChild(this.card);
+
         this.field_ids.forEach((field_id, idx) => {
             this.new_field_idx = idx;
-            this.view_field(this.fields[field_id]);
+            if (this.status == 'draft') {
+                this.view_field(this.fields[field_id]);
+            }
         })
     }
 
@@ -354,5 +337,49 @@ class Schema extends ComplexField {
         xhr.open('POST', this.url, true);
         xhr.send(to_post);
         console.log(this._name, 'posted.');
+    }
+}
+
+class SchemaGroup {
+    badge_url = 'https://img.shields.io/badge/';
+    status_colors = {
+        'published' : 'success',
+        'draft' : 'orange',
+        'archived' : 'inactive'
+    }
+
+    constructor(template, container_id) {
+        this.name = template.schema_name;
+        this.versions = template.template_list.map((temp) => {
+            let temp_info = temp.name.split('-v')[1].split('-');
+            let status = temp_info[1].startsWith('draft') ? 'draft' : temp_info[1].startsWith('published') ? 'published' : 'archived';
+            let data = {
+                version : temp_info[0],
+                status : status
+            }
+            return(data);
+        });
+
+        let nav_bar = new NavBar(this.name, ['nav-tabs']);
+        let statuses = this.versions.map((v) => v.status);
+
+        for (let version of this.versions) {
+            let version_badge = document.createElement('img');
+            version_badge.setAttribute('alt', 'version ' + version.version);
+            version_badge.setAttribute('src', `${this.badge_url}version-${version.version}-blue`);
+
+            let status_badge = Field.quick('img', 'mx-2');
+            status_badge.setAttribute('alt', 'status ' + version.status);        
+            status_badge.setAttribute('src', `${this.badge_url}-${version.status}-${this.status_colors[version.status]}`);
+
+            let active = statuses.indexOf('published') > -1 ? version.status == 'published' : version.status == 'draft';
+            // this does not account for a case with only archived versions and a draft
+            nav_bar.add_item(`v${version.version.replaceAll('.', '')}`, [version_badge, status_badge], active);
+        };
+
+        let acc_item = new AccordionItem(this.name + '-schemas', this.name, container_id);
+        acc_item.append(nav_bar.nav_bar);
+        acc_item.append(nav_bar.tab_content);
+        document.getElementById(container_id).appendChild(acc_item.div);
     }
 }

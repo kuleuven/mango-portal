@@ -1,1 +1,0 @@
-{"mini-schema":{"title":"mini-schema","type":"object","properties":{"textid":{"title":"Some text","type":"text","required":true,"repeatable":true}}}}

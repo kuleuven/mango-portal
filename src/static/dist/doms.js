@@ -48,6 +48,14 @@ class Field {
         return inner_input;
     }
 
+    static labeller(label_text, input_id) {
+        let label = Field.quick("label", "form-label h6", label_text);
+        label.id = `label-${input_id}`;
+        label.setAttribute("for", input_id);
+
+        return label;
+    }
+
 }
 class MovingField {
     // Parent class for a form element that can move around
@@ -194,7 +202,7 @@ class MovingChoice extends MovingField {
     // It has a working text input field and no edit button
     constructor(label_text, idx, value = false) {
         super(idx);
-        this.label = BasicForm.labeller(label_text, `mover-${idx}`);
+        this.label = Field.labeller(label_text, `mover-${idx}`);
         this.div = Field.quick("div", "blocked");
         this.value = value;
         this.div.id = `block-${idx}`;
@@ -291,15 +299,7 @@ class BasicForm {
         this.form.id = `form-${id}`;
         this.form.setAttribute('novalidate', '')
         this.option_indices = [];
-    }
-
-    static labeller(label_text, input_id) {
-        let label = Field.quick("label", "form-label h6", label_text);
-        label.id = `label-${input_id}`;
-        label.setAttribute("for", input_id);
-
-        return label;
-    }
+    }    
 
     add_input(label_text, input_id, {
         description = false, placeholder = "Some text",
@@ -320,7 +320,7 @@ class BasicForm {
         // input_tag.addEventListener('input', () => {
         //     if (input_tag.validity.valueMissing) input_tag.reportValidity();
         // })
-        let label = BasicForm.labeller(label_text, input_id)
+        let label = Field.labeller(label_text, input_id)
 
         let validator = Field.quick('div', 'invalid-feedback', validation_message);
 
@@ -367,7 +367,7 @@ class BasicForm {
         });
 
         let input_div = Field.quick('div', 'mb-3 form-container');
-        input_div.appendChild(BasicForm.labeller(label_text, select_id));
+        input_div.appendChild(Field.labeller(label_text, select_id));
         input_div.appendChild(select);
         this.form.appendChild(input_div);
     }
@@ -607,4 +607,59 @@ class AccordionItem {
     toggle() {
         this.collapse.toggle();
     }
+}
+
+class NavBar {
+    constructor(id, extra_classes = []) {
+        this.nav_bar = Field.quick('ul', 'nav')
+        this.nav_bar.role = 'tablist';
+        this.nav_bar.id = 'nav-tab-' + id;
+        this.id = id;
+        for (let extra_class of extra_classes) {
+            // pills would be called with extra_classes = ['justify-content-end', 'nav-pills']
+            this.nav_bar.classList.add(extra_class)
+        }
+
+        this.tab_content = Field.quick('div', 'tab-content');
+    }
+
+    add_item(item_id, button_text, active = false) {
+        this.add_button(item_id, button_text, active = active);
+        this.add_tab(item_id, active = active);
+    }
+
+    add_button(item_id, button_text, active) {
+        let li = Field.quick('li', 'nav-item');
+        let button = document.createElement('button');
+        button.className = active ? 'nav-link active' : 'nav-link';
+        if (typeof button_text == 'string') {
+            button.innerHTML = button_text
+        } else {
+            button_text.forEach((b) => button.appendChild(b));
+        }
+        button.id = `${item_id}-tab-${this.id}`;
+        button.setAttribute('data-bs-toggle', 'tab');
+        button.setAttribute('data-bs-target', `#${item_id}-pane-${this.id}`);
+        button.type = 'button';
+        button.role = 'tab';
+        button.setAttribute('aria-controls', `${item_id}-pane-${this.id}`);
+        li.appendChild(button);
+        this.nav_bar.appendChild(li);
+    }
+
+
+    add_tab(item_id, active) {
+        let tab = Field.quick('div',
+            active ? 'tab-pane fade show active' : 'tab-pane fade');
+        tab.id = `${item_id}-pane-${this.id}`;
+        tab.role = 'tabpanel';
+        tab.setAttribute('aria-labelledby', `${item_id}-tab-${this.id}`);
+        tab.tabIndex = '0';
+        this.tab_content.appendChild(tab);
+    }
+
+    add_tab_content(item_id, content) {
+        this.tab_content.querySelector(`#${item_id}-pane-${this.id}`).appendChild(content);
+    }
+
 }
