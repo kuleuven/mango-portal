@@ -32,7 +32,7 @@
         configure an irods client. The irods session itself will last for a
         week, afterwards repeat the command.
       </p>
-      <pre>irods-setup --zone {{ info['hpc-irods-setup-zone'] }} | bash</pre>
+      <pre><code>irods-setup --zone {{ info['hpc-irods-setup-zone'] }} | bash</code></pre>
       <p>
         From other HPC clusters in flanders, you can run
         <code
@@ -51,12 +51,12 @@
         irods session itself will last for a week.
       </p>
     {% endif %}
-<pre>mkdir -p ~/.irods
+<pre><code>mkdir -p ~/.irods
 cat > ~/.irods/irods_environment.json <<'EOF'
 {{ setup_json['linux'] }}
 EOF
 echo '{{ info['token'] }}' | iinit --ttl 168 >/dev/null && echo You are now authenticated to irods. Your session is valid for 168 hours.
-</pre>
+</code></pre>
 
     <h5>Python Client on Windows</h5>
     <p style="margin-top: 10px">
@@ -66,7 +66,7 @@ echo '{{ info['token'] }}' | iinit --ttl 168 >/dev/null && echo You are now auth
         the irods environment file and a password file. The written password 
         file will grant access for 60 hours.
       </p>
-<pre>config = """
+<pre><code>config = """
 {{ setup_json['windows'] }}
 """
 password = "{{ info['token'] }}"
@@ -87,7 +87,7 @@ def iinit(config, password):
         print("You have successfully authenticated. Use iRODSSession(irods_env_file=" + repr(env_file) +") to start interacting with iRODS.")
 
 iinit(config, password)    
-</pre>
+</code></pre>
     <!--
     <p>See below how to get started with the python client.</p>
    
@@ -96,13 +96,13 @@ iinit(config, password)
        Inside any python environment, such as anaconda or jupyter notebook, on
        Linux or Windows, run the following snippet and adjust it to get started:
     </p>
-    <pre>import os, os.path
+    <pre><code>import os, os.path
 from irods.session import iRODSSession
 env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
 with iRODSSession(irods_env_file=env_file) as session:
     # Do something
     coll = session.collections.get("/{{ info['irods_environment']['irods_zone_name'] }}/home/{{ info['irods_environment']['irods_user_name'] }}")
-    print(coll.id)</pre>
+    print(coll.id)</code></pre>
     -->
 
     <h5>iRODS WebDAV Client (Davrods)</h5>
