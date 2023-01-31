@@ -71,6 +71,9 @@ if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.mango_open_search.admin import mango_open_search_admin_bp
     from plugins.mango_open_search.api import mango_open_search_api_bp
 
+if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+    from plugins.data_platform.user import data_platform_user_bp
+
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 irods_sessions = {}
 ## Allow cross origin requests for SPA/Ajax situations
@@ -117,6 +120,9 @@ with app.app_context():
         app.register_blueprint(mango_open_search_bp)
         app.register_blueprint(mango_open_search_admin_bp)
         app.register_blueprint(mango_open_search_api_bp)
+
+    if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        app.register_blueprint(data_platform_user_bp)
 
 
 @app.context_processor
