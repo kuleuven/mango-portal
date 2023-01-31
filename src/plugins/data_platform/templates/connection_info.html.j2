@@ -1,8 +1,119 @@
 {% extends "base.html.j2" %}
 {% block body %}
-    <h4 class="mb-3">Connection info</h4>
+    <h4 class="mb-3">Connection information</h4>
+
+    <p>
+        To be able to use the irods icommands of the irods python client, you can use the information below to connect to the ManGO storage server.
+    </p>
     
-        <p>
-            Sorry, this is not implemented.
-        </p>
+    <dl class="mx-auto ml-20">
+      <dt>Hostname</dt>
+      <dd>{{ info['irods_environment']['irods_host'] }}</dd>
+      <dt>Port</dt>
+      <dd>{{ info['irods_environment']['irods_port'] }}</dd>
+      <dt>Zone</dt>
+      <dd>{{ info['irods_environment']['irods_zone_name'] }}</dd>
+      <dt>Username</dt>
+      <dd>{{ info['irods_environment']['irods_user_name'] }}</dd>
+      <dt>Password</dt>
+      <dd>
+        <pre>{{ info['token'] }}</pre>
+      </dd>
+    </dl>
+    <p>
+      The provided password is valid for 4 hours only, refresh the page to get a
+      new password.
+    </p>
+
+    <h5>iCommands Client on Linux</h5>
+    {% if 'hpc-irods-setup-zone' in info %}
+      <p style="margin-top: 10px">
+        On the HPC tier1 or tier2 clusters in Leuven, run the snippet below to
+        configure an irods client. The irods session itself will last for a
+        week, afterwards repeat the command.
+      </p>
+      <pre>irods-setup --zone {{ info['hpc-irods-setup-zone'] }} | bash</pre>
+      <p>
+        From other HPC clusters in flanders, you can run
+        <code
+          >ssh login.hpc.kuleuven.be irods-setup --zone
+          {{ info['hpc-irods-setup-zone'] }} | bash</code
+        >. If this command through ssh does not work, please run it without
+        <code>| bash</code> to troubleshoot.
+      </p>
+      <p>
+        Alternatively, you can copy paste the snippet below on any Linux client
+        on which the irods icommands are installed.
+      </p>
+    {% else %}
+      <p style="margin-top: 10px">
+        Run the snippet below to configure an irods client under Linux. The
+        irods session itself will last for a week.
+      </p>
+    {% endif %}
+<pre>mkdir -p ~/.irods
+cat > ~/.irods/irods_environment.json <<'EOF'
+{{ setup_json['linux'] }}
+EOF
+echo '{{ info['token'] }}' | iinit --ttl 168 >/dev/null && echo You are now authenticated to irods. Your session is valid for 168 hours.
+</pre>
+
+    <h5>Python Client on Windows</h5>
+    <p style="margin-top: 10px">
+        Start a python interactive shell, and paste the snippet below to setup
+        the necessary files to authenticate against irods. The script assumes
+        that you installed the <code>python-irodsclient</code>. It will write
+        the irods environment file and a password file. The written password 
+        file will grant access for 60 hours.
+      </p>
+<pre>config = """
+{{ setup_json['windows'] }}
+"""
+password = "{{ info['token'] }}"
+
+import os, os.path
+from irods.session import iRODSSession
+from irods.password_obfuscation import encode
+
+def iinit(config, password):
+    def put(file, contents):
+        os.makedirs(os.path.dirname(file), exist_ok=True)
+        with open(file, "w") as f:
+            f.write(contents)
+    env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
+    put(env_file, config)
+    with iRODSSession(irods_env_file=env_file, password=password) as session:
+        put(iRODSSession.get_irods_password_file(), encode(session.pam_pw_negotiated[0], uid=1000))
+        print("You have successfully authenticated. Use iRODSSession(irods_env_file=" + repr(env_file) +") to start interacting with iRODS.")
+
+iinit(config, password)    
+</pre>
+    <!--
+    <p>See below how to get started with the python client.</p>
+   
+    <h6>Get started with python</h6>
+    <p style="margin-top: 10px">
+       Inside any python environment, such as anaconda or jupyter notebook, on
+       Linux or Windows, run the following snippet and adjust it to get started:
+    </p>
+    <pre>import os, os.path
+from irods.session import iRODSSession
+env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
+with iRODSSession(irods_env_file=env_file) as session:
+    # Do something
+    coll = session.collections.get("/{{ info['irods_environment']['irods_zone_name'] }}/home/{{ info['irods_environment']['irods_user_name'] }}")
+    print(coll.id)</pre>
+    -->
+
+    <h5>iRODS WebDAV Client (Davrods)</h5>
+    <p style="margin-top: 10px">You can also use WebDAV to connect to iRODS</p>
+    <p>
+      To connect to Davrods via WebDAV, go to
+      <a href="'https://' + info['irods_environment']['irods_host'] + ':8443/'"
+        >https://{{ info['irods_environment']['irods_host'] }}:8443/</a
+      >
+      and enter the username and password displayed above. <br /><b
+        >Make sure to copy the password without leading or trailing spaces.</b
+      >
+    </p>
 {% endblock body %}
