@@ -2,7 +2,7 @@ Beaker==1.12.0
 bleach==6.0.0
 blinker==1.5
 Bootstrap-Flask==2.2.0
-cachelib==0.10.1
+cachelib==0.9.0
 certifi==2022.12.7
 cffi==1.15.1
 charset-normalizer==3.0.1
