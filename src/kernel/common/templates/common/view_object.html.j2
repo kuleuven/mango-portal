@@ -1,6 +1,7 @@
 {% extends "base.html.j2" %}
 {% import "dialogs.html.j2" as dialogs %}
 {% import "blocks.html.j2" as block_macros %}
+{% set own_or_write = ['own', 'modify', 'modify object', 'modify_object', 'write'] %}
 {% block body %}
   <nav aria-label="breadcrumb"
        class="navbar-light bg-light sticky-top pb-2 pt-1">
@@ -167,7 +168,7 @@
     </div>
     <div class="tab-pane" id="item-analysis">
       {% if tika_result %}
-        {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata'), data_object_path=data_object.path) }}
+        {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata'), data_object_path=data_object.path, read_only = not(current_user_rights | intersection(own_or_write))) }}
       {% endif %}
       <div class="row">
         <form class="row row-cols-lg-auto g-3 align-items-center mt-3 mb-3 text-end"
