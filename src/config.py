@@ -1,6 +1,7 @@
 import os
 
-MANGO_AUTH = os.environ.get("MANGO_AUTH", "openid") # "local_dev", "basic", "openid", "via_callback"
+MANGO_AUTH = os.environ.get("MANGO_AUTH", "login") # "localdev" or "login"
+MANGO_LOGIN_ACTION = "data_platform_user_bp.login_openid"
 UPLOAD_FOLDER = "/tmp"
 SECRET_KEY = os.environ.get("SECRET_KEY", "HV44H6oH-eKMqJDU0W6Xw6ch_c4wpmDWf5tgD0p-0Gc")
 DATA_OBJECT_MAX_SIZE_PREVIEW = 1024 * 1024 * 16  # 16MB

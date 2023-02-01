@@ -1,0 +1,49 @@
+{% extends "base.html.j2" %}
+{% block body %}
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-header">
+          <h1 class="bi bi-archive display-1"></h1>
+        </div>
+        <table class="table">
+          <tr>
+            <th>Project id</th>
+            <td>{{ project['name'] }}</td>
+          </tr>
+          <tr>
+            <th>Description</th>
+            <td>{{ project['description'] }}</td>
+          </tr>
+          <tr>
+            <th>Platform</th>
+            <td>
+            {% if project['platform'] == "irods" %}
+            irods
+            {% for opt in project['platform_options'] %}
+            {% if opt['key'] == 'zone-jobid' and opt['value'] != current_jobid %}
+            {% for zone in zones %}
+            {% if zone['jobid'] == opt['value'] %}
+            (zone {{ zone['fqdn'] }})
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+            {% endfor %}
+            {% else %}
+            {{ project['platform'] }}
+            {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th>Max inodes</th>
+            <td>{{ project['quotas_inodes'] }}</td>
+          </tr>
+          <tr>
+            <th>Max size (bytes)</th>
+            <td>{{ project['quotas_size'] }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock body %}

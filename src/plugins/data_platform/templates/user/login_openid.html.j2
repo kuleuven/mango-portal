@@ -14,16 +14,16 @@ div#login-form {
         <div class="row align-items-center justify-content-center">
             <div class="col-md-9 rounded-3" id="login-form">
                 <h3>Login to Mango, your Active Data Portal</h3>
-                <p class="mb-4">Please select the zone you want to login to</p>
-                <form action="{{ url_for('user_bp.login_openid_select_zone') }}"" method="post">
+                <p class="mb-4">Please select the infrastructure you want to login to</p>
+                <form action="{{ url_for('data_platform_user_bp.login_openid') }}"" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="form-group mb-3">
-                        <label for="irods_zone">iRODS zone</label>
-                        <select class="form-select" name="irods_zone" id="irods_zone">
-                            {% for zone_name in zones %}
-                                <option value="{{ zone_name }}"
-                                        {% if zone_name == last_zone_name %}selected{% endif %}>
-                                    {{ zone_name }}
+                        <label for="openid_provider">Login Provider</label>
+                        <select class="form-select" name="openid_provider" id="irods_zone">
+                            {% for openid_provider in openid_providers %}
+                                <option value="{{ openid_provider }}"
+                                        {% if openid_provider == last_openid_provider %}selected{% endif %}>
+                                    {{ openid_providers[openid_provider]['label'] }}
                                 </option>
                             {% endfor %}
                         </select>
