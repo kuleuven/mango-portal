@@ -2,54 +2,62 @@
 
 {% block body %}
     <h3>Login to Mango, your Active Data Portal</h3>
-    <p class="mb-4">Please select the zone you want to login to</p>
-    <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}"" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <div class="form-group mb-3">
-            <label for="irods_zone">iRODS zone</label>
-            <select class="form-select" name="irods_zone" id="irods_zone">
-                {% for zone_name in zones %}
-                    <option value="{{ zone_name }}"
-                            {% if zone_name == last_zone_name %}selected{% endif %}>
-                        {{ zone_name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        <input type="submit" value="Log In" class="btn btn-block btn-primary mb-3"/>
-    </form>
 
-    <p class="mb-4">You have the following projects:</p>
+    <p class="mb-4">Please select the zone/project you want to login to:</p>
 
     <div class="row">
         <div class="col">
+            {% for zone_name in zones %}
             <div class="card">
-            <div class="card-header">
-                <h1 class="bi bi-archive display-1"></h1>
+                <div class="card-header">
+                    <h4 class="bi bi-archive mt-2">
+                    iRODS zone {{ zone_name }}</h4>
                 </div>
-                <ul class="list-group list-group-flush">
+                <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}"" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="irods_zone" value="{{ zone_name }}" />
+                    <div class="d-flex p-2">
+                        <input type="submit" name="submit" value="Enter portal" class="btn btn-block btn-primary m-1"/>
+                        <input type="submit" name="submit" value="Connection information" class="btn btn-block btn-primary m-1"/>
+                    </div>
+                </form>
+                <table class="table table-striped table-hover mt-2">
+                  <thead>
+                    <th>Project</th>
+                    <th>Actions</th>
+                  </thead>
+                  <tbody>
                 {% for project in projects %}
-                    <li class="list-group-item"><a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
-                    
-                    {% if project['platform'] == "irods" %}
-                    {% for opt in project['platform_options'] %}
-                    {% if opt['key'] == 'zone-jobid' %}
-                    {% for zone in zones %}
-                    {% if zone['jobid'] == opt['value'] %}
-                    (zone {{ zone['fqdn'] }})
-                    {% endif %}
-                    {% endfor %}
-                    {% endif %}
-                    {% endfor %}
-                    {% else %}
-                    ({{ project['platform'] }})
-                    {% endif %}
-                    
-                    </li>
-                {%endfor%}
-                </ul>
+                {% if project['zone'] == zone_name %}
+                    <tr>
+                      <td class="bi bi-folder fs-4">
+                      <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a></td>
+                      <td><a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a></td>
+                    </tr>
+                {% endif %}
+                {% endfor %}
+                  </tbody>
+                </table>
             </div>
+            {% endfor %}
+
+            {% for project in projects %}
+            {% if 'zone' not in project %}
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="bi bi-archive mt-2">
+                    {{project['platform']}} {{ project.name }}</h4>
+                </div>
+                <div class="d-flex p-2">
+                    <input type="submit" value="Edit members" class="btn btn-block btn-primary"/>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
         </div>
     </div>
+    </form>
+
+    <!-- TODO : Add buttons "Open portal" / "Edit members" / "Machine token" -->
 
 {% endblock body %}
