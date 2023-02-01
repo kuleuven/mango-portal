@@ -38,7 +38,7 @@ irods_zones = {
             "zone": "kuleuven_tier1_pilot",
         },
         "ssl_settings": {},
-        "admin_users": ["vsc33436", "x0116999"],
+        "admin_users": ["vsc33436", "x0116999", "vsc31987"],
         'logo': 'vsc-combi.webp', # path in static folder
         'splash_image' : 'portal2.jpg',
     },
@@ -195,6 +195,10 @@ def irods_connection_info(login_method, zone, username, password=None):
         info = response.json()
 
         parameters.update(info["irods_environment"])
+
+        if parameters["irods_authentication_scheme"] == "pam_password":
+            parameters["irods_authentication_scheme"] = "PAM"
+
         password = info["token"]
 
     return {
