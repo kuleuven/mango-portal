@@ -56,13 +56,13 @@
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    {% if config['MANGO_AUTH'] in ['basic', 'openid', 'via_callback'] %}
+                    {% if config['MANGO_AUTH'] == 'localdev' %}
                         <li>
-                            <a class="dropdown-item" href="{{ url_for('user_bp.logout_basic') }}">Sign out</a>
+                            <a class="dropdown-item disabled" href="#">Sign out</a>
                         </li>
                     {% else %}
                         <li>
-                            <a class="dropdown-item disabled" href="#">Sign out</a>
+                            <a class="dropdown-item" href="{{ url_for('user_bp.logout_basic') }}">Sign out</a>
                         </li>
                     {% endif %}
                     <!--<li><a class="dropdown-item" href="#">Switch to admin</a></li>-->
