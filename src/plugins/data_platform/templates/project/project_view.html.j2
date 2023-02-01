@@ -1,5 +1,14 @@
-{% extends "base.html.j2" %}
+{% extends "base_openid.html.j2" %}
+
 {% block body %}
+   <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+          <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">{{ project['name'] }}</li>
+    </ol>
+  </nav>
   <div class="row">
     <div class="col">
       <div class="card">
@@ -21,10 +30,10 @@
             {% if project['platform'] == "irods" %}
             irods
             {% for opt in project['platform_options'] %}
-            {% if opt['key'] == 'zone-jobid' and opt['value'] != current_jobid %}
+            {% if opt['key'] == 'zone-jobid' %}
             {% for zone in zones %}
             {% if zone['jobid'] == opt['value'] %}
-            (zone {{ zone['fqdn'] }})
+            (zone {{ zone['zone'] }})
             {% endif %}
             {% endfor %}
             {% endif %}
