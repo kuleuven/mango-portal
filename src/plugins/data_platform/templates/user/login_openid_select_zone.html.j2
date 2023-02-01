@@ -3,6 +3,9 @@
 {% block body %}
     <h3>Login to Mango, your Active Data Portal</h3>
 
+    {% if projects|length == 0 %}
+    <p class="mb-4">You have no active project registered. Please contact the service desk for more information about ManGO.</p>
+    {% else %}
     <p class="mb-4">Please select the zone/project you want to login to:</p>
 
     <div class="row">
@@ -32,7 +35,10 @@
                     <tr>
                       <td class="bi bi-folder fs-4">
                       <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a></td>
-                      <td><a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a></td>
+                      <td>
+                      <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
+                      <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Create API token</a>
+                      </td>
                     </tr>
                 {% endif %}
                 {% endfor %}
@@ -57,7 +63,6 @@
         </div>
     </div>
     </form>
-
-    <!-- TODO : Add buttons "Open portal" / "Edit members" / "Machine token" -->
+    {% endif %}
 
 {% endblock body %}
