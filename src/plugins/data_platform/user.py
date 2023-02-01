@@ -196,8 +196,8 @@ def login_openid_select_zone():
     if request.method == 'GET':
         last_zone_name=''
 
-        if 'zone_name' in session:
-            last_zone_name = session['zone_name']
+        if 'zone' in session:
+            last_zone_name = session['zone']
 
         zones_for_user = openid_providers[session['openid_provider']]['zones_for_user']
 
