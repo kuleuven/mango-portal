@@ -106,7 +106,7 @@ def login_basic():
             userid = session['userid']
         if 'zone' in session:
             last_zone_name = session['zone']
-        return render_template('login_basic.html.j2', userid=userid, last_zone_name=last_zone_name)
+        return render_template('user/login_basic.html.j2', userid=userid, last_zone_name=last_zone_name)
     if request.method== 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
@@ -114,10 +114,10 @@ def login_basic():
 
         if username == '':
             flash('Missing user id', category='danger')
-            return render_template('login_basic.html.j2')
+            return render_template('user/login_basic.html.j2')
         if password == '':
             flash('Missing password', category='danger')
-            return render_template('login_basic.html.j2')
+            return render_template('user/login_basic.html.j2')
 
         connection_info = irods_connection_info(login_method="basic", zone=zone, username=username, password=password)
 
@@ -132,7 +132,7 @@ def login_basic():
         except Exception as e:
             print(e)
             flash('Could not create iRODS session', category='danger')
-            return render_template('login_basic.html.j2')
+            return render_template('user/login_basic.html.j2')
 
         # sanity check on credentials
         try:
@@ -140,12 +140,12 @@ def login_basic():
         except PAM_AUTH_PASSWORD_FAILED as e:
             print(e)
             flash('Authentication failed: invalid password', category='danger')
-            return render_template('login_basic.html.j2')
+            return render_template('user/login_basic.html.j2')
 
         except Exception as e:
             print(e)
             flash('Authentication failed: '+str(e))
-            return render_template('login_basic.html.j2', category='danger')
+            return render_template('user/login_basic.html.j2', category='danger')
 
         # should be ok now to add session to pool
         irods_session_pool.add_irods_session(username, irods_session)
@@ -195,7 +195,7 @@ def login_zone():
             return redirect(auth_uri)
         else:
             flash('Unknown zone', category='danger')
-            return render_template('login_zone.html.j2', )
+            return render_template('user/login_zone.html.j2', )
 
 
 
@@ -211,7 +211,7 @@ def login_via_go_callback():
 
     if not user_name or not password or not zone:
         flash('Could not obtain user name or password or zone name, did you select the right zone', category='danger')
-        return render_template('login_zone.html.j2')
+        return render_template('user/login_zone.html.j2')
 
     try:
         irods_session = iRODSSession(
@@ -256,7 +256,7 @@ def login_openid():
 
         if openid_provider not in openid_providers:
             flash('Unknown openid provider', category='danger')
-            return render_template('login_openid.html.j2', )
+            return render_template('user/login_openid.html.j2', )
 
         provider_config = openid_providers[openid_provider]
 
@@ -342,7 +342,7 @@ def login_openid_callback(openid_provider):
 def login_openid_select_zone():
     if 'openid_username' not in session or 'openid_provider' not in session:
         flash('Please log in first', category='danger')
-        return render_template('login_openid.html.j2')
+        return render_template('user/login_openid.html.j2')
 
     if request.method == 'GET':
         last_zone_name=''
