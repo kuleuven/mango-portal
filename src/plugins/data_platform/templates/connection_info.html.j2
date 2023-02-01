@@ -43,7 +43,7 @@
       </p>
       <p>
         Alternatively, you can copy paste the snippet below on any Linux client
-        on which the irods icommands are installed.
+        on which the irods icommands (version >= 4.3.0) are installed.
       </p>
     {% else %}
       <p style="margin-top: 10px">
@@ -55,6 +55,7 @@
 cat > ~/.irods/irods_environment.json <<'EOF'
 {{ setup_json['linux'] }}
 EOF
+iinit -h | grep Version | grep -v -q 4.2. || sed -i 's/"irods_authentication_scheme": "pam_password"/"irods_authentication_scheme": "PAM"/' ~/.irods/irods_environment.json
 echo '{{ info['token'] }}' | iinit --ttl 168 >/dev/null && echo You are now authenticated to irods. Your session is valid for 168 hours.
 </code></pre>
 
