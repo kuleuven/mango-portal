@@ -2,6 +2,8 @@ import os
 import logging
 import requests
 
+from flask import current_app, session
+
 API_URL = os.environ.get(
     "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
 )
@@ -41,26 +43,51 @@ def update_zone_info(irods_zones):
     irods_zones.clear()
     irods_zones.update(zones)
 
-# TODO: only present relevant zones for a user
-def zones_for_user_lnx(irods_zones, username):
-    zones = []
 
-    for zone, info in irods_zones.items():
-        if "-lnx-" in info["jobid"]:
-            zones.append(zone)
+def current_user_api_token():
+    header = {"Authorization": "Bearer " + API_TOKEN}
+    response = requests.post(
+        f"{API_URL}/v1/token",
+        json={"username": session['openid_username'], "permissions": ["user"]},
+        headers=header,
+    )
+    response.raise_for_status()
 
-    return zones
+    return response.json()["token"]
 
 
-# TODO: only present relevant zones for a user
-def zones_for_user_vsc(irods_zones, username):
-    zones = []
+def current_user_projects():
+    # Retrieve projects
+    header = {"Authorization": "Bearer " + current_user_api_token()}
+    response = requests.get(
+        f"{API_URL}/v1/projects", headers=header
+    )
+    response.raise_for_status()
 
-    for zone, info in irods_zones.items():
-        if "-hpc-" in info["jobid"]:
-            zones.append(zone)
+    projects = response.json()
 
-    return zones
+    # Get zones
+    zones = current_app.config['irods_zones']
+
+    # Map projects to zones
+    for project in projects:
+        if project["platform"] != "irods":
+            continue
+    
+        jobid = ''
+
+        for opt in project["platform_options"]:
+            if opt["key"] == "zone-jobid":
+                jobid = opt["value"]
+        
+        for zone in zones:
+            if zones[zone]['jobid'] == jobid:
+                project["zone"] = zone
+    
+    return projects
+
+def current_zone_jobid():
+    return current_app.config['irods_zones'][g.irods_session.zone]["jobid"]
 
 # Dict of openid providers
 openid_providers = {
@@ -69,13 +96,11 @@ openid_providers = {
         "client_id": os.environ.get("OIDC_CLIENT_ID", ""),
         "secret": os.environ.get("OIDC_SECRET", ""),
         "issuer_url": os.environ.get("OIDC_ISSUER_URL", ""),
-        "zones_for_user": zones_for_user_lnx,
     },
     "vsc": {
         "label": "VSC",
         "client_id": "blub",
         "secret": "blub",
         "issuer_url": "https://auth.vscentrum.be",
-        "zones_for_user": zones_for_user_vsc,
     },
 }

@@ -74,6 +74,7 @@ if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     update_zone_info(app.config["irods_zones"])
 
     from plugins.data_platform.user import data_platform_user_bp
+    from plugins.data_platform.project import data_platform_project_bp
 
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 irods_sessions = {}
@@ -124,6 +125,7 @@ with app.app_context():
 
     if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
         app.register_blueprint(data_platform_user_bp)
+        app.register_blueprint(data_platform_project_bp)
 
 
 @app.context_processor
@@ -152,6 +154,7 @@ def init_and_secure_views():
         "data_platform_user_bp.login_openid",
         "data_platform_user_bp.login_openid_callback",
         "data_platform_user_bp.login_openid_select_zone",
+        "data_platform_project_bp.project",
     ]:
         return None
 

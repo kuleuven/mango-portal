@@ -39,12 +39,43 @@ def current_user_api_token():
     header = {"Authorization": "Bearer " + API_TOKEN}
     response = requests.post(
         f"{API_URL}/v1/token",
-        json={"username": g.irods_session.username, "permissions": ["user"]},
+        json={"username": session['openid_username'], "permissions": ["user"]},
         headers=header,
     )
     response.raise_for_status()
 
     return response.json()["token"]
+
+
+def current_user_projects():
+    # Retrieve projects
+    header = {"Authorization": "Bearer " + current_user_api_token()}
+    response = requests.get(
+        f"{API_URL}/v1/projects", headers=header
+    )
+    response.raise_for_status()
+
+    projects = response.json()
+
+    # Get zones
+    zones = current_app.config['irods_zones']
+
+    # Map projects to zones
+    for project in projects:
+        if project["platform"] != "irods":
+            continue
+    
+        jobid = ''
+
+        for opt in project["platform_options"]:
+            if opt["key"] == "zone-jobid":
+                jobid = opt["value"]
+        
+        for zone in zones:
+            if zones[zone]['jobid'] == jobid:
+                project["zone"] = zone
+    
+    return projects
 
 def current_zone_jobid():
     return current_app.config['irods_zones'][g.irods_session.zone]["jobid"]
@@ -198,12 +229,20 @@ def login_openid_select_zone():
 
         if 'zone' in session:
             last_zone_name = session['zone']
+        
+        projects = current_user_projects()
 
-        zones_for_user = openid_providers[session['openid_provider']]['zones_for_user']
+        # Filter zones
+        zones = []
+        for project in projects:
+            if 'zone' in project and project['zone'] not in zones:
+                zones.append(project['zone'])
 
-        zones = zones_for_user(current_app.config['irods_zones'], session['openid_username'])
-
-        return render_template('user/login_openid_select_zone.html.j2', zones=zones, last_zone_name=last_zone_name)
+        return render_template('user/login_openid_select_zone.html.j2', 
+            projects=projects, 
+            zones=zones, 
+            last_zone_name=last_zone_name,
+        )
 
     zone = request.form.get('irods_zone')
 
@@ -263,50 +302,4 @@ def connection_info():
             'linux': json.dumps(info['irods_environment'], indent=4),
             'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
         }
-    )
-
-@data_platform_user_bp.route("/data-platform/projects", methods=["GET"])
-def project_list():
-    header = {"Authorization": "Bearer " + current_user_api_token()}
-    jobid = current_zone_jobid()
-
-    response = requests.get(
-        f"{API_URL}/v1/irods/zones", headers=header
-    )
-    response.raise_for_status() 
-
-    zones = response.json()
-
-    response = requests.get(
-        f"{API_URL}/v1/projects", headers=header
-    )
-    response.raise_for_status()
-
-    projects = response.json()
-
-    return render_template(
-        "project_list.html.j2", projects=projects, zones=zones, current_jobid=jobid,
-    )
-
-@data_platform_user_bp.route("/data-platform/project/<project_name>", methods=["GET"])
-def project(project_name):
-    header = {"Authorization": "Bearer " + current_user_api_token()}
-    jobid = current_zone_jobid()
-
-    response = requests.get(
-        f"{API_URL}/v1/irods/zones", headers=header
-    )
-    response.raise_for_status() 
-
-    zones = response.json()
-
-    response = requests.get(
-        f"{API_URL}/v1/projects/{project_name}", headers=header
-    )
-    response.raise_for_status()
-
-    project = response.json()
-
-    return render_template(
-        "project_view.html.j2", project=project, zones=zones, current_jobid=jobid,
     )

@@ -1,55 +1,4 @@
-{% extends "base.html.j2" %}
-{% block header %}
-<header class="py-3 mb-4 border-bottom shadow">
-    <div class="container-fluid d-grid gap-3 align-items-center"
-         style="grid-template-columns: 1fr 2fr;">
-        <div class="row">
-            <a href="{{ url_for('index')}}"
-               class="d-flex align-items-center col-3 mb-2 mb-lg-0 link-dark text-decoration-none">
-                <img class="logo"
-                        alt="logo"
-                        src="{{ url_for('static', filename='logo.svg') }}"
-                        width="137"
-                        style="margin: -10px 10px;"/>
-                <img class="logo"
-                        alt="logo"
-                        src="{{ url_for('static', filename='mango-logo.svg') }}"
-                        width="137"
-                        style="margin: -10px 0;"/>
-            </a>
-        </div>
-        <div class="d-flex justify-content-end">
-            <div class="flex-shrink-0 dropdown">
-                <a href="#"
-                   class="d-block link-dark text-decoration-none dropdown-toggle"
-                   id="dropdownUser"
-                   data-bs-toggle="dropdown"
-                   aria-expanded="false">
-                    {{ session['openid_username'] }} <i class="bi bi-person-circle fs-4"></i>
-                </a>
-                <ul class="dropdown-menu text-small shadow"
-                    aria-labelledby="dropdownUser">
-                    <li>
-                        <a class="dropdown-item disabled" href="#">Preferences</a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item disabled" href="#">My profile</a>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.login_openid') }}">Sign out</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</header>    
-{% endblock header %}
-
-{% block footer %}
-{% endblock footer %}
+{% extends "base_openid.html.j2" %}
 
 {% block body %}
     <h3>Login to Mango, your Active Data Portal</h3>
@@ -69,4 +18,38 @@
         </div>
         <input type="submit" value="Log In" class="btn btn-block btn-primary mb-3"/>
     </form>
+
+    <p class="mb-4">You have the following projects:</p>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+            <div class="card-header">
+                <h1 class="bi bi-archive display-1"></h1>
+                </div>
+                <ul class="list-group list-group-flush">
+                {% for project in projects %}
+                    <li class="list-group-item"><a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
+                    
+                    {% if project['platform'] == "irods" %}
+                    {% for opt in project['platform_options'] %}
+                    {% if opt['key'] == 'zone-jobid' %}
+                    {% for zone in zones %}
+                    {% if zone['jobid'] == opt['value'] %}
+                    (zone {{ zone['fqdn'] }})
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    {% endfor %}
+                    {% else %}
+                    ({{ project['platform'] }})
+                    {% endif %}
+                    
+                    </li>
+                {%endfor%}
+                </ul>
+            </div>
+        </div>
+    </div>
+
 {% endblock body %}
