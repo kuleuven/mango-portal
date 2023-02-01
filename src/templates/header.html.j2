@@ -4,7 +4,7 @@
         <div class="row">
             <a href="{{ url_for('index')}}"
                class="d-flex align-items-center col-3 mb-2 mb-lg-0 link-dark text-decoration-none">
-                {% if 'logo' in config.irods_zones[g.irods_session.zone] %}
+                {% if 'irods_session' in g and 'logo' in config.irods_zones[g.irods_session.zone] %}
                     <img class="logo"
                          alt="logo"
                          src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
@@ -37,6 +37,7 @@
                            required/>
                 </form>
             {% endif %}
+            {% if 'irods_session' in g %}
             <div class="flex-shrink-0 dropdown">
                 <a href="#"
                    class="d-block link-dark text-decoration-none dropdown-toggle"
@@ -68,6 +69,7 @@
                     <!--<li><a class="dropdown-item" href="#">Switch to admin</a></li>-->
                 </ul>
             </div>
+            {% endif %}
         </div>
     </div>
 </header>

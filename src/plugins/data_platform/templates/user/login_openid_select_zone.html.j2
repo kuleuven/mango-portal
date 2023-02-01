@@ -1,36 +1,72 @@
-{% extends "base_core.html.j2" %}
-{% block custom_style %}
-    <style>
-div#login-form {
-    background-image: url({{ url_for('static', filename='unsplash-mango.jpg') }});
-    background-color: rgba(255,255,255,0.8);
-    background-blend-mode: lighten;
-    /* You may add things like width, height, background-size... */
-}
-    </style>
-{% endblock custom_style %}
-{% block body %}
-    <div class="container">
-        <div class="row align-items-center justify-content-center">
-            <div class="col-md-9 rounded-3" id="login-form">
-                <h3>Login to Mango, your Active Data Portal</h3>
-                <p class="mb-4">Please select the zone you want to login to</p>
-                <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}"" method="post">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <div class="form-group mb-3">
-                        <label for="irods_zone">iRODS zone</label>
-                        <select class="form-select" name="irods_zone" id="irods_zone">
-                            {% for zone_name in zones %}
-                                <option value="{{ zone_name }}"
-                                        {% if zone_name == last_zone_name %}selected{% endif %}>
-                                    {{ zone_name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <input type="submit" value="Log In" class="btn btn-block btn-primary mb-3"/>
-                </form>
+{% extends "base.html.j2" %}
+{% block header %}
+<header class="py-3 mb-4 border-bottom shadow">
+    <div class="container-fluid d-grid gap-3 align-items-center"
+         style="grid-template-columns: 1fr 2fr;">
+        <div class="row">
+            <a href="{{ url_for('index')}}"
+               class="d-flex align-items-center col-3 mb-2 mb-lg-0 link-dark text-decoration-none">
+                <img class="logo"
+                        alt="logo"
+                        src="{{ url_for('static', filename='logo.svg') }}"
+                        width="137"
+                        style="margin: -10px 10px;"/>
+                <img class="logo"
+                        alt="logo"
+                        src="{{ url_for('static', filename='mango-logo.svg') }}"
+                        width="137"
+                        style="margin: -10px 0;"/>
+            </a>
+        </div>
+        <div class="d-flex justify-content-end">
+            <div class="flex-shrink-0 dropdown">
+                <a href="#"
+                   class="d-block link-dark text-decoration-none dropdown-toggle"
+                   id="dropdownUser"
+                   data-bs-toggle="dropdown"
+                   aria-expanded="false">
+                    {{ g.openid_user_name }} <i class="bi bi-person-circle fs-4"></i>
+                </a>
+                <ul class="dropdown-menu text-small shadow"
+                    aria-labelledby="dropdownUser">
+                    <li>
+                        <a class="dropdown-item disabled" href="#">Preferences</a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item disabled" href="#">My profile</a>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.login_openid') }}">Sign out</a>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
+</header>    
+{% endblock header %}
+
+{% block footer %}
+{% endblock footer %}
+
+{% block body %}
+    <h3>Login to Mango, your Active Data Portal</h3>
+    <p class="mb-4">Please select the zone you want to login to</p>
+    <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}"" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="form-group mb-3">
+            <label for="irods_zone">iRODS zone</label>
+            <select class="form-select" name="irods_zone" id="irods_zone">
+                {% for zone_name in zones %}
+                    <option value="{{ zone_name }}"
+                            {% if zone_name == last_zone_name %}selected{% endif %}>
+                        {{ zone_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <input type="submit" value="Log In" class="btn btn-block btn-primary mb-3"/>
+    </form>
 {% endblock body %}
