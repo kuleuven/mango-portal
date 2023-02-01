@@ -57,6 +57,11 @@
                     <li>
                         <hr class="dropdown-divider">
                     </li>
+                    {% if 'openid_username' in session %}
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}">Switch zone</a>
+                        </li>
+                    {% endif %}
                     {% if config['MANGO_AUTH'] == 'localdev' %}
                         <li>
                             <a class="dropdown-item disabled" href="#">Sign out</a>
