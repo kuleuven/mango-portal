@@ -5,6 +5,7 @@ from flask import (
     redirect,
     request,
     url_for,
+    session,
 )
 
 from . import API_URL, current_user_api_token
@@ -33,8 +34,15 @@ def project(project_name):
 
     project = response.json()
 
+    # find out whether we are project owner
+    my_project_role = ""
+
+    for m in project['members']:
+        if m['username'] == session['openid_username']:
+            my_project_role = m['role']
+
     return render_template(
-        "project/project_view.html.j2", project=project, zones=zones,
+        "project/project_view.html.j2", project=project, zones=zones, my_project_role=my_project_role,
     )
 
 @data_platform_project_bp.route("/data-platform/projects/member/add", methods=["POST"])

@@ -36,8 +36,10 @@
                       <td class="bi bi-folder fs-4">
                       <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a></td>
                       <td>
+                      {% if project['my_role'] == 'owner' %}
                       <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
                       <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Create API token</a>
+                      {% endif %}
                       </td>
                     </tr>
                 {% endif %}

@@ -62,6 +62,12 @@ def current_user_projects():
 
     # Map projects to zones
     for project in projects:
+        project['my_role'] = ''
+
+        for m in project['members']:
+            if m['username'] == session['openid_username']:
+                project['my_role'] = m['role']
+
         if project["platform"] != "irods":
             continue
     
