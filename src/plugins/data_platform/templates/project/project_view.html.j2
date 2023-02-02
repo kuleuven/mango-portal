@@ -56,27 +56,33 @@
           <tr>
             <th>Username</th>
             <th>Role</th>
+            {% if my_project_role == 'owner' %}
             <th></th>
             <th></th>
+            {% endif %}
           </tr>
           {% for member in project['members'] %}
           <tr>
             <td>{{ member['username'] }}</td>
             <td>{{ member['role'] }}</td>
+            {% if my_project_role == 'owner' %}
             <td>
               <a href="#" data-bs-toggle="modal" data-bs-target="#editMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-pencil"></i></a>
             </td>
             <td>
               <a class="text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-trash"></i></a>
             </td>
+            {% endif %}
           </tr>
           {% endfor %}
         </table>
+        {% if my_project_role == 'owner' %}
         <div>
           <button type="button" class="btn btn-primary m-2 mt-0" data-bs-toggle="modal" data-bs-target="#addMember">
               Add member
           </button>
         </div>
+        {% endif %}
       </div>
     </div>
   </div>
