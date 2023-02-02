@@ -16,7 +16,7 @@
                     <h4 class="bi bi-archive mt-2">
                     iRODS zone {{ zone_name }}</h4>
                 </div>
-                <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}"" method="post">
+                <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="irods_zone" value="{{ zone_name }}" />
                     <div class="d-flex p-2">

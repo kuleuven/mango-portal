@@ -45,14 +45,272 @@
           </tr>
           <tr>
             <th>Max inodes</th>
-            <td>{{ project['quotas_inodes'] }}</td>
+            <td>{{ project['quota_inodes'] }}</td>
           </tr>
           <tr>
             <th>Max size (bytes)</th>
-            <td>{{ project['quotas_size'] }}</td>
+            <td>{{ project['quota_size'] }}</td>
           </tr>
         </table>
+        <table class="table table-hover">
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th></th>
+            <th></th>
+          </tr>
+          {% for member in project['members'] %}
+          <tr>
+            <td>{{ member['username'] }}</td>
+            <td>{{ member['role'] }}</td>
+            <td>
+              <a href="#" data-bs-toggle="modal" data-bs-target="#editMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-pencil"></i></a>
+            </td>
+            <td>
+              <a class="text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-trash"></i></a>
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+        <div>
+          <button type="button" class="btn btn-primary m-2 mt-0" data-bs-toggle="modal" data-bs-target="#addMember">
+              Add member
+          </button>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Add member model -->
+  <div class="modal fade"
+       id="addMember"
+       tabindex="-1"
+       aria-labelledby="addMemberLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addMemberLabel">
+            Add member
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.add_project_member') }}""
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="username-add" class="col-form-label">
+                Username
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="username-add"
+                     name="username"
+                     required/>
+              <div class="invalid-feedback">
+                Username is required for adding a member
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="role-add" class="col-form-label">
+                Role
+              </label>
+              <select
+                     class="form-select"
+                     id="role-add"
+                     name="role"
+                     required>
+                  <option value="member">member</option>
+                  <option value="owner">owner</option>
+              </select>
+              <div class="invalid-feedback">
+                A value is required for adding a member
+              </div>
+            </div>
+            <input type="hidden"
+                   id="project-add"
+                   name="project"
+                   value="{{ project['name']}}"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Add
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!--Edit member modal -->
+  <div class="modal fade"
+       id="editMember"
+       tabindex="-1"
+       aria-labelledby="editMemberLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editMemberLabel">
+            Update Membership
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.modify_project_member') }}""
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="username" class="col-form-label">
+                Username
+              </label>
+              <input type="text"
+                     class="form-control-plaintext"
+                     id="username"
+                     name="username"
+                     required readonly />
+              <div class="invalid-feedback">
+                Username is required
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="role" class="col-form-label">
+                Role
+              </label>
+              <select
+                     class="form-select"
+                     id="role"
+                     name="role"
+                     required>
+                  <option value="member">member</option>
+                  <option value="owner">owner</option>
+              </select>
+              <div class="invalid-feedback">
+                Role is required
+              </div>
+            </div>
+            <input type="hidden"
+                   id="project-edit"
+                   name="project"
+                   value="{{ project['name']}}"/>
+            <input type="hidden"
+                   id="orig-role"
+                   name="orig-role"
+                   value=""/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Delete modal -->
+  <div class="modal fade"
+       id="deleteMember"
+       tabindex="-1"
+       aria-labelledby="deleteMemberLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteMemberLabel">
+            Delete Membership
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.delete_project_member') }}"
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="username-delete" class="col-form-label">
+                Username
+              </label>
+              <input type="text"
+                     class="form-control-plaintext"
+                     id="username-delete"
+                     name="username"
+                     readonly readonly />
+              <div class="invalid-feedback">
+                Username is required
+              </div>
+            </div>
+            <input type="hidden"
+                   id="project-delete"
+                   name="project"
+                   value="{{ project['name']}}"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-danger" type="submit">
+              Delete
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>  
+  var editMember = document.getElementById('editMember')
+  editMember.addEventListener('show.bs.modal', function (event) {
+    // Button that triggered the modal
+    var button = event.relatedTarget
+    // Extract info from data-bs-* attributes
+    var fieldUsername = button.getAttribute('data-bs-username')
+    var fieldRole = button.getAttribute('data-bs-role')
+  
+    var modalBodyInputUsername = editMember.querySelector('#username')
+    var modalBodyInputRole = editMember.querySelector('#role')
+    var modalBodyInputOrigRole = editMember.querySelector('#orig-role')
+
+    modalBodyInputUsername.value = fieldUsername
+    modalBodyInputRole.value = fieldRole
+    modalBodyInputOrigRole.value = fieldRole
+  });
+
+  var deleteMember = document.getElementById('deleteMember')
+  deleteMember.addEventListener('show.bs.modal', function (event) {
+    // Button that triggered the modal
+    var button = event.relatedTarget
+    // Extract info from data-bs-* attributes
+    var fieldUsername = button.getAttribute('data-bs-username')
+
+    var modalBodyInputUsername = deleteMember.querySelector('#username-delete')
+
+    modalBodyInputUsername.value = fieldUsername
+  });
+  </script>
 {% endblock body %}
