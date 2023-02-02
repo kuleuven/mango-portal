@@ -65,7 +65,10 @@
           <tr>
             <td>{{ member['username'] }}</td>
             <td>{{ member['role'] }}</td>
-            {% if my_project_role == 'owner' %}
+            {% if my_project_role == 'owner' and member['username'] == session['openid_username'] %}
+            <td></td>
+            <td></td>
+            {% elif my_project_role == 'owner' %}
             <td>
               <a href="#" data-bs-toggle="modal" data-bs-target="#editMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-pencil"></i></a>
             </td>
