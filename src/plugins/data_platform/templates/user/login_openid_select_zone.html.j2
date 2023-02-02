@@ -39,6 +39,8 @@
                       {% if project['my_role'] == 'owner' %}
                       <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
                       <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Create API token</a>
+                      {% else %}
+                      <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
                       {% endif %}
                       </td>
                     </tr>
