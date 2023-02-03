@@ -6,6 +6,7 @@ from flask import (
     request,
     url_for,
     session,
+    flash,
 )
 
 from . import API_URL, current_user_api_token
@@ -60,6 +61,8 @@ def add_project_member():
     )
     response.raise_for_status()
 
+    flash(response.json()['message'], "success")
+
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
 
 @data_platform_project_bp.route("/data-platform/projects/member/delete", methods=["POST"])
@@ -74,4 +77,21 @@ def delete_project_member():
     )
     response.raise_for_status()
 
+    flash(response.json()['message'], "success")
+    
+    return redirect(url_for('data_platform_project_bp.project', project_name=id))
+
+@data_platform_project_bp.route("/data-platform/projects/deploy", methods=["POST"])
+def deploy_project():
+    header = {"Authorization": "Bearer " + current_user_api_token()}
+
+    id = request.form.get('project')
+
+    response = requests.post(
+        f"{API_URL}/v1/projects/{id}/deploy", headers=header
+    )
+    response.raise_for_status()
+
+    flash(response.json()['message'], "success")
+    
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
