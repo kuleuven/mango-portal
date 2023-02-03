@@ -97,8 +97,8 @@ def deploy_project():
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
 
 
-@data_platform_project_bp.route("/data-platform/project/<project_name>/api_token", methods=["GET"])
-def api_token(project_name):
+@data_platform_project_bp.route("/data-platform/project/<project_name>/api_token/<type>", methods=["GET"])
+def api_token(project_name, type):
     return render_template(
         "project/api_token.html.j2", project_name=project_name,
     )

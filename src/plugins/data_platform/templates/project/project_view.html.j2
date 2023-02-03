@@ -1,6 +1,16 @@
 {% extends "base_openid.html.j2" %}
 
 {% block body %}
+{% set opts = {'folder-layout': 'v1'} %}
+{% for opt in project['platform_options'] %}
+{% if opts.update({opt['key']: opt['value']}) %}{% endif %}
+{% endfor %}
+{% set zone = {} %}
+{% for z in zones %}
+{% if z['jobid'] == opts['zone-jobid'] %}
+{% if zone.update(z) %}{% endif %}
+{% endif %}
+{% endfor %}
    <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
       <li class="breadcrumb-item">
@@ -27,22 +37,30 @@
           <tr>
             <th>Platform</th>
             <td>
-            {% if project['platform'] == "irods" %}
-            irods
-            {% for opt in project['platform_options'] %}
-            {% if opt['key'] == 'zone-jobid' %}
-            {% for zone in zones %}
-            {% if zone['jobid'] == opt['value'] %}
+            {{ project['platform'] }} 
+            {% if 'zone' in zone %}
             (zone {{ zone['zone'] }})
-            {% endif %}
-            {% endfor %}
-            {% endif %}
-            {% endfor %}
-            {% else %}
-            {{ project['platform'] }}
             {% endif %}
             </td>
           </tr>
+          {% if project['platform'] == "irods" and 'zone' in zone %}
+          <tr>
+            <th>Home folder</th>
+            <td>
+              <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="irods_zone" value="{{ zone['zone'] }}" />
+                {% if opts['folder-layout'] == 'v0' %}
+                <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/home/{{ project['name'] }}" />
+                {% else %}
+                <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/projects/{{ project['name'] }}/data" /><br />
+                <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/projects/{{ project['name'] }}/ingress" /><br />
+                <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/projects/{{ project['name'] }}/egress" />
+                {% endif %}
+              </form>
+            </td>
+          </tr>
+          {% endif %}
           <tr>
             <th>Max inodes</th>
             <td>{{ project['quota_inodes'] }}</td>
@@ -95,17 +113,29 @@
         <table class="table table-hover">
           <tr>
             <th>API Token Username</th>
+            <th>Default permissions</th>
             <th>Expiration</th>
             {% if my_project_role == 'owner' %}
             <th></th>
             {% endif %}
           </tr>
           <tr>
-            <td>{{ project['name'] }}_ingest</td>
-            <td>Not activated</td>
+            <td class="align-middle">{{ project['name'] }}_ingress</td>
+            <td class="align-middle">Not activated</td>
+            <td class="align-middle">Read+Write</td>
             {% if my_project_role == 'owner' %}
             <td>
-              <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name)}}">Reset API token</a>
+              <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = "ingress")}}">Reset API token</a>
+            </td>
+            {% endif %}
+          </tr>
+          <tr>
+            <td class="align-middle">{{ project['name'] }}_egress</td>
+            <td class="align-middle">Not activated</td>
+            <td class="align-middle">Read-only</td>
+            {% if my_project_role == 'owner' %}
+            <td>
+              <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = "egress")}}">Reset API token</a>
             </td>
             {% endif %}
           </tr>
