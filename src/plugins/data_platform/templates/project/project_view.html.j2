@@ -123,7 +123,7 @@
           {% for token in project['machine_tokens'] %}
           <tr>
             <td class="align-middle">{{ project['name'] }}_{{ token['type'] }}</td>
-            <td class="align-middle">{% if token['type'] == 'egress' %}Read-only{% else %}Read+Write{% endif %}{% if opts['folder-layout'] != 'v0' %} on /{{ zone['zone'] }}/projects/{{ project['name'] }}/{{ token['type'] }} {% endif %}</td>
+            <td class="align-middle">{% if token['type'] == 'egress' %}read-only{% else %}read+write{% endif %}{% if opts['folder-layout'] != 'v0' %} on /{{ zone['zone'] }}/projects/{{ project['name'] }}/{{ token['type'] }} {% endif %}</td>
             <td class="align-middle">{% if token['isset'] %}{{ token['expiration']|format_time }}{% else %}Not activated{% endif %}</td>
             {% if my_project_role == 'owner' %}
             <td>
