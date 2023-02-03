@@ -17,8 +17,14 @@
       For unattended scripts that send data to the data platform, or retrieve data from it, you can request a long-living token to save safely together with the script. The long-living token is tied to a separate username, so that permissions can be set to what is strictly necessary. Be aware that resetting the token is possible at any time, but will invalidate the previous value and scripts will stop working.
     </p>
 
+    {% for token in current_machine_tokens %}
+    {% if token['type'] == type and token['isset'] %}
+    <p class="text-danger">There is already a token set, expiring on {{ token['expiration']|format_time }}. Are you sure to reset it?</p>
+    {% endif %}
+    {% endfor %}
+
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-      <input type="submit" class="btn btn-primary" value="Create/Reset API token" />
+      <input type="submit" class="btn btn-primary" value="Retrieve API token" />
     </form>
 {% endblock body %}
