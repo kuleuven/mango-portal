@@ -307,6 +307,8 @@ def connection_info():
 
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
+    
+    info['expiration'] = datetime.strptime(info['expiration'][:24] + info['expiration'][27:], '%Y-%m-%dT%H:%M:%S.%f%z')
 
     return render_template(
         "user/connection_info.html.j2", 

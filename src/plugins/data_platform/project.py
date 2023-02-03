@@ -1,5 +1,6 @@
 import requests
 import json
+from datetime import datetime
 from flask import (
     Blueprint,
     render_template,
@@ -112,6 +113,8 @@ def api_token(project_name, type):
     response.raise_for_status()
 
     info = response.json()
+
+    info['expiration'] = datetime.strptime(info['expiration'][:24] + info['expiration'][27:], '%Y-%m-%dT%H:%M:%S.%f%z')
 
     return render_template(
         "project/api_token_connection_info.html.j2", project_name=project_name, type=type,
