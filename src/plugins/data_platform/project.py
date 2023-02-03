@@ -44,6 +44,17 @@ def project(project_name):
         if m['username'] == session['openid_username']:
             my_project_role = m['role']
 
+    if project['platform'] == 'irods':
+        response = requests.get(
+            f"{API_URL}/v1/irods/projects/{project_name}/machine_token", headers=header
+        )
+        response.raise_for_status()
+
+        project['machine_tokens'] = response.json()
+
+        for t in project['machine_tokens']:
+            t['expiration'] = datetime.strptime(t['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+
     return render_template(
         "project/project_view.html.j2", project=project, zones=zones, my_project_role=my_project_role,
     )
@@ -101,12 +112,23 @@ def deploy_project():
 
 @data_platform_project_bp.route("/data-platform/project/<project_name>/api_token/<type>", methods=["GET", "POST"])
 def api_token(project_name, type):
+    header = {"Authorization": "Bearer " + current_user_api_token()}
+
     if request.method == 'GET':
+        response = requests.get(
+            f"{API_URL}/v1/irods/projects/{project_name}/machine_token", headers=header
+        )
+        response.raise_for_status()
+
+        current_machine_tokens = response.json()
+
+        for t in current_machine_tokens:
+            t['expiration'] = datetime.strptime(t['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+
         return render_template(
-            "project/api_token.html.j2", project_name=project_name, type=type,
+            "project/api_token.html.j2", project_name=project_name, type=type, current_machine_tokens=current_machine_tokens,
         )
 
-    header = {"Authorization": "Bearer " + current_user_api_token()}
     response = requests.post(
         f"{API_URL}/v1/irods/projects/{project_name}/machine_token", headers=header, json={"type": type},
     )
