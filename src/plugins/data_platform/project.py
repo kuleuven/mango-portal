@@ -88,10 +88,17 @@ def deploy_project():
     id = request.form.get('project')
 
     response = requests.post(
-        f"{API_URL}/v1/projects/{id}/deploy", headers=header
+        f"{API_URL}/v1/projects/{id}/deploy", headers=header, json={}
     )
     response.raise_for_status()
 
     flash(response.json()['message'], "success")
     
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
+
+
+@data_platform_project_bp.route("/data-platform/project/<project_name>/api_token", methods=["GET"])
+def api_token(project_name):
+    return render_template(
+        "project/api_token.html.j2", project_name=project_name,
+    )

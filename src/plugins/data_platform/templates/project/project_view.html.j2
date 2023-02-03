@@ -91,6 +91,26 @@
         </form>
         </div>
         {% endif %}
+        <div>
+        <table class="table table-hover">
+          <tr>
+            <th>API Token Username</th>
+            <th>Expiration</th>
+            {% if my_project_role == 'owner' %}
+            <th></th>
+            {% endif %}
+          </tr>
+          <tr>
+            <td>{{ project['name'] }}_ingest</td>
+            <td>Not activated</td>
+            {% if my_project_role == 'owner' %}
+            <td>
+              <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name)}}">Reset API token</a>
+            </td>
+            {% endif %}
+          </tr>
+        </table>
+        </div>
       </div>
     </div>
   </div>
