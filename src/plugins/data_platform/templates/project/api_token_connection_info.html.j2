@@ -31,6 +31,10 @@
       <dd>
         <pre>{{ info['token'] }}</pre>
       </dd>
+      <dt>Expiration</dt>
+      <dd>
+        {{ info['expiration']|format_time }}
+      </dd>
     </dl>
 
     <h5>iCommands Client on Linux</h5>
@@ -46,7 +50,7 @@ echo {{ info['token'] }} | iinit
 
     <h5>Python Client</h5>
     <p style="margin-top: 10px">
-        Use the following snippet to authenticate a python client.
+        Use the following snippet (and adapt) to authenticate a python client.
       </p>
 <pre><code>config = """
 {{ setup_json }}
