@@ -279,6 +279,10 @@ def login_openid_select_zone():
 
     if request.form.get('submit') == 'Connection information':
         return redirect(url_for('data_platform_user_bp.connection_info'))
+    
+    collection = request.form.get('collection')
+    if collection:
+        return redirect(url_for('browse_bp.collection_browse', collection=collection.lstrip('/')))
 
     return redirect(url_for('index'))
 
