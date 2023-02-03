@@ -47,12 +47,31 @@ def project(project_name):
 
 @data_platform_project_bp.route("/data-platform/projects/member/add", methods=["POST"])
 def add_project_member():
-    return redirect(url_for('data_platform_project_bp.project', project_name=request.form.get('project')))
+    header = {"Authorization": "Bearer " + current_user_api_token()}
 
-@data_platform_project_bp.route("/data-platform/projects/member/modify", methods=["POST"])
-def modify_project_member():
-    return redirect(url_for('data_platform_project_bp.project', project_name=request.form.get('project')))
+    id = request.form.get('project')
+    username = request.form.get('username')
+    role = request.form.get('role')
+
+    response = requests.put(
+        f"{API_URL}/v1/projects/{id}/members/{username}", headers=header, json={
+            "role": role,
+        }
+    )
+    response.raise_for_status()
+
+    return redirect(url_for('data_platform_project_bp.project', project_name=id))
 
 @data_platform_project_bp.route("/data-platform/projects/member/delete", methods=["POST"])
 def delete_project_member():
-    return redirect(url_for('data_platform_project_bp.project', project_name=request.form.get('project')))
+    header = {"Authorization": "Bearer " + current_user_api_token()}
+
+    id = request.form.get('project')
+    username = request.form.get('username')
+
+    response = requests.delete(
+        f"{API_URL}/v1/projects/{id}/members/{username}", headers=header
+    )
+    response.raise_for_status()
+
+    return redirect(url_for('data_platform_project_bp.project', project_name=id))
