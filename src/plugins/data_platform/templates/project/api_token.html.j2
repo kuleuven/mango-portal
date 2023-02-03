@@ -7,14 +7,18 @@
           <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
       </li>
       <li class="breadcrumb-item">
-          <a href="{{ url_for('data_platform_project_bp.project', project_name=project_name)}}">Project overview</a>
+          <a href="{{ url_for('data_platform_project_bp.project', project_name=project_name)}}">{{ project_name }}</a>
       </li>
       <li class="breadcrumb-item active" aria-current="page">Create API Token</li>
     </ol>
   </nav>
-  <div class="row">
-    <div class="col">
-      <p>Not implemented</p>
-    </div>
-  </div>
+  <h4 class="mb-3">API token {{ type }}</h4>
+    <p>
+      For unattended scripts that send data to the data platform, or retrieve data from it, you can request a long-living token to save safely together with the script. The long-living token is tied to a separate username, so that permissions can be set to what is strictly necessary. Be aware that resetting the token is possible at any time, but will invalidate the previous value and scripts will stop working.
+    </p>
+
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="submit" class="btn btn-primary" value="Create/Reset API token" />
+    </form>
 {% endblock body %}

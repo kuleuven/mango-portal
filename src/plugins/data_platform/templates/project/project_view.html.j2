@@ -122,7 +122,7 @@
           <tr>
             <td class="align-middle">{{ project['name'] }}_ingress</td>
             <td class="align-middle">Not activated</td>
-            <td class="align-middle">Read+Write</td>
+            <td class="align-middle">Read+Write{% if opts['folder-layout'] != 'v0' %} on /{{ zone['zone'] }}/projects/{{ project['name'] }}/ingress {% endif %}</td>
             {% if my_project_role == 'owner' %}
             <td>
               <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = "ingress")}}">Reset API token</a>
@@ -131,7 +131,7 @@
           </tr>
           <tr>
             <td class="align-middle">{{ project['name'] }}_egress</td>
-            <td class="align-middle">Not activated</td>
+            <td class="align-middle">Not activated{% if opts['folder-layout'] != 'v0' %} on /{{ zone['zone'] }}/projects/{{ project['name'] }}/egress {% endif %}</td>
             <td class="align-middle">Read-only</td>
             {% if my_project_role == 'owner' %}
             <td>
