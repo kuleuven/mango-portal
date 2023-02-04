@@ -26,7 +26,7 @@ from oic.oic.message import RegistrationResponse, AuthorizationResponse
 from oic import rndstr
 
 from irods_zones_config import DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
-from . import API_URL, API_TOKEN, openid_providers, openid_login_required
+from . import API_URL, API_TOKEN, openid_providers, openid_login_required, current_user_projects, current_user_api_token, current_zone_jobid
 
 import logging
 
@@ -34,57 +34,6 @@ import logging
 data_platform_user_bp = Blueprint(
     "data_platform_user_bp", __name__, template_folder="templates"
 )
-
-def current_user_api_token():
-    header = {"Authorization": "Bearer " + API_TOKEN}
-    response = requests.post(
-        f"{API_URL}/v1/token",
-        json={"username": session['openid_username'], "permissions": ["user"]},
-        headers=header,
-    )
-    response.raise_for_status()
-
-    return response.json()["token"]
-
-
-def current_user_projects():
-    # Retrieve projects
-    header = {"Authorization": "Bearer " + current_user_api_token()}
-    response = requests.get(
-        f"{API_URL}/v1/projects", headers=header
-    )
-    response.raise_for_status()
-
-    projects = response.json()
-
-    # Get zones
-    zones = current_app.config['irods_zones']
-
-    # Map projects to zones
-    for project in projects:
-        project['my_role'] = ''
-
-        for m in project['members']:
-            if m['username'] == session['openid_username']:
-                project['my_role'] = m['role']
-
-        if project["platform"] != "irods":
-            continue
-    
-        jobid = ''
-
-        for opt in project["platform_options"]:
-            if opt["key"] == "zone-jobid":
-                jobid = opt["value"]
-        
-        for zone in zones:
-            if zones[zone]['jobid'] == jobid:
-                project["zone"] = zone
-    
-    return projects
-
-def current_zone_jobid():
-    return current_app.config['irods_zones'][g.irods_session.zone]["jobid"]
 
 def irods_connection_info(zone, username):
     jobid = current_app.config['irods_zones'][zone]["jobid"]
@@ -231,18 +180,25 @@ def login_openid_select_zone():
         if 'zone' in session:
             last_zone_name = session['zone']
         
-        projects = current_user_projects()
+        projects, perms = current_user_projects()
 
         # Filter zones
-        zones = []
+        zones = [] # All visible zones (many in case user is admin)
+        my_zones = [] # Zones in which the user exist (user must be on a project)
         for project in projects:
-            if 'zone' in project and project['zone'] not in zones:
+            if 'zone' not in project:
+                continue
+            if project['zone'] not in zones:
                 zones.append(project['zone'])
+            if project['my_role'] != '' and project['zone'] not in my_zones:
+                my_zones.append(project['zone'])
 
         return render_template('user/login_openid_select_zone.html.j2', 
             projects=projects, 
-            zones=zones, 
+            zones=zones,
+            my_zones=my_zones,
             last_zone_name=last_zone_name,
+            admin='admin' in perms,
         )
 
     zone = request.form.get('irods_zone')
@@ -283,7 +239,8 @@ def login_openid_select_zone():
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 def connection_info():
-    header = {"Authorization": "Bearer " + current_user_api_token()}
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
     jobid = current_zone_jobid()
     response = requests.get(
         f"{API_URL}/v1/irods/zones/{jobid}/connection_info", headers=header

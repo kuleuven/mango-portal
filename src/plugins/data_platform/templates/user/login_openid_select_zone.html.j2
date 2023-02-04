@@ -11,11 +11,12 @@
     <div class="row">
         <div class="col">
             {% for zone_name in zones %}
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header">
                     <h4 class="bi bi-archive mt-2">
                     iRODS zone {{ zone_name }}</h4>
                 </div>
+                {% if zone_name in my_zones %}
                 <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="irods_zone" value="{{ zone_name }}" />
@@ -24,24 +25,35 @@
                         <input type="submit" name="submit" value="Connection information" class="btn btn-block btn-primary m-1"/>
                     </div>
                 </form>
-                <table class="table table-striped table-hover mt-2">
+                {% endif %}
+                <table class="table table-striped table-hover mt-2 mb-0">
+                  <colgroup>
+                    <col class="col-md-5" />
+                    <col class="col-md-3" />
+                    <col class="col-md-4" />
+                  </colgroup>
                   <thead>
                     <th>Project</th>
+                    <th>Role</th>
                     <th>Actions</th>
                   </thead>
                   <tbody>
                 {% for project in projects %}
                 {% if project['zone'] == zone_name %}
                     <tr>
-                      <td class="bi bi-folder fs-4">
-                      <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a></td>
-                      <td>
-                      {% if project['my_role'] == 'owner' %}
-                      <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
-                      <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = "ingress")}}">Retrieve API token</a>
-                      {% else %}
-                      <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
-                      {% endif %}
+                      <td class="bi bi-folder fs-6 align-middle">
+                        <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
+                      </td>
+                      <td class="fs-6 align-middle">
+                        {{project['my_role']}}
+                      </td>
+                      <td class="text-nowrap">
+                        {% if project['my_role'] == 'owner' or admin %}
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = "ingress")}}">Retrieve API token</a>
+                        {% else %}
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
+                        {% endif %}
                       </td>
                     </tr>
                 {% endif %}

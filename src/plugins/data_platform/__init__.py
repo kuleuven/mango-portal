@@ -2,7 +2,7 @@ import os
 import logging
 import requests
 
-from flask import current_app, session, redirect, url_for
+from flask import current_app, session, redirect, url_for, g
 
 API_URL = os.environ.get(
     "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
@@ -57,17 +57,19 @@ def current_user_api_token():
     header = {"Authorization": "Bearer " + API_TOKEN}
     response = requests.post(
         f"{API_URL}/v1/token",
-        json={"username": session['openid_username'], "permissions": ["user"]},
+        json={"username": session['openid_username'], "permissions": ["user"], "lookup_user_permissions": True},
         headers=header,
     )
     response.raise_for_status()
 
-    return response.json()["token"]
+    payload = response.json()
 
+    return payload["token"], payload["permissions"]
 
 def current_user_projects():
     # Retrieve projects
-    header = {"Authorization": "Bearer " + current_user_api_token()}
+    token, perms = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
     response = requests.get(
         f"{API_URL}/v1/projects", headers=header
     )
@@ -80,6 +82,12 @@ def current_user_projects():
 
     # Map projects to zones
     for project in projects:
+        project['my_role'] = ''
+
+        for m in project['members']:
+            if m['username'] == session['openid_username']:
+                project['my_role'] = m['role']
+
         if project["platform"] != "irods":
             continue
     
@@ -93,7 +101,7 @@ def current_user_projects():
             if zones[zone]['jobid'] == jobid:
                 project["zone"] = zone
     
-    return projects
+    return projects, perms
 
 def current_zone_jobid():
     return current_app.config['irods_zones'][g.irods_session.zone]["jobid"]

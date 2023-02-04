@@ -43,7 +43,7 @@
             {% endif %}
             </td>
           </tr>
-          {% if project['platform'] == "irods" and 'zone' in zone %}
+          {% if project['platform'] == "irods" and 'zone' in zone and project['my_role'] != '' %}
           <tr>
             <th>Home folder</th>
             <td>
@@ -80,7 +80,7 @@
           <tr>
             <th>Username</th>
             <th>Role</th>
-            {% if my_project_role == 'owner' %}
+            {% if project['my_role'] == 'owner' or admin %}
             <th></th>
             <th></th>
             {% endif %}
@@ -89,10 +89,10 @@
           <tr>
             <td>{{ member['username'] }}</td>
             <td>{{ member['role'] }}</td>
-            {% if my_project_role == 'owner' and member['username'] == session['openid_username'] %}
+            {% if (project['my_role'] == 'owner' or admin) and member['username'] == session['openid_username'] %}
             <td></td>
             <td></td>
-            {% elif my_project_role == 'owner' %}
+            {% elif project['my_role'] == 'owner' or admin %}
             <td>
               <a href="#" data-bs-toggle="modal" data-bs-target="#editMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-pencil"></i></a>
             </td>
@@ -103,7 +103,7 @@
           </tr>
           {% endfor %}
         </table>
-        {% if my_project_role == 'owner' %}
+        {% if project['my_role'] == 'owner' or admin %}
         <div>
         <form action="{{ url_for('data_platform_project_bp.deploy_project') }}" method="post" class="m-2 mt-0">
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMember">
@@ -122,7 +122,7 @@
             <th>API Token Username</th>
             <th>Default permissions</th>
             <th>Expiration</th>
-            {% if my_project_role == 'owner' %}
+            {% if project['my_role'] == 'owner' or admin %}
             <th></th>
             {% endif %}
           </tr>
@@ -131,7 +131,7 @@
             <td class="align-middle">{{ project['name'] }}_{{ token['type'] }}</td>
             <td class="align-middle">{{ token['default_permission'] }}</td>
             <td class="align-middle">{% if token['isset'] %}{{ token['expiration']|format_time }}{% else %}Not activated{% endif %}</td>
-            {% if my_project_role == 'owner' %}
+            {% if project['my_role'] == 'owner' or admin %}
             <td>
               <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = token['type'])}}">Retrieve API token</a>
             </td>
