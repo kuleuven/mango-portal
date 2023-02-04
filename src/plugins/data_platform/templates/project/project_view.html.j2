@@ -62,12 +62,18 @@
           </tr>
           {% endif %}
           <tr>
-            <th>Max inodes</th>
-            <td>{{ project['quota_inodes'] }}</td>
+            <th>Size</th>
+            <td>{{ status['used_size'] }} of {{ project['quota_size'] }} bytes used</td>
           </tr>
           <tr>
-            <th>Max size (bytes)</th>
-            <td>{{ project['quota_size'] }}</td>
+            <th>Inodes</th>
+            <td>{{ status['used_inodes'] }} of {{ project['quota_inodes'] }} inodes used
+            {% if project['platform'] == 'irods' %}
+            ({{ status['platform_info']['object_count'] }} objects, 
+            {{ status['platform_info']['coll_count'] }} collections, 
+            {{ status['platform_info']['meta_count'] }} metadata records) 
+            {% endif %}
+            </td>
           </tr>
         </table>
         <table class="table table-hover">
