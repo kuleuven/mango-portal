@@ -2,7 +2,7 @@ import os
 import logging
 import requests
 
-from flask import current_app, session
+from flask import current_app, session, redirect, url_for
 
 API_URL = os.environ.get(
     "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
@@ -11,6 +11,15 @@ API_TOKEN = os.environ.get("API_TOKEN", "")
 
 if not API_TOKEN:
     logging.warn(f"No COZ API token, module data_platform will not work")
+
+def openid_login_required(func):
+  def inner(*args, **kwargs):
+    if 'openid_username' not in session or 'openid_provider' not in session:
+        return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
+
+    return func(*args, **kwargs)
+  
+  return inner
 
 def update_zone_info(irods_zones):
     """
