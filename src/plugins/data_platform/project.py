@@ -158,3 +158,32 @@ def api_token(project_name, type):
         info=info,
         setup_json=json.dumps(info['irods_environment'], indent=4),
     )
+
+@openid_login_required
+@data_platform_project_bp.route("/data-platform/projects/add", methods=["POST"])
+def add_project():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    id = request.form.get('name')
+
+    response = requests.put(
+        f"{API_URL}/v1/projects/{id}", headers=header, json={
+            "platform": "irods",
+            "platform_options": [
+                {
+                    "key": "zone-jobid",
+                    "value": request.form.get('zone'),
+                },
+                {
+                    "key": "folder-layout",
+                    "value": request.form.get('layout'),
+                },
+            ],
+        }
+    )
+    response.raise_for_status()
+
+    flash(response.json()['message'], "success")
+
+    return redirect(url_for('data_platform_project_bp.project', project_name=id))

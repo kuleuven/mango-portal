@@ -81,4 +81,100 @@
     </form>
     {% endif %}
 
+    {% if admin %}
+    <div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProject">
+            Add irods project
+        </button>
+    </div>
+
+    <!-- Add project model -->
+    <div class="modal fade"
+        id="addProject"
+        tabindex="-1"
+        aria-labelledby="addProjectLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="addProjectLabel">
+                Add project
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <form action="{{ url_for('data_platform_project_bp.add_project') }}""
+                method="post"
+                enctype="multipart/form-data"
+                class="row g-3 needs-validation"
+                novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="modal-body">
+                <div class="mb-3">
+                <label for="name" class="col-form-label">
+                    Project ID
+                </label>
+                <input type="text"
+                        class="form-control"
+                        id="name"
+                        name="name"
+                        required/>
+                <div class="invalid-feedback">
+                    Project id is required
+                </div>
+                </div>
+
+                <div class="mb-3">
+                <label for="zone" class="col-form-label">
+                    Zone
+                </label>
+                <select
+                     class="form-select"
+                     id="zone"
+                     name="zone"
+                     required>
+                  {% for zone in config['irods_zones'] %}
+                  <option value="{{ config['irods_zones'][zone]['jobid'] }}">{{ zone }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">
+                    An irods zone is required
+                </div>
+                </div>
+
+                <div class="mb-3">
+                <label for="layout" class="col-form-label">
+                    Folder layout
+                </label>
+
+                <div>
+                    <input type="radio" class="btn-check" name="layout" id="v0-layout" autocomplete="off" value="v0" />
+                    <label class="btn btn-outline-secondary" for="v0-layout">Single collection</label>
+
+                    <input type="radio" class="btn-check" name="layout" id="v1-layout" autocomplete="off" checked value="v1" />
+                    <label class="btn btn-outline-secondary" for="v1-layout">Structured subcollections</label>
+                </div>
+
+                <div class="invalid-feedback">
+                    An irods folder layout is required
+                </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+                </button>
+                <button class="btn btn-primary" type="submit">
+                Add
+                </button>
+            </div>
+            </form>
+        </div>
+        </div>
+    </div>
+    {% endif %}
+
 {% endblock body %}
