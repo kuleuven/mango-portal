@@ -26,7 +26,7 @@ from oic.oic.message import RegistrationResponse, AuthorizationResponse
 from oic import rndstr
 
 from irods_zones_config import DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
-from . import API_URL, API_TOKEN, openid_providers
+from . import API_URL, API_TOKEN, openid_providers, openid_login_required
 
 import logging
 
@@ -222,14 +222,9 @@ def login_openid_callback(openid_provider):
 
     return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 
-
-
+@openid_login_required
 @data_platform_user_bp.route('/user/openid/choose_zone', methods=["GET", "POST"])
 def login_openid_select_zone():
-    if 'openid_username' not in session or 'openid_provider' not in session:
-        flash('Please log in first', category='danger')
-        return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
-
     if request.method == 'GET':
         last_zone_name=''
 
@@ -286,8 +281,6 @@ def login_openid_select_zone():
 
     return redirect(url_for('index'))
 
-
-
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 def connection_info():
     header = {"Authorization": "Bearer " + current_user_api_token()}
@@ -308,7 +301,7 @@ def connection_info():
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
     
-    info['expiration'] = datetime.strptime(info['expiration'][:24] + info['expiration'][27:], '%Y-%m-%dT%H:%M:%S.%f%z')
+    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
     return render_template(
         "user/connection_info.html.j2", 
