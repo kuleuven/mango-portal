@@ -181,6 +181,8 @@ def init_and_secure_views():
             irods_env_file = os.path.expanduser("~/.irods/irods_environment.json")
             irods_session = iRODSSession(irods_env_file=irods_env_file)
             session["userid"] = irods_session.username
+            session["openid_username"] = irods_session.username
+            session["openid_provider"] = "dummy"
             irods_session_pool.add_irods_session(session["userid"], irods_session)
         g.irods_session = irods_session
         print(f"Session id: {session['userid']}")
