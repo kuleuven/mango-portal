@@ -21,7 +21,8 @@ data_platform_project_bp = Blueprint(
 @openid_login_required
 @data_platform_project_bp.route("/data-platform/project/<project_name>", methods=["GET"])
 def project(project_name):
-    header = {"Authorization": "Bearer " + current_user_api_token()}
+    token, perms = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
 
     response = requests.get(
         f"{API_URL}/v1/irods/zones", headers=header
@@ -45,11 +46,11 @@ def project(project_name):
     status = response.json()
 
     # find out whether we are project owner
-    my_project_role = ""
+    project['my_role'] = ""
 
     for m in project['members']:
         if m['username'] == session['openid_username']:
-            my_project_role = m['role']
+            project['my_role'] = m['role']
 
     if project['platform'] == 'irods':
         response = requests.get(
@@ -63,13 +64,14 @@ def project(project_name):
             t['expiration'] = datetime.strptime(t['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
     return render_template(
-        "project/project_view.html.j2", project=project, status=status, zones=zones, my_project_role=my_project_role,
+        "project/project_view.html.j2", project=project, status=status, zones=zones, admin='admin' in perms,
     )
 
 @openid_login_required
 @data_platform_project_bp.route("/data-platform/projects/member/add", methods=["POST"])
 def add_project_member():
-    header = {"Authorization": "Bearer " + current_user_api_token()}
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
 
     id = request.form.get('project')
     username = request.form.get('username')
@@ -89,7 +91,8 @@ def add_project_member():
 @openid_login_required
 @data_platform_project_bp.route("/data-platform/projects/member/delete", methods=["POST"])
 def delete_project_member():
-    header = {"Authorization": "Bearer " + current_user_api_token()}
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
 
     id = request.form.get('project')
     username = request.form.get('username')
@@ -106,7 +109,8 @@ def delete_project_member():
 @openid_login_required
 @data_platform_project_bp.route("/data-platform/projects/deploy", methods=["POST"])
 def deploy_project():
-    header = {"Authorization": "Bearer " + current_user_api_token()}
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
 
     id = request.form.get('project')
 
@@ -122,7 +126,8 @@ def deploy_project():
 @openid_login_required
 @data_platform_project_bp.route("/data-platform/project/<project_name>/api_token/<type>", methods=["GET", "POST"])
 def api_token(project_name, type):
-    header = {"Authorization": "Bearer " + current_user_api_token()}
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
 
     if request.method == 'GET':
         response = requests.get(
