@@ -64,7 +64,7 @@ def project(project_name):
             t['expiration'] = datetime.strptime(t['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
     return render_template(
-        "project/project_view.html.j2", project=project, status=status, zones=zones, admin='admin' in perms,
+        "project/project_view.html.j2", project=project, status=status, zones=zones, admin=('operator' in perms or 'admin' in perms),
     )
 
 @openid_login_required

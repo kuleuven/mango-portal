@@ -198,7 +198,7 @@ def login_openid_select_zone():
             zones=zones,
             my_zones=my_zones,
             last_zone_name=last_zone_name,
-            admin='admin' in perms,
+            admin=('operator' in perms or 'admin' in perms),
         )
 
     zone = request.form.get('irods_zone')
