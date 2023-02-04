@@ -89,7 +89,7 @@
           <tr>
             <td>{{ member['username'] }}</td>
             <td>{{ member['role'] }}</td>
-            {% if (project['my_role'] == 'owner' or admin) and member['username'] == session['openid_username'] %}
+            {% if project['my_role'] == 'owner' and member['username'] == session['openid_username'] and not admin %}
             <td></td>
             <td></td>
             {% elif project['my_role'] == 'owner' or admin %}
