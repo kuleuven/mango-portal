@@ -37,6 +37,13 @@ def project(project_name):
 
     project = response.json()
 
+    response = requests.get(
+        f"{API_URL}/v1/projects/{project_name}/status", headers=header
+    )
+    response.raise_for_status()
+
+    status = response.json()
+
     # find out whether we are project owner
     my_project_role = ""
 
@@ -56,7 +63,7 @@ def project(project_name):
             t['expiration'] = datetime.strptime(t['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
     return render_template(
-        "project/project_view.html.j2", project=project, zones=zones, my_project_role=my_project_role,
+        "project/project_view.html.j2", project=project, status=status, zones=zones, my_project_role=my_project_role,
     )
 
 @openid_login_required
