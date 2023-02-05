@@ -114,6 +114,18 @@ def deploy_project():
 
     id = request.form.get('project')
 
+    if request.form.get('submit') == 'Archive':
+        response = requests.patch(
+            f"{API_URL}/v1/projects/{id}", headers=header, json={"archived": True}
+        )
+        response.raise_for_status()
+
+    if request.form.get('submit') == 'Unarchive':
+        response = requests.patch(
+            f"{API_URL}/v1/projects/{id}", headers=header, json={"archived": False}
+        )
+        response.raise_for_status()
+
     response = requests.post(
         f"{API_URL}/v1/projects/{id}/deploy", headers=header, json={}
     )

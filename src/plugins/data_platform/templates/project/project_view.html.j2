@@ -30,6 +30,12 @@
             <th>Project id</th>
             <td>{{ project['name'] }}</td>
           </tr>
+          {% if project['archived'] %}
+          <tr>
+            <th>Status</th>
+            <td>Archived</td>
+          </tr>
+          {% endif %}
           <tr>
             <th>Description</th>
             <td>{{ project['description'] }}</td>
@@ -111,7 +117,48 @@
           </button>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <input type="hidden" name="project" value="{{ project['name'] }}" />
+          {% if project['archived'] %}
+          {% if admin %}
+          <input type="submit" name="submit" value="Unarchive" class="btn btn-block btn-primary"/>
+          {% endif %}
+          {% else %}
           <input type="submit" name="submit" value="Deploy {{ project['platform']}} group" class="btn btn-block btn-primary"/>
+          {% if admin %}
+          <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#archiveProject">
+              Archive
+          </button>
+          <div class="modal fade"
+              id="archiveProject"
+              tabindex="-1"
+              aria-labelledby="archiveProjectLabel"
+              aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="archiveProjectLabel">
+                    Archive project
+                  </h5>
+                  <button type="button"
+                          class="btn-close"
+                          data-bs-dismiss="modal"
+                          aria-label="Close">
+                  </button>
+                </div>
+                  <div class="modal-body">
+                    Archiving a project means that access to the data will no longer be possible for all members, but the data is not automatically cleaned up. API tokens will be revoked, and cannot be restored if the project is unarchived later.
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                      Cancel
+                    </button>
+                    <input type="submit" name="submit" value="Archive" class="btn btn-danger" />
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          {% endif %}
         </form>
         </div>
         {% endif %}
