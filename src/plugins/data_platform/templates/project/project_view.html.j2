@@ -35,6 +35,11 @@
             <th>Status</th>
             <td>Archived</td>
           </tr>
+          {% elif not status['provisioned'] %}
+          <tr>
+            <th>Status</th>
+            <td>Changes pending in {{ project['platform'] }}</td>
+          </tr>
           {% endif %}
           <tr>
             <th>Description</th>
@@ -122,7 +127,9 @@
           <input type="submit" name="submit" value="Unarchive" class="btn btn-block btn-primary"/>
           {% endif %}
           {% else %}
-          <input type="submit" name="submit" value="Deploy {{ project['platform']}} group" class="btn btn-block btn-primary"/>
+          {% if not status['provisioned'] %}
+          <input type="submit" name="submit" value="Apply changes in {{ project['platform']}}" class="btn btn-block btn-primary"/>
+          {% endif %}
           {% if admin %}
           <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#archiveProject">
               Archive
