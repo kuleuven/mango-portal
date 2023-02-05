@@ -184,13 +184,13 @@ def login_openid_select_zone():
 
         # Filter zones
         zones = [] # All visible zones (many in case user is admin)
-        my_zones = [] # Zones in which the user exist (user must be on a project)
+        my_zones = [] # Zones in which the user exist (user must be on a project that is not archived)
         for project in projects:
             if 'zone' not in project:
                 continue
             if project['zone'] not in zones:
                 zones.append(project['zone'])
-            if project['my_role'] != '' and project['zone'] not in my_zones:
+            if project['my_role'] != '' and not project['archived'] and project['zone'] not in my_zones:
                 my_zones.append(project['zone'])
 
         return render_template('user/login_openid_select_zone.html.j2', 

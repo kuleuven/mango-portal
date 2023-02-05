@@ -48,7 +48,7 @@
                         {{project['my_role']}}
                       </td>
                       <td class="text-nowrap">
-                        {% if project['my_role'] == 'owner' or admin %}
+                        {% if (project['my_role'] == 'owner' or admin) and not project['archived'] %}
                         <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
                         <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = "ingress")}}">Retrieve API token</a>
                         {% else %}
