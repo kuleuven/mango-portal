@@ -43,7 +43,7 @@
             {% endif %}
             </td>
           </tr>
-          {% if project['platform'] == "irods" and 'zone' in zone and project['my_role'] != '' %}
+          {% if project['platform'] == "irods" and 'zone' in zone and project['my_role'] != '' and not project['archived'] %}
           <tr>
             <th>Home folder</th>
             <td>
@@ -116,7 +116,7 @@
         </div>
         {% endif %}
         <div>
-        {% if project['platform'] == 'irods' %}
+        {% if project['platform'] == 'irods' and not project['archived'] %}
         <table class="table table-hover">
           <tr>
             <th>API Token Username</th>
