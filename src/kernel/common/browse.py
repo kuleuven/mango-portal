@@ -259,26 +259,30 @@ def view_object(data_object_path):
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
     data_object : iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
+    current_user_rights=get_current_user_rights(
+            g.irods_session.username, data_object
+        )
 
     #meta_data_items = data_object.metadata.items()
     #if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
-    try:
-        mime_avu = data_object.metadata.get_one(MIME_TYPE_ATTRIBUTE_NAME)
-    except:
+    if (set(current_user_rights).intersection(set(["own", "write"]))):
         try:
-            with data_object.open("r") as f:
-                blub = f.read(50 * 1024) #read max 50k from data object
-            mime_type = magic.from_buffer(blub, mime=True)
-            mime_avu = iRODSMeta(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
-            data_object.metadata.set(mime_avu)
-            #meta_data_items.append(mime_avu)
-            logging.info(f"mime-type was not set for object {data_object.path}, so we blubbed a bit into magic")
-
+            mime_avu = data_object.metadata.get_one(MIME_TYPE_ATTRIBUTE_NAME)
         except:
-            flash(
-                f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
-                "warning",
-            )
+            try:
+                with data_object.open("r") as f:
+                    blub = f.read(50 * 1024) #read max 50k from data object
+                mime_type = magic.from_buffer(blub, mime=True)
+                mime_avu = iRODSMeta(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
+                data_object.metadata.set(mime_avu)
+                #meta_data_items.append(mime_avu)
+                logging.info(f"mime-type was not set for object {data_object.path}, so we blubbed a bit into magic")
+
+            except:
+                flash(
+                    f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
+                    "warning",
+                )
     acl_users = []
     group_analysis_unit = True
     grouped_metadata = group_prefix_metadata_items(
@@ -410,9 +414,7 @@ def view_object(data_object_path):
         metadata_schema_filenames = metadata_schema_filenames,
         tika_result=tika_result,
         consolidated_names = consolidated_analysis_metadata_names,
-        current_user_rights=get_current_user_rights(
-            g.irods_session.username, data_object
-        ),
+        current_user_rights = current_user_rights,
     )
 
 
