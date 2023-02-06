@@ -32,10 +32,10 @@ class TemplatesRequest extends MangoRequest {
                     .sort((t1, t2) => (t1.name) > (t2.name) ? 1 : -1)
             })); // match unique names and versions
             for (let template of grouped_templates) {
-                new SchemaGroup(template, container_id);
+                let statuses = new SchemaGroup(template, container_id).summary;
                 for (let version of template.template_list) {
                     let version_number = version.name.split('-v')[1].split('-')[0].replaceAll('.', '');
-                    let reader = new TemplateReader(version, version_number, url);
+                    let reader = new TemplateReader(version, version_number, url, statuses);
                     reader.retrieve();
                 }
             }
@@ -46,21 +46,19 @@ class TemplatesRequest extends MangoRequest {
 
 
 class TemplateReader extends MangoRequest {
-    constructor(template, version_number, url_new) {
+    constructor(template, version_number, url_new, statuses) {
         super(template.url);
         this.schema_name = `${template.schema_name}-${version_number}`;
         this.container_id = `v${version_number}-pane-${template.schema_name}`;
         this.url_new = url_new;
-        this.parse_response();
+        this.parse_response(statuses);
     }
 
-    parse_response() {
+    parse_response(statuses) {
         this.addEventListener('load', () => {
             let json = Object.values(this.json)[0];
-            let schema = new Schema(this.schema_name, this.container_id, this.url_new);
+            let schema = new Schema(this.schema_name, this.container_id, this.url_new, json.version, statuses);
             schema.from_json(json);
-            schema.version = json.version;
-            schema.status = json.status;
             schema.view();
         })
     }
