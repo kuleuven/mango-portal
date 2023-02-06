@@ -327,7 +327,6 @@ class Schema extends ComplexField {
             placeholder: "schema-name", validation_message: "This field is compulsory, please only use lower case letters and '-'.",
             pattern: "[a-z0-9-]+"
         });
-        console.log(this.statuses)
 
         let button = this.create_button();
         form.form.insertBefore(button, form.divider);
@@ -351,7 +350,6 @@ class Schema extends ComplexField {
                 form.form.classList.add('was-validated');
             } else {
                 console.log('Ready to publish');
-                console.log(this.statuses)
 
                 let second_sentence = this.statuses.published.length > 0 ?
                     ` Version ${this.statuses.published[0]} will be archived.` :

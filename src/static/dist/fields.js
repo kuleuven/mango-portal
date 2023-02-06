@@ -17,6 +17,7 @@ class InputField {
         let json = { title: this.title, type: this.type, ...this.values };
         if (this.required) json.required = this.required;
         if (this.repeatable) json.repeatable = this.repeatable;
+        if (this.default) json.default = this.default;
         return json;
     }
 
@@ -66,11 +67,18 @@ class InputField {
             });
     }
 
+    add_default_field() {
+        return;
+    }
+
     end_form() {
+        let this_class = this.constructor.name;
+        
+        this.add_default_field();
+
         // Add require switch and submit button to form
         this.form_field.form.appendChild(document.createElement('br'));
-        let this_class = this.constructor.name;
-        let repeatable = !(this_class == 'SelectInput' | this_class == 'CheckboxInput')
+        let repeatable = !(this_class == 'SelectInput' | this_class == 'CheckboxInput');
         let switchnames = ['required'];
         let switches = {required : this.required};
         if (repeatable) {
@@ -154,6 +162,7 @@ class InputField {
         let data = new FormData(this.form_field.form);
         let old_id = this.id;
         let new_id = data.get(`${this.id}-id`);
+        this.default = data.get(`${this.id}-default`);
         if (old_id == new_id) {
             this.title = data.get(`${this.id}-label`);
             this.recover_fields(data);
@@ -207,6 +216,7 @@ class InputField {
 
     reset() {
         this.form_field.reset();
+        this.default = undefined;
     }
 
     static choose_class(schema_name, [id, data] = []) {
@@ -251,6 +261,15 @@ class TypedInput extends InputField {
         inner_input.placeholder = "example placeholder";
         return inner_input;
     }
+    add_default_field() {
+        this.form_field.add_input(
+            'Default value', `${this.id}-default`,
+            {
+                description: "Default value for this field.",
+                value: this.default
+            }
+        )
+    }
 
     viewer_input() {
         let div = document.createElement('div');
@@ -259,6 +278,9 @@ class TypedInput extends InputField {
         if (this.type != 'textarea') {
             input = Field.quick("input", "form-control input-view");
             input.type = this.type == 'float' | this.type == 'integer' ? 'number' : this.type;
+            if (this.default !== undefined) {
+                input.value = this.default;
+            }
         } else {
             input = Field.quick("textarea", "form-control input-view");
         }
@@ -305,7 +327,13 @@ class TypedInput extends InputField {
         let min_id = `${this.id}-min`;
         let max_id = `${this.id}-max`;
 
+        let default_input = this.form_field.form.querySelector(`#${this.id}-default`);
+        
         if (format == "integer" | format == 'float') {
+            if (default_input !== null) {
+                default_input.type = 'number';
+            }
+            
             this.form_field.add_input("Minimum", min_id,
                 {
                     placeholder: '0',
@@ -321,22 +349,29 @@ class TypedInput extends InputField {
                     validation_message: "This field is compulsory and the value must be lower than the minimum."
                 });
             this.form_field.form.querySelector('#' + max_id).type = 'number';
-            let min_button = this.form_field.form.querySelector('#'  + min_id)
-            let max_button = this.form_field.form.querySelector('#'  + max_id)
+            let min_button = this.form_field.form.querySelector('#'  + min_id);
+            let max_button = this.form_field.form.querySelector('#'  + max_id);
             
             if (format == 'float') {
                 min_button.setAttribute('step', 'any');
                 max_button.setAttribute('step', 'any');
+                if (default_input !== null) {
+                    default_input.setAttribute('step', 'any');
+                }
             }
 
             min_button.addEventListener('change', () => {
                 max_button.min = min_button.value;
+                if (default_input != null) {
+                    default_input.min = min_button.value;
+                }
             });
             max_button.addEventListener('change', () => {
                 min_button.max = max_button.value;
-            })
+                default_input.max = max_button.value;
+            });
         } else {
-            if (this.form_field.form.querySelectorAll('.form-container').length > 3) {
+            if (this.form_field.form.querySelectorAll('.form-container [type="number"]').length > 0) {
                 this.form_field.form.removeChild(document.getElementById(`div-${min_id}`));
                 this.form_field.form.removeChild(document.getElementById(`div-${max_id}`));
             }
@@ -344,6 +379,20 @@ class TypedInput extends InputField {
                 delete this.values.minimum;
                 delete this.values.maximum;
             }
+            if (format == 'textarea') {
+                console.log('TODO: get textarea for defaults? But does that make sense?');
+            } else if (default_input !== null) {
+                default_input.type = format;
+            }
+        }
+        if (default_input !== null) {
+            let num_validator = default_input.input == 'number' ? 
+                ` with values between ${default_input.min} and ${default_input.max}` :
+                '';
+            let validator = `This field must be of type ${format}${num_validator}.`
+            default_input.parentElement
+                .querySelector('.invalid-feedback')
+                .innerHTML = validator;
         }
     }
 
@@ -506,6 +555,9 @@ class SelectInput extends MultipleInput {
     }
     dropdown_alt = 'radio';
 
+    add_default_field() {
+        this.form_field.add_select("Default value", `${this.id}-default`, this.values.values);
+    }
 }
 
 class CheckboxInput extends MultipleInput {
