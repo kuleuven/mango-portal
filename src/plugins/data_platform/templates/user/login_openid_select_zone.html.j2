@@ -28,12 +28,14 @@
                 {% endif %}
                 <table class="table table-striped table-hover mt-2 mb-0">
                   <colgroup>
-                    <col class="col-md-5" />
-                    <col class="col-md-3" />
+                    <col class="col-md-4" />
+                    <col class="col-md-2" />
+                    <col class="col-md-2" />
                     <col class="col-md-4" />
                   </colgroup>
                   <thead>
                     <th>Project</th>
+                    <th>Status</th>
                     <th>Role</th>
                     <th>Actions</th>
                   </thead>
@@ -43,6 +45,13 @@
                     <tr>
                       <td class="bi bi-folder fs-6 align-middle">
                         <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
+                      </td>
+                      <td class="fs-6 align-middle">
+                        {% if project['archived'] %}
+                        archived
+                        {% else %}
+                        active
+                        {% endif %}
                       </td>
                       <td class="fs-6 align-middle">
                         {{project['my_role']}}
