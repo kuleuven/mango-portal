@@ -113,11 +113,13 @@ openid_providers = {
         "client_id": os.environ.get("OIDC_CLIENT_ID", ""),
         "secret": os.environ.get("OIDC_SECRET", ""),
         "issuer_url": os.environ.get("OIDC_ISSUER_URL", ""),
+        "auto_pick_on_host": "mango.kuleuven.be",
     },
     "vsc": {
         "label": "VSC",
         "client_id": "blub",
         "secret": "blub",
         "issuer_url": "https://auth.vscentrum.be",
+        "auto_pick_on_host": "mango.vscentrum.be",
     },
 }

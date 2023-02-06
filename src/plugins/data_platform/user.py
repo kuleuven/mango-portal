@@ -79,45 +79,50 @@ def login_openid():
     """
 
     if request.method == 'GET':
-        last_openid_provider=''
+        for openid_provider in openid_providers:
+            if 'auto_pick_on_host' in openid_provider and openid_provider['auto_pick_on_host'] == request.host:
+                return redirect_to_idp(openid_provider)
 
         if 'openid_provider' in session:
             last_openid_provider = session['openid_provider']
+        
         return render_template('user/login_openid.html.j2', openid_providers=openid_providers, last_openid_provider=last_openid_provider)
 
     if request.method == 'POST':
-        host = request.host
         openid_provider = request.form.get('openid_provider')
 
         if openid_provider not in openid_providers:
             flash('Unknown openid provider', category='danger')
             return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
 
-        provider_config = openid_providers[openid_provider]
+        return redirect_to_idp(openid_provider)
 
-        client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
-        issuer_url = provider_config['issuer_url']
-        provider_info = client.provider_config(issuer_url)
-        client_reg = RegistrationResponse(client_id=provider_config['client_id'], client_secret=provider_config['secret'])
-        client.store_registration_info(client_reg)
+def redirect_to_idp(openid_provider):
+    provider_config = openid_providers[openid_provider]
 
-        session["openid_state"] = rndstr()
-        session["openid_nonce"] = rndstr()
-        args = {
-            "client_id": client.client_id,
-            "response_type": "code",
-            "scope": ["openid"],
-            "nonce": session["openid_nonce"],
-            "redirect_uri": f"https://{host}/user/openid/callback/{openid_provider}",
-            "state": session["openid_state"]
-        }
+    host = request.host
 
-        auth_req = client.construct_AuthorizationRequest(request_args=args)
-        auth_uri = auth_req.request(client.authorization_endpoint)
+    client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
+    issuer_url = provider_config['issuer_url']
+    provider_info = client.provider_config(issuer_url)
+    client_reg = RegistrationResponse(client_id=provider_config['client_id'], client_secret=provider_config['secret'])
+    client.store_registration_info(client_reg)
 
-        return redirect(auth_uri)
+    session["openid_state"] = rndstr()
+    session["openid_nonce"] = rndstr()
+    args = {
+        "client_id": client.client_id,
+        "response_type": "code",
+        "scope": ["openid"],
+        "nonce": session["openid_nonce"],
+        "redirect_uri": f"https://{host}/user/openid/callback/{openid_provider}",
+        "state": session["openid_state"]
+    }
 
+    auth_req = client.construct_AuthorizationRequest(request_args=args)
+    auth_uri = auth_req.request(client.authorization_endpoint)
 
+    return redirect(auth_uri)
 
 @data_platform_user_bp.route('/user/openid/callback/<openid_provider>')
 def login_openid_callback(openid_provider):
