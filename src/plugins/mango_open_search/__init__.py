@@ -434,11 +434,11 @@ def delete_item_by_path(zone: str, item_path):
             "bool": {
                 "must": [
                     {
-                        "match": {
-                            "irods_path": item_path,
+                        "term": {
+                            "irods_path.keyword": item_path,
                         }
                     },
-                    {"bool": {"filter": [{"term": {"irods_zone_name": zone}}]}},
+                    {"term": {"irods_zone_name": zone}},
                 ]
             }
         }
@@ -453,13 +453,16 @@ def delete_subtree_by_id(zone: str, path_item_id: int):
     query_body = {
         "query": {
             "bool": {
-                "must": [
+                "filter": [
                     {
-                        "match": {
-                            "irods_parent_path_ids": path_item_id,
-                        }
+                        "bool": {
+                            "should": [
+                                {"term": {"irods_parent_path_ids": path_item_id}},
+                                {"term": {"irods_id": path_item_id}},
+                            ]
+                        },
                     },
-                    {"bool": {"filter": [{"term": {"irods_zone_name": zone}}]}},
+                    {"term": {"irods_zone_name.keyword": zone}},
                 ]
             }
         }
@@ -476,14 +479,16 @@ def delete_subtree_by_path(zone: str, item_path):
     query_body = {
         "query": {
             "bool": {
-                "must": [
+                "filter": [
                     {
-                        "multi_match": {
-                            "query": item_path,
-                            "fields": ["irods_parent_paths", "irods_path"],
+                        "bool": {
+                            "should": [
+                                {"term": {"irods_parent_paths.keyword": item_path}},
+                                {"term": {"irods_path.keyword": item_path}},
+                            ]
                         }
                     },
-                    {"bool": {"filter": [{"term": {"irods_zone_name": zone}}]}},
+                    {"term": {"irods_zone_name.keyword": zone}},
                 ]
             }
         }
@@ -614,7 +619,6 @@ def permissions_changed_listener(sender, **parameters):
         item_type=item_type,
         item_path=parameters["item_path"],
     )
-
 
 
 signals.collection_added.connect(collection_modified_listener)
