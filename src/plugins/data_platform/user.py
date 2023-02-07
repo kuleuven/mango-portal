@@ -83,6 +83,7 @@ def login_openid():
             if 'auto_pick_on_host' in openid_provider and openid_provider['auto_pick_on_host'] == request.host:
                 return redirect_to_idp(openid_provider)
 
+        last_openid_provider = ""
         if 'openid_provider' in session:
             last_openid_provider = session['openid_provider']
         
