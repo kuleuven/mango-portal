@@ -83,9 +83,10 @@ def login_openid():
             if 'auto_pick_on_host' in openid_provider and openid_provider['auto_pick_on_host'] == request.host:
                 return redirect_to_idp(openid_provider)
 
+        last_openid_provider = ""
         if 'openid_provider' in session:
             last_openid_provider = session['openid_provider']
-        
+
         return render_template('user/login_openid.html.j2', openid_providers=openid_providers, last_openid_provider=last_openid_provider)
 
     if request.method == 'POST':
@@ -184,7 +185,7 @@ def login_openid_select_zone():
 
         if 'zone' in session:
             last_zone_name = session['zone']
-        
+
         projects, perms = current_user_projects()
 
         # Filter zones
@@ -198,8 +199,8 @@ def login_openid_select_zone():
             if project['my_role'] != '' and not project['archived'] and project['zone'] not in my_zones:
                 my_zones.append(project['zone'])
 
-        return render_template('user/login_openid_select_zone.html.j2', 
-            projects=projects, 
+        return render_template('user/login_openid_select_zone.html.j2',
+            projects=projects,
             zones=zones,
             my_zones=my_zones,
             last_zone_name=last_zone_name,
@@ -231,11 +232,11 @@ def login_openid_select_zone():
     except Exception as e:
         print(e)
         flash('Could not create iRODS session', category='danger')
-        return render_template('user/login_openid_select_zone.html.j2', zones=zones)
+        return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 
     if request.form.get('submit') == 'How to connect':
         return redirect(url_for('data_platform_user_bp.connection_info'))
-    
+
     collection = request.form.get('collection')
     if collection:
         return redirect(url_for('browse_bp.collection_browse', collection=collection.lstrip('/')))
@@ -253,7 +254,7 @@ def connection_info():
     response.raise_for_status()
 
     info = response.json()
-    
+
     if "-hpc-" in jobid:
         # icts-p-hpc-irods-instance
         parts = jobid.split('-', 5)
@@ -262,11 +263,11 @@ def connection_info():
 
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
-    
+
     info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
     return render_template(
-        "user/connection_info.html.j2", 
+        "user/connection_info.html.j2",
         info=info,
         setup_json={
             'linux': json.dumps(info['irods_environment'], indent=4),
