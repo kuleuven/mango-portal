@@ -231,7 +231,7 @@ def login_openid_select_zone():
     except Exception as e:
         print(e)
         flash('Could not create iRODS session', category='danger')
-        return render_template('user/login_openid_select_zone.html.j2', zones=zones)
+        return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 
     if request.form.get('submit') == 'How to connect':
         return redirect(url_for('data_platform_user_bp.connection_info'))
