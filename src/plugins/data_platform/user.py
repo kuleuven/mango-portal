@@ -27,7 +27,7 @@ from oic.oic.message import RegistrationResponse, AuthorizationResponse
 from oic import rndstr
 
 from irods_zones_config import DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
-from . import API_URL, API_TOKEN, openid_providers, openid_login_required, current_user_projects, current_user_api_token, current_zone_jobid
+from . import API_URL, openid_providers, openid_login_required, current_user_projects, current_user_api_token, current_zone_jobid
 
 import logging
 
@@ -37,19 +37,11 @@ data_platform_user_bp = Blueprint(
 )
 
 def irods_connection_info(zone, username):
+    token, _ = current_user_api_token()
+
     jobid = current_app.config['irods_zones'][zone]["jobid"]
 
-    header = {"Authorization": "Bearer " + API_TOKEN}
-    response = requests.post(
-        f"{API_URL}/v1/token",
-        json={"username": username, "permissions": ["user"]},
-        headers=header,
-    )
-    response.raise_for_status()
-
-    user_api_token = response.json()["token"]
-
-    header = {"Authorization": "Bearer " + user_api_token}
+    header = {"Authorization": "Bearer " + token}
     response = requests.get(
         f"{API_URL}/v1/irods/zones/{jobid}/connection_info", headers=header
     )

@@ -202,8 +202,8 @@ def init_and_secure_views():
                 parameters = DEFAULT_IRODS_PARAMETERS.copy()
                 ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
                 zone = session["zone"]
-                parameters.update(irods_zones[zone]["parameters"])
-                ssl_settings.update(irods_zones[zone]["ssl_settings"])
+                parameters.update(app.config["irods_zones"][zone]["parameters"])
+                ssl_settings.update(app.config["irods_zones"][zone]["ssl_settings"])
                 irods_session = iRODSSession(
                     user=session["userid"],
                     password=session["password"],
