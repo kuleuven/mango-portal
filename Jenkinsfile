@@ -5,8 +5,8 @@ properties([
 ])
 
 def allowed_branch_names = [
-  'development': 'latest', 
-  'data-platform-view': 'quality'
+  'development': 'development', 
+  'main': 'latest'
 ]
 
 def publish = allowed_branch_names.containsKey(env.BRANCH_NAME)
