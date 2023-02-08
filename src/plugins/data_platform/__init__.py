@@ -71,8 +71,6 @@ def current_user_api_token():
         payload = response.json()
 
         return payload["token"], payload["permissions"]
-
-    print(session['openid_id_token_jwt'])
     
     response = requests.post(
         f"{API_URL}/v1/token/exchange",
