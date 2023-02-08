@@ -44,7 +44,12 @@
           {% endif %}
           <tr>
             <th>Description</th>
-            <td>{{ project['description'] }}</td>
+            <td>
+            {{ project['description'] }}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            </td>
           </tr>
           <tr>
             <th>Platform</th>
@@ -75,7 +80,15 @@
           {% endif %}
           <tr>
             <th>Size</th>
-            <td>{{ status['used_size'] }} of {{ project['quota_size'] }} bytes used</td>
+            <td>{{ status['used_size'] }} of {{ project['quota_size'] }} bytes used
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+
+            <div class="progress">
+              <div class="progress-bar{% if status['used_size'] > project['quota_size'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_size'] * 100 / project['quota_size'] }}%" aria-valuenow="{{ status['used_size'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_size'] }}"></div>
+            </div>
+            </td>
           </tr>
           <tr>
             <th>Inodes</th>
@@ -85,6 +98,13 @@
             {{ status['platform_info']['coll_count'] }} collections, 
             {{ status['platform_info']['meta_count'] }} metadata records) 
             {% endif %}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+
+            <div class="progress">
+              <div class="progress-bar{% if status['used_inodes'] > project['quota_inodes'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_inodes'] * 100 / project['quota_inodes'] }}%" aria-valuenow="{{ status['used_inodes'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_inodes'] }}"></div>
+            </div>
             </td>
           </tr>
         </table>
@@ -258,7 +278,7 @@
               </div>
             </div>
             <input type="hidden"
-                   id="project-add"
+                   id="project-add-member"
                    name="project"
                    value="{{ project['name']}}"/>
           </div>
@@ -332,7 +352,7 @@
               </div>
             </div>
             <input type="hidden"
-                   id="project-edit"
+                   id="project-edit-member"
                    name="project"
                    value="{{ project['name']}}"/>
             <input type="hidden"
@@ -391,7 +411,7 @@
               </div>
             </div>
             <input type="hidden"
-                   id="project-delete"
+                   id="project-delete-member"
                    name="project"
                    value="{{ project['name']}}"/>
           </div>
@@ -407,6 +427,86 @@
       </div>
     </div>
   </div>
+
+  <!-- Modify project modal -->
+  <div class="modal fade"
+       id="modifyProject"
+       tabindex="-1"
+       aria-labelledby="modifyProjectLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteMemberLabel">
+            Modify project settings
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.modify_project') }}"
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="description" class="col-form-label">
+                Description
+              </label>
+              <input type="text"
+                     class="form-control"
+                     name="description"
+                     value="{{ project['description'] }}" />
+              <div class="invalid-feedback">
+                Description is required
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="description" class="col-form-label">
+                Max Size (bytes)
+              </label>
+              <input type="number"
+                     class="form-control"
+                     name="quota_size"
+                     value="{{ project['quota_size'] }}" />
+              <div class="invalid-feedback">
+                Value for size quota is required
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="description" class="col-form-label">
+                Max Inodes
+              </label>
+              <input type="number"
+                     class="form-control"
+                     name="quota_inodes"
+                     value="{{ project['quota_inodes'] }}" />
+              <div class="invalid-feedback">
+                Value for inodes quota is required
+              </div>
+            </div>
+            <input type="hidden"
+                   id="project-modify"
+                   name="project"
+                   value="{{ project['name']}}"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 
   <script>  
   var editMember = document.getElementById('editMember')

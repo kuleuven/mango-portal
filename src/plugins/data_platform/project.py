@@ -110,6 +110,27 @@ def delete_project_member():
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
 
 @openid_login_required
+@data_platform_project_bp.route("/data-platform/projects/modify", methods=["POST"])
+def modify_project():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    id = request.form.get('project')
+
+    response = requests.patch(
+        f"{API_URL}/v1/projects/{id}", headers=header, json={
+            "description": request.form.get("description"),
+            "quota_inodes": int(request.form.get("quota_inodes")),
+            "quota_size": int(request.form.get("quota_size")),
+        }
+    )
+    response.raise_for_status()
+
+    flash(response.json()['message'], "success")
+    
+    return redirect(url_for('data_platform_project_bp.project', project_name=id))
+
+@openid_login_required
 @data_platform_project_bp.route("/data-platform/projects/deploy", methods=["POST"])
 def deploy_project():
     token, _ = current_user_api_token()
