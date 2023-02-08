@@ -10,9 +10,13 @@ def allowed_branch_names = [
 ]
 
 def publish = allowed_branch_names.containsKey(env.BRANCH_NAME)
+def tag = ""
+if (publish) {
+  tag = allowed_branch_names[env.BRANCH_NAME]
+}
 buildDockerImage {
   namespace = 'foz'
   imageName = 'mango'
-  imageTag = allowed_branch_names[env.BRANCH_NAME]
+  imageTag = tag 
   noPublish = !publish
 }
