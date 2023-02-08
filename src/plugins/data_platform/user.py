@@ -102,7 +102,7 @@ def login_openid():
 def redirect_to_idp(openid_provider):
     provider_config = openid_providers[openid_provider]
 
-    redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"{request.scheme}://{request.host}")  
+    redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}")  
 
     client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
     issuer_url = provider_config['issuer_url']
@@ -150,7 +150,7 @@ def login_openid_callback(openid_provider):
         flash('Invalid state', category='danger')
         return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
 
-    redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"{request.scheme}://{request.host}")    
+    redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}")    
 
     args = {
         "code": authn_resp["code"],

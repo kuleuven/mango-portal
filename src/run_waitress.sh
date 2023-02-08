@@ -11,7 +11,7 @@ export spOption="mango_portal"
 #export MANGO_AUTH="via_callback"
 export HOSTNAME
 
-#export OPENID_REDIRECT_BASE=http://oidcapp.icts.kuleuven.be:8080
+export OPENID_REDIRECT_BASE=http://localhost:8080
 export OIDC_ISSUER_URL=https://idp.kuleuven.be/auth/realms/kuleuven
 export OIDC_CLIENT_ID=abc
 export API_URL=https://icts-q-coz-data-platform-api.cloud.q.icts.kuleuven.be
