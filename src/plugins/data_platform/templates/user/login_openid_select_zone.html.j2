@@ -80,7 +80,11 @@
                     {{project['platform']}} {{ project.name }}</h4>
                 </div>
                 <div class="d-flex p-2">
-                    <input type="submit" value="Edit members" class="btn btn-block btn-primary"/>
+                    {% if (project['my_role'] == 'owner' or admin) and not project['archived'] %}
+                    <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
+                    {% else %}
+                    <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}

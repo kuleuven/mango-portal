@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 import requests
 import json
 from flask import (
@@ -101,7 +102,7 @@ def login_openid():
 def redirect_to_idp(openid_provider):
     provider_config = openid_providers[openid_provider]
 
-    host = request.host
+    redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"{request.scheme}://{request.host}")  
 
     client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
     issuer_url = provider_config['issuer_url']
@@ -116,7 +117,7 @@ def redirect_to_idp(openid_provider):
         "response_type": "code",
         "scope": ["openid"],
         "nonce": session["openid_nonce"],
-        "redirect_uri": f"https://{host}/user/openid/callback/{openid_provider}",
+        "redirect_uri": f"{redirect_base}/user/openid/callback/{openid_provider}",
         "state": session["openid_state"]
     }
 
@@ -149,10 +150,11 @@ def login_openid_callback(openid_provider):
         flash('Invalid state', category='danger')
         return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
 
-    host = request.host
+    redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"{request.scheme}://{request.host}")    
+
     args = {
         "code": authn_resp["code"],
-        "redirect_uri": f"https://{host}/user/openid/callback/{openid_provider}",
+        "redirect_uri": f"{redirect_base}/user/openid/callback/{openid_provider}",
     }
     token_resp = client.do_access_token_request(state=authn_resp["state"], request_args=args, authn_method="client_secret_basic")
 
@@ -174,6 +176,7 @@ def login_openid_callback(openid_provider):
         session["openid_user_email"] = userinfo["email"]
     if 'name' in userinfo:
         session["openid_user_name"] = userinfo["name"]
+    session["openid_id_token_jwt"] = token_resp['id_token_jwt']
 
     return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 

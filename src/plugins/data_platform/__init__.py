@@ -21,13 +21,18 @@ def openid_login_required(func):
   
   return inner
 
-def update_zone_info(irods_zones):
+def update_zone_info(irods_zones, token=API_TOKEN):
     """
     Refresh zone information
     Update the irods_zone information with the zones retrieved from the data platform api.
     """
 
-    header = {"Authorization": "Bearer " + API_TOKEN}
+    if not token:
+        logging.warn(f"No COZ API token, not updating zones")
+
+        return
+
+    header = {"Authorization": "Bearer " + token}
     response = requests.get(f"{API_URL}/v1/irods/zones", headers=header)
     response.raise_for_status()
 
@@ -54,15 +59,30 @@ def update_zone_info(irods_zones):
 
 
 def current_user_api_token():
-    header = {"Authorization": "Bearer " + API_TOKEN}
+    if API_TOKEN:
+        header = {"Authorization": "Bearer " + API_TOKEN}
+        response = requests.post(
+            f"{API_URL}/v1/token",
+            json={"username": session['openid_username'], "permissions": ["user"], "lookup_user_permissions": True},
+            headers=header,
+        )
+        response.raise_for_status()
+
+        payload = response.json()
+
+        return payload["token"], payload["permissions"]
+
+    print(session['openid_id_token_jwt'])
+    
     response = requests.post(
-        f"{API_URL}/v1/token",
-        json={"username": session['openid_username'], "permissions": ["user"], "lookup_user_permissions": True},
-        headers=header,
+        f"{API_URL}/v1/token/exchange",
+        json={"id_token": session['openid_id_token_jwt']},
     )
     response.raise_for_status()
 
     payload = response.json()
+
+    update_zone_info(current_app.config['irods_zones'], payload["token"])
 
     return payload["token"], payload["permissions"]
 
@@ -98,7 +118,7 @@ def current_user_projects():
                 jobid = opt["value"]
         
         for zone in zones:
-            if zones[zone]['jobid'] == jobid:
+            if 'jobid' in zones[zone] and zones[zone]['jobid'] == jobid:
                 project["zone"] = zone
     
     return projects, perms
