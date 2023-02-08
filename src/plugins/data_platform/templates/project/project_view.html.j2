@@ -1,6 +1,7 @@
 {% extends "base_openid.html.j2" %}
 
 {% block body %}
+{% set can_edit = project['my_role'] == 'owner' or project['my_role'] == 'responsible' or admin %}
 {% set opts = {'folder-layout': 'v1'} %}
 {% for opt in project['platform_options'] %}
 {% if opts.update({opt['key']: opt['value']}) %}{% endif %}
@@ -91,7 +92,7 @@
           <tr>
             <th>Username</th>
             <th>Role</th>
-            {% if project['my_role'] == 'owner' or admin %}
+            {% if can_edit %}
             <th></th>
             <th></th>
             {% endif %}
@@ -100,10 +101,10 @@
           <tr>
             <td>{{ member['username'] }}</td>
             <td>{{ member['role'] }}</td>
-            {% if project['my_role'] == 'owner' and member['username'] == session['openid_username'] and not admin %}
+            {% if can_edit and not admin and member['role'] == 'responsible' and (project['my_role'] != 'responsible' or project['responsibles'] <= 1) %}
             <td></td>
             <td></td>
-            {% elif project['my_role'] == 'owner' or admin %}
+            {% elif can_edit %}
             <td>
               <a href="#" data-bs-toggle="modal" data-bs-target="#editMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-pencil"></i></a>
             </td>
@@ -114,7 +115,7 @@
           </tr>
           {% endfor %}
         </table>
-        {% if project['my_role'] == 'owner' or admin %}
+        {% if can_edit %}
         <div>
         <form action="{{ url_for('data_platform_project_bp.deploy_project') }}" method="post" class="m-2 mt-0">
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMember">
@@ -176,7 +177,7 @@
             <th>API Token Username</th>
             <th>Default permissions</th>
             <th>Expiration</th>
-            {% if project['my_role'] == 'owner' or admin %}
+            {% if can_edit %}
             <th></th>
             {% endif %}
           </tr>
@@ -185,7 +186,7 @@
             <td class="align-middle">{{ project['name'] }}_{{ token['type'] }}</td>
             <td class="align-middle">{{ token['default_permission'] }}</td>
             <td class="align-middle">{% if token['isset'] %}{{ token['expiration']|format_time }}{% else %}Not activated{% endif %}</td>
-            {% if project['my_role'] == 'owner' or admin %}
+            {% if can_edit %}
             <td>
               <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = token['type'])}}">Retrieve API token</a>
             </td>
@@ -247,7 +248,10 @@
                      name="role"
                      required>
                   <option value="member">member</option>
-                  <option value="owner">owner</option>
+                  <option value="manager">manager</option>
+                  {% if project['my_role'] == 'responsible' or admin %}
+                  <option value="responsible">responsible</option>
+                  {% endif %}
               </select>
               <div class="invalid-feedback">
                 A value is required for adding a member
@@ -318,7 +322,10 @@
                      name="role"
                      required>
                   <option value="member">member</option>
-                  <option value="owner">owner</option>
+                  <option value="manager">manager</option>
+                  {% if project['my_role'] == 'responsible' or admin %}
+                  <option value="responsible">responsible</option>
+                  {% endif %}
               </select>
               <div class="invalid-feedback">
                 Role is required

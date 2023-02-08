@@ -47,10 +47,13 @@ def project(project_name):
 
     # find out whether we are project owner
     project['my_role'] = ""
+    project['responsibles'] = 0
 
     for m in project['members']:
         if m['username'] == session['openid_username']:
             project['my_role'] = m['role']
+        if m['role'] == 'responsible':
+            project['responsibles'] += 1
 
     if project['platform'] == 'irods':
         response = requests.get(

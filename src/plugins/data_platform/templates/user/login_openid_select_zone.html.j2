@@ -57,7 +57,7 @@
                         {{project['my_role']}}
                       </td>
                       <td class="text-nowrap">
-                        {% if (project['my_role'] == 'owner' or admin) and not project['archived'] %}
+                        {% if (project['my_role'] == 'responsible' or project['my_role'] == 'manager' or admin) and not project['archived'] %}
                         <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
                         <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = "ingress")}}">Retrieve API token</a>
                         {% else %}
@@ -80,7 +80,7 @@
                     {{project['platform']}} {{ project.name }}</h4>
                 </div>
                 <div class="d-flex p-2">
-                    {% if (project['my_role'] == 'owner' or admin) and not project['archived'] %}
+                    {% if (project['my_role'] == 'responsible' or project['my_role'] == 'manager' or admin) and not project['archived'] %}
                     <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
                     {% else %}
                     <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
