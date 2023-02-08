@@ -9,8 +9,8 @@ API_URL = os.environ.get(
 )
 API_TOKEN = os.environ.get("API_TOKEN", "")
 
-if not API_TOKEN:
-    logging.warn(f"No COZ API token, module data_platform will not work")
+if not os.environ.get("OIDC_SECRET", ""):
+    logging.warn(f"No OIDC_SECRET, only VSC login will work")
 
 def openid_login_required(func):
   def inner(*args, **kwargs):
