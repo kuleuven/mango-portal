@@ -1,7 +1,7 @@
 {% extends "base_openid.html.j2" %}
 
 {% block body %}
-{% set can_edit = project['my_role'] == 'owner' or project['my_role'] == 'responsible' or admin %}
+{% set can_edit = project['my_role'] == 'manager' or project['my_role'] == 'responsible' or admin %}
 {% set opts = {'folder-layout': 'v1'} %}
 {% for opt in project['platform_options'] %}
 {% if opts.update({opt['key']: opt['value']}) %}{% endif %}
