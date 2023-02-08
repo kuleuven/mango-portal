@@ -85,9 +85,11 @@
             <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
             {% endif %}
 
+            {% if project['quota_size'] > 0 %}
             <div class="progress">
               <div class="progress-bar{% if status['used_size'] > project['quota_size'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_size'] * 100 / project['quota_size'] }}%" aria-valuenow="{{ status['used_size'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_size'] }}"></div>
             </div>
+            {% endif %}
             </td>
           </tr>
           <tr>
@@ -102,9 +104,11 @@
             <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
             {% endif %}
 
+            {% if project['quota_inodes'] > 0 %}
             <div class="progress">
               <div class="progress-bar{% if status['used_inodes'] > project['quota_inodes'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_inodes'] * 100 / project['quota_inodes'] }}%" aria-valuenow="{{ status['used_inodes'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_inodes'] }}"></div>
             </div>
+            {% endif %}
             </td>
           </tr>
         </table>
