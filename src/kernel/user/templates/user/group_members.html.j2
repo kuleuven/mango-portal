@@ -12,9 +12,14 @@
         <ul class="list-group">
         {% for person in members %}
             <li class="list-group-item">{{person.name}}</li>
-
         {%endfor%}
         </ul>
+        {% if "data_platform" in config["MANGO_ENABLE_CORE_PLUGINS"] and group_name != 'public' %}
+        {% set project_name = group_name | replace("_manager", "") | replace("_responsible", "") %}
+        <div>
+          <a class="btn btn-block btn-primary m-2" href="{{url_for('data_platform_project_bp.project', project_name = project_name)}}">Project details</a>
+        </div>
+        {% endif %}
     </div>
   </div>
 </div>

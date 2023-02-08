@@ -4,7 +4,7 @@
         <div class="row">
             <a href="{{ url_for('index')}}"
                class="d-flex align-items-center col-3 mb-2 mb-lg-0 link-dark text-decoration-none">
-                {% if 'logo' in config.irods_zones[g.irods_session.zone] %}
+                {% if 'irods_session' in g and 'logo' in config.irods_zones[g.irods_session.zone] %}
                     <img class="logo"
                          alt="logo"
                          src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
@@ -37,6 +37,7 @@
                            required/>
                 </form>
             {% endif %}
+            {% if 'irods_session' in g %}
             <div class="flex-shrink-0 dropdown">
                 <a href="#"
                    class="d-block link-dark text-decoration-none dropdown-toggle"
@@ -56,18 +57,24 @@
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    {% if config['MANGO_AUTH'] in ['basic', 'openid', 'via_callback'] %}
+                    {% if 'openid_username' in session %}
                         <li>
-                            <a class="dropdown-item" href="{{ url_for('user_bp.logout_basic') }}">Sign out</a>
+                            <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}">Switch zone</a>
+                        </li>
+                    {% endif %}
+                    {% if config['MANGO_AUTH'] == 'localdev' %}
+                        <li>
+                            <a class="dropdown-item disabled" href="#">Sign out</a>
                         </li>
                     {% else %}
                         <li>
-                            <a class="dropdown-item disabled" href="#">Sign out</a>
+                            <a class="dropdown-item" href="{{ url_for('user_bp.logout_basic') }}">Sign out</a>
                         </li>
                     {% endif %}
                     <!--<li><a class="dropdown-item" href="#">Switch to admin</a></li>-->
                 </ul>
             </div>
+            {% endif %}
         </div>
     </div>
 </header>
