@@ -1,7 +1,8 @@
 import requests
 from flask import (
     Blueprint,
-    jsonify
+    jsonify,
+    session
 )
 
 from . import openid_login_required, current_user_api_token, API_URL
@@ -27,10 +28,14 @@ def autocomplete_username(term):
     if not result:
         return jsonify([])
 
+    # Limit suggestions to the right 'source'
+    vsc = session['openid_provider'] == 'VSC'
+
     return jsonify([
         {
             'username': u['username'],
             'label': u['name'],
         } 
         for u in result
+        if u['username'].startswith('vsc') == vsc
     ])
