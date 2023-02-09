@@ -50,7 +50,7 @@ $ src/run_waitress.sh
 
 This will start waitress as used in the production deployments, but adds a listener for reloading the app when you change files locally.
 
-Point your browser to `http://localhost:8080`
+Point your browser to `http://localhost:3000`
 
 ### Starting the development server (built in, deprecated)
 
