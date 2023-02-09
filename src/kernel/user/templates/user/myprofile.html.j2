@@ -11,10 +11,10 @@
             <th>Login name</th>
             <td>{{ me.name }}</td>
           </tr>
-          {% if 'openid_user_name' in session %}
+          {% if 'openid_session' in session %}
             <tr>
               <th>Name</th>
-              <td>{{ session['openid_user_name'] }}</td>
+              <td>{{ session.openid_session.user_info.name }}</td>
             </tr>
           {% endif %}
           <tr>

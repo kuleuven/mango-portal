@@ -1,14 +1,16 @@
 import os
 import logging
 import requests
+from datetime import datetime
+import json
 
 from functools import wraps
 
-from flask import current_app, session, redirect, url_for, g
+from flask import current_app, session, redirect, url_for, g, request
 
-from oic.oic import Client
+from oic.oic import Client, Token
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
-from oic.oic.message import RegistrationResponse
+from oic.oic.message import RegistrationResponse, AccessTokenResponse, OpenIDSchema
 
 from oic import rndstr
 
@@ -60,7 +62,14 @@ def openid_get_client(openid_provider):
 def openid_login_required(func):
   @wraps(func)
   def inner(*args, **kwargs):
-    if 'openid_username' not in session or 'openid_provider' not in session:
+    if 'openid_session' not in session:
+        return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
+    
+    s = Session(session['openid_session'])
+
+    s.refresh()
+
+    if not s.valid():
         return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
 
     return func(*args, **kwargs)
@@ -105,22 +114,9 @@ def update_zone_info(irods_zones, token=API_TOKEN):
 
 
 def current_user_api_token():
-    #if API_TOKEN:
-    #    header = {"Authorization": "Bearer " + API_TOKEN}
-    #    response = requests.post(
-    #        f"{API_URL}/v1/token",
-    #        json={"username": session['openid_username'], "permissions": ["user"], "lookup_user_permissions": True},
-    #        headers=header,
-    #    )
-    #    response.raise_for_status()
-    #
-    #    payload = response.json()
-    #
-    #    return payload["token"], payload["permissions"]
-    
     response = requests.post(
         f"{API_URL}/v1/token/exchange",
-        json={"id_token": session['openid_id_token_jwt']},
+        json={"id_token": Session(session['openid_session']).jwt_token},
     )
     response.raise_for_status()
 
@@ -149,7 +145,7 @@ def current_user_projects():
         project['my_role'] = ''
 
         for m in project['members']:
-            if m['username'] == session['openid_username']:
+            if m['username'] == Session(session['openid_session']).username:
                 project['my_role'] = m['role']
 
         if project["platform"] != "irods":
@@ -169,3 +165,68 @@ def current_user_projects():
 
 def current_zone_jobid():
     return current_app.config['irods_zones'][g.irods_session.zone]["jobid"]
+
+class Session(dict):
+    def __init__(self, provider, token_resp: AccessTokenResponse=None, user_info: OpenIDSchema=None):
+        dict.__init__(self)
+
+        if type(provider) is dict:
+            self.update(**provider)
+        else:
+            self['provider'] = provider
+
+            self['user_info'] = user_info._dict
+
+            if token_resp is not None:
+                self['jwt_token'] = token_resp['id_token_jwt']
+                self['access_token'] = token_resp['access_token']
+                self['refresh_token'] = None
+                if 'refresh_token' in token_resp:
+                    self['refresh_token'] = token_resp['refresh_token']
+                self['expiry'] = token_resp['id_token']['exp']
+
+    @property
+    def username(self):
+        return self['user_info']['preferred_username']
+    
+    @property
+    def name(self):
+        return self['user_info']['name']
+    
+    @property
+    def email(self):
+        return self['user_info']['email']
+    
+    @property
+    def jwt_token(self):
+        return self['jwt_token']
+
+    def valid(self):
+        return 'expiry' in self and self['expiry'] - 30 > datetime.utcnow().timestamp()
+    
+    def refresh(self):
+        if 'refresh_token' not in self or self['refresh_token'] is None:
+            return
+        
+        redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}")  
+
+        request_args = {
+            'grant_type': 'refresh_token',
+            'refresh_token': self['refresh_token'],
+            "redirect_uri": f"{redirect_base}/user/openid/callback/{self['provider']}",
+        }
+
+        client = openid_get_client(self['provider'])
+
+        token_resp = client.do_access_token_refresh(
+            request_args=request_args, 
+            authn_method='client_secret_basic',
+            token=Token(resp={'refresh_token': self['refresh_token']}),
+        )
+
+        self['jwt_token'] = token_resp['id_token_jwt']
+        self['access_token'] = token_resp['access_token']
+        self['refresh_token'] = None
+        if 'refresh_token' in token_resp:
+            self['refresh_token'] = token_resp['refresh_token']
+        self['expiry'] = token_resp['id_token']['exp']

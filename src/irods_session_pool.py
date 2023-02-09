@@ -37,10 +37,9 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.group_ids = self.group_ids = [
             group.id for group in self.groups
         ]
-        if "openid_user_name" in session:
-            self.openid_user_name = session["openid_user_name"]
-        if "openid_user_email" in session:
-            self.openid_user_email = session["openid_user_email"]
+        if "openid_session" in session:
+            self.openid_user_name = session["openid_session"]["user_info"]["name"]
+            self.openid_user_email = session["openid_session"]["user_info"]["email"]
 
     def __del__(self):
         # release connections upon object destruction

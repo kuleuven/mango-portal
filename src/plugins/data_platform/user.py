@@ -26,7 +26,7 @@ from oic.oic.message import AuthorizationResponse
 from oic import rndstr
 
 from irods_zones_config import DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
-from . import API_URL, openid_providers, openid_get_client, openid_login_required, current_user_projects, current_user_api_token, current_zone_jobid
+from . import API_URL, openid_providers, openid_get_client, openid_login_required, current_user_projects, current_user_api_token, current_zone_jobid, Session
 
 import logging
 
@@ -95,6 +95,7 @@ def redirect_to_idp(openid_provider):
 
     client = openid_get_client(openid_provider)
 
+    session.clear()
     session["openid_state"] = rndstr()
     session["openid_nonce"] = rndstr()
     args = {
@@ -104,6 +105,7 @@ def redirect_to_idp(openid_provider):
         "redirect_uri": f"{redirect_base}/user/openid/callback/{openid_provider}",
         "state": session["openid_state"]
     }
+
     auth_req = client.construct_AuthorizationRequest(request_args=args)
     auth_uri = auth_req.request(client.authorization_endpoint)
 
@@ -142,22 +144,14 @@ def login_openid_callback(openid_provider):
         flash('Invalid nonce', category='danger')
         return render_template('login_openid.html.j2', openid_providers=openid_providers)
 
-    userinfo = client.do_user_info_request(state=authn_resp["state"])
-    if userinfo['sub'] != id_token['sub']:
+    user_info = client.do_user_info_request(state=authn_resp["state"])
+    if user_info['sub'] != id_token['sub']:
         flash('The \'sub\' of userinfo does not match \'sub\' of ID Token.', category='danger')
         return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
 
     # We are logged on
     session['openid_provider'] = openid_provider
-    session['openid_username'] = userinfo['preferred_username']
-    if 'email' in userinfo:
-        session['openid_user_email'] = userinfo['email']
-    if 'name' in userinfo:
-        session['openid_user_name'] = userinfo['name']
-    session['openid_access_token'] = token_resp['access_token']
-    session['openid_id_token_jwt'] = token_resp['id_token_jwt']
-    if 'refresh_token' in token_resp:
-        session['openid_refresh_token'] = token_resp['refresh_token']
+    session['openid_session'] = dict(Session(openid_provider, token_resp, user_info))
 
     return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 
@@ -193,7 +187,7 @@ def login_openid_select_zone():
 
     zone = request.form.get('irods_zone')
 
-    user_name = session['openid_username']
+    user_name = Session(session['openid_session']).username
     connection_info = irods_connection_info(zone=zone, username=user_name)
     password = connection_info['password']
 
@@ -210,7 +204,7 @@ def login_openid_select_zone():
         session['password'] = password
         session['zone'] = irods_session.zone
 
-        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now(), 'user_name': session['openid_user_name'] if 'openid_user_name' in session else ''} ]
+        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now(), 'user_name': user_name} ]
         logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
 
     except Exception as e:

@@ -11,7 +11,7 @@ from flask import (
     flash,
 )
 
-from . import API_URL, current_user_api_token, openid_login_required
+from . import API_URL, current_user_api_token, openid_login_required, Session
 
 
 data_platform_project_bp = Blueprint(
@@ -50,7 +50,7 @@ def project(project_name):
     project['responsibles'] = 0
 
     for m in project['members']:
-        if m['username'] == session['openid_username']:
+        if m['username'] == Session(session['openid_session']).username:
             project['my_role'] = m['role']
         if m['role'] == 'responsible':
             project['responsibles'] += 1

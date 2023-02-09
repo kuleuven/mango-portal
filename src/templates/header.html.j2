@@ -57,7 +57,7 @@
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    {% if 'openid_username' in session %}
+                    {% if 'openid_session' in session %}
                         <li>
                             <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}">Switch zone</a>
                         </li>
