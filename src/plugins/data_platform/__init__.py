@@ -66,7 +66,12 @@ def openid_login_required(func):
     
     s = Session(session['openid_session'])
 
-    s.refresh()
+    if s.should_refresh():
+        try:
+            s.refresh()
+            session['openid_session'] = dict(s)
+        except Exception as e:
+            print(e)
 
     if not s.valid():
         return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
@@ -193,13 +198,16 @@ class Session(dict):
     def valid(self):
         if 'expiry' not in self:
             return False
-        print(self['expiry'])
-        return self['expiry'] - 30 > datetime.now().timestamp()
-    
-    def refresh(self):
-        if 'refresh_token' not in self or self['refresh_token'] is None:
-            return
 
+        return self['expiry'] - 30 > datetime.utcnow().timestamp()
+
+    def should_refresh(self):
+         if'expiry' not in self or 'refresh_token' not in self or self['refresh_token'] is None:
+            return False
+        
+         return self['expiry'] - 90 < datetime.utcnow().timestamp()
+        
+    def refresh(self):
         request_args = {
             'grant_type': 'refresh_token',
             'refresh_token': self['refresh_token'],
@@ -224,7 +232,7 @@ class Session(dict):
     def login(self):
         client = openid_get_client(self['provider'])
 
-        session.clear()
+        del session["openid_session"]
         session["openid_state"] = rndstr()
         session["openid_nonce"] = rndstr()
         args = {
