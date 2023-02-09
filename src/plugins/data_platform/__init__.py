@@ -191,7 +191,10 @@ class Session(dict):
         return self['jwt_token']
 
     def valid(self):
-        return 'expiry' in self and self['expiry'] - 30 > datetime.utcnow().timestamp()
+        if 'expiry' not in self:
+            return False
+        print(self['expiry'])
+        return self['expiry'] - 30 > datetime.now().timestamp()
     
     def refresh(self):
         if 'refresh_token' not in self or self['refresh_token'] is None:

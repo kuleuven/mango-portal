@@ -200,6 +200,7 @@ def connection_info_modal(zone):
     return render_template("user/connection_info_body.html.j2", info=info, setup_json=setup_json)
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
+@openid_login_required
 def connection_info():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
