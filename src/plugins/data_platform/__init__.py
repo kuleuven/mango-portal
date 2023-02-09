@@ -2,7 +2,15 @@ import os
 import logging
 import requests
 
+from functools import wraps
+
 from flask import current_app, session, redirect, url_for, g
+
+from oic.oic import Client
+from oic.utils.authn.client import CLIENT_AUTHN_METHOD
+from oic.oic.message import RegistrationResponse
+
+from oic import rndstr
 
 API_URL = os.environ.get(
     "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
@@ -12,7 +20,45 @@ API_TOKEN = os.environ.get("API_TOKEN", "")
 if not os.environ.get("OIDC_SECRET", ""):
     logging.warn(f"No OIDC_SECRET, only VSC login will work")
 
+# Dict of openid providers
+openid_providers = {
+    "kuleuven": {
+        "label": "KU Leuven",
+        "client_id": os.environ.get("OIDC_CLIENT_ID", ""),
+        "secret": os.environ.get("OIDC_SECRET", ""),
+        "issuer_url": os.environ.get("OIDC_ISSUER_URL", ""),
+        "auto_pick_on_host": "mango.kuleuven.be",
+    },
+    "vsc": {
+        "label": "VSC",
+        "client_id": "blub",
+        "secret": "blub",
+        "issuer_url": "https://auth.vscentrum.be",
+        "auto_pick_on_host": "mango.vscentrum.be",
+    },
+}
+
+openid_clients = {}
+
+# Function to retrieve client for openid providers
+def openid_get_client(openid_provider):
+    if openid_provider in openid_clients:
+        return openid_clients[openid_provider]
+
+    provider_config = openid_providers[openid_provider]
+
+    client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
+    issuer_url = provider_config['issuer_url']
+    provider_info = client.provider_config(issuer_url)
+    client_reg = RegistrationResponse(client_id=provider_config['client_id'], client_secret=provider_config['secret'])
+    client.store_registration_info(client_reg)
+
+    openid_clients[openid_provider] = client
+
+    return client
+
 def openid_login_required(func):
+  @wraps(func)
   def inner(*args, **kwargs):
     if 'openid_username' not in session or 'openid_provider' not in session:
         return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
@@ -59,18 +105,18 @@ def update_zone_info(irods_zones, token=API_TOKEN):
 
 
 def current_user_api_token():
-    if API_TOKEN:
-        header = {"Authorization": "Bearer " + API_TOKEN}
-        response = requests.post(
-            f"{API_URL}/v1/token",
-            json={"username": session['openid_username'], "permissions": ["user"], "lookup_user_permissions": True},
-            headers=header,
-        )
-        response.raise_for_status()
-
-        payload = response.json()
-
-        return payload["token"], payload["permissions"]
+    #if API_TOKEN:
+    #    header = {"Authorization": "Bearer " + API_TOKEN}
+    #    response = requests.post(
+    #        f"{API_URL}/v1/token",
+    #        json={"username": session['openid_username'], "permissions": ["user"], "lookup_user_permissions": True},
+    #        headers=header,
+    #    )
+    #    response.raise_for_status()
+    #
+    #    payload = response.json()
+    #
+    #    return payload["token"], payload["permissions"]
     
     response = requests.post(
         f"{API_URL}/v1/token/exchange",
@@ -123,21 +169,3 @@ def current_user_projects():
 
 def current_zone_jobid():
     return current_app.config['irods_zones'][g.irods_session.zone]["jobid"]
-
-# Dict of openid providers
-openid_providers = {
-    "kuleuven": {
-        "label": "KU Leuven",
-        "client_id": os.environ.get("OIDC_CLIENT_ID", ""),
-        "secret": os.environ.get("OIDC_SECRET", ""),
-        "issuer_url": os.environ.get("OIDC_ISSUER_URL", ""),
-        "auto_pick_on_host": "mango.kuleuven.be",
-    },
-    "vsc": {
-        "label": "VSC",
-        "client_id": "blub",
-        "secret": "blub",
-        "issuer_url": "https://auth.vscentrum.be",
-        "auto_pick_on_host": "mango.vscentrum.be",
-    },
-}

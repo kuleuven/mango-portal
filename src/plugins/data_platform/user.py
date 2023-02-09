@@ -22,13 +22,11 @@ from flask import (
 from irods.session import iRODSSession
 import irods_session_pool
 
-from oic.oic import Client
-from oic.utils.authn.client import CLIENT_AUTHN_METHOD
-from oic.oic.message import RegistrationResponse, AuthorizationResponse
+from oic.oic.message import AuthorizationResponse
 from oic import rndstr
 
 from irods_zones_config import DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
-from . import API_URL, openid_providers, openid_login_required, current_user_projects, current_user_api_token, current_zone_jobid
+from . import API_URL, openid_providers, openid_get_client, openid_login_required, current_user_projects, current_user_api_token, current_zone_jobid
 
 import logging
 
@@ -93,31 +91,24 @@ def login_openid():
         return redirect_to_idp(openid_provider)
 
 def redirect_to_idp(openid_provider):
-    provider_config = openid_providers[openid_provider]
-
     redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}")  
 
-    client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
-    issuer_url = provider_config['issuer_url']
-    provider_info = client.provider_config(issuer_url)
-    client_reg = RegistrationResponse(client_id=provider_config['client_id'], client_secret=provider_config['secret'])
-    client.store_registration_info(client_reg)
+    client = openid_get_client(openid_provider)
 
     session["openid_state"] = rndstr()
     session["openid_nonce"] = rndstr()
     args = {
-        "client_id": client.client_id,
         "response_type": "code",
         "scope": ["openid"],
         "nonce": session["openid_nonce"],
         "redirect_uri": f"{redirect_base}/user/openid/callback/{openid_provider}",
         "state": session["openid_state"]
     }
-
     auth_req = client.construct_AuthorizationRequest(request_args=args)
     auth_uri = auth_req.request(client.authorization_endpoint)
 
     return redirect(auth_uri)
+    
 
 @data_platform_user_bp.route('/user/openid/callback/<openid_provider>')
 def login_openid_callback(openid_provider):
@@ -128,13 +119,7 @@ def login_openid_callback(openid_provider):
         flash('Unknown openid provider', category='danger')
         return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
 
-    provider_config = openid_providers[openid_provider]
-
-    client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
-    issuer_url = provider_config['issuer_url']
-    provider_info = client.provider_config(issuer_url)
-    client_reg = RegistrationResponse(client_id=provider_config['client_id'], client_secret=provider_config['secret'])
-    client.store_registration_info(client_reg)
+    client = openid_get_client(openid_provider)
 
     query_string = request.query_string.decode('utf-8')
     authn_resp = client.parse_response(AuthorizationResponse, info=query_string, sformat='urlencoded')
@@ -163,18 +148,21 @@ def login_openid_callback(openid_provider):
         return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
 
     # We are logged on
-    session["openid_provider"] = openid_provider
-    session["openid_username"] = userinfo['preferred_username']
+    session['openid_provider'] = openid_provider
+    session['openid_username'] = userinfo['preferred_username']
     if 'email' in userinfo:
-        session["openid_user_email"] = userinfo["email"]
+        session['openid_user_email'] = userinfo['email']
     if 'name' in userinfo:
-        session["openid_user_name"] = userinfo["name"]
-    session["openid_id_token_jwt"] = token_resp['id_token_jwt']
+        session['openid_user_name'] = userinfo['name']
+    session['openid_access_token'] = token_resp['access_token']
+    session['openid_id_token_jwt'] = token_resp['id_token_jwt']
+    if 'refresh_token' in token_resp:
+        session['openid_refresh_token'] = token_resp['refresh_token']
 
     return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 
-@openid_login_required
 @data_platform_user_bp.route('/user/openid/choose_zone', methods=["GET", "POST"])
+@openid_login_required
 def login_openid_select_zone():
     if request.method == 'GET':
         last_zone_name=''
@@ -239,8 +227,8 @@ def login_openid_select_zone():
 
     return redirect(url_for('index'))
 
-@openid_login_required
 @data_platform_user_bp.route("/data-platform/connection-info/modal/<zone>", methods=["GET"])
+@openid_login_required
 def connection_info_modal(zone):
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}

@@ -18,8 +18,8 @@ data_platform_project_bp = Blueprint(
     "data_platform_project_bp", __name__, template_folder="templates"
 )
 
-@openid_login_required
 @data_platform_project_bp.route("/data-platform/project/<project_name>", methods=["GET"])
+@openid_login_required
 def project(project_name):
     token, perms = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
@@ -70,8 +70,8 @@ def project(project_name):
         "project/project_view.html.j2", project=project, status=status, zones=zones, admin=('operator' in perms or 'admin' in perms),
     )
 
-@openid_login_required
 @data_platform_project_bp.route("/data-platform/projects/member/add", methods=["POST"])
+@openid_login_required
 def add_project_member():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
@@ -91,8 +91,8 @@ def add_project_member():
 
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
 
-@openid_login_required
 @data_platform_project_bp.route("/data-platform/projects/member/delete", methods=["POST"])
+@openid_login_required
 def delete_project_member():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
@@ -109,8 +109,8 @@ def delete_project_member():
     
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
 
-@openid_login_required
 @data_platform_project_bp.route("/data-platform/projects/modify", methods=["POST"])
+@openid_login_required
 def modify_project():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
@@ -130,8 +130,8 @@ def modify_project():
     
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
 
-@openid_login_required
 @data_platform_project_bp.route("/data-platform/projects/deploy", methods=["POST"])
+@openid_login_required
 def deploy_project():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
@@ -159,8 +159,8 @@ def deploy_project():
     
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
 
-@openid_login_required
 @data_platform_project_bp.route("/data-platform/project/<project_name>/api_token/<type>", methods=["GET", "POST"])
+@openid_login_required
 def api_token(project_name, type):
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
@@ -195,8 +195,8 @@ def api_token(project_name, type):
         setup_json=json.dumps(info['irods_environment'], indent=4),
     )
 
-@openid_login_required
 @data_platform_project_bp.route("/data-platform/projects/add", methods=["POST"])
+@openid_login_required
 def add_project():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
