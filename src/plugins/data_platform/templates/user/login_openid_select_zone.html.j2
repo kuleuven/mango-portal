@@ -137,9 +137,9 @@
                         class="form-control"
                         id="name"
                         name="name"
-                        required/>
+                        required pattern="^[a-zA-Z0-9-_]*$" />
                 <div class="invalid-feedback">
-                    Project name is required
+                    A valid project name is required. It may consist of <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>-</code> and <code>_</code> only.
                 </div>
                 </div>
 
