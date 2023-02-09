@@ -8,25 +8,16 @@ from flask import (
     current_app,
     url_for,
     redirect,
-    g,
-    send_file,
-    abort,
-    stream_with_context,
-    Response,
     request,
     session,
-    flash,
-    jsonify
+    flash
 )
 
 from irods.session import iRODSSession
 import irods_session_pool
 
-from oic.oic.message import AuthorizationResponse
-from oic import rndstr
-
 from irods_zones_config import DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
-from . import API_URL, openid_providers, openid_get_client, openid_login_required, current_user_projects, current_user_api_token, current_zone_jobid, Session
+from . import API_URL, openid_providers, openid_login_required, current_user_projects, current_user_api_token, current_zone_jobid, Session
 
 import logging
 
@@ -73,7 +64,7 @@ def login_openid():
     if request.method == 'GET':
         for openid_provider in openid_providers:
             if 'auto_pick_on_host' in openid_provider and openid_provider['auto_pick_on_host'] == request.host:
-                return redirect_to_idp(openid_provider)
+                return Session(openid_provider).login()
 
         last_openid_provider = ""
         if 'openid_provider' in session:
@@ -86,31 +77,9 @@ def login_openid():
 
         if openid_provider not in openid_providers:
             flash('Unknown openid provider', category='danger')
-            return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
+            return redirect(url_for('data_platform_user_bp.login_openid'))
 
-        return redirect_to_idp(openid_provider)
-
-def redirect_to_idp(openid_provider):
-    redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}")  
-
-    client = openid_get_client(openid_provider)
-
-    session.clear()
-    session["openid_state"] = rndstr()
-    session["openid_nonce"] = rndstr()
-    args = {
-        "response_type": "code",
-        "scope": ["openid"],
-        "nonce": session["openid_nonce"],
-        "redirect_uri": f"{redirect_base}/user/openid/callback/{openid_provider}",
-        "state": session["openid_state"]
-    }
-
-    auth_req = client.construct_AuthorizationRequest(request_args=args)
-    auth_uri = auth_req.request(client.authorization_endpoint)
-
-    return redirect(auth_uri)
-    
+        return Session(openid_provider).login()
 
 @data_platform_user_bp.route('/user/openid/callback/<openid_provider>')
 def login_openid_callback(openid_provider):
@@ -121,39 +90,17 @@ def login_openid_callback(openid_provider):
         flash('Unknown openid provider', category='danger')
         return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
 
-    client = openid_get_client(openid_provider)
+    s = Session(openid_provider).from_callback()
 
-    query_string = request.query_string.decode('utf-8')
-    authn_resp = client.parse_response(AuthorizationResponse, info=query_string, sformat='urlencoded')
-
-    if authn_resp["state"] != session.pop('openid_state'):
-        flash('Invalid state', category='danger')
-        return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
-
-    redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}")    
-
-    args = {
-        "code": authn_resp["code"],
-        "redirect_uri": f"{redirect_base}/user/openid/callback/{openid_provider}",
-    }
-    token_resp = client.do_access_token_request(state=authn_resp["state"], request_args=args, authn_method="client_secret_basic")
-
-    id_token = token_resp['id_token']
-
-    if id_token['nonce'] != session.pop('openid_nonce'):
-        flash('Invalid nonce', category='danger')
-        return render_template('login_openid.html.j2', openid_providers=openid_providers)
-
-    user_info = client.do_user_info_request(state=authn_resp["state"])
-    if user_info['sub'] != id_token['sub']:
-        flash('The \'sub\' of userinfo does not match \'sub\' of ID Token.', category='danger')
-        return render_template('user/login_openid.html.j2', openid_providers=openid_providers)
+    if not s.valid():
+        return redirect(url_for('data_platform_user_bp.login_openid'))
 
     # We are logged on
     session['openid_provider'] = openid_provider
-    session['openid_session'] = dict(Session(openid_provider, token_resp, user_info))
+    session['openid_session'] = dict(s)
 
     return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+
 
 @data_platform_user_bp.route('/user/openid/choose_zone', methods=["GET", "POST"])
 @openid_login_required

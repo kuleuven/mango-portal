@@ -2,15 +2,14 @@ import os
 import logging
 import requests
 from datetime import datetime
-import json
 
 from functools import wraps
 
-from flask import current_app, session, redirect, url_for, g, request
+from flask import current_app, session, redirect, url_for, g, request, flash
 
 from oic.oic import Client, Token
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
-from oic.oic.message import RegistrationResponse, AccessTokenResponse, OpenIDSchema
+from oic.oic.message import RegistrationResponse, AuthorizationResponse
 
 from oic import rndstr
 
@@ -167,23 +166,13 @@ def current_zone_jobid():
     return current_app.config['irods_zones'][g.irods_session.zone]["jobid"]
 
 class Session(dict):
-    def __init__(self, provider, token_resp: AccessTokenResponse=None, user_info: OpenIDSchema=None):
+    def __init__(self, provider):
         dict.__init__(self)
 
         if type(provider) is dict:
             self.update(**provider)
         else:
             self['provider'] = provider
-
-            self['user_info'] = user_info._dict
-
-            if token_resp is not None:
-                self['jwt_token'] = token_resp['id_token_jwt']
-                self['access_token'] = token_resp['access_token']
-                self['refresh_token'] = None
-                if 'refresh_token' in token_resp:
-                    self['refresh_token'] = token_resp['refresh_token']
-                self['expiry'] = token_resp['id_token']['exp']
 
     @property
     def username(self):
@@ -207,13 +196,11 @@ class Session(dict):
     def refresh(self):
         if 'refresh_token' not in self or self['refresh_token'] is None:
             return
-        
-        redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}")  
 
         request_args = {
             'grant_type': 'refresh_token',
             'refresh_token': self['refresh_token'],
-            "redirect_uri": f"{redirect_base}/user/openid/callback/{self['provider']}",
+            "redirect_uri": self.redirect_uri,
         }
 
         client = openid_get_client(self['provider'])
@@ -230,3 +217,66 @@ class Session(dict):
         if 'refresh_token' in token_resp:
             self['refresh_token'] = token_resp['refresh_token']
         self['expiry'] = token_resp['id_token']['exp']
+
+    def login(self):
+        client = openid_get_client(self['provider'])
+
+        session.clear()
+        session["openid_state"] = rndstr()
+        session["openid_nonce"] = rndstr()
+        args = {
+            "response_type": "code",
+            "scope": ["openid"],
+            "nonce": session["openid_nonce"],
+            "redirect_uri": self.redirect_uri,
+            "state": session["openid_state"]
+        }
+
+        auth_req = client.construct_AuthorizationRequest(request_args=args)
+        auth_uri = auth_req.request(client.authorization_endpoint)
+
+        return redirect(auth_uri)
+    
+    def from_callback(self):
+        client = openid_get_client(self['provider'])
+
+        query_string = request.query_string.decode('utf-8')
+        authn_resp = client.parse_response(AuthorizationResponse, info=query_string, sformat='urlencoded')
+
+        if authn_resp["state"] != session.pop('openid_state'):
+            flash('Invalid state', category='danger')
+            return self  
+
+        args = {
+            "code": authn_resp["code"],
+            "redirect_uri": self.redirect_uri,
+        }
+        token_resp = client.do_access_token_request(state=authn_resp["state"], request_args=args, authn_method="client_secret_basic")
+
+        id_token = token_resp['id_token']
+
+        if id_token['nonce'] != session.pop('openid_nonce'):
+            flash('Invalid nonce', category='danger')
+            return self
+
+        user_info = client.do_user_info_request(state=authn_resp["state"])
+        if user_info['sub'] != id_token['sub']:
+            flash('The \'sub\' of userinfo does not match \'sub\' of ID Token.', category='danger')
+            return self
+        
+        self['user_info'] = user_info._dict
+
+        self['jwt_token'] = token_resp['id_token_jwt']
+        self['access_token'] = token_resp['access_token']
+        self['refresh_token'] = None
+        if 'refresh_token' in token_resp:
+            self['refresh_token'] = token_resp['refresh_token']
+        self['expiry'] = token_resp['id_token']['exp']
+
+        return self
+    
+    @property
+    def redirect_uri(self):
+        redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}") 
+
+        return f"{redirect_base}/user/openid/callback/{self['provider']}"
