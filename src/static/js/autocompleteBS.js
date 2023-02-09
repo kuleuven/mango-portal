@@ -35,8 +35,6 @@ function addResultsBS(config, results) {
 
   if ( results.length === 0 ) {
     console.log('No Matches - Push a Message onto Results');
-    let pseudoResult = { [config.fetchMap.id]: "noMatchesBS", [config.fetchMap.name]: "No Matches Found - Please try again..." };
-    results.push(pseudoResult);
   }
   newDiv.id = "autocompleteBS-list";
   let resultCounter = 0;
