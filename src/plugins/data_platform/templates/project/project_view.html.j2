@@ -1,5 +1,10 @@
 {% extends "base_openid.html.j2" %}
 
+{% block custom_style %}
+<link href="{{ url_for('static', filename='css/autocompleteBS.css') }}" rel="stylesheet" />
+<script src="{{ url_for('static', filename='js/autocompleteBS.js') }}"></script>
+{% endblock %}
+
 {% block body %}
 {% set can_edit = project['my_role'] == 'manager' or project['my_role'] == 'responsible' or admin %}
 {% set opts = {'folder-layout': 'v1'} %}
@@ -257,7 +262,7 @@
                      class="form-control"
                      id="username-add"
                      name="username"
-                     required/>
+                     required autocomplete="off" />
               <div class="invalid-feedback">
                 Username is required for adding a member
               </div>
@@ -409,7 +414,7 @@
                      class="form-control-plaintext"
                      id="username-delete"
                      name="username"
-                     readonly readonly />
+                     required readonly />
               <div class="invalid-feedback">
                 Username is required
               </div>
@@ -511,8 +516,7 @@
     </div>
   </div>
 
-
-  <script>  
+  <script>
   var editMember = document.getElementById('editMember')
   editMember.addEventListener('show.bs.modal', function (event) {
     // Button that triggered the modal
@@ -541,5 +545,25 @@
 
     modalBodyInputUsername.value = fieldUsername
   });
+  </script>
+
+  <script>
+    const autoCompleteConfig = [{
+        name: 'Username lookup',
+        debounceMS: 250,
+        minLength: 3,
+        maxResults: 10,
+        inputSource: document.getElementById('username-add'),
+        targetID: document.getElementById('username-add'),
+        fetchURL: '/data-platform/autocomplete/username/{term}',
+        fetchMap: {id: "username",
+                  name: "label"}
+      }
+    ];
+
+    console.log(autoCompleteConfig);
+
+    // Initiate Autocomplete to Create Listeners
+    autocompleteBS(autoCompleteConfig);
   </script>
 {% endblock body %}
