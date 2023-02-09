@@ -154,6 +154,7 @@ def init_and_secure_views():
         "data_platform_user_bp.login_openid",
         "data_platform_user_bp.login_openid_callback",
         "data_platform_user_bp.login_openid_select_zone",
+        "data_platform_user_bp.connection_info_modal",
         "data_platform_project_bp.project",
         "data_platform_project_bp.add_project_member",
         "data_platform_project_bp.delete_project_member",

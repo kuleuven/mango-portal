@@ -22,7 +22,10 @@
                     <input type="hidden" name="irods_zone" value="{{ zone_name }}" />
                     <div class="d-flex p-2">
                         <input type="submit" name="submit" value="Enter portal" class="btn btn-block btn-primary m-1"/>
-                        <input type="submit" name="submit" value="How to connect" class="btn btn-block btn-primary m-1"/>
+                        <!--<input type="submit" name="submit" value="How to connect" class="btn btn-block btn-primary m-1"/>-->
+                        <button type="button" class="btn btn-block btn-primary m-1" data-bs-toggle="modal" data-bs-target="#connectInformation" data-zone="{{ zone_name }}">
+                            How to connect
+                        </button>
                     </div>
                 </form>
                 {% endif %}
@@ -189,5 +192,71 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Add project model -->
+    <div class="modal fade"
+        id="connectInformation"
+        tabindex="-1"
+        aria-labelledby="connectInformationLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="connectInformationLabel">
+                How to connect
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <div class="modal-body" id="connectInformationBody">
+                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Close
+                </button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <script>
+        var connInfo = document.getElementById('connectInformation');
+        connInfo.addEventListener('show.bs.modal', function (event) {
+            //event.preventDefault(); // stops modal from being 
+            
+            // Button that triggered the modal
+            var button = event.relatedTarget
+            // Extract info from data-* attributes
+            var zone = button.getAttribute('data-zone')
+        
+            var body = connInfo.querySelector('#connectInformationBody')
+
+            body.innerHTML = "Loading..."
+
+            // Creating Our XMLHttpRequest object 
+            var xhr = new XMLHttpRequest();
+    
+            // Making our connection  
+            var url = '/data-platform/connection-info/modal/'+zone;
+            xhr.open("GET", url, true);
+    
+            // function execute after request is successful 
+            xhr.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    body.innerHTML = this.responseText;
+
+                    //let myModal = new bootstrap.Modal(document.getElementById('connectInformation'), {});
+                    //myModal.show();
+                }
+            }
+            
+            // Sending our request 
+            xhr.send()
+        });
+    </script>
 
 {% endblock body %}

@@ -16,6 +16,7 @@ from flask import (
     request,
     session,
     flash,
+    jsonify
 )
 
 from irods.session import iRODSSession
@@ -238,6 +239,37 @@ def login_openid_select_zone():
 
     return redirect(url_for('index'))
 
+@openid_login_required
+@data_platform_user_bp.route("/data-platform/connection-info/modal/<zone>", methods=["GET"])
+def connection_info_modal(zone):
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+    jobid = current_app.config['irods_zones'][zone]["jobid"]
+    response = requests.get(
+        f"{API_URL}/v1/irods/zones/{jobid}/connection_info", headers=header
+    )
+    response.raise_for_status()
+
+    info = response.json()
+
+    if "-hpc-" in jobid:
+        # icts-p-hpc-irods-instance
+        parts = jobid.split('-', 5)
+
+        info['hpc-irods-setup-zone'] = parts[4]
+
+        if parts[1] != 'p':
+            info['hpc-irods-setup-zone'] += "-" + parts[1]
+
+    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+
+    setup_json={
+        'linux': json.dumps(info['irods_environment'], indent=4),
+        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
+    }
+
+    return render_template("user/connection_info_body.html.j2", info=info, setup_json=setup_json)
+
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 def connection_info():
     token, _ = current_user_api_token()
@@ -261,11 +293,9 @@ def connection_info():
 
     info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
-    return render_template(
-        "user/connection_info.html.j2",
-        info=info,
-        setup_json={
-            'linux': json.dumps(info['irods_environment'], indent=4),
-            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
-        }
-    )
+    setup_json={
+        'linux': json.dumps(info['irods_environment'], indent=4),
+        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
+    }
+
+    return render_template("user/connection_info.html.j2", info=info, setup_json=setup_json)
