@@ -14,7 +14,7 @@ data_platform_autocomplete_bp = Blueprint(
 @data_platform_autocomplete_bp.route("/data-platform/autocomplete/username/<term>", methods=["GET"])
 @openid_login_required
 def autocomplete_username(term):
-    token, _ = current_user_api_token()
+    token, perms = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
     params = [('term', t) for t in term.split(' ')]
 
@@ -30,6 +30,7 @@ def autocomplete_username(term):
 
     # Limit suggestions to the right 'source'
     vsc = session['openid_provider'] == 'VSC'
+    admin = 'operator' in perms or 'admin' in perms
 
     return jsonify([
         {
@@ -37,5 +38,5 @@ def autocomplete_username(term):
             'label': u['name'],
         } 
         for u in result
-        if u['username'].startswith('vsc') == vsc
+        if u['username'].startswith('vsc') == vsc or admin
     ])
