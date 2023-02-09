@@ -262,9 +262,9 @@
                      class="form-control"
                      id="username-add"
                      name="username"
-                     required autocomplete="off" />
+                     required autocomplete="off" pattern="^vsc[0-9]{5}$|^[urbcms][0-9]{7}$" />
               <div class="invalid-feedback">
-                Username is required for adding a member
+                A valid username is required, e.g. {% if session['openid_provider'] == 'VSC' %}vsc12345{% else %}u0123456{% endif %}.
               </div>
             </div>
             <div class="mb-3">
