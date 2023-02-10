@@ -29,7 +29,7 @@ def autocomplete_username(term):
         return jsonify([])
 
     # Limit suggestions to the right 'source'
-    vsc = session['openid_provider'] == 'VSC'
+    vsc = session['openid_provider'] == 'vsc'
     admin = 'operator' in perms or 'admin' in perms
 
     return jsonify([
