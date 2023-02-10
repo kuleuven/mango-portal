@@ -12,7 +12,7 @@ from flask import (
 )
 
 from . import API_URL, current_user_api_token, openid_login_required, Session
-
+from .autocomplete import resolve_full_name
 
 data_platform_project_bp = Blueprint(
     "data_platform_project_bp", __name__, template_folder="templates"
@@ -54,6 +54,7 @@ def project(project_name):
             project['my_role'] = m['role']
         if m['role'] == 'responsible':
             project['responsibles'] += 1
+        m['name'] = resolve_full_name(m['username'])
 
     if project['platform'] == 'irods':
         response = requests.get(
