@@ -38,5 +38,5 @@ def autocomplete_username(term):
             'label': u['name'],
         } 
         for u in result
-        if u['username'].startswith('vsc') == vsc or admin
+        if (u['username'].startswith('vsc') == vsc) or admin
     ])
