@@ -232,7 +232,8 @@ class Session(dict):
     def login(self):
         client = openid_get_client(self['provider'])
 
-        del session["openid_session"]
+        if 'openid_session' in session:
+            del session["openid_session"]
         session["openid_state"] = rndstr()
         session["openid_nonce"] = rndstr()
         args = {
