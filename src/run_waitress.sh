@@ -13,6 +13,7 @@ export HOSTNAME
 
 export OIDC_ISSUER_URL=https://idp.kuleuven.be/auth/realms/kuleuven
 export OIDC_CLIENT_ID=oidcapp
+export OPENID_REDIRECT_BASE=http://localhost:3000
 
 # To test kuleuven login locally, uncomment the following lines and ask Peter for the secret
 # See also https://ceifdoc.icts.kuleuven.be/devops/development/go-webapp-basis/#basis-setup-development
