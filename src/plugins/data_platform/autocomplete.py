@@ -40,30 +40,3 @@ def autocomplete_username(term):
         for u in result
         if u['username'].startswith('vsc') == vsc or admin
     ])
-
-
-username_cache = {}
-
-def resolve_full_name(username):
-    if username in username_cache:
-        return username_cache[username]
-
-    print("looking up user", username)
-    
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-    params = [('term', username)]
-
-    response = requests.get(
-        f"{API_URL}/v1/users/autocomplete", headers=header, params=params
-    )
-    response.raise_for_status() 
-
-    result = response.json()
-    if not result or len(result) != 1:
-        return ""
-    
-    if result[0]['name']:
-        username_cache[username] = result[0]['name']
-
-    return result[0]['name']
