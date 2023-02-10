@@ -19,7 +19,7 @@ def autocomplete_username(term):
     params = [('term', t) for t in term.split(' ')]
 
     response = requests.get(
-        f"{API_URL}/v1/users", headers=header, params=params
+        f"{API_URL}/v1/users/autocomplete", headers=header, params=params
     )
     response.raise_for_status() 
 

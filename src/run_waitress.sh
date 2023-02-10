@@ -21,5 +21,9 @@ export OIDC_CLIENT_ID=oidcapp
 
 export API_URL=https://icts-q-coz-data-platform-api.cloud.q.icts.kuleuven.be
 
+# To test with data platform api, generate a token
+# Needed for mango_open_search plugin, not for data_platform plugin
+export API_TOKEN=$(data-platform-cli token --tier q)
+
 # Hupper will reload the app upon changed files after 5 secs
 hupper --shutdown-interval 5  -m  waitress_serve
