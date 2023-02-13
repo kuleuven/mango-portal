@@ -63,7 +63,8 @@ def login_openid():
 
     if request.method == 'GET':
         for openid_provider in openid_providers:
-            if 'auto_pick_on_host' in openid_provider and openid_provider['auto_pick_on_host'] == request.host:
+            provider_config = openid_providers[openid_provider]
+            if 'auto_pick_on_host' in provider_config and provider_config['auto_pick_on_host'] == request.host:
                 return Session(openid_provider).login()
 
         last_openid_provider = ""
