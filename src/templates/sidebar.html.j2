@@ -41,14 +41,6 @@
         <span class="d-none d-sm-inline">Metadata schemas</span>
     </a>
 </li>
-{% if 'data_platform' in config['MANGO_ENABLE_CORE_PLUGINS'] %}
-<li>
-    <a href="/data-platform/connection-info" class="nav-link px-2 text-truncate">
-        <i class="bi bi-terminal fs-4"></i>
-        <span class="d-none d-sm-inline">How to connect</span>
-    </a>
-</li>
-{% endif %}
 {% if g.irods_session.username in config['irods_zones'][g.irods_session.zone]['admin_users'] %}
     <li>
         <a href="{{ url_for('admin_bp.index') }}"
