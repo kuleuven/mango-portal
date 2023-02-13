@@ -20,12 +20,7 @@ from pprint import pprint, pformat
 import irods_session_pool
 import logging
 
-from oic.oic import Client
-from oic.utils.authn.client import CLIENT_AUTHN_METHOD
-from oic.oic.message import RegistrationResponse, AuthorizationResponse
-from oic import rndstr
-
-from irods_zones_config import irods_zones, openid_providers, irods_connection_info
+from irods_zones_config import irods_zones, DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
 
 user_bp = Blueprint(
     "user_bp", __name__, static_folder="static/user", template_folder="templates"
@@ -106,7 +101,7 @@ def login_basic():
             userid = session['userid']
         if 'zone' in session:
             last_zone_name = session['zone']
-        return render_template('login_basic.html.j2', userid=userid, last_zone_name=last_zone_name)
+        return render_template('user/login_basic.html.j2', userid=userid, last_zone_name=last_zone_name)
     if request.method== 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
@@ -114,12 +109,12 @@ def login_basic():
 
         if username == '':
             flash('Missing user id', category='danger')
-            return render_template('login_basic.html.j2')
+            return render_template('user/login_basic.html.j2')
         if password == '':
             flash('Missing password', category='danger')
-            return render_template('login_basic.html.j2')
+            return render_template('user/login_basic.html.j2')
 
-        connection_info = irods_connection_info(login_method="basic", zone=zone, username=username, password=password)
+        connection_info = irods_connection_info(zone=zone, username=username, password=password)
 
         try:
             irods_session = iRODSSession(
@@ -132,7 +127,7 @@ def login_basic():
         except Exception as e:
             print(e)
             flash('Could not create iRODS session', category='danger')
-            return render_template('login_basic.html.j2')
+            return render_template('user/login_basic.html.j2')
 
         # sanity check on credentials
         try:
@@ -140,12 +135,12 @@ def login_basic():
         except PAM_AUTH_PASSWORD_FAILED as e:
             print(e)
             flash('Authentication failed: invalid password', category='danger')
-            return render_template('login_basic.html.j2')
+            return render_template('user/login_basic.html.j2')
 
         except Exception as e:
             print(e)
             flash('Authentication failed: '+str(e))
-            return render_template('login_basic.html.j2', category='danger')
+            return render_template('user/login_basic.html.j2', category='danger')
 
         # should be ok now to add session to pool
         irods_session_pool.add_irods_session(username, irods_session)
@@ -158,7 +153,22 @@ def login_basic():
 
         return redirect(url_for('index'))
 
+def irods_connection_info(zone, username, password):
+    """
+    Callback to retrieve connection information for a certain zone, username and password.
+    """
 
+    parameters = DEFAULT_IRODS_PARAMETERS.copy()
+    ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
+    parameters.update(irods_zones[zone]["parameters"])
+    ssl_settings.update(irods_zones[zone]["ssl_settings"])
+    parameters["irods_user_name"] = username
+
+    return {
+        "parameters": parameters,
+        "ssl_settings": ssl_settings,
+        "password": password,
+    }
 
 @user_bp.route('/user/logout')
 def logout_basic():
@@ -166,221 +176,4 @@ def logout_basic():
         irods_session_pool.remove_irods_session(session['userid'])
         del session['password']
 
-    if app.config["MANGO_AUTH"] == 'openid':
-        return redirect(url_for('user_bp.login_openid'))
-    if app.config["MANGO_AUTH"] == "via_callback":
-        return redirect(url_for("user_bp.login_zone"))
-    #default
-    return redirect(url_for('user_bp.login_basic'))
-
-
-@user_bp.route('/user/login_zone', methods=["GET", "POST"])
-def login_zone():
-    """
-    """
-    if request.method == 'GET':
-        last_zone_name=''
-
-        if 'zone' in session:
-            last_zone_name = session['zone']
-        return render_template('user/login_zone.html.j2', last_zone_name=last_zone_name)
-
-    if request.method == 'POST':
-        host = request.host
-        scheme = request.scheme
-        zone = request.form.get('irods_zone')
-        if zone in irods_zones:
-            auth_uri = f"https://{irods_zones[zone]['parameters']['host']}/auth/iinit?redirect_uri={scheme}://{host}/user/login_zone_callback"
-            print(f"Auth uri: {auth_uri}")
-            return redirect(auth_uri)
-        else:
-            flash('Unknown zone', category='danger')
-            return render_template('login_zone.html.j2', )
-
-
-
-@user_bp.route('/user/login_zone_callback')
-def login_via_go_callback():
-    """
-    """
-
-    user_name = request.args.get('user_name', '')
-    password = request.args.get('password', '')
-    zone = request.args.get('zone_name', '')
-    connection_info = irods_connection_info(login_method="go_callback", zone=zone, username=user_name, password=password)
-
-    if not user_name or not password or not zone:
-        flash('Could not obtain user name or password or zone name, did you select the right zone', category='danger')
-        return render_template('login_zone.html.j2')
-
-    try:
-        irods_session = iRODSSession(
-            user=user_name,
-            password=password,
-            **connection_info['parameters'],
-            **connection_info['ssl_settings']
-        )
-
-        irods_session_pool.add_irods_session(user_name, irods_session)
-        session['userid'] = user_name
-        session['password'] = password
-        session['zone'] = irods_session.zone
-
-        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now()}]
-        logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
-
-    except Exception as e:
-        print(e)
-        flash('Could not create iRODS session', category='danger')
-        return render_template('user/login_zone.html.j2')
-
-    return redirect(url_for('index'))
-
-
-
-@user_bp.route('/user/login_openid', methods=["GET", "POST"])
-def login_openid():
-    """
-    """
-
-    if request.method == 'GET':
-        last_openid_provider=''
-
-        if 'openid_provider' in session:
-            last_openid_provider = session['openid_provider']
-        return render_template('user/login_openid.html.j2', last_openid_provider=last_openid_provider)
-
-    if request.method == 'POST':
-        host = request.host
-        openid_provider = request.form.get('openid_provider')
-
-        if openid_provider not in openid_providers:
-            flash('Unknown openid provider', category='danger')
-            return render_template('login_openid.html.j2', )
-
-        provider_config = openid_providers[openid_provider]
-
-        client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
-        issuer_url = provider_config['issuer_url']
-        provider_info = client.provider_config(issuer_url)
-        client_reg = RegistrationResponse(client_id=provider_config['client_id'], client_secret=provider_config['secret'])
-        client.store_registration_info(client_reg)
-
-        session["openid_state"] = rndstr()
-        session["openid_nonce"] = rndstr()
-        args = {
-            "client_id": client.client_id,
-            "response_type": "code",
-            "scope": ["openid"],
-            "nonce": session["openid_nonce"],
-            "redirect_uri": f"https://{host}/user/openid/callback/{openid_provider}",
-            "state": session["openid_state"]
-        }
-
-        auth_req = client.construct_AuthorizationRequest(request_args=args)
-        auth_uri = auth_req.request(client.authorization_endpoint)
-
-        return redirect(auth_uri)
-
-
-
-@user_bp.route('/user/openid/callback/<openid_provider>')
-def login_openid_callback(openid_provider):
-    """
-    """
-
-    if openid_provider not in openid_providers:
-        flash('Unknown openid provider', category='danger')
-        return render_template('user/login_openid.html.j2', )
-
-    provider_config = openid_providers[openid_provider]
-
-    client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
-    issuer_url = provider_config['issuer_url']
-    provider_info = client.provider_config(issuer_url)
-    client_reg = RegistrationResponse(client_id=provider_config['client_id'], client_secret=provider_config['secret'])
-    client.store_registration_info(client_reg)
-
-    query_string = request.query_string.decode('utf-8')
-    authn_resp = client.parse_response(AuthorizationResponse, info=query_string, sformat='urlencoded')
-
-    if authn_resp["state"] != session.pop('openid_state'):
-        flash('Invalid state', category='danger')
-        return render_template('user/login_openid.html.j2')
-
-    host = request.host
-    args = {
-        "code": authn_resp["code"],
-        "redirect_uri": f"https://{host}/user/openid/callback/{openid_provider}",
-    }
-    token_resp = client.do_access_token_request(state=authn_resp["state"], request_args=args, authn_method="client_secret_basic")
-
-    id_token = token_resp['id_token']
-
-    if id_token['nonce'] != session.pop('openid_nonce'):
-        flash('Invalid nonce', category='danger')
-        return render_template('login_openid.html.j2')
-
-    userinfo = client.do_user_info_request(state=authn_resp["state"])
-    if userinfo['sub'] != id_token['sub']:
-        flash('The \'sub\' of userinfo does not match \'sub\' of ID Token.', category='danger')
-        return render_template('user/login_openid.html.j2')
-
-    # We are logged on
-    session["openid_provider"] = openid_provider
-    session["openid_username"] = userinfo['preferred_username']
-    if 'email' in userinfo:
-        session["openid_user_email"] = userinfo["email"]
-    if 'name' in userinfo:
-        session["openid_user_name"] = userinfo["name"]
-
-    return redirect(url_for('user_bp.login_openid_select_zone'))
-
-
-
-@user_bp.route('/user/openid/choose_zone', methods=["GET", "POST"])
-def login_openid_select_zone():
-    if 'openid_username' not in session or 'openid_provider' not in session:
-        flash('Please log in first', category='danger')
-        return render_template('login_openid.html.j2')
-
-    if request.method == 'GET':
-        last_zone_name=''
-
-        if 'zone_name' in session:
-            last_zone_name = session['zone_name']
-
-        zones_for_user = openid_providers[session['openid_provider']]['zones_for_user']
-
-        zones = zones_for_user(session['openid_username'])
-
-        return render_template('user/login_openid_select_zone.html.j2', zones=zones, last_zone_name=last_zone_name)
-
-    zone = request.form.get('irods_zone')
-
-    user_name = session['openid_username']
-    connection_info = irods_connection_info(login_method="openid", zone=zone, username=user_name)
-    password = connection_info['password']
-
-    try:
-        irods_session = iRODSSession(
-            user=user_name,
-            password=password,
-            **connection_info['parameters'],
-            **connection_info['ssl_settings']
-        )
-
-        irods_session_pool.add_irods_session(user_name, irods_session)
-        session['userid'] = user_name
-        session['password'] = password
-        session['zone'] = irods_session.zone
-
-        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now(), 'user_name': session['openid_user_name'] if 'openid_user_name' in session else ''} ]
-        logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
-
-    except Exception as e:
-        print(e)
-        flash('Could not create iRODS session', category='danger')
-        return render_template('user/login_openid_select_zone.html.j2')
-
-    return redirect(url_for('index'))
+    return redirect(url_for(app.config['MANGO_LOGIN_ACTION']))
