@@ -132,7 +132,7 @@
             <td>{{ member['username'] }}</td>
             <td>{{ member['name'] }}</td>
             <td>{{ member['role'] }}</td>
-            {% if can_edit and not admin and member['role'] == 'responsible' and (project['my_role'] != 'responsible' or project['responsibles'] <= 1) %}
+            {% if can_edit and not admin and (member['role'] == 'responsible' and (project['my_role'] != 'responsible' or project['responsibles'] <= 1) or member['role'] == 'support') %}
             <td></td>
             <td></td>
             {% elif can_edit %}
@@ -283,6 +283,9 @@
                   {% if project['my_role'] == 'responsible' or admin %}
                   <option value="responsible">responsible</option>
                   {% endif %}
+                  {% if admin %}
+                  <option value="support">support</option>
+                  {% endif %}
               </select>
               <div class="invalid-feedback">
                 A value is required for adding a member
@@ -356,6 +359,9 @@
                   <option value="manager">manager</option>
                   {% if project['my_role'] == 'responsible' or admin %}
                   <option value="responsible">responsible</option>
+                  {% endif %}
+                  {% if admin %}
+                  <option value="support">support</option>
                   {% endif %}
               </select>
               <div class="invalid-feedback">
