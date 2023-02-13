@@ -20,13 +20,13 @@ class ComplexField {
         this.field_ids = [];
         this.fields = {};
         this.new_field_idx = 0;
-        this.name = this.constructor.name == 'Schema' && this.status == 'draft' ? 'schema-editor-schema' : this.name;
+        this.name = this.constructor.name == 'Schema' && this.status == 'draft' ? 'schema-editor' : this.name;
     }
 
 
     to_json() {
         let base_data = {
-            title: this.name,
+            title: this.title != undefined ? this.title : this.name,
             properties: {}
         }
         if (this.constructor.name == 'Schema') {
@@ -50,18 +50,19 @@ class ComplexField {
 
 
     from_json(data) {
-        this.name = data.title;
+        this.name = data.title
+        this.title = data.title;
         this.field_ids = Object.keys(data.properties);
         for (let entry of Object.entries(data.properties)) {
-            let new_field = InputField.choose_class(data.title, entry);
-            new_field.create_modal(this);
+            let new_field = InputField.choose_class(this.card_id, entry);
+            new_field.create_modal(this, data.status ? data.status : 'object');
             this.fields[entry[0]] = new_field;
         }
     }
 
-    display_options(id) {
+    display_options(schema_status) {
         let formTemp = Field.quick("div", "formContainer");
-        formTemp.id = id + '-templates';
+        formTemp.id = schema_status + '-templates';
 
         let form_choice_modal = new Modal(this.choice_id, "What form element would you like to add?", "choiceTitle");
         form_choice_modal.create_modal([formTemp], 'lg');
@@ -70,14 +71,16 @@ class ComplexField {
             let formTemp = this_modal.querySelector('div.formContainer');
             if (formTemp.childNodes.length == 0) {
                 Object.values(this.initials).forEach((initial) => {
-                    formTemp.appendChild(initial.render(this, id));
+                    formTemp.appendChild(initial.render(this, schema_status));
                 });
             }
         });
     }
 
-    view_field(form_object, form_id) {
-        let clicked_button = document.getElementById(`form-${this.card_id}-${form_id}`).querySelectorAll('.adder')[this.new_field_idx];
+    view_field(form_object, schema_status) {
+        let clicked_button = document
+            .getElementById(`form-${this.card_id}-${schema_status}`)
+            .querySelectorAll('.adder')[this.new_field_idx];
         let below = clicked_button.nextSibling;
         let moving_viewer = form_object.view(this);
         let new_button = this.create_button();
@@ -100,11 +103,11 @@ class ComplexField {
         }
     }
 
-    add_field(form_object, id) {
+    add_field(form_object, schema_status) {
         // Register a created form field, add it to the fields dictionary and view it
         this.field_ids.splice(this.new_field_idx, 0, form_object.id);
         this.fields[form_object.id] = form_object;
-        this.view_field(form_object, id);
+        this.view_field(form_object, schema_status);
     }
 
     update_field(form_object) {
@@ -112,10 +115,10 @@ class ComplexField {
         this.fields[form_object.id] = form_object;
         let viewer = document.getElementById(this.card_id).querySelector('#' + form_object.id);
         viewer.querySelector('h5').innerHTML = form_object.required ? form_object.title + '*' : form_object.title;
-        let rep_icon = Field.quick('i', 'bi bi-stack px-2');
+        let rep_icon = Field.quick('i', 'bi bi-front px-2');
         if (form_object.repeatable) {
             viewer.querySelector('h5').appendChild(rep_icon);
-        } else if (viewer.querySelector('.bi-stack') != null) {
+        } else if (viewer.querySelector('.bi-front') != null) {
             viewer.querySelector('h5').removeChild(rep_icon);
         }
         let form_field = viewer.querySelector('.card-body');
@@ -123,11 +126,15 @@ class ComplexField {
         form_field.replaceChild(new_input, form_field.firstChild);
     }
 
-    replace_field(old_id, form_object, id) {
+    replace_field(old_id, form_object, schema_status) {
+        const form = document.getElementById(`form-${this.card_id}-${schema_status}`);
+        const old_adder = form.querySelectorAll('.adder')[this.field_ids.indexOf(old_id)];
+        old_adder.nextSibling.remove();
+        old_adder.remove();
         delete this.fields[old_id];
         this.new_field_idx = this.field_ids.indexOf(old_id);
         this.field_ids.splice(this.new_field_idx, 1);
-        this.add_field(form_object, id);
+        this.add_field(form_object, schema_status);
     }
 
     create_button() {
@@ -147,8 +154,10 @@ class ComplexField {
         return div;
     }
 
-    static create_viewer(schema) {
-        let div = Field.quick('div', 'input-view');
+    static create_viewer(schema, active = false) {
+        let div = schema.constructor.name == 'SchemaForm' ? 
+            Field.quick('form', 'mt-3 needs-validation') :
+            Field.quick('div', 'input-view');
         schema.field_ids.forEach((field_id) => {
             let subfield = schema.fields[field_id];
             let small_div = Field.quick('div', 'mini-viewer');
@@ -165,9 +174,32 @@ class ComplexField {
                 );
             }
             if (subfield.repeatable) {
-                label.appendChild(Field.quick('i', 'bi bi-stack px-2'));
+                let icon = Field.quick('i', 'bi bi-front px-2');
+                if (active) {
+                    let button = Field.quick('button', 'btn btn-outline-dark p-0 mx-2');
+                    button.type = 'button';
+                    button.addEventListener('click', () => {
+                        let clone = small_div.cloneNode(true);
+                        let clone_button = clone.querySelector('button i');
+                        clone_button.classList.remove('bi-front');
+                        clone_button.classList.add('bi-trash');
+                        clone_button.parentElement.addEventListener('click', () => {
+                            clone.remove();
+                        });
+
+                        if (small_div.nextSibling == undefined) {
+                            small_div.parentElement.appendChild(clone);
+                        } else {
+                            small_div.parentElement.insertBefore(clone, small_div.nextSibling);
+                        }
+                    })
+                    button.appendChild(icon);
+                    label.appendChild(button);
+                } else {
+                    label.appendChild(icon);
+                }                
             }
-            let input = subfield.viewer_input();
+            let input = subfield.viewer_input(active = active);
             small_div.appendChild(label);
             small_div.appendChild(input);
             div.appendChild(small_div);
@@ -195,9 +227,8 @@ class Schema extends ComplexField {
     constructor(card_id, container_id, url, version = "1.0.0",
         statuses = { 'draft': ['1.0.0'], 'published': [], 'archived': [] }) {
         super('formChoice', card_id);
-        this.card_id = card_id + '-schema';
+        this.card_id = card_id;
         this.name = card_id.replace(`-${version}`, '');
-        this.full_name = card_id;
         this.version = version;
         this.container = container_id;
         this.url = url;
@@ -216,12 +247,13 @@ class Schema extends ComplexField {
         if (is_new | is_copy) {
             // create a child/copy from a published version
             let name = form.form.querySelector(`#${this.card_id}-name`).value;
-            let json_contents = Object.values(this.to_json())[0];
-            json_contents.title = name;
-            json_contents.version = '1.0.0';
-            json_contents.status = status;
+            let label = form.form.querySelector(`#${this.card_id}-label`).value;
+            let json_contents = this.to_json();
+            json_contents[name].title = label;
+            json_contents[name].version = '1.0.0';
+            json_contents[name].status = status;
             if (is_copy) {
-                json_contents.parent = this.full_name;
+                json_contents[name].parent = this.card_id;
             }
 
             let template = {
@@ -237,7 +269,7 @@ class Schema extends ComplexField {
                 "1.0.0");
             new_schema.from_json(json_contents);
             new_schema.view();
-            // new_schema.post();
+            new_schema.post();
 
             if (is_new) {
                 form.reset();
@@ -251,6 +283,7 @@ class Schema extends ComplexField {
         } else if (id == 'draft') {
             // this schema was modified
             this.name = form.form.querySelector(`#${this.card_id}-name`).value;
+            this.title = form.form.querySelector(`#${this.card_id}-label`).value;
             this.status = status;
 
             // update badge
@@ -275,15 +308,15 @@ class Schema extends ComplexField {
                 this.view();
             } else {
                 let old_input_view = document
-                    .querySelector(`#view-pane-${this.full_name}`)
+                    .querySelector(`#view-pane-${this.card_id}`)
                     .querySelector('.input-view');
                 let new_input_view = ComplexField.create_viewer(this);
                 old_input_view.parentElement.replaceChild(new_input_view, old_input_view);
             }
 
 
-            // this.post();
-            let trigger = document.querySelector(`#nav-tab-${this.full_name} button`);
+            this.post();
+            let trigger = document.querySelector(`#nav-tab-${this.card_id} button`);
             bootstrap.Tab.getOrCreateInstance(trigger).show();
 
         } else if (id == 'new') {
@@ -304,29 +337,40 @@ class Schema extends ComplexField {
                 bootstrap.Tab.getOrCreateInstance(trigger).show();
             } else {
                 this.statuses.draft = [new_version];
-                new NavBar(this.full_name).remove_item('new');
-                let trigger = document.querySelector(`#nav-tab-${this.full_name} button`);
+                new NavBar(this.card_id).remove_item('new');
+                let trigger = document.querySelector(`#nav-tab-${this.card_id} button`);
                 bootstrap.Tab.getOrCreateInstance(trigger).show();
             }
             let new_schema = new Schema(`${this.name}-${no_dots}`,
                 'v' + incremented_major + this.container.slice(2), // adapt to other increments
                 this.url, new_version, this.statuses);
-            let json_contents = Object.values(this.to_json())[0];
-            json_contents.version = new_version;
-            json_contents.status = status;
+            let json_contents = this.to_json();
+            json_contents[this.name].version = new_version;
+            json_contents[this.name].status = status;
             new_schema.from_json(json_contents);
             new_schema.view();
-            // new_schema.post();
+            new_schema.post();
             
         }
     }
 
-    create_editor(id) {
+    create_editor(id, is_new = false) {
         let form = new BasicForm(`${this.card_id}-${id}`);
-        form.add_input("Metadata template name", this.card_id + '-name', {
-            placeholder: "schema-name", validation_message: "This field is compulsory, please only use lower case letters and '-'.",
-            pattern: "[a-z0-9-]+"
+        form.add_input("Schema ID", this.card_id + '-name', {
+            placeholder: "schema-name", validation_message: "This field is compulsory, please only use lower case letters, '_' and '-'.",
+            pattern: "[a-z0-9-_]+", description: is_new ? "This cannot be changed after the draft is saved." : false
         });
+
+        form.add_input("Schema label", this.card_id + '-label', {
+            placeholder: "Some informative label",
+            validation_message: "This field is compulsory.",
+            description: is_new ? "This cannot be changed after the draft is saved." : false
+        });
+
+        if (!is_new) {
+            form.form.querySelector(`#${this.card_id}-name`).setAttribute('readonly', '');
+            form.form.querySelector(`#${this.card_id}-label`).setAttribute('readonly', '');
+        }
 
         let button = this.create_button();
         form.form.insertBefore(button, form.divider);
@@ -354,7 +398,7 @@ class Schema extends ComplexField {
                 let second_sentence = this.statuses.published.length > 0 ?
                     ` Version ${this.statuses.published[0]} will be archived.` :
                     ''
-                const toast = new Toast(this.full_name + '-pub',
+                const toast = new Toast(this.card_id + '-pub',
                     "Published schemas cannot be edited." + second_sentence);
                 toast.show(() => {
                     // save form!
@@ -369,15 +413,15 @@ class Schema extends ComplexField {
     create_creator() {
         this.status = 'draft';
         this.display_options(this.status);
-        let form = this.create_editor(this.status);
-        this.card = new AccordionItem(this.full_name + '-schema', 'New schema', this.container, true);
+        let form = this.create_editor(this.status, true);
+        this.card = new AccordionItem(this.card_id, 'New schema', this.container, true);
         document.getElementById(this.container).appendChild(this.accordion_item);
         this.card.append(form.form);
     }
 
     create_navbar() {
         // design navbar
-        let nav_bar = new NavBar(this.full_name, ['justify-content-end', 'nav-pills']);
+        let nav_bar = new NavBar(this.card_id, ['justify-content-end', 'nav-pills']);
         nav_bar.add_item('view', 'View', true);
 
         let viewer = ComplexField.create_viewer(this);
@@ -388,11 +432,13 @@ class Schema extends ComplexField {
 
             this.display_options(this.status);
             let form = this.create_editor(this.status);
-            form.form.querySelector('input.form-control').value = this.name;
+            let inputs = form.form.querySelectorAll('input.form-control');
+            inputs[0].value = this.name; // id
+            inputs[1].value = this.title; // label
             nav_bar.add_tab_content('edit', form.form);
 
             nav_bar.add_action_button('Discard', 'danger', () => {
-                const toast = new Toast(this.full_name + '-discard',
+                const toast = new Toast(this.card_id + '-discard',
                     "A deleted draft cannot be recovered.");
                 toast.show(() => {
                     if (this.statuses.published.length + this.statuses.archived.length == 0) {
@@ -414,18 +460,20 @@ class Schema extends ComplexField {
                 this.display_options('new');
                 nav_bar.add_item('new', 'New version');
                 let new_form = this.create_editor('new');
-                new_form.form.querySelector('input.form-control').value = this.name;
-                new_form.form.querySelector('input.form-control').setAttribute('readonly', '');
+                let inputs = new_form.form.querySelectorAll('input.form-control');
+                inputs[0].value = this.name; // id
+                inputs[1].value = this.title; // label
+                
                 nav_bar.add_tab_content('new', new_form.form);
             }
 
             this.display_options('copy');
             nav_bar.add_item('child', 'New from copy');
-            let child_form = this.create_editor('copy');
+            let child_form = this.create_editor('copy', true);
             nav_bar.add_tab_content('child', child_form.form);
 
             nav_bar.add_action_button('Archive', 'danger', () => {
-                const toast = new Toast(this.full_name + '-discard',
+                const toast = new Toast(this.card_id + '-discard',
                     "Archived schemas cannot be implemented.");
                 toast.show(() => {
                     if (this.statuses.draft.length + this.statuses.archived.length == 0) {
@@ -457,9 +505,7 @@ class Schema extends ComplexField {
         this.card.id = this.card_id;
         this.card.appendChild(this.nav_bar);
         this.card.appendChild(this.tab_content);
-        // console.log(this.container)
         document.getElementById(this.container).appendChild(this.card);
-
         this.field_ids.forEach((field_id, idx) => {
             this.new_field_idx = idx;
             if (this.status == 'draft') {
@@ -474,10 +520,12 @@ class Schema extends ComplexField {
     }
 
     from_json(data) {
-        super.from_json(data);
-        this.status = data.status;
-        this.version = data.version;
-        this.parent = data.parent;
+        let name = Object.keys(data)[0];
+        super.from_json(data[name]);
+        this.name = name;
+        this.status = data[name].status;
+        this.version = data[name].version;
+        this.parent = data[name].parent;
 
         if (this.status != 'draft') {
             this.fixed = Object.values(this.to_json())[0];
@@ -487,13 +535,14 @@ class Schema extends ComplexField {
     post() {
         const to_post = new FormData();
         let fname = `${this.name}-v${this.version}`;
-        to_post.append('template_name', this.status == archived ? fname : `${fname}-${this.status}`);
+        to_post.append('template_name', this.status == 'archived' ? fname : `${fname}-${this.status}`);
         to_post.append('template_json', JSON.stringify(this.to_json()));
+        console.log(fname);
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', this.url, true);
-        xhr.send(to_post);
-        console.log(this.name, 'posted.');
+        // const xhr = new XMLHttpRequest();
+        // xhr.open('POST', this.url, true);
+        // xhr.send(to_post);
+        // console.log(this.name, 'posted.');
     }
 }
 
@@ -555,5 +604,65 @@ class SchemaGroup {
         status_badge.setAttribute('name', status);
         status_badge.setAttribute('src', `${SchemaGroup.badge_url}-${status}-${SchemaGroup.status_colors[status]}`);
         return [version_badge, status_badge]
+    }
+}
+
+class SchemaForm {
+    constructor(schema_name, container_id, url, prefix) {
+        this.name = schema_name;
+        this.container = container_id; // div in which to render
+        this.url = url; // for posting
+        this.prefix = prefix; // for flattening
+        this.fields = {}
+    }
+    
+    from_json(schema_json, annotated_data = {}) {
+        let schema_data = schema_json[this.name];
+        this.field_ids = Object.keys(schema_data.properties);
+        for (let entry of Object.entries(schema_data.properties)) {
+            let new_field = InputField.choose_class(this.name, entry);
+            this.fields[entry[0]] = new_field;
+        }
+        SchemaForm.flatten_object(this, this.prefix);
+        let form_div = ComplexField.create_viewer(this, true);
+
+        let title = document.createElement('h3');
+        title.innerHTML = `<small class="text-muted">Metadata schema:</small> ${schema_data.title}`;
+        document.getElementById(this.container).appendChild(title);
+
+        let submitting_row = Field.quick('div', 'row border-top pt-2')
+
+        let submitter = Field.quick('button', 'btn btn-primary', 'Save metadata');
+        submitter.type = 'submit';
+        submitter.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!form_div.checkValidity()) {
+                e.stopPropagation();
+                form_div.classList.add('was-validated');
+            } else {
+                // save form!
+                console.log('submitting');
+                let data = new FormData(form_div);
+                for (const pair of data.entries()) {
+                    // if (pair[1].length == 0) { data.delete(pair[0]); }
+                    console.log(`${pair[0]}, ${pair[1]}`);
+                }
+            }
+        });
+        submitting_row.appendChild(submitter);
+        form_div.appendChild(submitting_row);
+
+        document.getElementById(this.container).appendChild(form_div);
+    }
+
+    static flatten_object(object_editor, flattened_id) {
+        object_editor.field_ids.forEach((field_id) => {
+            let subfield_flattened = `${flattened_id}.${field_id}`;
+            if (object_editor.fields[field_id].constructor.name == 'ObjectInput') {
+                SchemaForm.flatten_object(object_editor.fields[field_id].editor, subfield_flattened);
+            } else {
+                object_editor.fields[field_id].name = subfield_flattened;
+            }
+        });
     }
 }

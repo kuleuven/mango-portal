@@ -11,25 +11,42 @@ class Field {
 
     static example_values = ['A', 'B', 'C'];
 
-    static dropdown(multiple = false, values = false) {
+    static dropdown(field, active = false) {
+        let { multiple, values } = field.values;
         let inner_input = Field.quick("select", "form-select");
         if (multiple) {
             inner_input.setAttribute('multiple', '');
         }
         values = values ? values : Field.example_values;
         // inner_input.setAttribute("multiple", "");
+        let empty_option = document.createElement("option");
+        inner_input.appendChild(empty_option);
+
         for (let i of values) {
             let new_option = document.createElement("option");
             new_option.value = i;
             new_option.innerHTML = i;
             inner_input.appendChild(new_option);
         }
+        if (active) {
+            inner_input.name = field.name;
+            if (field.required) {
+                inner_input.setAttribute('required', '');
+            }
+            let value = Field.include_value(field);
+            if (value != undefined) {
+                inner_input.querySelector(`option[value="${value}"]`)
+                    .setAttribute('selected', '');
+            }
+        }
         return inner_input;
     }
 
-    static checkbox_radio(multiple = true, values = false) {
+    static checkbox_radio(field, active = false) {
+        let { multiple, values } = field.values;
         values = values ? values : Field.example_values;
         let inner_input = document.createElement("div");
+        let value = Field.include_value(field);
         for (let i of values) {
             let new_option = Field.quick("div", "form-check input-view");
 
@@ -37,6 +54,12 @@ class Field {
             new_input.type = multiple ? "checkbox" : "radio";
             new_input.value = i;
             new_input.id = `check-${i}`;
+            if (active) {
+                new_input.name = field.name;
+                if (value && value.indexOf(i) > -1) {
+                    new_input.setAttribute('checked', '');
+                }
+            }
 
             let new_label = Field.quick('label', "form-check-label", i);
             new_label.setAttribute("for", `check-${i}`);
@@ -54,6 +77,16 @@ class Field {
         label.setAttribute("for", input_id);
 
         return label;
+    }
+
+    static include_value(field) {
+        if (this.value != undefined) {
+            return field.value;
+        } else if (this.required && field.default != undefined) {
+            return field.default;
+        } else {
+            return;
+        }
     }
 
 }
@@ -99,10 +132,32 @@ class MovingViewer extends MovingField {
         this.div.id = form.id;
         this.body = form.viewer_input();
         let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(`mod-${form.id}-${form.schema_name}`));
+        this.copy = this.add_btn('copy', 'front', () => this.duplicate(form, schema));
+        if (form.is_duplicate) {
+            this.copy.setAttribute('disabled', '');
+        }
         this.edit = this.add_btn('edit', 'pencil', () => modal.toggle());
         
         this.assemble();
         this.schema = schema;        
+    }
+
+    duplicate(form, schema) {
+        const clone = new form.constructor(schema.initial_name);
+        clone.id = form.id + Math.round(Math.random() * 100);
+        clone.title = form.title;
+        clone.is_duplicate = true;
+        clone.required = form.required;
+        clone.repeatable = form.repeatable;
+        clone.values = form.values;
+        if (form.constructor.name == 'ObjectInput') {
+            clone.editor = form.editor;
+        }
+        clone.mode = 'mod';
+        clone.create_form();
+        clone.create_modal(schema, 'draft');
+        schema.new_field_idx = schema.field_ids.indexOf(form.id) + 1;
+        schema.add_field(clone, 'draft');
     }
 
     assemble() {
@@ -110,11 +165,11 @@ class MovingViewer extends MovingField {
         let header_title = document.createElement('h5');
         header_title.innerHTML = this.title;
         if (this.repeatable) {
-            header_title.appendChild(Field.quick('i', 'bi bi-stack px-2'));
+            header_title.appendChild(Field.quick('i', 'bi bi-front px-2'));
         }
         
         let header_buttons = Field.quick('div', 'btn-list');
-        for (let button of [this.up, this.down, this.edit, this.rem]) {
+        for (let button of [this.up, this.down, this.copy, this.edit, this.rem]) {
             header_buttons.appendChild(button);
         }
         header.appendChild(header_title);
@@ -310,7 +365,7 @@ class BasicForm {
     add_input(label_text, input_id, {
         description = false, placeholder = "Some text",
         value = false, validation_message = "This field is compulsory",
-        pattern = ".*"
+        pattern = ".*", required = true
         } = {}) {
         // Create and append a required text input
         let input_tag = Field.quick("input", "form-control");
@@ -319,7 +374,9 @@ class BasicForm {
         input_tag.type = "text";
         input_tag.pattern = pattern;
         input_tag.placeholder = placeholder;
-        input_tag.setAttribute("required", "")
+        if (required) {
+            input_tag.setAttribute("required", "");
+        }
         if (value) {
             input_tag.value = value;
         }
@@ -335,6 +392,7 @@ class BasicForm {
         if (description) {
             let input_desc = Field.quick('div', 'form-text', description);
             input_desc.id = 'help-' + input_id;
+            input_tag.setAttribute('aria-describedby', 'help-', input_id)
             input_div.appendChild(input_desc);
         }
 
@@ -485,7 +543,8 @@ class BasicForm {
     }
 
     add_submit_action(id, action) {
-        this.form.querySelector("[type='submit']#" + id).addEventListener('click', action);
+        this.form.querySelector("[type='submit']#" + id)
+            .addEventListener('click', action);
     }
 
     reset() {

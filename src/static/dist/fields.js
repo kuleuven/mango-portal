@@ -7,6 +7,7 @@ class InputField {
         this.mode = 'add'; // whether the form has to be created or edited ("mod")
         this.repeatable = false;
         this.schema_name = schema_name;
+        this.is_duplicate = false;
     }
 
     get json() {
@@ -31,14 +32,14 @@ class InputField {
         return example;
     }
 
-    render(schema, id) {
+    render(schema, schema_status) {
         this.id = `${this.form_type}-${schema.id}`;
         this.create_form();
 
         let new_form = Field.quick("div", "border HTMLElement rounded");
 
         let new_button = Field.quick("button", "btn btn-primary HTMLElementButton", this.button_title);
-        this.create_modal(schema, id)
+        this.create_modal(schema, schema_status)
 
         new_button.setAttribute("data-bs-toggle", "modal");
         new_button.setAttribute("data-bs-target", `#add-${this.id}-${this.schema_name}`);
@@ -79,8 +80,9 @@ class InputField {
         // Add require switch and submit button to form
         this.form_field.form.appendChild(document.createElement('br'));
         let repeatable = !(this_class == 'SelectInput' | this_class == 'CheckboxInput');
-        let switchnames = ['required'];
-        let switches = {required : this.required};
+        let requirable = !(this_class == 'CheckboxInput' | this_class == 'ObjectInput');
+        let switchnames = requirable ? ['required'] : [];
+        let switches = requirable ? {required : this.required} : {};
         if (repeatable) {
             switchnames.push('repeatable');
             switches.repeatable = this.repeatable;
@@ -90,11 +92,13 @@ class InputField {
         }
         this.form_field.add_switches(this.id, switchnames, switches);
         
-        let req_input = this.form_field.form.querySelector(`#${this.id}-required`);
-        req_input.addEventListener('change', () => {
-            this.required = !this.required;
-            this.required ? req_input.setAttribute('checked', '') : req_input.removeAttribute('checked');
-        });
+        if (requirable) {
+            let req_input = this.form_field.form.querySelector(`#${this.id}-required`);
+            req_input.addEventListener('change', () => {
+                this.required = !this.required;
+                this.required ? req_input.setAttribute('checked', '') : req_input.removeAttribute('checked');
+            });    
+        }
         if (repeatable) {
             let rep_input = this.form_field.form.querySelector(`#${this.id}-repeatable`);
             rep_input.addEventListener('change', () => {
@@ -113,8 +117,9 @@ class InputField {
 
     }
 
-    create_modal(schema, id) {
+    create_modal(schema, schema_status) {
         let modal_id = `${this.mode}-${this.id}-${this.schema_name}`;
+        console.log(modal_id)
         let edit_modal = new Modal(modal_id, `Add ${this.button_title}`, `title-${this.form_type}`);
         let form = this.form_field.form;
         edit_modal.create_modal([form], 'lg');
@@ -127,7 +132,7 @@ class InputField {
                 e.stopPropagation();
                 form.classList.add('was-validated');
             } else {
-                let clone = this.register_fields(schema, id);
+                let clone = this.register_fields(schema, schema_status);
                 form.classList.remove('was-validated');
                 this.modal.toggle();
                 if (schema.constructor.name == 'ObjectEditor') {
@@ -154,7 +159,7 @@ class InputField {
         })
     }
 
-    register_fields(schema, id) {
+    register_fields(schema, schema_status) {
         // Read data from the modal form
         // With this form we create a new instance of the class with the output of the form
         // and give it to the schema as a created field
@@ -162,7 +167,9 @@ class InputField {
         let data = new FormData(this.form_field.form);
         let old_id = this.id;
         let new_id = data.get(`${this.id}-id`);
-        this.default = data.get(`${this.id}-default`);
+        if (this.required) {
+            this.default = data.get(`${this.id}-default`);
+        }
         if (old_id == new_id) {
             this.title = data.get(`${this.id}-label`);
             this.recover_fields(data);
@@ -179,6 +186,9 @@ class InputField {
 
             clone.repeatable = this.repeatable;
             this.repeatable = false;
+            
+            clone.default = this.default;
+            this.default = undefined;
 
             clone.id = this.id // temporarily, to recover data
 
@@ -192,17 +202,15 @@ class InputField {
             clone.recover_fields(data);
             clone.id = clone.field_id;
             this.reset(); // specific
-
-            if (this.mode == 'mod') {
-                schema.replace_field(old_id, clone, id);
-            } else {
-                clone.mode = 'mod';
+            
+            clone.mode = 'mod';
+            clone.create_form();
+            clone.create_modal(schema, schema_status);
                 
-                clone.create_form();
-
-                clone.create_modal(schema, id);
-                schema.add_field(clone, id);
-
+            if (this.mode == 'mod') {
+                schema.replace_field(old_id, clone, schema_status);
+            } else {
+                schema.add_field(clone, schema_status);
             }
             return clone;
         }
@@ -238,9 +246,15 @@ class InputField {
     from_json(data) {
         this.title = data.title;
         this.type = data.type;
-        if (data.required) this.required = data.required;
-        if (data.repeatable) this.repeatable = data.repeatable;
-
+        if (data.required) {
+            this.required = data.required;
+            if (data.default) {
+                this.default = data.default;
+            }
+        }
+        if (data.repeatable) {
+            this.repeatable = data.repeatable;
+        }
     }
 }
 
@@ -265,28 +279,50 @@ class TypedInput extends InputField {
         this.form_field.add_input(
             'Default value', `${this.id}-default`,
             {
-                description: "Default value for this field.",
-                value: this.default
+                description: "Default value for this field: only valid if the field is required.",
+                value: this.default, required: false
             }
         )
     }
 
-    viewer_input() {
+    viewer_input(active = false) {
         let div = document.createElement('div');
-        let subtitle = Field.quick('p', 'card-subtitle', this.viewer_subtitle);
+        let subtitle = active ?
+            Field.quick('div', 'form-text', this.viewer_subtitle) :
+            Field.quick('p', 'card-subtitle', this.viewer_subtitle);
+        subtitle.id = 'help-' + this.id;
         let input;
         if (this.type != 'textarea') {
             input = Field.quick("input", "form-control input-view");
             input.type = this.type == 'float' | this.type == 'integer' ? 'number' : this.type;
-            if (this.default !== undefined) {
+            input.setAttribute('aria-describedby', subtitle.id);
+            if (this.required && this.default !== undefined) {
                 input.value = this.default;
             }
         } else {
             input = Field.quick("textarea", "form-control input-view");
         }
-        input.setAttribute('readonly', '');
-        div.appendChild(subtitle);
-        div.appendChild(input);
+        if (!active) {
+            input.setAttribute('readonly', '');
+            div.appendChild(subtitle);
+            div.appendChild(input);
+        } else {
+            input.name = this.name;
+            if (this.required) {
+                input.setAttribute('required', '');
+            }
+            let value = Field.include_value(this);
+            if (value != undefined) {
+                input.value = value;
+            }
+            if (this.values.minimum != undefined) {
+                input.min = this.values.minimum;
+                input.max = this.values.maximum;
+            }
+            div.appendChild(input);
+            div.appendChild(subtitle);
+        
+        }
         return div;
     }
 
@@ -311,7 +347,7 @@ class TypedInput extends InputField {
 
     reset() {
         let form = this.form_field.form;
-        if (form.querySelectorAll('.form-container').length > 3) {
+        if (document.getElementById(`div-${this.id}-min`) != undefined) {
             form.removeChild(document.getElementById(`div-${this.id}-min`));
             form.removeChild(document.getElementById(`div-${this.id}-max`));
         }
@@ -442,8 +478,8 @@ class ObjectInput extends InputField {
         this.editor.display_options("objectTemplates");
     }
 
-    viewer_input() {
-        return ComplexField.create_viewer(this.editor);
+    viewer_input(active = false) {
+        return ComplexField.create_viewer(this.editor, active);
     }
 
     create_form() {
@@ -487,15 +523,15 @@ class MultipleInput extends InputField {
     constructor(schema_name) {
         super(schema_name);
         this.type = "select";
-        this.values.values = [];
+        this.values.values = ['one', 'two', 'three'];
     }
 
     repeatable = false;
     
     ex_input() {
         let columns = Field.quick('div', 'row');
-        let dropdown = Field.dropdown(this.values.multiple);
-        let radio = Field.checkbox_radio(this.values.multiple);
+        let dropdown = Field.dropdown(this);
+        let radio = Field.checkbox_radio(this);
         let col1 = Field.quick('div', 'col-6');
         col1.appendChild(dropdown);
         let col2 = Field.quick('div', 'col-6');
@@ -505,10 +541,11 @@ class MultipleInput extends InputField {
         return columns;
     }
 
-    viewer_input() {
+    viewer_input(active = false) {
+        // I just send the Fields data (values, actual value, and name if active)
         let div = this.values.ui == 'dropdown' ?
-            Field.dropdown(this.values.multiple, this.values.values) :
-            Field.checkbox_radio(this.values.multiple, this.values.values);
+            Field.dropdown(this, active) :
+            Field.checkbox_radio(this, active);
         return div;
     }
 
@@ -556,7 +593,7 @@ class SelectInput extends MultipleInput {
     dropdown_alt = 'radio';
 
     add_default_field() {
-        this.form_field.add_select("Default value", `${this.id}-default`, this.values.values);
+        this.form_field.add_select("Default value (if field is required)", `${this.id}-default`, this.values.values);
     }
 }
 
