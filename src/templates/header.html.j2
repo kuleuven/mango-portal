@@ -73,7 +73,7 @@
                         </li>
                     {% else %}
                         <li>
-                            <a class="dropdown-item" href="{{ url_for('user_bp.logout_basic') }}">Sign out</a>
+                            <a class="dropdown-item" href="{{ url_for(config['MANGO_LOGOUT_ACTION']) }}">Sign out</a>
                         </li>
                     {% endif %}
                     <!--<li><a class="dropdown-item" href="#">Switch to admin</a></li>-->
