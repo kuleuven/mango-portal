@@ -62,12 +62,6 @@ def login_openid():
     """
 
     if request.method == 'GET':
-        if 'openid_session' in session:
-            s = Session(session['openid_session'])
-            if s.valid():
-                del session['openid_session']
-                return render_template('user/logout_openid.html.j2')
-
         for openid_provider in openid_providers:
             provider_config = openid_providers[openid_provider]
             if 'auto_pick_on_host' in provider_config and provider_config['auto_pick_on_host'] == request.host:
@@ -178,6 +172,16 @@ def login_openid_select_zone():
         return redirect(url_for('browse_bp.collection_browse', collection=collection.lstrip('/')))
 
     return redirect(url_for('index'))
+
+@data_platform_user_bp.route('/user/logout_openid', methods=["GET"])
+def logout_openid():
+    if 'openid_session' in session:
+        del session['openid_session']
+
+    if 'userid' in session:
+        del session['userid']
+
+    return render_template('user/logout_openid.html.j2')
 
 @data_platform_user_bp.route("/data-platform/connection-info/modal/<zone>", methods=["GET"])
 @openid_login_required
