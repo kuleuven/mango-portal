@@ -67,7 +67,7 @@ def login_openid():
             if s.valid():
                 del session['openid_session']
                 return render_template('user/logout_openid.html.j2')
-                
+
         for openid_provider in openid_providers:
             provider_config = openid_providers[openid_provider]
             if 'auto_pick_on_host' in provider_config and provider_config['auto_pick_on_host'] == request.host:
@@ -123,7 +123,10 @@ def login_openid_select_zone():
         # Filter zones
         zones = [] # All visible zones (many in case user is admin)
         my_zones = [] # Zones in which the user exist (user must be on a project that is not archived)
+        other_platforms = []
         for project in projects:
+            if project['platform'] != 'irods' and project['platform'] not in other_platforms:
+                other_platforms.append(project['platform'])
             if 'zone' not in project:
                 continue
             if project['zone'] not in zones:
@@ -135,6 +138,7 @@ def login_openid_select_zone():
             projects=projects,
             zones=zones,
             my_zones=my_zones,
+            other_platforms=other_platforms,
             last_zone_name=last_zone_name,
             admin=('operator' in perms or 'admin' in perms),
         )

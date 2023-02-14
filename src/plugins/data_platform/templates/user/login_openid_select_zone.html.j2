@@ -81,29 +81,63 @@
             </div>
             {% endfor %}
 
-            {% for project in projects %}
-            {% if 'zone' not in project %}
-            <div class="accordion-item">
-                <h4 class="accordion-header" id="#{{ project.name }}Header" style="position: relative">
-                    <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#{{ project.name }}" aria-expanded="false" aria-controls="{{ project.name }}">
-                        {{project['platform']}} {{ project.name }}
-                    </button>
-                    
-                    <div style="position: absolute; z-index: 99; top: 3px; right: 60px">
-                    {% if (project['my_role'] == 'responsible' or project['my_role'] == 'manager' or admin) and not project['archived'] %}
-                    <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
-                    {% else %}
-                    <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
-                    {% endif %}
-                    </div>
-                </h4>
-                <div id="{{ project.name }}" class="accordion-collapse collapse" aria-labelledby="{{ project.name }}Header" data-parent="#accordion">
-                <div class="accordion-body">
 
+            {% for platform in other_platforms %}
+            <div class="accordion-item">
+                <h4 class="accordion-header" id="#{{ platform }}Header" style="position: relative">
+                    <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#{{ platform }}" aria-expanded="false" aria-controls="{{ platform }}">
+                        {{ platform }}
+                    </button>
+                </h4>
+
+                <div id="{{ platform }}" class="accordion-collapse collapse" aria-labelledby="{{ platform }}Header" data-parent="#accordion">
+                <div class="accordion-body">
+                
+                <table class="table table-striped table-hover mt-2 mb-0">
+                  <colgroup>
+                    <col class="col-md-4" />
+                    <col class="col-md-2" />
+                    <col class="col-md-2" />
+                    <col class="col-md-4" />
+                  </colgroup>
+                  <thead>
+                    <th>Project</th>
+                    <th>Status</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                  </thead>
+                  <tbody>
+                {% for project in projects %}
+                {% if project['platform'] == platform %}
+                    <tr>
+                      <td class="bi bi-folder fs-6 align-middle">
+                        <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
+                      </td>
+                      <td class="fs-6 align-middle">
+                        {% if project['archived'] %}
+                        archived
+                        {% else %}
+                        active
+                        {% endif %}
+                      </td>
+                      <td class="fs-6 align-middle">
+                        {{project['my_role']}}
+                      </td>
+                      <td class="text-nowrap">
+                        {% if (project['my_role'] == 'responsible' or project['my_role'] == 'manager' or admin) and not project['archived'] %}
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
+                        {% else %}
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
+                        {% endif %}
+                      </td>
+                    </tr>
+                {% endif %}
+                {% endfor %}
+                  </tbody>
+                </table>
                 </div>
                 </div>
             </div>
-            {% endif %}
             {% endfor %}
         </div>
     {% endif %}
