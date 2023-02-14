@@ -62,6 +62,12 @@ def login_openid():
     """
 
     if request.method == 'GET':
+        if 'openid_session' in session:
+            s = Session(session['openid_session'])
+            if s.valid():
+                del session['openid_session']
+                return render_template('user/logout_openid.html.j2')
+                
         for openid_provider in openid_providers:
             provider_config = openid_providers[openid_provider]
             if 'auto_pick_on_host' in provider_config and provider_config['auto_pick_on_host'] == request.host:
