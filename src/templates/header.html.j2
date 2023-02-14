@@ -54,6 +54,11 @@
                     <li>
                         <a class="dropdown-item" href="{{ url_for('user_bp.my_profile')}}">My profile</a>
                     </li>
+                    {% if 'data_platform' in config['MANGO_ENABLE_CORE_PLUGINS'] %}
+                    <li>
+                        <a class="dropdown-item" href="/data-platform/connection-info">How to connect</a>
+                    </li>
+                    {% endif %}
                     <li>
                         <hr class="dropdown-divider">
                     </li>
