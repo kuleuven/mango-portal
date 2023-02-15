@@ -119,7 +119,6 @@ class InputField {
 
     create_modal(schema, schema_status) {
         let modal_id = `${this.mode}-${this.id}-${this.schema_name}`;
-        console.log(modal_id)
         let edit_modal = new Modal(modal_id, `Add ${this.button_title}`, `title-${this.form_type}`);
         let form = this.form_field.form;
         edit_modal.create_modal([form], 'lg');
@@ -132,6 +131,7 @@ class InputField {
                 e.stopPropagation();
                 form.classList.add('was-validated');
             } else {
+                // if the id is repeated it will replace the other field
                 let clone = this.register_fields(schema, schema_status);
                 form.classList.remove('was-validated');
                 this.modal.toggle();
@@ -217,9 +217,9 @@ class InputField {
 
     }
 
-    view(schema) {
+    view(schema, schema_status) {
         // Method to view the created form
-        return new MovingViewer(this, schema);
+        return new MovingViewer(this, schema, schema_status);
     }
 
     reset() {

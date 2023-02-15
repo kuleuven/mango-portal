@@ -6,7 +6,7 @@
         {% set first = "metadata_schema_editor_bp" %}
         {% set mdt = "meta_data_template" %}
         <url-list new="{{ url_for('{}.new_{}'.format(first, mdt)) }}" list="{{ url_for('{}.list_{}s'.format(first, mdt)) }}"></url-list>
-        {% for file in ['doms', 'fields', 'schema', 'httprequests', 'init'] %}
+        {% for file in ['doms', 'fields', 'schema', 'httprequests', 'manager'] %}
         <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
         {% endfor %}
         <link href="{{ url_for('static', filename='dist/mdschema.css') }}"

@@ -124,15 +124,16 @@ class MovingField {
 
 class MovingViewer extends MovingField {
     // Specific class for viewing fields of a schema
-    constructor(form, schema) {
+    constructor(form, schema, schema_status) {
         super(form.id);
+        console.log(schema_status)
         this.title = form.required ? form.title + '*' : form.title;
         this.repeatable = form.repeatable;
         this.div = Field.quick("div", "card border-primary viewer");
         this.div.id = form.id;
         this.body = form.viewer_input();
         let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(`mod-${form.id}-${form.schema_name}`));
-        this.copy = this.add_btn('copy', 'front', () => this.duplicate(form, schema));
+        this.copy = this.add_btn('copy', 'front', () => this.duplicate(form, schema, schema_status));
         if (form.is_duplicate) {
             this.copy.setAttribute('disabled', '');
         }
@@ -142,7 +143,7 @@ class MovingViewer extends MovingField {
         this.schema = schema;        
     }
 
-    duplicate(form, schema) {
+    duplicate(form, schema, schema_status) {
         const clone = new form.constructor(schema.initial_name);
         clone.id = form.id + Math.round(Math.random() * 100);
         clone.title = form.title;
@@ -155,9 +156,9 @@ class MovingViewer extends MovingField {
         }
         clone.mode = 'mod';
         clone.create_form();
-        clone.create_modal(schema, 'draft');
+        clone.create_modal(schema, schema_status);
         schema.new_field_idx = schema.field_ids.indexOf(form.id) + 1;
-        schema.add_field(clone, 'draft');
+        schema.add_field(clone, schema_status);
     }
 
     assemble() {
@@ -182,10 +183,6 @@ class MovingViewer extends MovingField {
         this.div.appendChild(body);
 
     }
-
-    // open_editor(modal) {
-    //     modal.toggle();
-    // }
 
     move_down() {
         // Method to move a viewing field downwards

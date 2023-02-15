@@ -82,7 +82,7 @@ class ComplexField {
             .getElementById(`form-${this.card_id}-${schema_status}`)
             .querySelectorAll('.adder')[this.new_field_idx];
         let below = clicked_button.nextSibling;
-        let moving_viewer = form_object.view(this);
+        let moving_viewer = form_object.view(this, schema_status);
         let new_button = this.create_button();
 
         below.parentElement.insertBefore(moving_viewer.div, below);
