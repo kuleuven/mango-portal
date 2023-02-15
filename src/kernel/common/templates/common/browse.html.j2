@@ -13,6 +13,16 @@
     height: 6px;
     top: 85%;
   }
+  
+.btn-oc {
+  --bs-btn-font-weight: 600;
+  --bs-btn-color: var(--bs-primary);
+  --bs-btn-bg: var(--bs-white);
+  --bs-btn-border-radius: 0rem;
+  --bs-btn-active-color: var(--bs-white);
+  --bs-btn-active-bg: var(--bs-primary);
+  --bs-btn-active-border-color: var(--bs-primary);
+  }
   </style>
 {% endblock head %}
 {% block body %}
@@ -119,18 +129,22 @@
       {{ block_macros.metadata_block(collection.id, collection.path.lstrip("/"), grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="collection", current_user_rights=current_user_rights)}}
     </div>
     <div class="tab-pane show active" id="collection-content">
-      {#  <div style="width:fit-content" class="input-group my-3">
-      <select class="form-select" id="action_select">
-        <option value="" selected>Choose action for selected items</option>
+      <div style="width:fit-content" class="input-group my-3">
+      <select class="form-select" aria-label="Select bulk operation"id="action_select">
         <option value="move">Move</option>
+       {# <option value="copy">Copy</option> #}
         <option value="delete">Delete</option>
+       {# <option value="download">Download</option> #}
       </select>
-      <button type="button" class="btn btn-primary" onclick="applyAction()">Apply</button>
-</div> #}
+      <button type="button" class="btn btn-primary" onclick="apply_bulk_operation()" disabled>Apply</button>
+</div>
       <table class="table table-striped table-hover mt-2" id="browseTable">
         <thead>
           <tr>
-            {# <th scope="col">Select</th> #}
+            <th scope="col" class="position-relative">
+              <input class="form-check-input" type="checkbox" value="" id="select_all" aria-label="Select all rows">
+              <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-primary"></span>
+            </th>
             <th scope="col">Name</th>
             <th scope="col">Owner</th>
             <th scope="col">Created</th>
@@ -142,10 +156,8 @@
         <tbody>
           {% for collection in sub_collections %}
             <tr>
-              {# <td><input style="vertical-align:middle"
-       class="form-check-input checkbox-inline"
-       type="checkbox"
-       value="{{collection.path}}"></td> #}
+              <th scope="row"><input style="vertical-align:middle" class="form-check-input checkbox-inline" type="checkbox" value="col-{{collection.path}}"
+              aria-label="Select {{collection.path}}"></td>
               <td>
                 <i class="bi bi-folder fs-4"></i> <a href="{{ url_for('browse_bp.collection_browse', collection=collection.path.lstrip('/'))}}">{{ collection.name }}</a>
               </td>
@@ -160,10 +172,8 @@
           {% endfor %}
           {% for data_object in data_objects %}
             <tr>
-              {# <td><input style="vertical-align:middle"
-       class="form-check-input checkbox-inline"
-       type="checkbox"
-       value="{{data_object.path}}"></td> #}
+              <th scope="row"><input style="vertical-align:middle" class="form-check-input checkbox-inline" type="checkbox" value="dobj-{{data_object.path}}"
+              aria-label="Select {{collection.path}}"></td>
               <td>
                 <i class="bi bi-file-earmark fs-4"></i><span> <a href="{{ url_for('browse_bp.view_object', data_object_path=data_object.path.lstrip('/'))}}">{{ data_object.name }}</a></span>
               </td>
@@ -672,6 +682,244 @@
 {% block javascript %}
   {{ super() }}
   <script>
+// start Mariana-code
+const tbody = document.querySelector('#browseTable tbody');
+const tbody_checkboxes = tbody.querySelectorAll('input[type="checkbox"]');
+const badge_counter = document.querySelector('#browseTable thead span.badge');
+const go_button = document.querySelector('#collection-content button');
+const select_all = document.querySelector('#browseTable input#select_all');
+
+select_all.addEventListener('change', () => {
+  if (select_all.checked) {
+        tbody_checkboxes.forEach((el) => el.checked = true);
+        go_button.removeAttribute('disabled');
+        if (select_all.parentElement.querySelector('span.badge') == null) {
+            select_all.parentElement.appendChild(badge_counter);
+        }
+        badge_counter.innerHTML = tbody_checkboxes.length;
+    } else {
+        tbody_checkboxes.forEach((el) => el.checked = false);
+        go_button.setAttribute('disabled', '');
+        select_all.parentElement.removeChild(badge_counter);
+    }
+});
+
+tbody_checkboxes.forEach((checkbox) => {
+  checkbox.addEventListener('change', () => {
+        let are_checked = [...tbody_checkboxes].filter((c) => c.checked).length;
+        badge_counter.innerHTML = are_checked;
+        if (checkbox.checked) {
+            console.log(`File "${checkbox.value}" has been selected.`);
+            go_button.removeAttribute('disabled');
+            if (are_checked == 1) {
+                select_all.parentElement.appendChild(badge_counter)
+            }
+            if (are_checked == tbody_checkboxes.length) {
+                select_all.checked = true;
+            }
+        } else {
+            console.log(`File "${checkbox.value}" has been unselected.`);
+            select_all.checked = false;
+            if (are_checked == 0) {
+                go_button.setAttribute('disabled', '');
+                select_all.parentElement.removeChild(badge_counter);
+            }
+        }
+    })
+});
+function apply_bulk_operation() {
+  const selected_option = document.querySelector('#collection-content select');
+  const selected_items = [...tbody_checkboxes].filter((c) => c.checked).map((c) => c.value);
+  if (selected_option.value == 'copy' || selected_option.value == 'move') {
+    const offcanvas_dom = document.querySelector('.offcanvas#collection-tree');
+        const offcanvas = new bootstrap.Offcanvas(offcanvas_dom);
+        offcanvas_dom.querySelectorAll('input[type="radio"]')
+            .forEach((input) => input.addEventListener('change', () => {
+                offcanvas_dom.querySelectorAll('i.bi-folder-symlink-fill')
+                    .forEach((i) => i.remove());
+                const icon = document.createElement('i');
+                icon.className = 'bi bi-folder-symlink-fill ms-2';
+                icon.setAttribute('style', 'font-size:1.2rem;');
+                input.nextSibling.appendChild(icon);
+                icon.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const action = selected_option.value == 'copy' ? 'copied' : 'moved';
+                    const destination = input.value;
+                    console.log(destination)
+                    console.log(`The following items will be ${action} to "${destination}":`,
+                        selected_items);
+                });
+            }));
+        offcanvas.toggle();
+  } else {
+    console.log("The following items will be deleted", selected_items);
+  }
+}
+
+class OffCanvas {
+  constructor(id) {
+    this.offcanvas = document.createElement('div');
+    this.offcanvas.className = 'offcanvas offcanvas-end';
+    this.offcanvas.id = id;
+    this.offcanvas.tabIndex = '-1';
+    this.offcanvas.setAttribute('aria-labelledby', 'offcanvas-label');
+    this.offcanvas.setAttribute('data-bs-backdrop', 'static');
+    this.add_header();
+    this.add_body();
+
+  }
+
+  add_header() {
+    const offcanvas_header = document.createElement('div');
+    offcanvas_header.className = 'offcanvas-header';
+
+    const offcanvas_h5 = document.createElement('h5');
+    offcanvas_h5.className = 'offcanvas-title';
+    offcanvas_h5.id = 'offcanvas-label';
+    offcanvas_h5.innerHTML = 'Select collection';
+    offcanvas_header.appendChild(offcanvas_h5);
+
+    const offcanvas_close = document.createElement('button');
+    offcanvas_close.type = 'button';
+    offcanvas_close.className = 'btn-close';
+    offcanvas_close.setAttribute('data-bs-dismiss', 'offcanvas');
+    offcanvas_close.setAttribute('aria-label', 'Close');
+    offcanvas_header.appendChild(offcanvas_close);
+
+    this.offcanvas.appendChild(offcanvas_header);
+  }
+
+  add_body() {
+    this.body = document.createElement('form');
+    this.body.className = 'offcanvas-body offcanvas-tree';
+
+    this.offcanvas.appendChild(this.body);
+  }
+
+  append_to(container) {
+    container.appendChild(this.offcanvas);
+  }
+}
+
+class TreeElement {
+  constructor({ id, label, children = undefined } = {}) {
+    this.has_children = children != undefined;
+    if (this.has_children) {
+      this.children = children;
+    }
+    this.id = id.replaceAll('/', '-');
+    this.value = id;
+    this.label_name = label;
+    this.input = this.create_input();
+    this.label = this.create_label();
+  }
+
+  append_to(parent_element) {
+    parent_element.appendChild(this.input);
+    parent_element.appendChild(this.label);
+    if (this.children != undefined) {
+      const collapse = this.create_collapse();
+      parent_element.appendChild(collapse);
+    }
+  }
+
+  create_input() {
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.className = 'btn-check';
+    input.name = 'destination';
+    input.id = this.id + '-radio';
+    input.value = this.value;
+    input.setAttribute('autocomplete', 'off');
+    if (this.has_children) {
+      input.setAttribute('data-bs-toggle', 'collapse');
+      input.setAttribute('data-bs-target', `#${this.id}-collapse`);
+      input.setAttribute('aria-expanded', 'false');
+      input.setAttribute('aria-controls', this.id + '-collapse');  
+    }
+    
+    return input;
+  }
+
+  create_label() {
+    const label = document.createElement('label');
+    label.className = 'btn btn-oc text-start';
+    label.setAttribute('for', this.id + '-radio');
+    const collection_name = document.createElement('span');
+    collection_name.innerHTML = this.label_name;
+    label.appendChild(collection_name);
+
+    if (this.has_children) {
+      let icon = document.createElement('i');
+      icon.className = 'bi bi-caret-right-fill me-2';
+      label.insertBefore(icon, collection_name);  
+    }
+
+    return label;
+  }
+
+  create_collapse() {
+    if (!this.has_children) {
+      return;
+    }
+    
+    const collapse = document.createElement('div');
+    collapse.className = 'collapse ps-3 w-100';
+    collapse.id = this.id + '-collapse';
+    const icon = this.label.querySelector('i.bi');
+
+    // the events below have an if statement because otherwise the icons of
+    // the parent folders also change
+    collapse.addEventListener('shown.bs.collapse', () => {
+      if (collapse.classList.contains('show')) {
+        icon.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
+      }
+    });
+
+    collapse.addEventListener('hidden.bs.collapse', () => {
+      if (!collapse.classList.contains('show')) {
+        icon.classList.replace('bi-caret-down-fill', 'bi-caret-right-fill');
+      }
+    });
+
+    const sub_button_group = TreeElement.create_button_group();
+    collapse.appendChild(sub_button_group);
+
+    this.children.forEach((tree_element) => {
+      new TreeElement(tree_element).append_to(sub_button_group);
+    });
+
+    return collapse;
+  }
+
+  static create_button_group() {
+    const button_group = document.createElement('div');
+    button_group.className = 'btn-group-vertical w-100';
+    button_group.role = 'group';
+    button_group.setAttribute('aria-label', 'Collection tree to select destination');
+    return button_group;
+  }
+}
+
+const offcanvas = new OffCanvas('collection-tree');
+const button_group = TreeElement.create_button_group();
+offcanvas.body.appendChild(button_group);
+offcanvas.append_to(document.getElementById('collection-content'));
+
+var xhr = new XMLHttpRequest();
+function create_tree() {
+  const tree = JSON.parse(this.responseText);
+  tree.forEach((tree_element) => {
+    new TreeElement(tree_element).append_to(button_group);
+  });
+}
+xhr.addEventListener('load', create_tree);
+xhr.open("GET", "/api/collection/tree");
+xhr.send();
+
+
+// end Mariana-code
+
 //function for applying action on all selected collections/files
 function applyAction() {
   let action = document.getElementById("action_select").value;
