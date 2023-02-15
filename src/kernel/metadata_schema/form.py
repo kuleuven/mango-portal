@@ -339,7 +339,120 @@ def edit_schema_metadata_for_item():
             )
         return redirect(request.referrer)
 
+@metadata_schema_form_bp.route("/metada-schema/edit2", methods=["POST", "GET"])
+def edit_schema_metadata_for_item2():
+    """
+    """
+    _parameters = request.values.to_dict()
 
+    item_type = _parameters["item_type"]
+    object_path = _parameters["object_path"]
+    if not object_path.startswith("/"):
+        object_path = "/" + object_path
+    template_name = _parameters["schema"]
+    prefix = get_schema_prefix(schema_filename=template_name) #f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(template_name)}"
+    # form_dict={}
+    # json_template_dir = get_metadata_schema_dir(g.irods_session)
+
+    # with open(f"{json_template_dir}/{template_name}") as template_file:
+    #     form_dict = json.load(template_file)
+
+    # needed for getting and setting specific values, for example multivalued fields like the checkboxes
+    # flat_form_dict = flatten_josse_schema(
+    #     ("", form_dict), level=0, prefix=prefix, result_dict={}
+    # )
+
+    catalog_item = (
+        g.irods_session.data_objects.get(object_path)
+        if item_type == "data_object"
+        else g.irods_session.collections.get(object_path)
+    )
+    setattr(catalog_item, "item_type", item_type)
+
+    form_values = MultiDict()
+    # form_values.extend(_parameters)
+    _parameters = {'mg.schema1.key1' : 'value1', 'mg.schema2.key2' : 'value2'} # for testing
+    for _key, _value in _parameters.items():
+        pprint(f"Key is: {_key}")
+
+        form_values.add(_key, _value)
+    form_values.add('redirect_hash', '#metadata')
+
+    for meta_data_item in catalog_item.metadata.items():
+        if meta_data_item.name.startswith(prefix):
+
+            form_values.add(meta_data_item.name, meta_data_item.value.replace("<br/>", "\n"))
+    
+    values_json = json.dumps(form_values, separators=(',', ':'))
+
+    if request.method == "GET":
+
+        # schema_form_class = josse_walk_schema_object((prefix, form_dict), prefix=prefix)
+        # setattr(schema_form_class, "id", HiddenField())
+        # setattr(schema_form_class, "schema", HiddenField())
+        # setattr(schema_form_class, "object_path", HiddenField())
+        # setattr(schema_form_class, "item_type", HiddenField())
+        # setattr(schema_form_class, "redirect_hash", HiddenField())
+        # setattr(schema_form_class, "submit", SubmitField(label="Save"))
+        # schema_form = schema_form_class(form_values)
+        return render_template(
+            "schema_form_edit2.html.j2",
+            schema_url=template_name,
+            schema_values=values_json,
+            prefix=prefix,
+            item=catalog_item,
+        )
+
+    if request.method == "POST":
+        """
+        """
+
+
+        # remove all relevant attributes for this schema
+        # remove operations:
+        avu_operation_list = []
+        for meta_data_item in catalog_item.metadata.items():
+            if meta_data_item.name.startswith(prefix):
+
+                avu_operation_list.append(
+                    AVUOperation(operation="remove", avu=meta_data_item)
+                )
+        for _key, _value in _parameters.items():
+
+            if _key.startswith(prefix) and _value:
+                if flat_form_dict[_key]["type"] == "checkboxes":
+                    _value = json.dumps(_value)
+                if flat_form_dict[_key]["type"] == "textarea":
+                    # the value is transformed to replace newlines as iRODS cannot handle this.
+                    # Most likely this is only for schemas which can have textarea boxes
+                    _value = "<br/>".join(_value.splitlines())
+
+                avu_operation_list.append(
+                    AVUOperation(operation="add", avu=iRODSMeta(_key, _value ))
+                )
+
+        #catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
+        # workaround for a bug in 4.2.11: only 'own' can execute atomic operations
+        lib.util.execute_atomic_operations(g.irods_session, catalog_item, avu_operation_list)
+
+        if item_type == "collection":
+            signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=object_path)
+        if item_type == "data_object":
+            signals.data_object_changed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path=object_path)
+
+#signals.data_object_changed(current_app._get_current_object(), data_object_path=data_object_path)
+        if item_type == "collection":
+            referral = url_for("browse_bp.collection_browse", collection=catalog_item.path)
+        else:
+            referral = url_for("browse_bp.view_object", data_object_path=catalog_item.path)
+
+        if "redirect_route" in request.values:
+            return redirect(request.values["redirect_route"])
+        if "redirect_hash" in request.values:
+            return redirect(
+                referral.split("#")[0] + request.values["redirect_hash"]
+            )
+        return redirect(request.referrer)
 
 @metadata_schema_form_bp.route("/metadata-schema/delete", methods=["POST"])
 def delete_schema_metadata_for_item():
