@@ -85,7 +85,7 @@
           {% endif %}
           <tr>
             <th>Size</th>
-            <td>{{ status['used_size'] }} of {{ project['quota_size'] }} bytes used
+            <td>{{ status['used_size']|format_size }} of {{ project['quota_size']|format_size }} used
             {% if admin %}
             <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
             {% endif %}
@@ -99,7 +99,7 @@
           </tr>
           <tr>
             <th>Inodes</th>
-            <td>{{ status['used_inodes'] }} of {{ project['quota_inodes'] }} inodes used
+            <td>{{ status['used_inodes']|format_intword }} of {{ project['quota_inodes']|format_intword }} inodes used
             {% if project['platform'] == 'irods' %}
             ({{ status['platform_info']['object_count'] }} objects, 
             {{ status['platform_info']['coll_count'] }} collections, 

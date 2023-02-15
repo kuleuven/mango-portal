@@ -19,6 +19,7 @@ import json
 import irods
 import pytz
 import bleach
+import humanize
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -272,6 +273,13 @@ def format_timestamp(ts):
 def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
 
+@app.template_filter("format_size")
+def format_size(size):
+    return humanize.naturalsize(size)
+
+@app.template_filter("format_intword")
+def format_intword(size):
+    return humanize.intword(size)
 
 @app.route("/")
 def index():
