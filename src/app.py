@@ -19,6 +19,7 @@ import json
 import irods
 import pytz
 import bleach
+import humanize
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -158,6 +159,7 @@ def init_and_secure_views():
         "data_platform_user_bp.login_openid_select_zone",
         "data_platform_user_bp.logout_openid",
         "data_platform_user_bp.connection_info_modal",
+        "data_platform_user_bp.drop_permissions",
         "data_platform_project_bp.project",
         "data_platform_project_bp.add_project_member",
         "data_platform_project_bp.delete_project_member",
@@ -272,6 +274,13 @@ def format_timestamp(ts):
 def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
 
+@app.template_filter("format_size")
+def format_size(size):
+    return humanize.naturalsize(size)
+
+@app.template_filter("format_intword")
+def format_intword(size):
+    return humanize.intword(size)
 
 @app.route("/")
 def index():

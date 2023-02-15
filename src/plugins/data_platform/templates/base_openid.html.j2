@@ -45,6 +45,11 @@
                     <li>
                         <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}">Switch zone</a>
                     </li>
+                    {% if admin|default(False) %}
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.drop_permissions') }}">Drop permissions</a>
+                    </li>
+                    {% endif %}
                     <li>
                         <a class="dropdown-item" href="{{ url_for(config['MANGO_LOGOUT_ACTION']) }}">Sign out</a>
                     </li>
