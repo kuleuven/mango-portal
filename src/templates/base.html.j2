@@ -40,6 +40,7 @@
 .toast {
   --bs-toast-max-width: 550px;
 }
+
       </style>
     {% endblock head %}
   </head>
@@ -47,8 +48,8 @@
     {% include "header.html.j2" %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
-      {% if messages %}
-        <div class="toast-container top-10 start-50 translate-middle-x">
+      <div class="toast-container top-10 start-50 translate-middle-x">
+        {% if messages %}
           {% for category, message in messages %}
             <div class="toast"
                  {% if category !="success" %} data-bs-autohide="false" {% else %} data-bs-delay="5000" {% endif %}
@@ -66,8 +67,8 @@
               <div class="toast-body">{{ message }}</div>
             </div>
           {% endfor %}
-        </div>
-      {% endif %}
+        {% endif %}
+      </div>
     {% endwith %}
     <main class="container">
       <div class="row flex-grow-sm-1 flex-grow-0">

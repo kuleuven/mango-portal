@@ -681,6 +681,7 @@
 {% endblock body %}
 {% block javascript %}
   {{ super() }}
+  <script src="{{url_for('static', filename='dist/doms.js')}}"></script>
   <script>
 // start Mariana-code
 const tbody = document.querySelector('#browseTable tbody');
@@ -730,36 +731,59 @@ tbody_checkboxes.forEach((checkbox) => {
 function apply_bulk_operation() {
   const selected_option = document.querySelector('#collection-content select');
   const selected_items = [...tbody_checkboxes].filter((c) => c.checked).map((c) => c.value);
+  const n_collections = selected_items.filter((c) => c.startsWith('col-')).length;
+  const n_dobjects = selected_items.filter((c) => c.startsWith('dobj-')).length;
+  const n_collections_printed = `${n_collections} collection${n_collections > 1 ? "s" : ""}`;
+  const n_dobjects_printed = `${n_dobjects} data object${n_dobjects > 1 ? "s" : ""}`;
+  const n_items = n_collections == 0 // if there are only objects
+    ? n_dobjects_printed
+    : n_dobjects == 0 // if there are only collections
+    ? n_collections_printed 
+    : `${n_collections_printed} and ${n_dobjects_printed}`;
   if (selected_option.value == 'copy' || selected_option.value == 'move') {
     const offcanvas_dom = document.querySelector('.offcanvas#collection-tree');
-        const offcanvas = new bootstrap.Offcanvas(offcanvas_dom);
-        offcanvas_dom.querySelectorAll('input[type="radio"]')
-            .forEach((input) => input.addEventListener('change', () => {
-                offcanvas_dom.querySelectorAll('i.bi-folder-symlink-fill')
-                    .forEach((i) => i.remove());
-                const icon = document.createElement('i');
-                icon.className = 'bi bi-folder-symlink-fill ms-2';
-                icon.setAttribute('style', 'font-size:1.2rem;');
-                input.nextSibling.appendChild(icon);
-                icon.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const action = selected_option.value == 'copy' ? 'copied' : 'moved';
-                    const destination = input.value;
-                    console.log(destination)
-                    console.log(`The following items will be ${action} to "${destination}":`,
-                        selected_items);
+    const offcanvas = new bootstrap.Offcanvas(offcanvas_dom);
+    offcanvas_dom.querySelectorAll('input[type="radio"]')
+        .forEach((input) => input.addEventListener('change', () => {
+            offcanvas_dom.querySelectorAll('i.bi-folder-symlink-fill')
+                .forEach((i) => i.remove());
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-folder-symlink-fill ms-2';
+            icon.setAttribute('style', 'font-size:1.2rem;');
+            input.nextSibling.appendChild(icon);
+            icon.addEventListener('click', (e) => {
+                e.preventDefault();
+                const action = selected_option.value == 'copy' ? 'copied' : 'moved';
+                const destination = input.value;
+                const toast = new Toast(selected_option.value + '-items',
+                `${n_items} will be ${action} to "${destination}."`);
+                toast.show(() => {
+                    console.log('MOVED');
+                    offcanvas.toggle();
+                    select_all.checked = false;
+                    tbody_checkboxes.forEach((c) => c.checked = false);
+                    go_button.setAttribute('disabled', '');
+                    select_all.parentElement.removeChild(badge_counter);
                 });
-            }));
-        offcanvas.toggle();
+            });
+        }));
+    offcanvas.toggle();
   } else {
-    console.log("The following items will be deleted", selected_items);
+    const toast = new Toast(selected_option.value + '-items',
+    `${n_items} will be deleted.`);
+    toast.show(() => {
+      console.log('DELETED');
+      select_all.checked = false;
+      tbody_checkboxes.forEach((c) => c.checked = false);
+      go_button.setAttribute('disabled', '');
+      select_all.parentElement.removeChild(badge_counter);
+      });
   }
 }
 
 class OffCanvas {
   constructor(id) {
-    this.offcanvas = document.createElement('div');
-    this.offcanvas.className = 'offcanvas offcanvas-end';
+    this.offcanvas = Field.quick('div', 'offcanvas offcanvas-end');
     this.offcanvas.id = id;
     this.offcanvas.tabIndex = '-1';
     this.offcanvas.setAttribute('aria-labelledby', 'offcanvas-label');
@@ -770,18 +794,14 @@ class OffCanvas {
   }
 
   add_header() {
-    const offcanvas_header = document.createElement('div');
-    offcanvas_header.className = 'offcanvas-header';
+    const offcanvas_header = Field.quick('quick', 'offcanvas-header');
 
-    const offcanvas_h5 = document.createElement('h5');
-    offcanvas_h5.className = 'offcanvas-title';
+    const offcanvas_h5 = Field.quick('h5', 'offcanvas-label', 'Select destination collection');
     offcanvas_h5.id = 'offcanvas-label';
-    offcanvas_h5.innerHTML = 'Select collection';
     offcanvas_header.appendChild(offcanvas_h5);
 
-    const offcanvas_close = document.createElement('button');
+    const offcanvas_close = Field.quick('button', 'btn-close');
     offcanvas_close.type = 'button';
-    offcanvas_close.className = 'btn-close';
     offcanvas_close.setAttribute('data-bs-dismiss', 'offcanvas');
     offcanvas_close.setAttribute('aria-label', 'Close');
     offcanvas_header.appendChild(offcanvas_close);
@@ -790,8 +810,7 @@ class OffCanvas {
   }
 
   add_body() {
-    this.body = document.createElement('form');
-    this.body.className = 'offcanvas-body offcanvas-tree';
+    this.body = Field.quick('form', 'offcanvas-body offcanvas-tree');
 
     this.offcanvas.appendChild(this.body);
   }
@@ -824,9 +843,8 @@ class TreeElement {
   }
 
   create_input() {
-    const input = document.createElement('input');
+    const input = Field.quick('input', 'btn-check');
     input.type = 'radio';
-    input.className = 'btn-check';
     input.name = 'destination';
     input.id = this.id + '-radio';
     input.value = this.value;
@@ -842,16 +860,14 @@ class TreeElement {
   }
 
   create_label() {
-    const label = document.createElement('label');
-    label.className = 'btn btn-oc text-start';
+    const label = Field.quick('label', 'btn btn-oc text-start');
     label.setAttribute('for', this.id + '-radio');
     const collection_name = document.createElement('span');
     collection_name.innerHTML = this.label_name;
     label.appendChild(collection_name);
 
     if (this.has_children) {
-      let icon = document.createElement('i');
-      icon.className = 'bi bi-caret-right-fill me-2';
+      let icon = Field.quick('i', 'bi bi-caret-right-fill me-2');
       label.insertBefore(icon, collection_name);  
     }
 
@@ -863,8 +879,7 @@ class TreeElement {
       return;
     }
     
-    const collapse = document.createElement('div');
-    collapse.className = 'collapse ps-3 w-100';
+    const collapse = Field.quick('div', 'collapse ps-3 w-100');
     collapse.id = this.id + '-collapse';
     const icon = this.label.querySelector('i.bi');
 
@@ -893,8 +908,7 @@ class TreeElement {
   }
 
   static create_button_group() {
-    const button_group = document.createElement('div');
-    button_group.className = 'btn-group-vertical w-100';
+    const button_group = Field.quick('div', 'btn-group-vertical w-100');
     button_group.role = 'group';
     button_group.setAttribute('aria-label', 'Collection tree to select destination');
     return button_group;
