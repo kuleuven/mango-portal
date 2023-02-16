@@ -20,6 +20,7 @@ import irods.keywords
 from irods.user import iRODSUserGroup, UserGroup, User
 from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
+from irods.session import iRODSSession
 
 from PIL import Image
 from pdf2image import convert_from_path
@@ -556,7 +557,6 @@ def delete_data_object():
         signals.data_object_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object_path)
         flash(f"Data object {data_object_path} moved to trash", "success")
 
-
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
@@ -876,3 +876,81 @@ def empty_user_trash():
             request.referrer.split("#")[0] + request.values["redirect_hash"]
         )
     return redirect(url_for('browse_bp.collection_browse', collection=user_trash_path))
+
+browse_bp.route('/items/bulk', methods=["POST"])
+def bulk_operation_items():
+    """
+    """
+    def return_error(message):
+        flash(message, category="warning")
+        if "redirect_route" in request.values:
+            return redirect(request.values["redirect_route"])
+        if "redirect_hash" in request.values:
+            return redirect(
+                request.referrer.split("#")[0] + request.values["redirect_hash"]
+            )
+        return redirect(request.referrer)
+
+    if not ("items" in request.form):
+        return return_error("Missing selection")
+    if not ("action" in request.form):
+        return return_error("Don't know what you want to do!")
+    if (request.form["action"] in ["move", "copy"]) and not ("destination" in request.form):
+        return_error("Destination for move or copy is missing")
+
+    irods_session : iRODSSession = g.irods_session
+    irods_session.collections()
+
+    ITEM_TYPE_PART = {"data_object" : "dobj", "collection" : "col"}
+
+    if request.form["action"] in ["delete", "force_delete"]:
+        force_delete = True if request.form["action"] == "force_delete" else False
+        for item in request.form.getlist['items']:
+            match = re.match(r"(dobj|col)-(.*)", item)
+            if match:
+                (item_type, item_path) = (match.group(1), match.group(2))
+                if item_type == ITEM_TYPE_PART["data_object"]:
+                    irods_session.data_objects.get(item_path).unlink(force=force_delete)
+
+                    if force_delete:
+                        signals.data_object_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = item_path)
+                    else:
+                        signals.data_object_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = item_path)
+                if item_type == ITEM_TYPE_PART["collection"]:
+                    irods_session.collections.remove(item_path, force = force_delete)
+                    if force_delete:
+                        signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+                    else:
+                        signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+
+    if request.form["action"] == "move":
+        for item in request.form.getlist['items']:
+            match = re.match(r"(dobj|col)-(.*)", item)
+            if match:
+                (item_type, item_path) = (match.group(1), match.group(2))
+                if item_type == ITEM_TYPE_PART["data_object"]:
+                    irods_session.data_objects.move(item_path, request.form["destination"])
+                    signals.data_object_moved.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = item_path, destination_path = request.form["destination"])
+                if item_type == ITEM_TYPE_PART["collection"]:
+                    irods_session.collections.move(item_path, request.form["destination"])
+                    signals.collection_moved.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path, destination_path = request.form["destination"])
+
+    if request.form["action"] == "copy":
+        for item in request.form.getlist['items']:
+            match = re.match(r"(dobj|col)-(.*)", item)
+            if match:
+                (item_type, item_path) = (match.group(1), match.group(2))
+                if item_type == ITEM_TYPE_PART["data_object"]:
+                    irods_session.data_objects.copy(item_path, request.form["destination"])
+                    signals.data_object_copied.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = item_path, destination_path = request.form["destination"])
+                # if item_type == ITEM_TYPE_PART["collection"]:
+                #     irods_session.collections.move(item_path, request.form["destination"])
+                #     signals.collection_moved.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path, destination_path = request.form["destination"])
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+        return redirect(request.referrer)
