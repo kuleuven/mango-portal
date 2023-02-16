@@ -919,9 +919,9 @@ def bulk_operation_items():
                 if item_type == ITEM_TYPE_PART["collection"]:
                     irods_session.collections.remove(item_path, force = force_delete)
                     if force_delete:
-                        signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+                        signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path)
                     else:
-                        signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+                        signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path)
 
     if request.form["action"] == "move":
         for item in request.form.getlist['items']:
@@ -953,4 +953,4 @@ def bulk_operation_items():
         return redirect(
             request.referrer.split("#")[0] + request.values["redirect_hash"]
         )
-        return redirect(request.referrer)
+    return redirect(request.referrer)
