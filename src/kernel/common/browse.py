@@ -922,6 +922,7 @@ def bulk_operation_items():
                         signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path)
                     else:
                         signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path)
+        flash(f"Successfully deleted {len(items)} items", "success")
 
     if request.form["action"] == "move":
         for item in request.form.getlist['items']:
@@ -934,6 +935,7 @@ def bulk_operation_items():
                 if item_type == ITEM_TYPE_PART["collection"]:
                     irods_session.collections.move(item_path, request.form["destination"])
                     signals.collection_moved.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path, destination_path = request.form["destination"])
+        flash(f"Successfully moved {len(items)} items", "success")
 
     if request.form["action"] == "copy":
         for item in request.form.getlist['items']:
@@ -946,6 +948,7 @@ def bulk_operation_items():
                 # if item_type == ITEM_TYPE_PART["collection"]:
                 #     irods_session.collections.move(item_path, request.form["destination"])
                 #     signals.collection_moved.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path, destination_path = request.form["destination"])
+        flash(f"Successfully copied {len(items)} items", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
