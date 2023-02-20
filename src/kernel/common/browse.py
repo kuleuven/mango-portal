@@ -47,6 +47,9 @@ from multidict import MultiDict
 from operator import itemgetter
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
+# proxy so it can also be imported in blueprints from csrf.py independently
+from csrf import csrf
+
 from kernel.metadata_schema.editor import get_metadata_schema_dir
 import signals
 
@@ -877,7 +880,8 @@ def empty_user_trash():
         )
     return redirect(url_for('browse_bp.collection_browse', collection=user_trash_path))
 
-browse_bp.route('/items/bulk', methods=["POST"])
+@browse_bp.route('/items/bulk', methods=["POST"])
+@csrf.exempt
 def bulk_operation_items():
     """
     """
@@ -899,13 +903,13 @@ def bulk_operation_items():
         return_error("Destination for move or copy is missing")
 
     irods_session : iRODSSession = g.irods_session
-    irods_session.collections()
+    irods_session.collections
 
     ITEM_TYPE_PART = {"data_object" : "dobj", "collection" : "col"}
 
     if request.form["action"] in ["delete", "force_delete"]:
         force_delete = True if request.form["action"] == "force_delete" else False
-        for item in request.form.getlist['items']:
+        for item in request.form.getlist('items'):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
                 (item_type, item_path) = (match.group(1), match.group(2))
@@ -922,10 +926,10 @@ def bulk_operation_items():
                         signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path)
                     else:
                         signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path)
-        flash(f"Successfully deleted {len(items)} items", "success")
+        flash(f"Successfully deleted {len(request.form.getlist('items'))} items", "success")
 
     if request.form["action"] == "move":
-        for item in request.form.getlist['items']:
+        for item in request.form.getlist('items'):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
                 (item_type, item_path) = (match.group(1), match.group(2))
@@ -935,10 +939,10 @@ def bulk_operation_items():
                 if item_type == ITEM_TYPE_PART["collection"]:
                     irods_session.collections.move(item_path, request.form["destination"])
                     signals.collection_moved.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path, destination_path = request.form["destination"])
-        flash(f"Successfully moved {len(items)} items", "success")
+        flash(f"Successfully moved {len(request.form.getlist('items'))} items", "success")
 
     if request.form["action"] == "copy":
-        for item in request.form.getlist['items']:
+        for item in request.form.getlist('items'):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
                 (item_type, item_path) = (match.group(1), match.group(2))
@@ -948,7 +952,7 @@ def bulk_operation_items():
                 # if item_type == ITEM_TYPE_PART["collection"]:
                 #     irods_session.collections.move(item_path, request.form["destination"])
                 #     signals.collection_moved.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path, destination_path = request.form["destination"])
-        flash(f"Successfully copied {len(items)} items", "success")
+        flash(f"Successfully copied {len(request.form.getlist('items'))} items", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
