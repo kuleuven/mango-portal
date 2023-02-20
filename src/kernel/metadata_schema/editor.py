@@ -79,7 +79,7 @@ def metadata_schemas(realm):
         del session["current_schema_editor_realm"]
 
     return render_template(
-        "metadata_template_module.html.j2", realms=realms, realm=realm
+        "metadata_schema_module.html.j2", realms=realms, realm=realm
     )
 
 

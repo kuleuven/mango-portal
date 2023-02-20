@@ -19,7 +19,8 @@
                     <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
                 {% endfor %}
                 <link href="{{ url_for('static', filename='dist/mdschema.css') }}"
-                      rel="stylesheet">
-            {% endif %}
-        </main>
-    {% endblock %}
+                      rel="stylesheet"/>
+            </div>
+        {% endif %}
+    </main>
+{% endblock body %}
