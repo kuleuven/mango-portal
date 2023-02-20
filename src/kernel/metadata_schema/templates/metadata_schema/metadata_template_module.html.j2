@@ -2,14 +2,24 @@
 {% block body %}
     <main>
         <h1>Metadata schema manager</h1>
-        <div id="metadata_template_list_container">
-        {% set first = "metadata_schema_editor_bp" %}
-        {% set mdt = "meta_data_template" %}
-        <url-list new="{{ url_for('{}.new_{}'.format(first, mdt)) }}" list="{{ url_for('{}.list_{}s'.format(first, mdt)) }}"></url-list>
-        {% for file in ['doms', 'fields', 'schema', 'httprequests', 'manager'] %}
-        <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
-        {% endfor %}
-        <link href="{{ url_for('static', filename='dist/mdschema.css') }}"
-              rel="stylesheet">
-    </main>
-{% endblock %}
+        {% if not realm %}
+            <h4>Please choose a realm from the list below</h4>
+            <div class="list-group realms">
+                {% for realm in realms %}
+                    <a href="{{ url_for('metadata_schema_editor_bp.metadata_schemas', realm=realm)}}"
+                       class="list-group-item">{{ realm }}</a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div id="metadata_template_list_container">
+                {% set blueprint = "metadata_schema_editor_bp" %}
+                {% set mdt = "meta_data_template" %}
+                <url-list new="{{ url_for('{}.save_schema'.format(blueprint)) }}" list="{{ url_for('{}.list_meta_data_schemas'.format(blueprint)) }}"></url-list>
+                {% for file in ['doms', 'fields', 'schema', 'httprequests', 'manager'] %}
+                    <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
+                {% endfor %}
+                <link href="{{ url_for('static', filename='dist/mdschema.css') }}"
+                      rel="stylesheet">
+            {% endif %}
+        </main>
+    {% endblock %}
