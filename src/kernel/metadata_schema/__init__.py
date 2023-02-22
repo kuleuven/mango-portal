@@ -115,7 +115,7 @@ class FileSystemSchemaManager:
             "draft_name": sorted(draft_files)[-1].name if draft_count >= 1 else "",
             "timestamp": schema_dir.stat().st_mtime,
             "versions_sorted": versions_sorted,
-            "latest_version": versions_sorted[-1],
+            "latest_version": versions_sorted[-1] if total_count > 0 else "",
             "realm": self.realm,
             "title": title,
         }
@@ -160,8 +160,10 @@ class FileSystemSchemaManager:
                 f"{schema_name}*{status}.json"
             )
         if version:
-            schema_paths = self._get_schema_path(schema_name).glob(
-                f"*{schema_name}*{version}*{status}.json"
+            schema_paths = list(
+                self._get_schema_path(schema_name).glob(
+                    f"*{schema_name}*{version}*{status}.json"
+                )
             )
         if len(schema_paths) >= 1:
             return sorted(schema_paths)[-1].read_text()
