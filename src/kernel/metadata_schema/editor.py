@@ -138,6 +138,7 @@ def save_schema():
             title=request.form["title"],
             username=g.irods_session.username,
         )
+    return redirect(request.referrer)
 
 
 @metadata_schema_editor_bp.route("/metadata-schema/delete", methods=["POST", "DELETE"])
