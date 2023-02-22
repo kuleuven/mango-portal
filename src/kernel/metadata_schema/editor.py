@@ -149,9 +149,23 @@ def delete_meta_data_schema():
     if "realm" in request.form:
         schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
         if request.form["with_status"] != "draft":
-            return False
+            abort(400, "Can only delete draft versions of schemas")
         return schema_manager.delete_draft_schema(
             schema_name=request.form["schema_name"]
         )
+
+    return redirect(request.referrer)
+
+
+@metadata_schema_editor_bp.route("/metadata-schema/archive", methods=["POST"])
+@csrf.exempt
+def archive_meta_data_schema():
+    """ """
+    if "realm" in request.form:
+        schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
+        if request.form["with_status"] != "published":
+            abort(400, "Can only archive published versions of schemas")
+
+        schema_manager.archive_published_schema(schema_name=request.form["schema_name"])
 
     return redirect(request.referrer)
