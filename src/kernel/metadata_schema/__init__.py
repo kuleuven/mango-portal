@@ -166,6 +166,7 @@ class FileSystemSchemaManager:
         current_version="auto-major",
         with_status="draft",
         title="MISSING TITLE",
+        username="unknown"
     ):
         current_schema_info = self.get_schema_info(schema_name)
         if with_status == "draft":
@@ -182,7 +183,7 @@ class FileSystemSchemaManager:
                                 "version": current_schema_info["latest_version"],
                                 "status": with_status,
                                 "schema": raw_schema,
-                                "edited_by": g.irods_session.username,
+                                "edited_by": username,
                                 "realm": self.realm,
                                 "title": title,
                             }
@@ -205,7 +206,7 @@ class FileSystemSchemaManager:
                                 "version": current_version,
                                 "status": with_status,
                                 "schema": raw_schema,
-                                "edited_by": g.irods_session.username,
+                                "edited_by": username,
                                 "realm": self.realm,
                                 "title": title,
                             }
@@ -233,7 +234,7 @@ class FileSystemSchemaManager:
                             "version": current_version,
                             "status": with_status,
                             "schema": raw_schema,
-                            "edited_by": g.irods_session.username,
+                            "edited_by": username,
                             "realm": self.realm,
                             "title": title,
                         }
