@@ -19,6 +19,7 @@ import json
 import irods
 import pytz
 import bleach
+import humanize
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -42,7 +43,6 @@ import platform
 
 
 from irods_zones_config import (
-    openid_providers,
     irods_zones,
     DEFAULT_IRODS_PARAMETERS,
     DEFAULT_SSL_PARAMETERS,
@@ -60,7 +60,6 @@ app = Flask(__name__)
 
 
 app.config.from_pyfile("config.py")
-app.config["openid_providers"] = openid_providers
 app.config["irods_zones"] = irods_zones
 
 
@@ -70,6 +69,14 @@ if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.mango_open_search.search import mango_open_search_bp
     from plugins.mango_open_search.admin import mango_open_search_admin_bp
     from plugins.mango_open_search.api import mango_open_search_api_bp
+
+if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+    from plugins.data_platform import update_zone_info
+    update_zone_info(app.config["irods_zones"])
+
+    from plugins.data_platform.user import data_platform_user_bp
+    from plugins.data_platform.project import data_platform_project_bp
+    from plugins.data_platform.autocomplete import data_platform_autocomplete_bp
 
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 irods_sessions = {}
@@ -118,6 +125,11 @@ with app.app_context():
         app.register_blueprint(mango_open_search_admin_bp)
         app.register_blueprint(mango_open_search_api_bp)
 
+    if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        app.register_blueprint(data_platform_user_bp)
+        app.register_blueprint(data_platform_project_bp)
+        app.register_blueprint(data_platform_autocomplete_bp)
+
 
 @app.context_processor
 def dump_variable():
@@ -142,11 +154,21 @@ def init_and_secure_views():
     if request.endpoint in [
         "static",
         "user_bp.login_basic",
-        "user_bp.login_openid",
-        "user_bp.login_zone",
-        "user_bp.login_openid_callback",
-        "user_bp.login_openid_select_zone",
-        "user_bp.login_via_go_callback",
+        "data_platform_user_bp.login_openid",
+        "data_platform_user_bp.login_openid_callback",
+        "data_platform_user_bp.login_openid_select_zone",
+        "data_platform_user_bp.logout_openid",
+        "data_platform_user_bp.connection_info_modal",
+        "data_platform_user_bp.drop_permissions",
+        "data_platform_project_bp.project",
+        "data_platform_project_bp.add_project_member",
+        "data_platform_project_bp.delete_project_member",
+        "data_platform_project_bp.deploy_project",
+        "data_platform_project_bp.api_token",
+        "data_platform_project_bp.add_irods_project",
+        "data_platform_project_bp.add_generic_project",
+        "data_platform_project_bp.modify_project",
+        "data_platform_autocomplete_bp.autocomplete_username",
     ]:
         return None
 
@@ -181,7 +203,7 @@ def init_and_secure_views():
 
         return None
 
-    if current_app.config["MANGO_AUTH"] in ["basic", "openid", "via_callback"]:
+    else:
         irods_session = None
         if not "userid" in session:
             print(f"No user id in session, need auth")
@@ -193,8 +215,8 @@ def init_and_secure_views():
                 parameters = DEFAULT_IRODS_PARAMETERS.copy()
                 ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
                 zone = session["zone"]
-                parameters.update(irods_zones[zone]["parameters"])
-                ssl_settings.update(irods_zones[zone]["ssl_settings"])
+                parameters.update(app.config["irods_zones"][zone]["parameters"])
+                ssl_settings.update(app.config["irods_zones"][zone]["ssl_settings"])
                 irods_session = iRODSSession(
                     user=session["userid"],
                     password=session["password"],
@@ -218,12 +240,7 @@ def init_and_secure_views():
             g.mango_server_info = mango_server_info
             return None
         else:
-            if current_app.config["MANGO_AUTH"] == "basic":
-                return redirect(url_for("user_bp.login_basic"))
-            if current_app.config["MANGO_AUTH"] == "openid":
-                return redirect(url_for("user_bp.login_openid"))
-            if current_app.config["MANGO_AUTH"] == "via_callback":
-                return redirect(url_for("user_bp.login_zone"))
+            return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
 
 
 @app.after_request
@@ -262,6 +279,13 @@ def format_timestamp(ts):
 def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
 
+@app.template_filter("format_size")
+def format_size(size):
+    return humanize.naturalsize(size)
+
+@app.template_filter("format_intword")
+def format_intword(size):
+    return humanize.intword(size)
 
 @app.route("/")
 def index():

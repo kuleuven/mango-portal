@@ -1,0 +1,577 @@
+{% extends "base_openid.html.j2" %}
+
+{% block custom_style %}
+<link href="{{ url_for('static', filename='css/autocompleteBS.css') }}" rel="stylesheet" />
+<script src="{{ url_for('static', filename='js/autocompleteBS.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+{% set can_edit = project['my_role'] == 'manager' or project['my_role'] == 'responsible' or admin %}
+{% set opts = {'folder-layout': 'v1'} %}
+{% for opt in project['platform_options'] %}
+{% if opts.update({opt['key']: opt['value']}) %}{% endif %}
+{% endfor %}
+{% set zone = {} %}
+{% for z in zones %}
+{% if z['jobid'] == opts['zone-jobid'] %}
+{% if zone.update(z) %}{% endif %}
+{% endif %}
+{% endfor %}
+   <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+          <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">{{ project['name'] }}</li>
+    </ol>
+  </nav>
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-header">
+          <h1 class="bi bi-archive display-1"></h1>
+        </div>
+        <table class="table">
+          <tr>
+            <th>Project name</th>
+            <td>{{ project['name'] }}</td>
+          </tr>
+          {% if project['archived'] %}
+          <tr>
+            <th>Status</th>
+            <td>Archived</td>
+          </tr>
+          {% elif not status['provisioned'] %}
+          <tr>
+            <th>Status</th>
+            <td>Changes pending in {{ project['platform']|replace('generic', 'the globus share storage') }}</td>
+          </tr>
+          {% endif %}
+          <tr>
+            <th>Description</th>
+            <td>
+            {{ project['description'] }}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th>Platform</th>
+            <td>
+            {{ project['platform'] }} 
+            {% if 'zone' in zone %}
+            (zone {{ zone['zone'] }})
+            {% endif %}
+            </td>
+          </tr>
+          {% if project['platform'] == "irods" and 'zone' in zone and project['my_role'] != '' and not project['archived'] %}
+          <tr>
+            <th>Home folder</th>
+            <td>
+              <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="irods_zone" value="{{ zone['zone'] }}" />
+                {% if opts['folder-layout'] == 'v0' %}
+                <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/home/{{ project['name'] }}" />
+                {% else %}
+                <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/projects/{{ project['name'] }}/data" /><br />
+                <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/projects/{{ project['name'] }}/ingress" /><br />
+                <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/projects/{{ project['name'] }}/egress" />
+                {% endif %}
+              </form>
+            </td>
+          </tr>
+          {% endif %}
+          <tr>
+            <th>Size</th>
+            <td>{{ status['used_size']|format_size }} of {{ project['quota_size']|format_size }} used
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+
+            {% if project['quota_size'] > 0 %}
+            <div class="progress">
+              <div class="progress-bar{% if status['used_size'] > project['quota_size'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_size'] * 100 / project['quota_size'] }}%" aria-valuenow="{{ status['used_size'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_size'] }}"></div>
+            </div>
+            {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th>Inodes</th>
+            <td>{{ status['used_inodes']|format_intword }} of {{ project['quota_inodes']|format_intword }} inodes used
+            {% if project['platform'] == 'irods' %}
+            ({{ status['platform_info']['object_count'] }} objects, 
+            {{ status['platform_info']['coll_count'] }} collections, 
+            {{ status['platform_info']['meta_count'] }} metadata records) 
+            {% endif %}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+
+            {% if project['quota_inodes'] > 0 %}
+            <div class="progress">
+              <div class="progress-bar{% if status['used_inodes'] > project['quota_inodes'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_inodes'] * 100 / project['quota_inodes'] }}%" aria-valuenow="{{ status['used_inodes'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_inodes'] }}"></div>
+            </div>
+            {% endif %}
+            </td>
+          </tr>
+        </table>
+        <table class="table table-hover">
+          <tr>
+            <th>Username</th>
+            <th>Name</th>
+            <th>Role</th>
+            {% if can_edit %}
+            <th></th>
+            <th></th>
+            {% endif %}
+          </tr>
+          {% for member in project['members'] %}
+          <tr>
+            <td>{{ member['username'] }}</td>
+            <td>{{ member['name'] }}</td>
+            <td>{{ member['role'] }}</td>
+            {% if can_edit and not admin and (member['role'] == 'responsible' and (project['my_role'] != 'responsible' or project['responsibles'] <= 1) or member['role'] == 'support') %}
+            <td></td>
+            <td></td>
+            {% elif can_edit %}
+            <td>
+              <a href="#" data-bs-toggle="modal" data-bs-target="#editMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-pencil"></i></a>
+            </td>
+            <td>
+              <a class="text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-trash"></i></a>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </table>
+        {% if can_edit %}
+        <div>
+        <form action="{{ url_for('data_platform_project_bp.deploy_project') }}" method="post" class="m-2 mt-0">
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMember">
+              Add member
+          </button>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="project" value="{{ project['name'] }}" />
+          {% if project['archived'] %}
+          {% if admin %}
+          <input type="submit" name="submit" value="Unarchive" class="btn btn-block btn-primary"/>
+          {% endif %}
+          {% else %}
+          {% if not status['provisioned'] %}
+          <input type="submit" name="submit" value="Apply changes in {{ project['platform']|replace('generic', 'the globus share storage') }}" class="btn btn-block btn-primary"/>
+          {% endif %}
+          {% if admin %}
+          <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#archiveProject">
+              Archive
+          </button>
+          <div class="modal fade"
+              id="archiveProject"
+              tabindex="-1"
+              aria-labelledby="archiveProjectLabel"
+              aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="archiveProjectLabel">
+                    Archive project
+                  </h5>
+                  <button type="button"
+                          class="btn-close"
+                          data-bs-dismiss="modal"
+                          aria-label="Close">
+                  </button>
+                </div>
+                  <div class="modal-body">
+                    Archiving a project means that access to the data will no longer be possible for all members, but the data is not automatically cleaned up. API tokens will be revoked, and cannot be restored if the project is unarchived later.
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                      Cancel
+                    </button>
+                    <input type="submit" name="submit" value="Archive" class="btn btn-danger" />
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          {% endif %}
+        </form>
+        </div>
+        {% endif %}
+        <div>
+        {% if project['platform'] == 'irods' and not project['archived'] %}
+        <table class="table table-hover">
+          <tr>
+            <th>API Token Username</th>
+            <th>Default permissions</th>
+            <th>Expiration</th>
+            {% if can_edit %}
+            <th></th>
+            {% endif %}
+          </tr>
+          {% for token in project['machine_tokens'] %}
+          <tr>
+            <td class="align-middle">{{ project['name'] }}_{{ token['type'] }}</td>
+            <td class="align-middle">{{ token['default_permission'] }}</td>
+            <td class="align-middle">{% if token['isset'] %}{{ token['expiration']|format_time }}{% else %}Not activated{% endif %}</td>
+            {% if can_edit %}
+            <td>
+              <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = token['type'])}}">Retrieve API token</a>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </table>
+        {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add member model -->
+  <div class="modal fade"
+       id="addMember"
+       tabindex="-1"
+       aria-labelledby="addMemberLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addMemberLabel">
+            Add member
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.add_project_member') }}""
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="username-add" class="col-form-label">
+                Username
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="username-add"
+                     name="username"
+                     required autocomplete="off" pattern="^vsc[0-9]{5}$|^[urbcms][0-9]{7}$" />
+              <div class="invalid-feedback">
+                A valid username is required, e.g. {% if session['openid_provider'] == 'vsc' %}vsc12345{% else %}u0123456{% endif %}.
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="role-add" class="col-form-label">
+                Role
+              </label>
+              <select
+                     class="form-select"
+                     id="role-add"
+                     name="role"
+                     required>
+                  <option value="member">member</option>
+                  <option value="manager">manager</option>
+                  {% if project['my_role'] == 'responsible' or admin %}
+                  <option value="responsible">responsible</option>
+                  {% endif %}
+                  {% if admin %}
+                  <option value="support">support</option>
+                  {% endif %}
+              </select>
+              <div class="invalid-feedback">
+                A value is required for adding a member
+              </div>
+            </div>
+            <input type="hidden"
+                   id="project-add-member"
+                   name="project"
+                   value="{{ project['name']}}"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Add
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!--Edit member modal -->
+  <div class="modal fade"
+       id="editMember"
+       tabindex="-1"
+       aria-labelledby="editMemberLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editMemberLabel">
+            Update Membership
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.add_project_member') }}""
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="username" class="col-form-label">
+                Username
+              </label>
+              <input type="text"
+                     class="form-control-plaintext"
+                     id="username"
+                     name="username"
+                     required readonly />
+              <div class="invalid-feedback">
+                Username is required
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="role" class="col-form-label">
+                Role
+              </label>
+              <select
+                     class="form-select"
+                     id="role"
+                     name="role"
+                     required>
+                  <option value="member">member</option>
+                  <option value="manager">manager</option>
+                  {% if project['my_role'] == 'responsible' or admin %}
+                  <option value="responsible">responsible</option>
+                  {% endif %}
+                  {% if admin %}
+                  <option value="support">support</option>
+                  {% endif %}
+              </select>
+              <div class="invalid-feedback">
+                Role is required
+              </div>
+            </div>
+            <input type="hidden"
+                   id="project-edit-member"
+                   name="project"
+                   value="{{ project['name']}}"/>
+            <input type="hidden"
+                   id="orig-role"
+                   name="orig-role"
+                   value=""/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Delete modal -->
+  <div class="modal fade"
+       id="deleteMember"
+       tabindex="-1"
+       aria-labelledby="deleteMemberLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteMemberLabel">
+            Delete Membership
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.delete_project_member') }}"
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="username-delete" class="col-form-label">
+                Username
+              </label>
+              <input type="text"
+                     class="form-control-plaintext"
+                     id="username-delete"
+                     name="username"
+                     required readonly />
+              <div class="invalid-feedback">
+                Username is required
+              </div>
+            </div>
+            <input type="hidden"
+                   id="project-delete-member"
+                   name="project"
+                   value="{{ project['name']}}"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-danger" type="submit">
+              Delete
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modify project modal -->
+  <div class="modal fade"
+       id="modifyProject"
+       tabindex="-1"
+       aria-labelledby="modifyProjectLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteMemberLabel">
+            Modify project settings
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.modify_project') }}"
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="description" class="col-form-label">
+                Description
+              </label>
+              <input type="text"
+                     class="form-control"
+                     name="description"
+                     value="{{ project['description'] }}" />
+              <div class="invalid-feedback">
+                Description is required
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="description" class="col-form-label">
+                Max Size (bytes)
+              </label>
+              <input type="number"
+                     class="form-control"
+                     name="quota_size"
+                     value="{{ project['quota_size'] }}" />
+              <div class="invalid-feedback">
+                Value for size quota is required
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="description" class="col-form-label">
+                Max Inodes
+              </label>
+              <input type="number"
+                     class="form-control"
+                     name="quota_inodes"
+                     value="{{ project['quota_inodes'] }}" />
+              <div class="invalid-feedback">
+                Value for inodes quota is required
+              </div>
+            </div>
+            <input type="hidden"
+                   id="project-modify"
+                   name="project"
+                   value="{{ project['name']}}"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  var editMember = document.getElementById('editMember')
+  editMember.addEventListener('show.bs.modal', function (event) {
+    // Button that triggered the modal
+    var button = event.relatedTarget
+    // Extract info from data-bs-* attributes
+    var fieldUsername = button.getAttribute('data-bs-username')
+    var fieldRole = button.getAttribute('data-bs-role')
+  
+    var modalBodyInputUsername = editMember.querySelector('#username')
+    var modalBodyInputRole = editMember.querySelector('#role')
+    var modalBodyInputOrigRole = editMember.querySelector('#orig-role')
+
+    modalBodyInputUsername.value = fieldUsername
+    modalBodyInputRole.value = fieldRole
+    modalBodyInputOrigRole.value = fieldRole
+  });
+
+  var deleteMember = document.getElementById('deleteMember')
+  deleteMember.addEventListener('show.bs.modal', function (event) {
+    // Button that triggered the modal
+    var button = event.relatedTarget
+    // Extract info from data-bs-* attributes
+    var fieldUsername = button.getAttribute('data-bs-username')
+
+    var modalBodyInputUsername = deleteMember.querySelector('#username-delete')
+
+    modalBodyInputUsername.value = fieldUsername
+  });
+  </script>
+
+  <script>
+    const autoCompleteConfig = [{
+        name: 'Username lookup',
+        debounceMS: 250,
+        minLength: 3,
+        maxResults: 10,
+        inputSource: document.getElementById('username-add'),
+        targetID: document.getElementById('username-add'),
+        fetchURL: '/data-platform/autocomplete/username/{term}',
+        fetchMap: {id: "username",
+                  name: "label"}
+      }
+    ];
+
+    console.log(autoCompleteConfig);
+
+    // Initiate Autocomplete to Create Listeners
+    autocompleteBS(autoCompleteConfig);
+  </script>
+{% endblock body %}

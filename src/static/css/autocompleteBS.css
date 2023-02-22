@@ -1,0 +1,38 @@
+/*the container must be positioned relative:*/
+.autocompleteBS {
+  position: relative;
+  /*display: inline-block;*/
+}
+
+.autocompleteBS-items {
+  position: absolute;
+  border: 1px solid #d4d4d4;
+  border-bottom: none;
+  border-top: none;
+  z-index: 99;
+  left: var(--bs-modal-padding);
+  right: var(--bs-modal-padding);
+}
+
+.autocompleteBS-items div {
+  padding: 10px;
+  cursor: pointer;
+  background-color: #fff; 
+  border-bottom: 1px solid #d4d4d4; 
+}
+
+/*when hovering an item:*/
+.autocompleteBS-items div:hover {
+  background-color: #e9e9e9; 
+}
+
+.autocompleteBS-items div span {
+  min-width: 50%;
+  display: inline-block;
+}
+
+/*when navigating through the items using the arrow keys:*/
+.autocompleteBS-active {
+  background-color:  #d4d4d4 !important; 
+  color: #ffffff;
+}

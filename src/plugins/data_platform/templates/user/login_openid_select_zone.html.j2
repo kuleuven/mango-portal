@@ -1,0 +1,361 @@
+{% extends "base_openid.html.j2" %}
+
+{% block body %}
+    <h3>Login to Mango, your Active Data Portal</h3>
+
+    {% if projects|length == 0 %}
+    <p class="mt-4">You have no active project registered. Please contact the service desk for more information about ManGO.</p>
+    {% else %}
+    <p class="mb-4">Please select the zone/project you want to login to:</p>
+
+   
+        <div class="accordion" id="accordion">
+            {% for zone_name in zones %}
+            <div class="accordion-item">
+                <h4 class="accordion-header" id="#{{ zone_name }}Header" style="position: relative">
+                    {% if zone_name in my_zones %}
+                    <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}" method="post" style="position: absolute; z-index: 99; top: 3px; right: 60px">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="irods_zone" value="{{ zone_name }}" />
+                        <input type="submit" name="submit" value="Enter portal" class="btn btn-block btn-primary m-1"/>
+                        <!--<input type="submit" name="submit" value="How to connect" class="btn btn-block btn-primary m-1"/>-->
+                        <button type="button" class="btn btn-block btn-primary m-1" data-bs-toggle="modal" data-bs-target="#connectInformation" data-zone="{{ zone_name }}">
+                            How to connect
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#{{ zone_name }}" aria-expanded="false" aria-controls="{{ zone_name }}">
+                        iRODS zone {{ zone_name }}
+                    </button>
+                </h4>
+
+                <div id="{{ zone_name }}" class="accordion-collapse collapse" aria-labelledby="{{ zone_name }}Header" data-parent="#accordion">
+                <div class="accordion-body">
+                
+                <table class="table table-striped table-hover mt-2 mb-0">
+                  <colgroup>
+                    <col class="col-md-4" />
+                    <col class="col-md-2" />
+                    <col class="col-md-2" />
+                    <col class="col-md-4" />
+                  </colgroup>
+                  <thead>
+                    <th>Project</th>
+                    <th>Status</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                  </thead>
+                  <tbody>
+                {% for project in projects %}
+                {% if project['zone'] == zone_name %}
+                    <tr>
+                      <td class="bi bi-folder fs-6 align-middle">
+                        <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
+                      </td>
+                      <td class="fs-6 align-middle">
+                        {% if project['archived'] %}
+                        archived
+                        {% else %}
+                        active
+                        {% endif %}
+                      </td>
+                      <td class="fs-6 align-middle">
+                        {{project['my_role']}}
+                      </td>
+                      <td class="text-nowrap">
+                        {% if (project['my_role'] == 'responsible' or project['my_role'] == 'manager' or admin) and not project['archived'] %}
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = "ingress")}}">Retrieve API token</a>
+                        {% else %}
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
+                        {% endif %}
+                      </td>
+                    </tr>
+                {% endif %}
+                {% endfor %}
+                  </tbody>
+                </table>
+                </div>
+                </div>
+            </div>
+            {% endfor %}
+
+
+            {% for platform in other_platforms %}
+            <div class="accordion-item">
+                <h4 class="accordion-header" id="#{{ platform }}Header" style="position: relative">
+                    <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#{{ platform }}" aria-expanded="false" aria-controls="{{ platform }}">
+                        {{ platform|replace('generic', 'Globus Shares') }}
+                    </button>
+                </h4>
+
+                <div id="{{ platform }}" class="accordion-collapse collapse" aria-labelledby="{{ platform }}Header" data-parent="#accordion">
+                <div class="accordion-body">
+                
+                <table class="table table-striped table-hover mt-2 mb-0">
+                  <colgroup>
+                    <col class="col-md-4" />
+                    <col class="col-md-2" />
+                    <col class="col-md-2" />
+                    <col class="col-md-4" />
+                  </colgroup>
+                  <thead>
+                    <th>Project</th>
+                    <th>Status</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                  </thead>
+                  <tbody>
+                {% for project in projects %}
+                {% if project['platform'] == platform %}
+                    <tr>
+                      <td class="bi bi-folder fs-6 align-middle">
+                        <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
+                      </td>
+                      <td class="fs-6 align-middle">
+                        {% if project['archived'] %}
+                        archived
+                        {% else %}
+                        active
+                        {% endif %}
+                      </td>
+                      <td class="fs-6 align-middle">
+                        {{project['my_role']}}
+                      </td>
+                      <td class="text-nowrap">
+                        {% if (project['my_role'] == 'responsible' or project['my_role'] == 'manager' or admin) and not project['archived'] %}
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
+                        {% else %}
+                        <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
+                        {% endif %}
+                      </td>
+                    </tr>
+                {% endif %}
+                {% endfor %}
+                  </tbody>
+                </table>
+                </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if admin %}
+    <div class="mt-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRodsProject">
+            Add iRODS project
+        </button>
+
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGenericProject">
+            Add globus share
+        </button>
+    </div>
+
+    <!-- Add project model -->
+    <div class="modal fade"
+        id="addRodsProject"
+        tabindex="-1"
+        aria-labelledby="addRodsProjectLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="addRodsProjectLabel">
+                Add iRODS project
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <form action="{{ url_for('data_platform_project_bp.add_irods_project') }}""
+                method="post"
+                enctype="multipart/form-data"
+                class="row g-3 needs-validation"
+                novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="modal-body">
+                <div class="mb-3">
+                <label for="name" class="col-form-label">
+                    Project name
+                </label>
+                <input type="text"
+                        class="form-control"
+                        id="name"
+                        name="name"
+                        required pattern="^[a-zA-Z0-9-_]*$" />
+                <div class="invalid-feedback">
+                    A valid project name is required. It may consist of <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>-</code> and <code>_</code> only.
+                </div>
+                </div>
+
+                <div class="mb-3">
+                <label for="zone" class="col-form-label">
+                    Zone
+                </label>
+                <select
+                     class="form-select"
+                     id="zone"
+                     name="zone"
+                     required>
+                  {% for zone in config['irods_zones'] %}
+                  <option value="{{ config['irods_zones'][zone]['jobid'] }}">{{ zone }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">
+                    An irods zone is required
+                </div>
+                </div>
+
+                <div class="mb-3">
+                <label for="layout" class="col-form-label">
+                    Folder layout
+                </label>
+
+                <div>
+                    <input type="radio" class="btn-check" name="layout" id="v0-layout" autocomplete="off" checked value="v0" />
+                    <label class="btn btn-outline-secondary" for="v0-layout">Single collection</label>
+
+                    <input type="radio" class="btn-check" name="layout" id="v1-layout" autocomplete="off" value="v1" />
+                    <label class="btn btn-outline-secondary" for="v1-layout">Structured subcollections</label>
+                </div>
+
+                <div class="invalid-feedback">
+                    An irods folder layout is required
+                </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+                </button>
+                <button class="btn btn-primary" type="submit">
+                Add
+                </button>
+            </div>
+            </form>
+        </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+        id="addGenericProject"
+        tabindex="-1"
+        aria-labelledby="addGenericProjectLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="addGenericProjectLabel">
+                Add globus share
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <form action="{{ url_for('data_platform_project_bp.add_generic_project') }}""
+                method="post"
+                enctype="multipart/form-data"
+                class="row g-3 needs-validation"
+                novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="modal-body">
+                <div class="mb-3">
+                <label for="name" class="col-form-label">
+                    Project name
+                </label>
+                <input type="text"
+                        class="form-control"
+                        id="name"
+                        name="name"
+                        required pattern="^[a-zA-Z0-9-_]*$" />
+                <div class="invalid-feedback">
+                    A valid project name is required. It may consist of <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>-</code> and <code>_</code> only.
+                </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+                </button>
+                <button class="btn btn-primary" type="submit">
+                Add
+                </button>
+            </div>
+            </form>
+        </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="modal fade"
+        id="connectInformation"
+        tabindex="-1"
+        aria-labelledby="connectInformationLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="connectInformationLabel">
+                How to connect
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <div class="modal-body" id="connectInformationBody">
+                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Close
+                </button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <script>
+        var connInfo = document.getElementById('connectInformation');
+        connInfo.addEventListener('show.bs.modal', function (event) {
+            //event.preventDefault(); // stops modal from being 
+            
+            // Button that triggered the modal
+            var button = event.relatedTarget
+            // Extract info from data-* attributes
+            var zone = button.getAttribute('data-zone')
+        
+            var body = connInfo.querySelector('#connectInformationBody')
+
+            body.innerHTML = "Loading..."
+
+            // Creating Our XMLHttpRequest object 
+            var xhr = new XMLHttpRequest();
+    
+            // Making our connection  
+            var url = '/data-platform/connection-info/modal/'+zone;
+            xhr.open("GET", url, true);
+    
+            // function execute after request is successful 
+            xhr.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    body.innerHTML = this.responseText;
+
+                    //let myModal = new bootstrap.Modal(document.getElementById('connectInformation'), {});
+                    //myModal.show();
+                }
+            }
+            
+            // Sending our request 
+            xhr.send()
+        });
+    </script>
+
+{% endblock body %}

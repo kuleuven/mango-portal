@@ -1,26 +1,26 @@
 <header class="py-3 mb-4 border-bottom shadow">
     <div class="container-fluid d-grid gap-3 align-items-center"
-         style="grid-template-columns: 1fr 2fr;">
+         style="grid-template-columns: 1fr 2fr">
         <div class="row">
             <a href="{{ url_for('index')}}"
                class="d-flex align-items-center col-3 mb-2 mb-lg-0 link-dark text-decoration-none">
-                {% if 'logo' in config.irods_zones[g.irods_session.zone] %}
+                {% if 'irods_session' in g and 'logo' in config.irods_zones[g.irods_session.zone] %}
                     <img class="logo"
                          alt="logo"
                          src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
                          width="137"
-                         style="margin: -10px;"/>
+                         style="margin: -10px"/>
                 {% else %}
                     <img class="logo"
                          alt="logo"
                          src="{{ url_for('static', filename='logo.svg') }}"
                          width="137"
-                         style="margin: -10px 10px;"/>
+                         style="margin: -10px 10px"/>
                     <img class="logo"
                          alt="logo"
                          src="{{ url_for('static', filename='mango-logo.svg') }}"
                          width="137"
-                         style="margin: -10px 0;"/>
+                         style="margin: -10px 0"/>
                 {% endif %}
             </a>
         </div>
@@ -37,37 +37,51 @@
                            required/>
                 </form>
             {% endif %}
-            <div class="flex-shrink-0 dropdown">
-                <a href="#"
-                   class="d-block link-dark text-decoration-none dropdown-toggle"
-                   id="dropdownUser"
-                   data-bs-toggle="dropdown"
-                   aria-expanded="false">
-                    {{ g.irods_session.username }} <i class="bi bi-person-circle fs-4"></i>
-                </a>
-                <ul class="dropdown-menu text-small shadow"
-                    aria-labelledby="dropdownUser">
-                    <li>
-                        <a class="dropdown-item disabled" href="#">Preferences</a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('user_bp.my_profile')}}">My profile</a>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    {% if config['MANGO_AUTH'] in ['basic', 'openid', 'via_callback'] %}
+            {% if 'irods_session' in g %}
+                <div class="flex-shrink-0 dropdown">
+                    <a href="#"
+                       class="d-block link-dark text-decoration-none dropdown-toggle"
+                       id="dropdownUser"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false">
+                        {{ g.irods_session.username }} <i class="bi bi-person-circle fs-4"></i>
+                    </a>
+                    <ul class="dropdown-menu text-small shadow mango-profile"
+                        aria-labelledby="dropdownUser">
                         <li>
-                            <a class="dropdown-item" href="{{ url_for('user_bp.logout_basic') }}">Sign out</a>
+                            <a class="dropdown-item disabled" href="#">Preferences</a>
                         </li>
-                    {% else %}
                         <li>
-                            <a class="dropdown-item disabled" href="#">Sign out</a>
+                            <a class="dropdown-item" href="{{ url_for('user_bp.my_profile')}}">My profile</a>
                         </li>
-                    {% endif %}
-                    <!--<li><a class="dropdown-item" href="#">Switch to admin</a></li>-->
-                </ul>
-            </div>
+                        {% if 'data_platform' in config['MANGO_ENABLE_CORE_PLUGINS'] %}
+                            <li>
+                                <a class="dropdown-item" href="/data-platform/connection-info">How to connect</a>
+                            </li>
+                        {% endif %}
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        {% if 'openid_session' in session %}
+                            <li>
+                                <a class="dropdown-item"
+                                   href="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}">Switch zone</a>
+                            </li>
+                        {% endif %}
+                        {% if config['MANGO_AUTH'] == 'localdev' %}
+                            <li>
+                                <a class="dropdown-item disabled" href="#">Sign out</a>
+                            </li>
+                        {% else %}
+                            <li>
+                                <a class="dropdown-item"
+                                   href="{{ url_for(config['MANGO_LOGOUT_ACTION']) }}">Sign out</a>
+                            </li>
+                        {% endif %}
+                        <!--<li><a class="dropdown-item" href="#">Switch to admin</a></li>-->
+                    </ul>
+                </div>
+            {% endif %}
         </div>
     </div>
 </header>

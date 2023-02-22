@@ -785,6 +785,7 @@ def object_preview(data_object_path):
                         size=400,
                         single_file=True,
                     )[0]
+                    image.save(f"{thumbnail_storage}/{data_object.id}.png")
 
             else:
                 try:

@@ -1,0 +1,73 @@
+{% extends "base_openid.html.j2" %}
+
+{% block body %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+          <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item">
+          <a href="{{ url_for('data_platform_project_bp.project', project_name=project_name)}}">{{ project_name }}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Create API Token</li>
+    </ol>
+  </nav>
+  <h4 class="mb-3">API token {{ type }}</h4>
+    <p>
+      For unattended scripts that send data to the data platform, or retrieve data from it, you can request a long-living token to save safely together with the script. The long-living token is tied to a separate username, so that permissions can be set to what is strictly necessary. Be aware that resetting the token is possible at any time, but will invalidate the previous value and scripts will stop working.
+    </p>
+  
+    <p class="text-danger">Please copy the password below safely now, because you will not be able to retrieve it again.</p>
+    <dl class="mx-auto ml-20">
+      <dt>Hostname</dt>
+      <dd>{{ info['irods_environment']['irods_host'] }}</dd>
+      <dt>Port</dt>
+      <dd>{{ info['irods_environment']['irods_port'] }}</dd>
+      <dt>Zone</dt>
+      <dd>{{ info['irods_environment']['irods_zone_name'] }}</dd>
+      <dt>Username</dt>
+      <dd>{{ info['irods_environment']['irods_user_name'] }}</dd>
+      <dt>Password</dt>
+      <dd>
+        <pre>{{ info['token'] }}</pre>
+      </dd>
+      <dt>Expiration</dt>
+      <dd>
+        {{ info['expiration']|format_time }}
+      </dd>
+    </dl>
+
+    <h5>iCommands Client on Linux</h5>
+      <p style="margin-top: 10px">
+        Run the snippet below to configure an irods client under Linux.
+      </p>
+<pre><code>mkdir -p ~/.irods
+cat > ~/.irods/irods_environment.json <<'EOF'
+{{ setup_json }}
+EOF
+echo {{ info['token'] }} | iinit
+</code></pre>
+
+    <h5>Python Client</h5>
+    <p style="margin-top: 10px">
+        Use the following snippet (and adapt) to authenticate a python client.
+      </p>
+<pre><code>config = """
+{{ setup_json }}
+"""
+password = "{{ info['token']}}"
+
+import os, os.path
+from irods.session import iRODSSession
+
+env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
+
+os.makedirs(os.path.dirname(env_file), exist_ok=True)
+with open(env_file, "w") as f:
+    f.write(config)
+
+with iRODSSession(irods_env_file=env_file, password=password) as session:
+    # Do something
+    coll = session.collections.get("/{{ info['irods_environment']['irods_zone_name'] }}")
+    print(coll.id)</code></pre>
+{% endblock body %}

@@ -1,0 +1,30 @@
+{% extends "base_openid.html.j2" %}
+
+{% block body %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+          <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item">
+          <a href="{{ url_for('data_platform_project_bp.project', project_name=project_name)}}">{{ project_name }}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Create API Token</li>
+    </ol>
+  </nav>
+  <h4 class="mb-3">API token {{ type }}</h4>
+    <p>
+      For unattended scripts that send data to the data platform, or retrieve data from it, you can request a long-living token to save safely together with the script. The long-living token is tied to a separate username, so that permissions can be set to what is strictly necessary. Be aware that resetting the token is possible at any time, but will invalidate the previous value and scripts will stop working.
+    </p>
+
+    {% for token in current_machine_tokens %}
+    {% if token['type'] == type and token['isset'] %}
+    <p class="text-danger">There is already a token set, expiring on {{ token['expiration']|format_time }}. Are you sure to reset it?</p>
+    {% endif %}
+    {% endfor %}
+
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="submit" class="btn btn-primary" value="Retrieve API token" />
+    </form>
+{% endblock body %}

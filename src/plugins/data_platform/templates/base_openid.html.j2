@@ -1,0 +1,65 @@
+{% extends "base.html.j2" %}
+{% block header %}
+<header class="py-3 mb-4 border-bottom shadow">
+    <div class="container-fluid d-grid gap-3 align-items-center"
+         style="grid-template-columns: 1fr 2fr;">
+        <div class="row">
+            <a href="{{ url_for('index')}}"
+               class="d-flex align-items-center col-3 mb-2 mb-lg-0 link-dark text-decoration-none">
+                <img class="logo"
+                        alt="logo"
+                        src="{{ url_for('static', filename='logo.svg') }}"
+                        width="137"
+                        style="margin: -10px 10px;"/>
+                <img class="logo"
+                        alt="logo"
+                        src="{{ url_for('static', filename='mango-logo.svg') }}"
+                        width="137"
+                        style="margin: -10px 0;"/>
+            </a>
+        </div>
+        {% if session.openid_session %}
+        <div class="d-flex justify-content-end">
+            <div class="flex-shrink-0 dropdown">
+                <a href="#"
+                   class="d-block link-dark text-decoration-none dropdown-toggle"
+                   id="dropdownUser"
+                   data-bs-toggle="dropdown"
+                   aria-expanded="false">
+                    {{ session.openid_session.user_info.preferred_username }} <i class="bi bi-person-circle fs-4"></i>
+                </a>
+                <ul class="dropdown-menu text-small shadow"
+                    aria-labelledby="dropdownUser">
+                    <li>
+                        <a class="dropdown-item disabled" href="#">Preferences</a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item disabled" href="#">My profile</a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item disabled" href="#">How to connect</a>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}">Switch zone</a>
+                    </li>
+                    {% if admin|default(False) %}
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.drop_permissions') }}">Drop permissions</a>
+                    </li>
+                    {% endif %}
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for(config['MANGO_LOGOUT_ACTION']) }}">Sign out</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</header>    
+{% endblock header %}
+
+{% block footer %}
+{% endblock footer %}

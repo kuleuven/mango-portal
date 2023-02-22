@@ -41,18 +41,25 @@
   --bs-toast-max-width: 550px;
 }
 
+.dropdown-menu.mango-profile {
+    z-index: 1021;
+  }
       </style>
     {% endblock head %}
+    {% block custom_style %}
+    {% endblock custom_style %}
   </head>
   <body>
-    {% include "header.html.j2" %}
+    {% block header %}
+      {% include "header.html.j2" %}
+    {% endblock header %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
       <div class="toast-container top-10 start-50 translate-middle-x">
         {% if messages %}
           {% for category, message in messages %}
             <div class="toast"
-                 {% if category !="success" %} data-bs-autohide="false" {% else %} data-bs-delay="5000" {% endif %}
+                 {% if category !="success" %} data-bs-autohide="false" {% else %} data-bs-delay="2000" {% endif %}
                  role="alert"
                  aria-live="assertive"
                  aria-atomic="true">
@@ -72,20 +79,24 @@
     {% endwith %}
     <main class="container">
       <div class="row flex-grow-sm-1 flex-grow-0">
-        {% include "sidebar.html.j2" %}
-        {# <div class="col-8 overflow-auto h-100"> #}
-        <div class="col-9">
-          <div class="bg-light border rounded-3 p-3">
-            {% block body %}{# THE MEAT #}{% endblock %}
+        {% if 'irods_session' in g %}
+          {% include "sidebar.html.j2" %}
+          <div class="col-9">
+          {% else %}
+            <div class="col">
+            {% endif %}
+            {# <div class="col-8 overflow-auto h-100"> #}
+            <div class="bg-light border rounded-3 p-3">
+              {% block body %}{# THE MEAT #}{% endblock %}
+            </div>
           </div>
         </div>
-      </div>
-      <div class="row mt-5">{% include "footer.html.j2" %}</div>
-    </main>
-    <script src="{{url_for('static', filename='dist/index.js')}}"></script>
-    <script src="{{url_for('static', filename='js/form-validation.js')}}"></script>
-    {% block javascript %}
-      <script>
+        <div class="row mt-5">{% include "footer.html.j2" %}</div>
+      </main>
+      <script src="{{url_for('static', filename='dist/index.js')}}"></script>
+      <script src="{{url_for('static', filename='js/form-validation.js')}}"></script>
+      {% block javascript %}
+        <script>
       // Activate toast mechanism
       var toastElList = [].slice.call(document.querySelectorAll('.toast'))
       var toastList = toastElList.map(function (toastEl) {
@@ -95,7 +106,7 @@
       toastList.forEach(toast => toast.show());
 
       // console.log(toastList);
-      </script>
-    {% endblock javascript %}
-  </body>
-</html>
+        </script>
+      {% endblock javascript %}
+    </body>
+  </html>
