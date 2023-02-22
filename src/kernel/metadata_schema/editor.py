@@ -99,11 +99,14 @@ def list_meta_data_schemas(realm):
             {
                 "name": schema,
                 "url": url_for(
-                    "metadata_schema_editor_bp.get_schema", realm=realm, schema=schema
+                    "metadata_schema_editor_bp.get_schema",
+                    realm=realm,
+                    schema=schema,
+                    status="status",
                 ),
                 "schema_info": schema_info,
             }
-            for (schema, schema_info) in schemas.values()
+            for (schema, schema_info) in schemas.items()
         ]
     )
 
