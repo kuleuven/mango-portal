@@ -178,6 +178,7 @@ class FileSystemSchemaManager:
         with_status="draft",
         title="MISSING TITLE",
         username="unknown",
+        parent=""
     ):
         current_schema_info = self.get_schema_info(schema_name)
         if with_status == "draft":
@@ -197,6 +198,7 @@ class FileSystemSchemaManager:
                                 "edited_by": username,
                                 "realm": self.realm,
                                 "title": title,
+                                "parent": parent,
                             }
                         )
                     )

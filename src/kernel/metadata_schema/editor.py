@@ -137,6 +137,7 @@ def save_schema():
             with_status=request.form["with_status"],
             title=request.form["title"],
             username=g.irods_session.username,
+            parent=request.form["parent"] if "parent" in request.form else "",
         )
     return redirect(request.referrer)
 
