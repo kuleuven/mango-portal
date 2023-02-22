@@ -128,7 +128,7 @@ def get_schema(realm: str, schema: str, status="published"):
 def save_schema():
     if "realm" in request.form:
         schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
-        return schema_manager.store_schema(
+        schema_manager.store_schema(
             schema_name=request.form["schema_name"],
             current_version=request.form["current_version"],
             raw_schema=json.loads(request.form["raw_schema"]),
@@ -148,9 +148,7 @@ def delete_meta_data_schema():
         schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
         if request.form["with_status"] != "draft":
             abort(400, "Can only delete draft versions of schemas")
-        return schema_manager.delete_draft_schema(
-            schema_name=request.form["schema_name"]
-        )
+        schema_manager.delete_draft_schema(schema_name=request.form["schema_name"])
 
     return redirect(request.referrer)
 

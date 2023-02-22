@@ -14,7 +14,7 @@
             <div id="metadata_template_list_container">
                 {% set blueprint = "metadata_schema_editor_bp" %}
                 {% set mdt = "meta_data_template" %}
-                <url-list new="{{ url_for('{}.save_schema'.format(blueprint)) }}" list="{{ url_for('{}.list_meta_data_schemas'.format(blueprint)) }}"></url-list>
+                <url-list new="{{ url_for('{}.save_schema'.format(blueprint)) }}" list="{{ url_for('{}.list_meta_data_schemas'.format(blueprint)) }}" delete="{{ url_for('{}.delete_meta_data_schema'.format(blueprint)) }}" archive="{{ url_for('{}.archive_meta_data_schema'.format(blueprint)) }}" realm="{{ realm }}"></url-list>
                 {% for file in ['doms', 'fields', 'schema', 'httprequests', 'manager'] %}
                     <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
                 {% endfor %}
