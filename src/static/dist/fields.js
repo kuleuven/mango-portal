@@ -156,7 +156,7 @@ class InputField {
             if (this.mode == 'add') {
                 form.classList.remove('was-validated');
             }
-        })
+        });
     }
 
     register_fields(schema, schema_status) {
@@ -205,7 +205,14 @@ class InputField {
             
             clone.mode = 'mod';
             clone.create_form();
+
             clone.create_modal(schema, schema_status);
+            if (this.constructor.name == 'ObjectInput') {
+                clone.editor.field_ids.forEach((field_id, idx) => {
+                    clone.editor.new_field_idx = idx;
+                    clone.editor.view_field(clone.editor.fields[field_id]);
+                });
+            }
                 
             if (this.mode == 'mod') {
                 schema.replace_field(old_id, clone, schema_status);
@@ -473,20 +480,29 @@ class ObjectInput extends InputField {
     }
 
     create_editor() {
-        this.editor = new ObjectEditor(this.form_field.form.id, this);
+        if (this.editor == undefined) {
+            this.editor = new ObjectEditor(this.form_field.form.id, this);
+        } else {
+            this.editor.form_id = this.form_field.form.id;
+            console.log(this.editor.form_id)
+        }
         // this.editor.modal = this.modal;
-        this.editor.display_options("objectTemplates");
+        this.editor.display_options();
     }
 
     viewer_input(active = false) {
+        console.log(this.editor)
         return ComplexField.create_viewer(this.editor, active);
     }
 
     create_form() {
+        console.log(this.editor)
         this.setup_form();
         this.create_editor();
-        this.form_field.form.appendChild(this.editor.button);
         this.end_form();
+        const switches = this.form_field.form.querySelector('#switches-div');
+        this.form_field.form.insertBefore(this.editor.button, switches);
+        
     }
 
     recover_fields(data) {

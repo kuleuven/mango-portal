@@ -100,7 +100,6 @@ class MovingField {
         this.idx = idx;
         this.up = this.add_btn('up', 'arrow-up-circle', () => this.move_up());
         this.down = this.add_btn('down', 'arrow-down-circle', () => this.move_down());
-        this.rem = this.add_btn('rem', 'trash', () => this.remove());
     }
     
     add_btn(className, symbol, action = false) {
@@ -126,7 +125,7 @@ class MovingViewer extends MovingField {
     // Specific class for viewing fields of a schema
     constructor(form, schema, schema_status) {
         super(form.id);
-        console.log(schema_status)
+        this.rem = this.add_btn('rem', 'trash', () => this.remove(schema_status));
         this.title = form.required ? form.title + '*' : form.title;
         this.repeatable = form.repeatable;
         this.div = Field.quick("div", "card border-primary viewer");
@@ -134,10 +133,12 @@ class MovingViewer extends MovingField {
         this.body = form.viewer_input();
         let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(`mod-${form.id}-${form.schema_name}`));
         this.copy = this.add_btn('copy', 'front', () => this.duplicate(form, schema, schema_status));
+        this.edit = this.add_btn('edit', 'pencil', () => modal.toggle());
         if (form.is_duplicate) {
             this.copy.setAttribute('disabled', '');
-        }
-        this.edit = this.add_btn('edit', 'pencil', () => modal.toggle());
+            // this.edit.classList.replace('btn-outline-primary', 'btn-primary');
+            this.edit.classList.add('shadow');
+        }        
         
         this.assemble();
         this.schema = schema;        
@@ -145,7 +146,11 @@ class MovingViewer extends MovingField {
 
     duplicate(form, schema, schema_status) {
         const clone = new form.constructor(schema.initial_name);
-        clone.id = form.id + Math.round(Math.random() * 100);
+        const pattern = `^${form.id}(\d+)$`;
+        const existing_copies = schema.field_ids
+            .filter(fid => fid.match(pattern))
+            .map(fid => parseInt(fid.match(pattern)[1]));
+        clone.id = existing_copies.length == 0 ? form.id + '0' : form.id + String(Math.max(...existing_copies) + 1);
         clone.title = form.title;
         clone.is_duplicate = true;
         clone.required = form.required;
@@ -230,7 +235,7 @@ class MovingViewer extends MovingField {
         this.schema.field_ids.splice(form_index - 1, 0, this.idx);
     }
 
-    remove() {
+    remove(schema_status) {
         // Method to remove a viewing field (and thus also the field itself)
         let form_index = this.schema.field_ids.indexOf(this.idx);
         
@@ -245,6 +250,10 @@ class MovingViewer extends MovingField {
         this.div.parentNode.removeChild(this.below);
         this.div.parentNode.removeChild(this.div);
         this.schema.field_ids.splice(form_index, 1);
+        delete this.schema.fields[this.idx];
+        if (this.constructor.name == 'MovingViewer') {
+            this.schema.toggle_saving(schema_status);
+        }
     }
 
 }
@@ -254,6 +263,7 @@ class MovingChoice extends MovingField {
     // It has a working text input field and no edit button
     constructor(label_text, idx, value = false) {
         super(idx);
+        this.rem = this.add_btn('rem', 'trash', () => this.remove());
         this.label = Field.labeller(label_text, `mover-${idx}`);
         this.div = Field.quick("div", "blocked");
         this.value = value;
@@ -499,6 +509,7 @@ class BasicForm {
         // I'm adding the radio switch for "repeatable" and "dropdown" here as well
         // For multiple choice fields, add 'dropdown' to switchnames and the Object.
         let div = Field.quick("div", "col-3 mt-2");
+        div.id = 'switches-div';
         let subdiv = Field.quick("div", "form-check form-switch form-check-inline");
         
         let switches = {
