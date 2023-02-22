@@ -274,7 +274,7 @@ class FileSystemSchemaManager:
         current_schema_info = self.get_schema_info(schema_name)
         if current_schema_info["total_count"] == 0:
             current_schema_path = self._get_realm_schemas_path() / schema_name
-            current_schema_path.rmdir(current_schema_path)
+            current_schema_path.rmdir()
             logging.warn(
                 f"Removed schema directory {current_schema_path} from file system because there are no more files left"
             )
