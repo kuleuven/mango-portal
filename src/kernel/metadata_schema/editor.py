@@ -116,9 +116,7 @@ def list_meta_data_schemas(realm):
 )
 def get_schema(realm: str, schema: str, status="published"):
     schema_manager = get_schema_manager(g.irods_session.zone, realm)
-    schema_content = schema_manager.load_schema(
-        schema_name=schema, realm=realm, status=status
-    )
+    schema_content = schema_manager.load_schema(schema_name=schema, status=status)
     if schema_content:
         return Response(schema_content, status=200, mimetype="application/json")
     else:
