@@ -1,5 +1,6 @@
 const container_id = 'metadata_template_list_container';
 const container = document.getElementById(container_id);
+container.className = 'accordion accordion-flush';
 
 let url_tag = document.getElementsByTagName('url-list')[0];
 let url_list = url_tag.attributes;
@@ -10,7 +11,8 @@ for (let url of url_list) {
 url_tag.remove();
 const realm = urls.realm;
 
-container.className = 'accordion accordion-flush';
+const schemas = {};
+
 // first the button
 let starting_schema = new Schema('schema-editor-100', container_id, urls);
 starting_schema.create_creator();

@@ -157,7 +157,6 @@ class ComplexField {
         let div = schema.constructor.name == 'SchemaForm' ?
             Field.quick('form', 'mt-3 needs-validation') :
             Field.quick('div', 'input-view');
-        console.log(schema.field_ids)
         schema.field_ids.forEach((field_id) => {
             let subfield = schema.fields[field_id];
             let small_div = Field.quick('div', 'mini-viewer');
@@ -222,15 +221,13 @@ class ObjectEditor extends ComplexField {
 }
 
 class Schema extends ComplexField {
-    constructor(card_id, container_id, urls, version = "1.0.0",
-        statuses = { 'draft': ['1.0.0'], 'published': [], 'archived': [] }) {
+    constructor(card_id, container_id, urls, version = "1.0.0") {
         super('formChoice', card_id);
         this.card_id = card_id;
         this.name = card_id.match(/^(.*)-\d\d\d$/)[1];
         this.version = version;
         this.container = container_id;
         this.urls = urls;
-        this.statuses = statuses;
     }
 
     get accordion_item() {
@@ -261,7 +258,7 @@ class Schema extends ComplexField {
             // container_id is the GLOBAL variable
             new SchemaGroup(name, label,
                 [{ name: name, version: '1.0.0', status: status, json: json_contents }],
-                container_id, { new: this.url });
+                container_id, this.urls);
 
             if (is_new) {
                 form.reset();
@@ -287,15 +284,15 @@ class Schema extends ComplexField {
 
             // update internal tabs
             if (action == 'publish') {
-                if (this.statuses.published.length > 0) {
-                    let published_version = this.statuses.published[0];
-                    this.statuses.archived.push(published_version);
+                if (schemas[this.name].published.length > 0) {
+                    let published_version = schemas[this.name].published[0];
+                    schemas[this.name].archived.push(published_version);
                     let nav_bar = new NavBar(this.name);
                     nav_bar.remove_item(`v${published_version.replaceAll('.', '')}`);
                     // actually archive it
                 }
-                this.statuses.published = [this.version];
-                this.statuses.draft = [];
+                schemas[this.name].published = [this.version];
+                schemas[this.name].draft = [];
                 document.getElementById(this.card_id).remove();
                 this.view();
             } else {
@@ -322,20 +319,20 @@ class Schema extends ComplexField {
             nav_bar.add_item('v' + no_dots, badges);
 
             if (action == 'published') {
-                this.statuses.archived.push(this.version);
-                this.statuses.draft = [new_version];
+                schemas[this.name].archived.push(this.version);
+                schemas[this.name].draft = [new_version];
                 new NavBar(this.name).remove_item(`v${published_version.replaceAll('.', '')}`);
                 let trigger = document.querySelector(`#nav-tab-${this.name} button`);
                 bootstrap.Tab.getOrCreateInstance(trigger).show();
             } else {
-                this.statuses.draft = [new_version];
+                schemas[this.name].draft = [new_version];
                 new NavBar(this.card_id).remove_item('new');
                 let trigger = document.querySelector(`#nav-tab-${this.card_id} button`);
                 bootstrap.Tab.getOrCreateInstance(trigger).show();
             }
             let new_schema = new Schema(`${this.name}-${no_dots}`,
                 'v' + incremented_major + this.container.slice(2), // adapt to other increments
-                this.urls, new_version, this.statuses);
+                this.urls, new_version,);
             this.fields_to_json();
             let json_contents = {
                 schema_name: this.name,
@@ -395,8 +392,8 @@ class Schema extends ComplexField {
             } else {
                 console.log('Ready to publish');
 
-                let second_sentence = this.statuses.published.length > 0 ?
-                    ` Version ${this.statuses.published[0]} will be archived.` :
+                let second_sentence = schemas[this.name].published.length > 0 ?
+                    ` Version ${schemas[this.name].published[0]} will be archived.` :
                     ''
                 const toast = new Toast(this.card_id + '-pub',
                     "Published schemas cannot be edited." + second_sentence);
@@ -453,8 +450,9 @@ class Schema extends ComplexField {
                 const toast = new Toast(this.card_id + '-discard',
                     "A deleted draft cannot be recovered.");
                 toast.show(() => {
+                    schemas[this.name].draft = [];
                     this.delete();
-                    if (this.statuses.published.length + this.statuses.archived.length == 0) {
+                    if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
                         // if there are no published or archived versions, delete the accordion item
                         document.querySelector(`.accordion-collapse#${this.name}-schemas`)
                             .parentElement
@@ -469,7 +467,7 @@ class Schema extends ComplexField {
                 });
             });
         } else if (this.status == 'published') {
-            if (this.statuses.draft.length == 0) {
+            if (schemas[this.name].draft.length == 0) {
                 this.display_options('new');
                 nav_bar.add_item('new', 'New version');
                 let new_form = this.create_editor('new');
@@ -489,8 +487,10 @@ class Schema extends ComplexField {
                 const toast = new Toast(this.card_id + '-discard',
                     "Archived schemas cannot be implemented.");
                 toast.show(() => {
+                    schemas[this.name].published = [];
+                    // schemas[this.name].archived = [this.version];
                     this.delete();
-                    if (this.statuses.draft.length + this.statuses.archived.length == 0) {
+                    if (schemas[this.name].draft.length + schemas[this.name].archived.length == 0) {
                         // if there are no published or archived versions, delete the accordion item
                         document.querySelector(`.accordion-collapse#${this.name}-schemas`)
                             .parentElement
@@ -530,7 +530,7 @@ class Schema extends ComplexField {
             if (this.status == 'draft') {
                 this.view_field(this.fields[field_id], 'draft');
             } else {
-                if (this.statuses.draft.length == 0) {
+                if (schemas[this.name].draft.length == 0) {
                     this.view_field(this.fields[field_id], 'new');
                 }
                 this.view_field(this.fields[field_id], 'copy');
@@ -589,9 +589,9 @@ class SchemaGroup {
                 .filter((v) => v.status == st)
                 .map((v) => v.version);
         });
+        schemas[name] = this.summary;
 
         let acc_item = new AccordionItem(this.name + '-schemas', this.title, container_id);
-        console.log(nav_bar.nav_bar)
         acc_item.append(nav_bar.nav_bar);
 
         acc_item.append(nav_bar.tab_content);
@@ -610,9 +610,8 @@ class SchemaGroup {
             let tab_id = `v${version_number}-pane-${this.name}`;
             let schema = new Schema(
                 `${version.name}-${version_number}`, tab_id,
-                this.urls, version.version, this.summary);
+                this.urls, version.version);
             schema.loaded = false;
-            console.log(nav_bar.tab_content);
             if (version.json != undefined) {
                 schema.loaded = true;
                 schema.from_json(version.json);
@@ -623,7 +622,6 @@ class SchemaGroup {
 
                 const accordion = nav_bar.tab_content.parentElement.parentElement;
                 accordion.addEventListener('show.bs.collapse', () => {
-                    console.log('showing');
                     const tab = accordion.querySelector('#' + tab_id);
                     if (tab.classList.contains('show')) {
                         if (!schema.loaded) {
