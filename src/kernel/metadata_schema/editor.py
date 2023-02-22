@@ -78,9 +78,7 @@ def metadata_schemas(realm):
     elif "current_schema_editor_realm" in session:
         del session["current_schema_editor_realm"]
 
-    return render_template(
-        "metadata_schema_module.html.j2", realms=realms, realm=realm
-    )
+    return render_template("metadata_schema_module.html.j2", realms=realms, realm=realm)
 
 
 @metadata_schema_editor_bp.route(
@@ -135,6 +133,7 @@ def save_schema():
             raw_schema=json.loads(request.form["raw_schema"]),
             with_status=request.form["with_status"],
             title=request.form["title"],
+            username=g.irods_session.username,
         )
 
 
