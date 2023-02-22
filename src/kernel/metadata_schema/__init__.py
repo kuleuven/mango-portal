@@ -193,7 +193,7 @@ class FileSystemSchemaManager:
                                 "schema_name": schema_name,
                                 "version": current_schema_info["latest_version"],
                                 "status": with_status,
-                                "schema": raw_schema,
+                                "properties": raw_schema,
                                 "edited_by": username,
                                 "realm": self.realm,
                                 "title": title,
