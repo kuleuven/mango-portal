@@ -201,9 +201,9 @@ def api_token(project_name, type):
         setup_json=json.dumps(info['irods_environment'], indent=4),
     )
 
-@data_platform_project_bp.route("/data-platform/projects/add", methods=["POST"])
+@data_platform_project_bp.route("/data-platform/projects/add/irods", methods=["POST"])
 @openid_login_required
-def add_project():
+def add_irods_project():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
 
@@ -222,6 +222,26 @@ def add_project():
                     "value": request.form.get('layout'),
                 },
             ],
+        }
+    )
+    response.raise_for_status()
+
+    flash(response.json()['message'], "success")
+
+    return redirect(url_for('data_platform_project_bp.project', project_name=id))
+
+
+@data_platform_project_bp.route("/data-platform/projects/add/generic", methods=["POST"])
+@openid_login_required
+def add_generic_project():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    id = request.form.get('name')
+
+    response = requests.put(
+        f"{API_URL}/v1/projects/{id}", headers=header, json={
+            "platform": "generic",
         }
     )
     response.raise_for_status()

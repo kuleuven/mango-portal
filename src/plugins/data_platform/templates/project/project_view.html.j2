@@ -44,7 +44,7 @@
           {% elif not status['provisioned'] %}
           <tr>
             <th>Status</th>
-            <td>Changes pending in {{ project['platform'] }}</td>
+            <td>Changes pending in {{ project['platform']|replace('generic', 'the globus share storage') }}</td>
           </tr>
           {% endif %}
           <tr>
