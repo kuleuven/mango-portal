@@ -8,10 +8,11 @@ for (let url of url_list) {
 	urls[url.name] = url.value;
 }
 url_tag.remove();
+const realm = urls.realm;
 
 container.className = 'accordion accordion-flush';
 // first the button
-let starting_schema = new Schema('schema-editor-100', container_id, urls.new);
+let starting_schema = new Schema('schema-editor-100', container_id, urls);
 starting_schema.create_creator();
 
 let templates_request = new TemplatesRequest(urls, container_id);

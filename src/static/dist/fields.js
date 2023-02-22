@@ -491,12 +491,10 @@ class ObjectInput extends InputField {
     }
 
     viewer_input(active = false) {
-        console.log(this.editor)
         return ComplexField.create_viewer(this.editor, active);
     }
 
     create_form() {
-        console.log(this.editor)
         this.setup_form();
         this.create_editor();
         this.end_form();
@@ -518,8 +516,13 @@ class ObjectInput extends InputField {
         this.editor.name = this.form_field.form
             .querySelector(`[name="${this.editor.id_field}"]`)
             .value;
-        let json = Object.values(this.editor.to_json())[0];
-        json.title = this.title;
+        this.editor.fields_to_json();
+        let json = {
+            title : this.title,
+            properties : this.editor.properties,
+            type : 'object'
+        }
+
         if (this.required) json.required = this.required;
         if (this.repeatable) json.repeatable = this.repeatable;
         return json;

@@ -23,34 +23,15 @@ class ComplexField {
         this.name = this.constructor.name == 'Schema' && this.status == 'draft' ? 'schema-editor' : this.name;
     }
 
-
-    to_json() {
-        let base_data = {
-            title: this.title != undefined ? this.title : this.name,
-            properties: {}
-        }
-        if (this.constructor.name == 'Schema') {
-            base_data.version = this.version;
-            base_data.status = this.status;
-            if (this.parent != undefined) {
-                data.parent = this.parent;
-            }
-        } else {
-            base_data.type = "object";
-        }
-
+    fields_to_json() {
+        this.properties = {};
         this.field_ids.forEach((field_id) => {
-            let field = this.fields[field_id];
-            base_data.properties[field_id] = field.json;
+            this.properties[field_id] = this.fields[field_id].json;
         });
-        let json = {};
-        json[this.name] = base_data;
-        return json;
     }
 
-
     from_json(data) {
-        this.name = data.title
+        this.name = data.title;
         this.title = data.title;
         this.field_ids = Object.keys(data.properties);
         if (this.field_ids.length > 0) {
@@ -59,7 +40,7 @@ class ComplexField {
                 new_field.create_modal(this, data.status ? data.status : 'object');
                 this.fields[entry[0]] = new_field;
             }
-        }        
+        }
     }
 
     display_options(schema_status = undefined) {
@@ -108,7 +89,7 @@ class ComplexField {
     toggle_saving(schema_status) {
         let form_id = schema_status == undefined ? this.form_id : `form-${this.card_id}-${schema_status}`;
         const has_duplicates = Object.values(this.fields).some((field) => field.is_duplicate);
-        
+
         const buttons = this.constructor.name == 'Schema'
             ? ['publish', 'draft'].map((btn) => document.getElementById(form_id).querySelector('button#' + btn))
             : [document.getElementById(form_id).querySelector('button#add')];
@@ -124,7 +105,7 @@ class ComplexField {
         this.field_ids.splice(this.new_field_idx, 0, form_object.id);
         this.fields[form_object.id] = form_object;
         this.toggle_saving(schema_status);
-        
+
         this.view_field(form_object, schema_status);
     }
 
@@ -173,7 +154,7 @@ class ComplexField {
     }
 
     static create_viewer(schema, active = false) {
-        let div = schema.constructor.name == 'SchemaForm' ? 
+        let div = schema.constructor.name == 'SchemaForm' ?
             Field.quick('form', 'mt-3 needs-validation') :
             Field.quick('div', 'input-view');
         console.log(schema.field_ids)
@@ -214,7 +195,7 @@ class ComplexField {
                     label.appendChild(button);
                 } else {
                     label.appendChild(icon);
-                }                
+                }
             }
             let input = subfield.viewer_input(active = active);
             small_div.appendChild(label);
@@ -241,14 +222,14 @@ class ObjectEditor extends ComplexField {
 }
 
 class Schema extends ComplexField {
-    constructor(card_id, container_id, url, version = "1.0.0",
+    constructor(card_id, container_id, urls, version = "1.0.0",
         statuses = { 'draft': ['1.0.0'], 'published': [], 'archived': [] }) {
         super('formChoice', card_id);
         this.card_id = card_id;
-        this.name = card_id.replace(`-${version}`, '');
+        this.name = card_id.match(/^(.*)-\d\d\d$/)[1];
         this.version = version;
         this.container = container_id;
-        this.url = url;
+        this.urls = urls;
         this.statuses = statuses;
     }
 
@@ -265,33 +246,22 @@ class Schema extends ComplexField {
             // create a child/copy from a published version
             let name = form.form.querySelector(`#${this.card_id}-name`).value;
             let label = form.form.querySelector(`#${this.card_id}-label`).value;
-            let json_contents = {};
-            json_contents[name] = Object.values(this.to_json())[0];
-            json_contents[name].title = label;
-            json_contents[name].version = '1.0.0';
-            json_contents[name].status = status;
+            this.fields_to_json();
+            let json_contents = {
+                schema_name: name,
+                title: label,
+                version: '1.0.0',
+                status: status,
+                properties: this.properties
+            };
             if (is_copy) {
-                json_contents[name].parent = this.card_id;
-            }
-            if (json_contents[name].properties == undefined) {
-                json_contents[name].properties = {};
+                json_contents.parent = this.card_id;
             }
 
-            let template = {
-                schema_name: name,
-                template_list: [{
-                    name: `${name}-v1.0.0-${status}`
-                }]
-            };
             // container_id is the GLOBAL variable
-            new SchemaGroup(template, container_id);
-            let new_schema = new Schema(`${name}-100`,
-                `v100-pane-${name}`, this.url,
-                "1.0.0");
-            new_schema.from_json(json_contents);
-            console.log(new_schema)
-            new_schema.view();
-            new_schema.post();
+            new SchemaGroup(name, label,
+                [{ name: name, version: '1.0.0', status: status, json: json_contents }],
+                container_id, { new: this.url });
 
             if (is_new) {
                 form.reset();
@@ -365,14 +335,19 @@ class Schema extends ComplexField {
             }
             let new_schema = new Schema(`${this.name}-${no_dots}`,
                 'v' + incremented_major + this.container.slice(2), // adapt to other increments
-                this.url, new_version, this.statuses);
-            let json_contents = this.to_json();
-            json_contents[this.name].version = new_version;
-            json_contents[this.name].status = status;
+                this.urls, new_version, this.statuses);
+            this.fields_to_json();
+            let json_contents = {
+                schema_name: this.name,
+                title: this.title,
+                version: new_version,
+                status: status,
+                properties: this.properties
+            }
             new_schema.from_json(json_contents);
             new_schema.view();
             new_schema.post();
-            
+
         }
     }
 
@@ -444,6 +419,18 @@ class Schema extends ComplexField {
         this.card.append(form.form);
     }
 
+    delete() {
+        const to_post = new FormData();
+        to_post.append('realm', realm);
+        to_post.append('schema_name', this.name);
+        to_post.append('with_status', this.status);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', this.status == 'draft' ? this.urls.delete : this.urls.archive, true);
+        xhr.send(to_post);
+        console.log(`${this.name} version ${this.version} (${this.status}) ${this.status == 'draft' ? 'deleted' : 'archived'}.`);
+    }
+
     create_navbar() {
         // design navbar
         let nav_bar = new NavBar(this.card_id, ['justify-content-end', 'nav-pills']);
@@ -466,6 +453,7 @@ class Schema extends ComplexField {
                 const toast = new Toast(this.card_id + '-discard',
                     "A deleted draft cannot be recovered.");
                 toast.show(() => {
+                    this.delete();
                     if (this.statuses.published.length + this.statuses.archived.length == 0) {
                         // if there are no published or archived versions, delete the accordion item
                         document.querySelector(`.accordion-collapse#${this.name}-schemas`)
@@ -488,7 +476,7 @@ class Schema extends ComplexField {
                 let inputs = new_form.form.querySelectorAll('input.form-control');
                 inputs[0].value = this.name; // id
                 inputs[1].value = this.title; // label
-                
+
                 nav_bar.add_tab_content('new', new_form.form);
             }
 
@@ -501,6 +489,7 @@ class Schema extends ComplexField {
                 const toast = new Toast(this.card_id + '-discard',
                     "Archived schemas cannot be implemented.");
                 toast.show(() => {
+                    this.delete();
                     if (this.statuses.draft.length + this.statuses.archived.length == 0) {
                         // if there are no published or archived versions, delete the accordion item
                         document.querySelector(`.accordion-collapse#${this.name}-schemas`)
@@ -533,7 +522,7 @@ class Schema extends ComplexField {
         document.getElementById(this.container).appendChild(this.card);
         if (this.field_ids.length == 0) {
             let msg = Field.quick('div', 'viewer',
-            'This schema does not have any fields yet. Go to "edit" mode to add one.');
+                'This schema does not have any fields yet. Go to "edit" mode to add one.');
             this.tab_content.querySelector('.input-view').appendChild(msg);
         }
         this.field_ids.forEach((field_id, idx) => {
@@ -550,29 +539,31 @@ class Schema extends ComplexField {
     }
 
     from_json(data) {
-        let name = Object.keys(data)[0];
-        super.from_json(data[name]);
-        this.name = name;
-        this.status = data[name].status;
-        this.version = data[name].version;
-        this.parent = data[name].parent;
+        super.from_json(data);
+        this.name = data.schema_name;
+        this.status = data.status;
+        this.version = data.version;
+        this.parent = data.parent;
 
         if (this.status != 'draft') {
-            this.fixed = Object.values(this.to_json())[0];
+            this.fixed = data;
         }
     }
 
     post() {
         const to_post = new FormData();
-        let fname = `${this.name}-v${this.version}`;
-        to_post.append('template_name', this.status == 'archived' ? fname : `${fname}-${this.status}`);
-        to_post.append('template_json', JSON.stringify(this.to_json()));
-        console.log(fname);
+        this.fields_to_json();
+        to_post.append('realm', realm);
+        to_post.append('schema_name', this.name);
+        to_post.append('current_version', this.version);
+        to_post.append('raw_schema', JSON.stringify(this.properties));
+        to_post.append('with_status', this.status);
+        to_post.append('title', this.title);
 
-        // const xhr = new XMLHttpRequest();
-        // xhr.open('POST', this.url, true);
-        // xhr.send(to_post);
-        // console.log(this.name, 'posted.');
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', this.urls.new, true);
+        xhr.send(to_post);
+        console.log(`${this.name} version ${this.version} (${this.status}) posted.`);
     }
 }
 
@@ -584,43 +575,73 @@ class SchemaGroup {
         'archived': 'inactive'
     }
 
-    constructor(template, container_id) {
-        this.name = template.schema_name;
-        this.versions = template.template_list.map((temp) => {
-            let temp_info = temp.name.split('-v')[1].split('-');
-            let status = temp_info[1].startsWith('draft') ? 'draft' : temp_info[1].startsWith('published') ? 'published' : 'archived';
-            let data = {
-                version: temp_info[0],
-                status: status
-            }
-            return (data);
-        });
-
+    constructor(name, title, versions, container_id, urls) {
+        this.name = name;
+        this.title = title;
+        this.versions = versions;
+        // obtain versions from published_ and draft_name with regex
         let nav_bar = new NavBar(this.name, ['nav-tabs']);
         this.statuses = this.versions.map((v) => v.status);
+        this.urls = urls;
+        this.summary = {};
+        Object.keys(SchemaGroup.status_colors).forEach((st) => {
+            this.summary[st] = this.versions
+                .filter((v) => v.status == st)
+                .map((v) => v.version);
+        });
 
+        let acc_item = new AccordionItem(this.name + '-schemas', this.title, container_id);
+        console.log(nav_bar.nav_bar)
+        acc_item.append(nav_bar.nav_bar);
+
+        acc_item.append(nav_bar.tab_content);
+        document.getElementById(container_id).appendChild(acc_item.div);
+        this.load_versions(nav_bar);
+
+    }
+
+    load_versions(nav_bar) {
         for (let version of this.versions) {
             let badges = SchemaGroup.add_version(version.version, version.status);
             let active = this.statuses.indexOf('published') > -1 ? version.status == 'published' : version.status == 'draft';
             // this does not account for a case with only archived versions and a draft
-            nav_bar.add_item(`v${version.version.replaceAll('.', '')}`, badges, active);
+            let version_number = version.version.replaceAll('\.', '');
+            nav_bar.add_item(`v${version_number}`, badges, active);
+            let tab_id = `v${version_number}-pane-${this.name}`;
+            let schema = new Schema(
+                `${version.name}-${version_number}`, tab_id,
+                this.urls, version.version, this.summary);
+            schema.loaded = false;
+            console.log(nav_bar.tab_content);
+            if (version.json != undefined) {
+                schema.loaded = true;
+                schema.from_json(version.json);
+                schema.view();
+                schema.post();
+            } else {
+                let reader = new TemplateReader(this.urls.get.replace('status', version.status), schema); // url to get this template
+
+                const accordion = nav_bar.tab_content.parentElement.parentElement;
+                accordion.addEventListener('show.bs.collapse', () => {
+                    console.log('showing');
+                    const tab = accordion.querySelector('#' + tab_id);
+                    if (tab.classList.contains('show')) {
+                        if (!schema.loaded) {
+                            reader.retrieve();
+                            schema.loaded = true;
+                        }
+                    } else {
+                        nav_bar.nav_bar.querySelector(`button#v${version_number}-tab-${this.name}`)
+                            .addEventListener('show.bs.tab', () => {
+                                if (!schema.loaded) {
+                                    reader.retrieve();
+                                    schema.loaded = true;
+                                }
+                            });
+                    }
+                });
+            }
         };
-
-        let acc_item = new AccordionItem(this.name + '-schemas', this.name, container_id);
-        acc_item.append(nav_bar.nav_bar);
-        acc_item.append(nav_bar.tab_content);
-        document.getElementById(container_id).appendChild(acc_item.div);
-    }
-
-    get summary() {
-        let statuses = Object.keys(SchemaGroup.status_colors);
-        let summary = {};
-        statuses.forEach((st) => {
-            summary[st] = this.versions
-                .filter((v) => v.status == st)
-                .map((v) => v.version);
-        });
-        return (summary);
     }
 
     static add_version(version, status) {
@@ -645,7 +666,7 @@ class SchemaForm {
         this.prefix = prefix; // for flattening
         this.fields = {}
     }
-    
+
     from_json(schema_json, annotated_data = {}) {
         let schema_data = schema_json[this.name];
         this.field_ids = Object.keys(schema_data.properties);

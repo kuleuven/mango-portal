@@ -156,8 +156,10 @@ class FileSystemSchemaManager:
     ) -> dict | bool:
         schema_paths = []
         if status in ["published", "draft"] and not version:
-            schema_paths = self._get_schema_path(schema_name).glob(
-                f"{schema_name}*{status}.json"
+            schema_paths = list(
+                self._get_schema_path(schema_name).glob(
+                    f"{schema_name}*{status}.json"
+                )
             )
         if version:
             schema_paths = list(
@@ -180,6 +182,16 @@ class FileSystemSchemaManager:
         username="unknown",
         parent=""
     ):
+        json_contents = {
+            'schema_name' : schema_name,
+            'version' : current_version,
+            'status' : with_status,
+            'properties' : raw_schema,
+            'edited_by' : username,
+            'realm' : self.realm,
+            'title' : title,
+            'parent' : parent
+        }
         current_schema_info = self.get_schema_info(schema_name)
         if with_status == "draft":
             if draft_file_name := current_schema_info["draft_name"]:
@@ -188,19 +200,9 @@ class FileSystemSchemaManager:
                     r"{current_schema_info['latest_version']}".replace(".", "\."),
                     draft_file_name,
                 ):
+                    json_contents['version'] = current_schema_info['latest_version']
                     draft_file_name.write_text(
-                        json.dumps(
-                            {
-                                "schema_name": schema_name,
-                                "version": current_schema_info["latest_version"],
-                                "status": with_status,
-                                "properties": raw_schema,
-                                "edited_by": username,
-                                "realm": self.realm,
-                                "title": title,
-                                "parent": parent,
-                            }
-                        )
+                        json.dumps(json_contents)
                     )
                 else:
                     current_version = (
@@ -208,22 +210,13 @@ class FileSystemSchemaManager:
                         if current_schema_info["latest_version"]
                         else "v1.0.0"
                     )
+                    json_contents['version'] = current_version
                     draft_file_name = (
                         self._get_schema_path(schema_name)
                         / f"{schema_name}-v{current_version}-draft.json"
                     )
                     draft_file_name.write_text(
-                        json.dumps(
-                            {
-                                "schema_name": schema_name,
-                                "version": current_version,
-                                "status": with_status,
-                                "schema": raw_schema,
-                                "edited_by": username,
-                                "realm": self.realm,
-                                "title": title,
-                            }
-                        )
+                        json.dumps(json_contents)
                     )
             else:
                 if current_version.startswith("auto"):
@@ -234,6 +227,7 @@ class FileSystemSchemaManager:
                         else "1.0.0",
                         auto_part,
                     )
+                json_contents['version'] = current_version
 
                 draft_file = (
                     self._get_schema_path(schema_name)
@@ -241,17 +235,7 @@ class FileSystemSchemaManager:
                 )
 
                 draft_file.write_text(
-                    json.dumps(
-                        {
-                            "schema_name": schema_name,
-                            "version": current_version,
-                            "status": with_status,
-                            "schema": raw_schema,
-                            "edited_by": username,
-                            "realm": self.realm,
-                            "title": title,
-                        }
-                    )
+                    json.dumps(json_contents)
                 )
 
         if with_status == "published":
@@ -277,17 +261,7 @@ class FileSystemSchemaManager:
             )
 
             new_published_file.write_text(
-                json.dumps(
-                    {
-                        "schema_name": schema_name,
-                        "version": current_version,
-                        "status": with_status,
-                        "schema": raw_schema,
-                        "edited_by": username,
-                        "realm": self.realm,
-                        "title": title,
-                    }
-                )
+                json.dumps(json_contents)
             )
             
 
