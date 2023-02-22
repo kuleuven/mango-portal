@@ -8,6 +8,8 @@ import logging
 
 from pathlib import Path, PurePath
 
+import pprint
+
 
 class SchemaManager(object):
     def __init__(self, zone: str, realm: str):
@@ -42,10 +44,11 @@ class FileSystemSchemaManager:
             # mkdir -p equivalent
             self._storage_schemas_path.mkdir(parents=True, exist_ok=True)
         # load schemas if any exist yet
-        self._schemas = self.list_schemas()
-        self._schemas_dir_mtime = self._storage_schemas_path.stat().st_mtime
         self.zone = zone
         self.realm = realm
+        self._schemas = self.list_schemas()
+        self._schemas_dir_mtime = self._storage_schemas_path.stat().st_mtime
+
         print(self)
 
     def increment_version(self, version_string: str, part="major"):
@@ -67,14 +70,17 @@ class FileSystemSchemaManager:
 
     def get_schema_info(self, schema_name: str) -> dict:
         schema_dir = self._get_schema_path(schema_name)
-        if schema_name in self._schemas and (
-            self._schemas[schema_name]["timestamp"] == schema_dir.stat().st_mtime
+        if (
+            hasattr(self, "_schemas")
+            and (schema_name in self._schemas)
+            and (self._schemas[schema_name]["timestamp"] == schema_dir.stat().st_mtime)
         ):
             return self._schemas[schema_name]
 
-        all_schema_files = schema_dir.glob("*.json")
-        published_files = schema_dir.glob("*published.json")
-        draft_files = schema_dir.glob("*draft.json")
+        all_schema_files = list(schema_dir.glob("*.json"))
+        pprint.pprint(all_schema_files)
+        published_files = list(schema_dir.glob("*published.json"))
+        draft_files = list(schema_dir.glob("*draft.json"))
         total_count = len(all_schema_files)
         published_count = len(published_files)
         draft_count = len(draft_files)
@@ -93,9 +99,13 @@ class FileSystemSchemaManager:
         if total_count > 0:
             with all_schema_files[0].open() as first_schema_file:
                 schema_file_content = json.load(first_schema_file)
-                title = schema_file_content["title"]
+                title = (
+                    schema_file_content["title"]
+                    if "title" in schema_file_content
+                    else "UNKNOWN"
+                )
 
-        self._schemas[schema_name] = {
+        return {
             "total_count": total_count,
             "published_count": published_count,
             "draft_count": draft_count,
@@ -109,8 +119,6 @@ class FileSystemSchemaManager:
             "realm": self.realm,
             "title": title,
         }
-
-        return self._schemas[schema_name]
 
     def list_schemas(self, filters=["published_count", "draft_count"]) -> dict:
         """
@@ -128,9 +136,10 @@ class FileSystemSchemaManager:
             for schema_path in realm_schemas_path.glob("*")
             if schema_path.is_dir()
         ]
-        schemas_dict = self._schemas = {
-            schema: self.get_schema_info(schema) for schema in schemas
-        }
+        pprint.pprint(schemas)
+        schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
+        pprint.pprint(realm_schemas_path)
+        pprint.pprint(schemas_dict)
 
         if not filters:
             return schemas_dict
@@ -166,7 +175,7 @@ class FileSystemSchemaManager:
         current_version="auto-major",
         with_status="draft",
         title="MISSING TITLE",
-        username="unknown"
+        username="unknown",
     ):
         current_schema_info = self.get_schema_info(schema_name)
         if with_status == "draft":
@@ -270,7 +279,7 @@ class FileSystemSchemaManager:
                         "version": current_version,
                         "status": with_status,
                         "schema": raw_schema,
-                        "edited_by": g.irods_session.username,
+                        "edited_by": username,
                         "realm": self.realm,
                         "title": title,
                     }
