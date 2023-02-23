@@ -118,9 +118,17 @@ def update_zone_info(irods_zones, token=API_TOKEN):
 
 
 def current_user_api_token():
+    drop = False
+
+    if 'drop_data_platform_privileges' in session:
+        drop = session['drop_data_platform_privileges']
+
     response = requests.post(
         f"{API_URL}/v1/token/exchange",
-        json={"id_token": Session(session['openid_session']).jwt_token},
+        json={
+            "id_token": Session(session['openid_session']).jwt_token,
+            "drop_permissions": drop,
+        },
     )
     response.raise_for_status()
 

@@ -178,10 +178,21 @@ def logout_openid():
     if 'openid_session' in session:
         del session['openid_session']
 
+    if 'drop_data_platform_privileges' in session:
+        del session['drop_data_platform_privileges']
+
     if 'userid' in session:
         del session['userid']
 
     return render_template('user/logout_openid.html.j2')
+
+@data_platform_user_bp.route('/user/openid/drop_permissions', methods=["GET"])
+@openid_login_required
+def drop_permissions():
+    session['drop_data_platform_privileges'] = True
+
+    return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+
 
 @data_platform_user_bp.route("/data-platform/connection-info/modal/<zone>", methods=["GET"])
 @openid_login_required

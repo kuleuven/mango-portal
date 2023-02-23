@@ -86,7 +86,7 @@
             <div class="accordion-item">
                 <h4 class="accordion-header" id="#{{ platform }}Header" style="position: relative">
                     <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#{{ platform }}" aria-expanded="false" aria-controls="{{ platform }}">
-                        {{ platform }}
+                        {{ platform|replace('generic', 'Globus Shares') }}
                     </button>
                 </h4>
 
@@ -144,22 +144,26 @@
 
     {% if admin %}
     <div class="mt-3">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProject">
-            Add irods project
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRodsProject">
+            Add iRODS project
+        </button>
+
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGenericProject">
+            Add globus share
         </button>
     </div>
 
     <!-- Add project model -->
     <div class="modal fade"
-        id="addProject"
+        id="addRodsProject"
         tabindex="-1"
-        aria-labelledby="addProjectLabel"
+        aria-labelledby="addRodsProjectLabel"
         aria-hidden="true">
         <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-            <h5 class="modal-title" id="addProjectLabel">
-                Add project
+            <h5 class="modal-title" id="addRodsProjectLabel">
+                Add iRODS project
             </h5>
             <button type="button"
                     class="btn-close"
@@ -167,7 +171,7 @@
                     aria-label="Close">
             </button>
             </div>
-            <form action="{{ url_for('data_platform_project_bp.add_project') }}""
+            <form action="{{ url_for('data_platform_project_bp.add_irods_project') }}""
                 method="post"
                 enctype="multipart/form-data"
                 class="row g-3 needs-validation"
@@ -236,9 +240,59 @@
         </div>
         </div>
     </div>
+
+    <div class="modal fade"
+        id="addGenericProject"
+        tabindex="-1"
+        aria-labelledby="addGenericProjectLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="addGenericProjectLabel">
+                Add globus share
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <form action="{{ url_for('data_platform_project_bp.add_generic_project') }}""
+                method="post"
+                enctype="multipart/form-data"
+                class="row g-3 needs-validation"
+                novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="modal-body">
+                <div class="mb-3">
+                <label for="name" class="col-form-label">
+                    Project name
+                </label>
+                <input type="text"
+                        class="form-control"
+                        id="name"
+                        name="name"
+                        required pattern="^[a-zA-Z0-9-_]*$" />
+                <div class="invalid-feedback">
+                    A valid project name is required. It may consist of <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>-</code> and <code>_</code> only.
+                </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+                </button>
+                <button class="btn btn-primary" type="submit">
+                Add
+                </button>
+            </div>
+            </form>
+        </div>
+        </div>
+    </div>
     {% endif %}
 
-    <!-- Add project model -->
     <div class="modal fade"
         id="connectInformation"
         tabindex="-1"

@@ -16,8 +16,9 @@
   </style>
 {% endblock head %}
 {% block body %}
-  <nav aria-label="breadcrumb" class="navbar-light bg-light sticky-top pb-2 pt-1">
-    <div class="text-bg-light">
+  <nav aria-label="breadcrumb"
+       class="navbar-light bg-light sticky-top pb-2 pt-1">
+    <div class="text-bg-light mr-4">
       <ol class="breadcrumb">
         <i class="bi bi-house-door-fill"> </i>&nbsp;
         {#<li class="breadcrumb-item">{{ breadcrumbs[0]['label'] }}</li>#}
@@ -797,6 +798,7 @@ Dropzone.options.mangoDropzone = {
 
     autoProcessQueue: false,
     dictDefaultMessage: "Click or drag files to upload here. When your selection is ready, click the buttton below to start the upload.",
+    addRemoveLinks: true,
     init: function () {
       var submitButton = document.querySelector("#submit-all")
       ourDropzone =  this;
