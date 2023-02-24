@@ -544,6 +544,9 @@ class Schema extends ComplexField {
                 schemas[this.name].published = [this.version];
                 schemas[this.name].draft = [];
                 document.getElementById(this.card_id).remove();
+                this.field_ids.forEach((field_id) => {
+                    this.fields[field_id].create_modal(this, 'new');
+                });
                 this.view();
             } else {
                 let old_input_view = document
