@@ -131,7 +131,8 @@ class MovingViewer extends MovingField {
         this.div = Field.quick("div", "card border-primary viewer");
         this.div.id = form.id;
         this.body = form.viewer_input();
-        let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(`mod-${form.id}-${form.schema_name}`));
+        let modal_id = `mod-${form.id}-${form.schema_name}-${schema_status}`;
+        let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modal_id));
         this.copy = this.add_btn('copy', 'front', () => this.duplicate(form, schema, schema_status));
         this.edit = this.add_btn('edit', 'pencil', () => modal.toggle());
         if (form.is_duplicate) {
@@ -156,6 +157,8 @@ class MovingViewer extends MovingField {
         clone.required = form.required;
         clone.repeatable = form.repeatable;
         clone.values = form.values;
+        clone.type = form.type;
+        clone.default = form.default;
         if (form.constructor.name == 'ObjectInput') {
             clone.editor = form.editor;
         }
@@ -405,16 +408,11 @@ class BasicForm {
 
         input_div.appendChild(validator);
 
-        this.form.insertBefore(input_div, this.divider);
-
-
-        // if (this.form.childNodes.length == 0 || this.form.lastChild.classList.contains('form-container')) {
-        //     // the second part checks that the last element is not the submit button (or div with, in this case)
-        //     this.form.appendChild(input_div);
-        // } else {
-        //     let br = this.form.querySelector('br');
-        //     this.form.insertBefore(input_div, br);
-        // }
+        if (this.switches) {
+            this.form.insertBefore(input_div, this.switches);
+        } else {
+            this.form.insertBefore(input_div, this.divider);
+        }
     }
 
     add_select(label_text, select_id, options, selected = false) {
@@ -508,8 +506,8 @@ class BasicForm {
         // Add a radio switch to select a field as required
         // I'm adding the radio switch for "repeatable" and "dropdown" here as well
         // For multiple choice fields, add 'dropdown' to switchnames and the Object.
-        let div = Field.quick("div", "col-3 mt-2");
-        div.id = 'switches-div';
+        this.switches = Field.quick("div", "col-3 mt-2");
+        this.switches.id = 'switches-div';
         let subdiv = Field.quick("div", "form-check form-switch form-check-inline");
         
         let switches = {
@@ -536,8 +534,8 @@ class BasicForm {
             subdiv.appendChild(input);
         }
         
-        div.appendChild(subdiv);
-        this.form.insertBefore(div, this.divider);
+        this.switches.appendChild(subdiv);
+        this.form.insertBefore(this.switches, this.divider);
         // this.form.appendChild(div);
     }
 
