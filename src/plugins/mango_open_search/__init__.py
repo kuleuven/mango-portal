@@ -616,20 +616,70 @@ def permissions_changed_listener(sender, **parameters):
     )
 
 
+def data_object_moved_listener(sender, **parameters):
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="delete_item",
+        item_type="data_object",
+        item_path=parameters["original_path"],
+    )
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="index_item",
+        item_type="data_object",
+        item_path=parameters["new_path"],
+    )
+
+
+def collection_moved_listener(sender, **parameters):
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="delete_subtree",
+        item_type="collection",
+        item_path=parameters["original_path"],
+    )
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="index_item",
+        item_type="collection",
+        item_path=parameters["new_path"],
+    )
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="index_subtree",
+        item_type="collection",
+        item_path=parameters["new_path"],
+    )
+
+
+def data_object_copied_listener(sender, **parameters):
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="index_item",
+        item_type="data_object",
+        item_path=parameters["new_path"],
+    )
+
 
 signals.collection_added.connect(collection_modified_listener)
 signals.collection_changed.connect(collection_modified_listener)
 signals.collection_deleted.connect(collection_deleted_listener)
 signals.collection_trashed.connect(collection_deleted_listener)
-
+signals.collection_moved.connect(collection_moved_listener)
+signals.collection_renamed.connect(collection_moved_listener)
 signals.subtree_added.connect(subtree_added_listener)
 
 signals.data_object_added.connect(data_object_modified_listener)
 signals.data_object_changed.connect(data_object_modified_listener)
 signals.data_object_deleted.connect(data_object_deleted_listener)
 signals.data_object_trashed.connect(data_object_deleted_listener)
+signals.data_object_moved.connect(data_object_moved_listener)
+signals.data_object_renamed.connect(data_object_moved_listener)
+signals.data_object_copied.connect(data_object_copied_listener)
 
 signals.permissions_changed.connect(permissions_changed_listener)
+
+signals.collection_moved
 
 # Indexing thread :)
 
