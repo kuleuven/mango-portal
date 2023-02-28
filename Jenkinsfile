@@ -9,18 +9,18 @@ def allowed_branch_names = [
   'main': 'latest'
 ]
 
-def deploy_environment = [
+def deploy_tier = [
   'development': 'test',
   'main': 'production',
 ]
 
 def publish = allowed_branch_names.containsKey(env.BRANCH_NAME)
 def tag = ""
-def env = ""
+def tier = ""
 if (publish) {
   tag = allowed_branch_names[env.BRANCH_NAME]
-  if (deploy_environment.containsKey(env.BRANCH_NAME)) {
-    env = deploy_environment[env.BRANCH_NAME]
+  if (deploy_tier.containsKey(env.BRANCH_NAME)) {
+    tier = deploy_tier[env.BRANCH_NAME]
   }
 }
 buildDockerImage {
@@ -30,10 +30,10 @@ buildDockerImage {
   noPublish = !publish
 }
 
-if (env!="") {
+if (tier!="") {
   stage("Deploy") {
      build job: '/team-faciliteiten-voor-onderzoek/gitea/mango-portal/deploy/', wait: true, parameters: [
-     [$class: 'StringParameterValue', name: 'Tier', value: env]
+     [$class: 'StringParameterValue', name: 'Tier', value: tier]
      ]
   }
 }
