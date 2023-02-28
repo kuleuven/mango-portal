@@ -238,14 +238,8 @@ class FileSystemSchemaManager:
             if draft_file_name := current_schema_info["draft_name"]:
                 draft_file: Path = self._get_schema_path(schema_name) / draft_file_name
                 draft_file.unlink()
-            if published_file_name := current_schema_info["published_name"]:
-                published_file: Path = (
-                    self._get_schema_path(schema_name) / published_file_name
-                )
-                published_file.rename(
-                    published_file_name.replace("-published.json", ".json")
-                    # edit the metadata status to archived
-                )
+            if current_schema_info["published_name"]:
+                self.archive_published_schema(schema_name)
 
             new_published_file = (
                 self._get_schema_path(schema_name)
@@ -262,9 +256,13 @@ class FileSystemSchemaManager:
             published_file: Path = (
                 self._get_schema_path(schema_name) / published_file_name
             )
+            # change the status to archived
+            schema_dict = json.loads(published_file.read_text())
+            schema_dict["status"] = "archived"
+            published_file.write_text(json.dumps(schema_dict))
             published_file.rename(
-                published_file_name.replace("-published.json", ".json")
-                # also change the status to archived
+                self._get_schema_path(schema_name)
+                / published_file_name.replace("-published.json", ".json")
             )
             return True
         else:
