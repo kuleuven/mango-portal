@@ -13,29 +13,12 @@
     height: 6px;
     top: 85%;
   }
-<<<<<<< Updated upstream
-=======
-
-.btn-oc {
-  --bs-btn-font-weight: 600;
-  --bs-btn-color: var(--bs-primary);
-  --bs-btn-bg: var(--bs-white);
-  --bs-btn-border-radius: 0rem;
-  --bs-btn-active-color: var(--bs-white);
-  --bs-btn-active-bg: var(--bs-primary);
-  --bs-btn-active-border-color: var(--bs-primary);
-  }
->>>>>>> Stashed changes
   </style>
 {% endblock head %}
 {% block body %}
   <nav aria-label="breadcrumb"
        class="navbar-light bg-light sticky-top pb-2 pt-1">
-<<<<<<< Updated upstream
     <div class="text-bg-light mr-4">
-=======
-    <div class="text-bg-light">
->>>>>>> Stashed changes
       <ol class="breadcrumb">
         <i class="bi bi-house-door-fill"> </i>&nbsp;
         {#<li class="breadcrumb-item">{{ breadcrumbs[0]['label'] }}</li>#}
@@ -137,7 +120,6 @@
       {{ block_macros.metadata_block(collection.id, collection.path.lstrip("/"), grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="collection", current_user_rights=current_user_rights)}}
     </div>
     <div class="tab-pane show active" id="collection-content">
-<<<<<<< Updated upstream
       {#  <div style="width:fit-content" class="input-group my-3">
       <select class="form-select" id="action_select">
         <option value="" selected>Choose action for selected items</option>
@@ -150,42 +132,6 @@
         <thead>
           <tr>
             {# <th scope="col">Select</th> #}
-=======
-      <div style="width:fit-content" class="input-group my-3">
-        <select class="form-select"
-                aria-label="Select bulk operation"
-                id="action_select"
-                aria-describedby="selection_help">
-          <option value="move">
-            Move
-          </option>
-          <option value="copy">
-            Copy
-          </option>
-          <option value="delete">
-            Delete
-          </option>
-          {# <option value="download">Download</option> #}
-        </select>
-        <button type="button"
-                class="btn btn-primary"
-                onclick="apply_bulk_operation()"
-                disabled>Apply</button>
-      </div>
-      <div id="selection_help" class="form-text">Copying is only available for data objects.</div>
-      <bulk-links post="{{ url_for('browse_bp.bulk_operation_items') }}" tree="{{ url_for('api_collection_tree') }}"/>
-      <table class="table table-striped table-hover mt-2" id="browseTable">
-        <thead>
-          <tr>
-            <th scope="col" class="position-relative">
-              <input class="form-check-input"
-                     type="checkbox"
-                     value=""
-                     id="select_all"
-                     aria-label="Select all rows">
-              <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-primary"></span>
-            </th>
->>>>>>> Stashed changes
             <th scope="col">Name</th>
             <th scope="col">Owner</th>
             <th scope="col">Created</th>
@@ -197,28 +143,16 @@
         <tbody>
           {% for collection in sub_collections %}
             <tr>
-<<<<<<< Updated upstream
               {# <td><input style="vertical-align:middle"
        class="form-check-input checkbox-inline"
        type="checkbox"
        value="{{collection.path}}"></td> #}
-=======
-              <th scope="row">
-                <input style="vertical-align:middle"
-                       class="form-check-input checkbox-inline"
-                       type="checkbox"
-                       value="col-{{ collection.path }}"
-                       aria-label="Select {{ collection.path }}">
-              </td>
->>>>>>> Stashed changes
               <td>
                 <i class="bi bi-folder fs-4"></i> <a href="{{ url_for('browse_bp.collection_browse', collection=collection.path.lstrip('/'))}}">{{ collection.name }}</a>
               </td>
               <td>{{ collection.owner_name }}</td>
               <td>{{ collection.create_time | localize_datetime }}</td>
-              <td>
-                {{ collection.modify_time | localize_datetime }}
-              </td>
+              <td>{{ collection.modify_time | localize_datetime }}</td>
               <td>
               </td>
               <td>
@@ -227,20 +161,10 @@
           {% endfor %}
           {% for data_object in data_objects %}
             <tr>
-<<<<<<< Updated upstream
               {# <td><input style="vertical-align:middle"
        class="form-check-input checkbox-inline"
        type="checkbox"
        value="{{data_object.path}}"></td> #}
-=======
-              <th scope="row">
-                <input style="vertical-align:middle"
-                       class="form-check-input checkbox-inline"
-                       type="checkbox"
-                       value="dobj-{{ data_object.path }}"
-                       aria-label="Select {{ collection.path }}">
-              </td>
->>>>>>> Stashed changes
               <td>
                 <i class="bi bi-file-earmark fs-4"></i><span> <a href="{{ url_for('browse_bp.view_object', data_object_path=data_object.path.lstrip('/'))}}">{{ data_object.name }}</a></span>
               </td>
@@ -873,15 +797,14 @@ hash && document.querySelector('a[href="'+hash+'"]').click()
 Dropzone.options.mangoDropzone = {
 
     autoProcessQueue: false,
-    maxFilesize: 2048,
-    dictDefaultMessage: "Click or drag files to upload here. When your selection is ready, click the buttton below to start the upload. <b>The size should be < 2GB</b>",
+    dictDefaultMessage: "Click or drag files to upload here. When your selection is ready, click the buttton below to start the upload.",
+    addRemoveLinks: true,
     init: function () {
       var submitButton = document.querySelector("#submit-all")
       ourDropzone =  this;
       submitButton.addEventListener("click", function() {
         ourDropzone.processQueue();
       });
-
       // if there are more than the parallel uploads parameter, ensure that all get uploaded
       this.on("processing", function() { ourDropzone.options.autoProcessQueue = true; });
       // reload the page at the end to show the uploaded files in iRODS
