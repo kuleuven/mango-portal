@@ -20,7 +20,9 @@ class ComplexField {
         this.field_ids = [];
         this.fields = {};
         this.new_field_idx = 0;
-        this.name = this.constructor.name == 'Schema' && this.status == 'draft' ? 'schema-editor' : this.name;
+        this.name = this.constructor.name == 'Schema' && this.status == 'draft'
+            ? 'schema-editor'
+            : this.parent ? this.parent.match(/(.+)-\d\.\d\.\d/)[1] : this.name;
     }
 
     fields_to_json() {
@@ -31,25 +33,33 @@ class ComplexField {
     }
 
     from_json(data) {
-        this.name = data.title;
+        this.name = data.schema_name || data.title;
         this.title = data.title;
         this.field_ids = Object.keys(data.properties);
         if (this.field_ids.length > 0) {
             for (let entry of Object.entries(data.properties)) {
                 let new_field = InputField.choose_class(this.card_id, entry);
-                new_field.create_modal(this, data.status ? data.status : 'object');
+                new_field.create_form();
+                if (!data.status) {
+                    new_field.create_modal(this, 'object');
+                } else if (data.status == 'draft') {
+                    new_field.create_modal(this, data.status);
+                } else if (data.status == 'published' && schemas[this.name] && schemas[this.name].draft.length == 0) {
+                    new_field.create_modal(this, 'new');
+                }
+                
                 this.fields[entry[0]] = new_field;
             }
         }
     }
 
-    display_options(schema_status = undefined) {
+    display_options(schema_status = 'object') {
         let formTemp = Field.quick("div", "formContainer");
-        formTemp.id = schema_status == undefined ? 'object' : schema_status + '-templates';
-
-        let form_choice_modal = new Modal(this.choice_id, "What form element would you like to add?", "choiceTitle");
+        formTemp.id = schema_status + '-templates';
+        let modal_id = `${this.choice_id}-${schema_status}`;
+        let form_choice_modal = new Modal(modal_id, "What form element would you like to add?", "choiceTitle");
         form_choice_modal.create_modal([formTemp], 'lg');
-        let this_modal = document.getElementById(this.choice_id);
+        let this_modal = document.getElementById(modal_id);
         this_modal.addEventListener('show.bs.modal', () => {
             let formTemp = this_modal.querySelector('div.formContainer');
             if (formTemp.childNodes.length == 0) {
@@ -61,12 +71,12 @@ class ComplexField {
     }
 
     view_field(form_object, schema_status) {
-        let form_id = schema_status == undefined ? this.form_id : `form-${this.card_id}-${schema_status}`;
+        let form_id = schema_status == 'object' ? this.form_id : `form-${this.card_id}-${schema_status}`;
         let clicked_button = document.getElementById(form_id)
             .querySelectorAll('.adder')[this.new_field_idx];
         let below = clicked_button.nextSibling;
         let moving_viewer = form_object.view(this, schema_status);
-        let new_button = this.create_button();
+        let new_button = this.create_button(schema_status);
 
         below.parentElement.insertBefore(moving_viewer.div, below);
         below.parentElement.insertBefore(new_button, below);
@@ -87,7 +97,7 @@ class ComplexField {
     }
 
     toggle_saving(schema_status) {
-        let form_id = schema_status == undefined ? this.form_id : `form-${this.card_id}-${schema_status}`;
+        let form_id = schema_status == 'object' ? this.form_id : `form-${this.card_id}-${schema_status}`;
         const has_duplicates = Object.values(this.fields).some((field) => field.is_duplicate);
 
         const buttons = this.constructor.name == 'Schema'
@@ -109,15 +119,16 @@ class ComplexField {
         this.view_field(form_object, schema_status);
     }
 
-    update_field(form_object) {
+    update_field(form_object, schema_status) {
         // TODO have checks so we don't just replace everything
         this.fields[form_object.id] = form_object;
-        let viewer = document.getElementById(this.card_id).querySelector('#' + form_object.id);
+        let form_id = schema_status == 'object' ? this.form_id : `form-${this.card_id}-${schema_status}`;
+        let viewer = document.getElementById(form_id).querySelector('#' + form_object.id);
         viewer.querySelector('h5').innerHTML = form_object.required ? form_object.title + '*' : form_object.title;
         let rep_icon = Field.quick('i', 'bi bi-front px-2');
         if (form_object.repeatable) {
             viewer.querySelector('h5').appendChild(rep_icon);
-        } else if (viewer.querySelector('.bi-front') != null) {
+        } else if (viewer.querySelector('h5 .bi-front') != null) {
             viewer.querySelector('h5').removeChild(rep_icon);
         }
         let form_field = viewer.querySelector('.card-body');
@@ -126,7 +137,8 @@ class ComplexField {
     }
 
     replace_field(old_id, form_object, schema_status) {
-        const form = document.getElementById(`form-${this.card_id}-${schema_status}`);
+        let form_id = schema_status == 'object' ? this.form_id : `form-${this.card_id}-${schema_status}`;
+        const form = document.getElementById(form_id);
         const old_adder = form.querySelectorAll('.adder')[this.field_ids.indexOf(old_id)];
         old_adder.nextSibling.remove();
         old_adder.remove();
@@ -136,13 +148,14 @@ class ComplexField {
         this.add_field(form_object, schema_status);
     }
 
-    create_button() {
+    create_button(schema_status) {
         // Create a button to create more form elements
         let div = Field.quick('div', 'd-grid gap-2 adder mt-2');
+        let modal_id = `${this.choice_id}-${schema_status}`
         let button = Field.quick("button", "btn btn-primary btn-sm", "Add element");
         button.type = "button";
         button.setAttribute("data-bs-toggle", "modal");
-        button.setAttribute("data-bs-target", `#${this.choice_id}`);
+        button.setAttribute("data-bs-target", `#${modal_id}`);
 
         button.addEventListener('click', () => {
             this.new_field_idx = div.previousSibling.classList.contains('viewer') ?
@@ -234,6 +247,231 @@ class Schema extends ComplexField {
         return this.card.div;
     }
 
+    from_json(data) {
+        super.from_json(data);
+        this.name = data.schema_name;
+        this.status = data.status;
+        this.version = data.version;
+        this.parent = data.parent;
+    }
+
+    create_creator() {
+        this.status = 'draft';
+        this.display_options(this.status);
+        let form = this.create_editor(this.status, true);
+        this.card = new AccordionItem(this.card_id, 'New schema', this.container, true);
+        document.getElementById(this.container).appendChild(this.accordion_item);
+        this.card.append(form.form);
+    }
+
+    create_editor(id, is_new = false) {
+        let form = new BasicForm(`${this.card_id}-${id}`);
+        form.add_input("Schema ID", this.card_id + '-name', {
+            placeholder: "schema-name", validation_message: "This field is compulsory, please only use lower case letters, '_' and '-'.",
+            pattern: "[a-z0-9-_]+", description: is_new ? "This cannot be changed after the draft is saved." : false
+        });
+
+        form.add_input("Schema label", this.card_id + '-label', {
+            placeholder: "Some informative label",
+            validation_message: "This field is compulsory.",
+            description: is_new ? "This cannot be changed after the draft is saved." : false
+        });
+
+        let button = this.create_button(id);
+        form.form.insertBefore(button, form.divider);
+        form.add_action_button("Save draft", 'draft');
+        form.add_submit_action('draft', (e) => {
+            e.preventDefault();
+            if (!form.form.checkValidity()) {
+                e.stopPropagation();
+                form.form.classList.add('was-validated');
+            } else {
+                // save form!
+                this.save_draft(form, id, 'save');
+                form.form.classList.remove('was-validated');
+            }
+        });
+        form.add_action_button("Publish", 'publish', 'warning');
+
+        let name_input = form.form.querySelector(`#${this.card_id}-name`);
+
+        if (!is_new) {
+            name_input.setAttribute('readonly', '');
+            form.form.querySelector(`#${this.card_id}-label`).setAttribute('readonly', '');
+        } else if (!form.form.querySelector(`#${this.card_id}-name`).value) {
+            form.form.querySelector('button#draft').setAttribute('disabled', '');
+            form.form.querySelector('button#publish').setAttribute('disabled', '');
+            name_input.addEventListener('change', () => {
+                if (name_input.value) {
+                    form.form.querySelector('button#draft').removeAttribute('disabled');
+                    if (this.field_ids.length > 0) {
+                        form.form.querySelector('button#publish').removeAttribute('disabled', '');
+                    }            
+                }
+            });
+        }
+
+        if (this.field_ids.length == 0) {
+            form.form.querySelector('button#publish').setAttribute('disabled', '');
+        }        
+
+        form.add_submit_action('publish', (e) => {
+            e.preventDefault();
+            if (!form.form.checkValidity()) {
+                e.stopPropagation();
+                form.form.classList.add('was-validated');
+            } else {
+                console.log('Ready to publish');
+
+                let second_sentence = schemas[this.name] && schemas[this.name].published.length > 0 ?
+                    ` Version ${schemas[this.name].published[0]} will be archived.` :
+                    ''
+                const toast = new Toast(this.card_id + '-pub',
+                    "Published schemas cannot be edited." + second_sentence);
+                toast.show(() => {
+                    // save form!
+                    this.save_draft(form, id, 'publish');
+                    form.form.classList.remove('was-validated');
+                });
+            }
+        })
+        return form;
+    }
+
+    from_parent(parent) {
+        this.field_ids = [...parent.field_ids];
+        this.parent = `${parent.name}-${parent.version}`;
+        this.status = 'draft';
+        this.origin = { ids: [...parent.field_ids], json : {...parent.properties} };
+        if (this.field_ids.length > 0) {
+            for (let entry of Object.entries(parent.properties)) {
+                let new_field = InputField.choose_class(this.card_id, entry);
+                new_field.create_form();
+                new_field.create_modal(this, 'copy');
+                this.fields[entry[0]] = new_field;
+            }
+        }
+    }
+
+    setup_copy() {
+        this.fields_to_json()
+        this.child = new Schema(this.card_id, this.container, this.urls)
+        this.child.from_parent(this);
+    }
+
+    create_navbar() {
+        // design navbar
+        let nav_bar = new NavBar(this.card_id, ['justify-content-end', 'nav-pills']);
+        nav_bar.add_item('view', 'View', true);
+
+        let viewer = ComplexField.create_viewer(this);
+        nav_bar.add_tab_content('view', viewer);
+
+        if (this.status == 'draft') {
+            nav_bar.add_item('edit', 'Edit');
+
+            this.display_options(this.status);
+            let form = this.create_editor(this.status);
+            let inputs = form.form.querySelectorAll('input.form-control');
+            inputs[0].value = this.name; // id
+            inputs[1].value = this.title; // label
+            nav_bar.add_tab_content('edit', form.form);
+
+            nav_bar.add_action_button('Discard', 'danger', () => {
+                const toast = new Toast(this.card_id + '-discard',
+                    "A deleted draft cannot be recovered.");
+                toast.show(() => {
+                    schemas[this.name].draft = [];
+                    this.delete();
+                    if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
+                        // if there are no published or archived versions, delete the accordion item
+                        document.querySelector(`.accordion-collapse#${this.name}-schemas`)
+                            .parentElement
+                            .remove();
+                    } else {
+                        // just delete the draft tab
+                        new NavBar(this.name)
+                            .remove_item(`v${this.version.replaceAll('.', '')}`);
+                        let trigger = document.querySelector(`#nav-tab-${this.name} button`);
+                        bootstrap.Tab.getOrCreateInstance(trigger).show();
+                    }
+                });
+            });
+        } else if (this.status == 'published') {
+            if (schemas[this.name].draft.length == 0) {
+                this.display_options('new');
+                nav_bar.add_item('new', 'New (draft) version');
+                let new_form = this.create_editor('new');
+                let inputs = new_form.form.querySelectorAll('input.form-control');
+                inputs[0].value = this.name; // id
+                inputs[1].value = this.title; // label
+
+                nav_bar.add_tab_content('new', new_form.form);
+            }
+
+            this.setup_copy();
+            this.child.display_options('copy');
+            nav_bar.add_item('child', 'Copy to new schema');
+            let child_form = this.child.create_editor('copy', true);
+            nav_bar.add_tab_content('child', child_form.form);
+
+            nav_bar.add_action_button('Archive', 'danger', () => {
+                const toast = new Toast(this.card_id + '-discard',
+                    "Archived schemas cannot be implemented.");
+                toast.show(() => {
+                    schemas[this.name].published = [];
+                    // schemas[this.name].archived = [this.version];
+                    this.delete();
+                    if (schemas[this.name].draft.length + schemas[this.name].archived.length == 0) {
+                        // if there are no published or archived versions, delete the accordion item
+                        document.querySelector(`.accordion-collapse#${this.name}-schemas`)
+                            .parentElement
+                            .remove();
+                    } else {
+                        // just delete the draft tab
+                        new NavBar(this.name)
+                            .remove_item(`v${this.version.replaceAll('.', '')}`);
+                        let trigger = document.querySelector(`#nav-tab-${this.name} button`);
+                        bootstrap.Tab.getOrCreateInstance(trigger).show();
+                    }
+                });
+            });
+        }
+
+        this.nav_bar = nav_bar.nav_bar;
+        this.tab_content = nav_bar.tab_content;
+
+    }
+
+    view() {
+        // console.log('This is version', this.version, 'of', this.name, 'which has status:', this.status);
+
+        this.create_navbar();
+        this.card = document.createElement('div')
+        this.card.id = this.card_id;
+        this.card.appendChild(this.nav_bar);
+        this.card.appendChild(this.tab_content);
+        document.getElementById(this.container).appendChild(this.card);
+        if (this.field_ids.length == 0) {
+            let msg = Field.quick('div', 'viewer',
+                'This schema does not have any fields yet. Go to "edit" mode to add one.');
+            this.tab_content.querySelector('.input-view').appendChild(msg);
+        }
+        
+        this.field_ids.forEach((field_id, idx) => {
+            this.new_field_idx = idx;
+            if (this.status == 'draft') {
+                this.view_field(this.fields[field_id], 'draft');
+            } else {
+                if (schemas[this.name].draft.length == 0) {
+                    this.view_field(this.fields[field_id], 'new');
+                }
+                this.child.new_field_idx = idx;
+                this.child.view_field(this.child.fields[field_id], 'copy');
+            }
+        });
+    }
+
     save_draft(form, id, action) {
         // action indicates whether it's saved or published
         let is_new = this.card_id.startsWith('schema-editor');
@@ -252,23 +490,35 @@ class Schema extends ComplexField {
                 properties: this.properties
             };
             if (is_copy) {
-                json_contents.parent = this.card_id;
+                json_contents.parent = this.parent;
             }
 
             // container_id is the GLOBAL variable
             new SchemaGroup(name, label,
                 [{ name: name, version: '1.0.0', status: status, json: json_contents }],
                 container_id, this.urls);
-
+            form.reset();
+            form.form.querySelectorAll('.viewer').forEach((viewer) => {
+                viewer.nextSibling.remove();
+                viewer.remove();
+            });
+            this.reset();
             if (is_new) {
-                form.reset();
-                form.form.querySelectorAll('.viewer').forEach((viewer) => {
-                    viewer.nextSibling.remove();
-                    viewer.remove();
-                });
-                this.reset();
                 this.card.toggle();
+            } else {
+                this.field_ids = [...this.origin.ids];
+                if (this.field_ids.length > 0) {
+                    this.field_ids.forEach((field_id, idx) => {
+                        let new_field = InputField.choose_class(this.card_id, [field_id, this.origin.json[field_id]]);
+                        this.fields[field_id] = new_field;
+                        new_field.create_form();
+                        new_field.create_modal(this, 'copy');
+                        this.new_field_idx = idx;
+                        this.view_field(new_field, 'copy');
+                    });
+                }
             }
+            
         } else if (id == 'draft') {
             // this schema was modified
             this.name = form.form.querySelector(`#${this.card_id}-name`).value;
@@ -294,6 +544,9 @@ class Schema extends ComplexField {
                 schemas[this.name].published = [this.version];
                 schemas[this.name].draft = [];
                 document.getElementById(this.card_id).remove();
+                this.field_ids.forEach((field_id) => {
+                    this.fields[field_id].create_modal(this, 'new');
+                });
                 this.view();
             } else {
                 let old_input_view = document
@@ -348,74 +601,6 @@ class Schema extends ComplexField {
         }
     }
 
-    create_editor(id, is_new = false) {
-        let form = new BasicForm(`${this.card_id}-${id}`);
-        form.add_input("Schema ID", this.card_id + '-name', {
-            placeholder: "schema-name", validation_message: "This field is compulsory, please only use lower case letters, '_' and '-'.",
-            pattern: "[a-z0-9-_]+", description: is_new ? "This cannot be changed after the draft is saved." : false
-        });
-
-        form.add_input("Schema label", this.card_id + '-label', {
-            placeholder: "Some informative label",
-            validation_message: "This field is compulsory.",
-            description: is_new ? "This cannot be changed after the draft is saved." : false
-        });
-
-        if (!is_new) {
-            form.form.querySelector(`#${this.card_id}-name`).setAttribute('readonly', '');
-            form.form.querySelector(`#${this.card_id}-label`).setAttribute('readonly', '');
-        }
-
-        let button = this.create_button();
-        form.form.insertBefore(button, form.divider);
-        form.add_action_button("Save draft", 'draft');
-        form.add_submit_action('draft', (e) => {
-            e.preventDefault();
-            if (!form.form.checkValidity()) {
-                e.stopPropagation();
-                form.form.classList.add('was-validated');
-            } else {
-                // save form!
-                this.save_draft(form, id, 'save');
-                form.form.classList.remove('was-validated');
-            }
-        });
-        form.add_action_button("Publish", 'publish', 'warning');
-        if (this.field_ids.length == 0) {
-            form.form.querySelector('button#publish').setAttribute('disabled', '');
-        }
-        form.add_submit_action('publish', (e) => {
-            e.preventDefault();
-            if (!form.form.checkValidity()) {
-                e.stopPropagation();
-                form.form.classList.add('was-validated');
-            } else {
-                console.log('Ready to publish');
-
-                let second_sentence = schemas[this.name].published.length > 0 ?
-                    ` Version ${schemas[this.name].published[0]} will be archived.` :
-                    ''
-                const toast = new Toast(this.card_id + '-pub',
-                    "Published schemas cannot be edited." + second_sentence);
-                toast.show(() => {
-                    // save form!
-                    this.save_draft(form, id, 'publish');
-                    form.form.classList.remove('was-validated');
-                });
-            }
-        })
-        return form;
-    }
-
-    create_creator() {
-        this.status = 'draft';
-        this.display_options(this.status);
-        let form = this.create_editor(this.status, true);
-        this.card = new AccordionItem(this.card_id, 'New schema', this.container, true);
-        document.getElementById(this.container).appendChild(this.accordion_item);
-        this.card.append(form.form);
-    }
-
     delete() {
         const to_post = new FormData();
         to_post.append('realm', realm);
@@ -427,129 +612,7 @@ class Schema extends ComplexField {
         xhr.send(to_post);
         console.log(`${this.name} version ${this.version} (${this.status}) ${this.status == 'draft' ? 'deleted' : 'archived'}.`);
     }
-
-    create_navbar() {
-        // design navbar
-        let nav_bar = new NavBar(this.card_id, ['justify-content-end', 'nav-pills']);
-        nav_bar.add_item('view', 'View', true);
-
-        let viewer = ComplexField.create_viewer(this);
-        nav_bar.add_tab_content('view', viewer);
-
-        if (this.status == 'draft') {
-            nav_bar.add_item('edit', 'Edit');
-
-            this.display_options(this.status);
-            let form = this.create_editor(this.status);
-            let inputs = form.form.querySelectorAll('input.form-control');
-            inputs[0].value = this.name; // id
-            inputs[1].value = this.title; // label
-            nav_bar.add_tab_content('edit', form.form);
-
-            nav_bar.add_action_button('Discard', 'danger', () => {
-                const toast = new Toast(this.card_id + '-discard',
-                    "A deleted draft cannot be recovered.");
-                toast.show(() => {
-                    schemas[this.name].draft = [];
-                    this.delete();
-                    if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
-                        // if there are no published or archived versions, delete the accordion item
-                        document.querySelector(`.accordion-collapse#${this.name}-schemas`)
-                            .parentElement
-                            .remove();
-                    } else {
-                        // just delete the draft tab
-                        new NavBar(this.name)
-                            .remove_item(`v${this.version.replaceAll('.', '')}`);
-                        let trigger = document.querySelector(`#nav-tab-${this.name} button`);
-                        bootstrap.Tab.getOrCreateInstance(trigger).show();
-                    }
-                });
-            });
-        } else if (this.status == 'published') {
-            if (schemas[this.name].draft.length == 0) {
-                this.display_options('new');
-                nav_bar.add_item('new', 'New version');
-                let new_form = this.create_editor('new');
-                let inputs = new_form.form.querySelectorAll('input.form-control');
-                inputs[0].value = this.name; // id
-                inputs[1].value = this.title; // label
-
-                nav_bar.add_tab_content('new', new_form.form);
-            }
-
-            this.display_options('copy');
-            nav_bar.add_item('child', 'New from copy');
-            let child_form = this.create_editor('copy', true);
-            nav_bar.add_tab_content('child', child_form.form);
-
-            nav_bar.add_action_button('Archive', 'danger', () => {
-                const toast = new Toast(this.card_id + '-discard',
-                    "Archived schemas cannot be implemented.");
-                toast.show(() => {
-                    schemas[this.name].published = [];
-                    // schemas[this.name].archived = [this.version];
-                    this.delete();
-                    if (schemas[this.name].draft.length + schemas[this.name].archived.length == 0) {
-                        // if there are no published or archived versions, delete the accordion item
-                        document.querySelector(`.accordion-collapse#${this.name}-schemas`)
-                            .parentElement
-                            .remove();
-                    } else {
-                        // just delete the draft tab
-                        new NavBar(this.name)
-                            .remove_item(`v${this.version.replaceAll('.', '')}`);
-                        let trigger = document.querySelector(`#nav-tab-${this.name} button`);
-                        bootstrap.Tab.getOrCreateInstance(trigger).show();
-                    }
-                });
-            });
-        }
-
-        this.nav_bar = nav_bar.nav_bar;
-        this.tab_content = nav_bar.tab_content;
-
-    }
-
-    view() {
-        // console.log('This is version', this.version, 'of', this.name, 'which has status:', this.status);
-
-        this.create_navbar();
-        this.card = document.createElement('div')
-        this.card.id = this.card_id;
-        this.card.appendChild(this.nav_bar);
-        this.card.appendChild(this.tab_content);
-        document.getElementById(this.container).appendChild(this.card);
-        if (this.field_ids.length == 0) {
-            let msg = Field.quick('div', 'viewer',
-                'This schema does not have any fields yet. Go to "edit" mode to add one.');
-            this.tab_content.querySelector('.input-view').appendChild(msg);
-        }
-        this.field_ids.forEach((field_id, idx) => {
-            this.new_field_idx = idx;
-            if (this.status == 'draft') {
-                this.view_field(this.fields[field_id], 'draft');
-            } else {
-                if (schemas[this.name].draft.length == 0) {
-                    this.view_field(this.fields[field_id], 'new');
-                }
-                this.view_field(this.fields[field_id], 'copy');
-            }
-        });
-    }
-
-    from_json(data) {
-        super.from_json(data);
-        this.name = data.schema_name;
-        this.status = data.status;
-        this.version = data.version;
-        this.parent = data.parent;
-
-        if (this.status != 'draft') {
-            this.fixed = data;
-        }
-    }
-
+    
     post() {
         const to_post = new FormData();
         this.fields_to_json();
@@ -559,6 +622,9 @@ class Schema extends ComplexField {
         to_post.append('raw_schema', JSON.stringify(this.properties));
         to_post.append('with_status', this.status);
         to_post.append('title', this.title);
+        if (this.parent) {
+            to_post.append('parent', this.parent);
+        }
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', this.urls.new, true);

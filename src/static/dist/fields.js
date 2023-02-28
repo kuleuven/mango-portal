@@ -33,7 +33,7 @@ class InputField {
     }
 
     render(schema, schema_status) {
-        this.id = `${this.form_type}-${schema.id}`;
+        this.id = `${this.form_type}-${schema.id}-${schema_status}`;
         this.create_form();
 
         let new_form = Field.quick("div", "border HTMLElement rounded");
@@ -42,7 +42,7 @@ class InputField {
         this.create_modal(schema, schema_status)
 
         new_button.setAttribute("data-bs-toggle", "modal");
-        new_button.setAttribute("data-bs-target", `#add-${this.id}-${this.schema_name}`);
+        new_button.setAttribute("data-bs-target", `#add-${this.id}-${this.schema_name}-${schema_status}`);
 
         new_form.appendChild(new_button);
         new_form.appendChild(this.create_example());
@@ -118,7 +118,7 @@ class InputField {
     }
 
     create_modal(schema, schema_status) {
-        let modal_id = `${this.mode}-${this.id}-${this.schema_name}`;
+        let modal_id = `${this.mode}-${this.id}-${this.schema_name}-${schema_status}`;
         let edit_modal = new Modal(modal_id, `Add ${this.button_title}`, `title-${this.form_type}`);
         let form = this.form_field.form;
         edit_modal.create_modal([form], 'lg');
@@ -142,7 +142,7 @@ class InputField {
                 }
                 modal_dom.querySelector('.modal-body').appendChild(form);
 
-                let clone_modal_id = `${clone.mode}-${clone.id}-${clone.schema_name}`;
+                let clone_modal_id = `${clone.mode}-${clone.id}-${clone.schema_name}-${schema_status}`;
                 if (clone_modal_id != modal_id) {
                     let clone_modal_dom = document.getElementById(clone_modal_id);
                     let clone_form = clone.form_field.form;
@@ -173,7 +173,7 @@ class InputField {
         if (old_id == new_id) {
             this.title = data.get(`${this.id}-label`);
             this.recover_fields(data);
-            schema.update_field(this);
+            schema.update_field(this, schema_status);
             return this;
         } else {
             let clone = new this.constructor(schema.initial_name);
@@ -283,13 +283,15 @@ class TypedInput extends InputField {
         return inner_input;
     }
     add_default_field() {
-        this.form_field.add_input(
-            'Default value', `${this.id}-default`,
-            {
-                description: "Default value for this field: only valid if the field is required.",
-                value: this.default, required: false
-            }
-        )
+        if (this.form_field.form.querySelector(`#div-${this.id}-default`) == null) {
+            this.form_field.add_input(
+                'Default value', `${this.id}-default`,
+                {
+                    description: "Default value for this field: only valid if the field is required.",
+                    value: this.default, required: false
+                }
+            );
+        }
     }
 
     viewer_input(active = false) {
@@ -370,7 +372,16 @@ class TypedInput extends InputField {
         let min_id = `${this.id}-min`;
         let max_id = `${this.id}-max`;
 
+        let default_div = this.form_field.form.querySelector(`#div-${this.id}-default`);
         let default_input = this.form_field.form.querySelector(`#${this.id}-default`);
+
+        if (format == 'textarea') {
+            if (default_div != null) {
+                this.form_field.form.removeChild(default_div);
+            }
+        } else {
+            this.add_default_field();
+        }
         
         if (format == "integer" | format == 'float') {
             if (default_input !== null) {
@@ -422,8 +433,9 @@ class TypedInput extends InputField {
                 delete this.values.minimum;
                 delete this.values.maximum;
             }
+            
             if (format == 'textarea') {
-                console.log('TODO: get textarea for defaults? But does that make sense?');
+                
             } else if (default_input !== null) {
                 default_input.type = format;
             }
@@ -484,7 +496,6 @@ class ObjectInput extends InputField {
             this.editor = new ObjectEditor(this.form_field.form.id, this);
         } else {
             this.editor.form_id = this.form_field.form.id;
-            console.log(this.editor.form_id)
         }
         // this.editor.modal = this.modal;
         this.editor.display_options();

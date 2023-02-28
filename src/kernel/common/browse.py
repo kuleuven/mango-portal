@@ -21,6 +21,7 @@ from irods.user import iRODSUserGroup, UserGroup, User
 from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
 from irods.session import iRODSSession
+from irods.path import iRODSPath
 
 from PIL import Image
 from pdf2image import convert_from_path
@@ -45,6 +46,8 @@ import logging
 import irods_session_pool
 from multidict import MultiDict
 from operator import itemgetter
+from pathlib import PurePath
+
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
 # proxy so it can also be imported in blueprints from csrf.py independently
@@ -55,13 +58,15 @@ import signals
 
 
 def group_prefix_metadata_items(
-    metadata_items, mango_prefix, no_schema_label="other", group_analysis_unit=False,
+    metadata_items,
+    mango_prefix,
+    no_schema_label="other",
+    group_analysis_unit=False,
 ):
-    """
-    """
-    grouped_metadata = {no_schema_label: MultiDict() }
+    """ """
+    grouped_metadata = {no_schema_label: MultiDict()}
     if group_analysis_unit:
-        grouped_metadata['analysis'] = MultiDict()
+        grouped_metadata["analysis"] = MultiDict()
     for avu in metadata_items:
         if avu.name.startswith(mango_prefix) and avu.name.count(".") >= 2:
             (mango_schema_prefix, schema, avu_name) = avu.name.split(".", 2)
@@ -69,21 +74,25 @@ def group_prefix_metadata_items(
             if schema not in grouped_metadata:
                 grouped_metadata[schema] = MultiDict()
             grouped_metadata[schema].add(avu.name, avu)
-        elif (group_analysis_unit and avu.units and avu.units.startswith('analysis')):
-            grouped_metadata['analysis'].add(avu.name, avu)
+        elif group_analysis_unit and avu.units and avu.units.startswith("analysis"):
+            grouped_metadata["analysis"].add(avu.name, avu)
         else:
             grouped_metadata[no_schema_label].add(avu.name, avu)
     # sort the non schema lists by key
-    grouped_metadata[no_schema_label]=MultiDict(sorted(grouped_metadata[no_schema_label].items(),  key=itemgetter(0)))
-    if 'analysis' in grouped_metadata:
-        grouped_metadata['analysis']=MultiDict(sorted(grouped_metadata['analysis'].items(), key=itemgetter(0)))
+    grouped_metadata[no_schema_label] = MultiDict(
+        sorted(grouped_metadata[no_schema_label].items(), key=itemgetter(0))
+    )
+    if "analysis" in grouped_metadata:
+        grouped_metadata["analysis"] = MultiDict(
+            sorted(grouped_metadata["analysis"].items(), key=itemgetter(0))
+        )
     # if there are no consolidated metadata in the analysis group, delete the (empty) group
-    if group_analysis_unit and len(grouped_metadata['analysis']) == 0:
-        del grouped_metadata['analysis']
+    if group_analysis_unit and len(grouped_metadata["analysis"]) == 0:
+        del grouped_metadata["analysis"]
     return grouped_metadata
 
 
-#@cache.memoize(1200)
+# @cache.memoize(1200)
 def get_current_user_rights(current_user_name, item):
     access = []
     permissions = g.irods_session.permissions.get(item, report_raw_acls=False)
@@ -91,11 +100,19 @@ def get_current_user_rights(current_user_name, item):
     # group_names: workaround for non expanding user groups for data objects
     group_names = []
     if current_user_name in irods_session_pool.irods_user_sessions:
-        group_names = [group.name for group in irods_session_pool.irods_user_sessions[current_user_name].groups]
+        group_names = [
+            group.name
+            for group in irods_session_pool.irods_user_sessions[
+                current_user_name
+            ].groups
+        ]
     for permission in permissions:
-        if current_user_name == permission.user_name or permission.user_name in group_names:
+        if (
+            current_user_name == permission.user_name
+            or permission.user_name in group_names
+        ):
             access += [permission.access_name]
-    #pprint.pprint(access)
+    # pprint.pprint(access)
     return access
 
 
@@ -104,7 +121,7 @@ def get_current_user_rights(current_user_name, item):
 )
 @browse_bp.route("/collection/browse/<path:collection>")
 def collection_browse(collection):
-    """ returns the list of objects and subcollections for the given
+    """returns the list of objects and subcollections for the given
     collection.
 
     Arguments:
@@ -146,7 +163,8 @@ def collection_browse(collection):
     # metadata grouping  to be moved to proper function for re-use
     other = current_app.config["MANGO_NOSCHEMA_LABEL"]
     grouped_metadata = group_prefix_metadata_items(
-        current_collection.metadata(timestamps=True).items(), current_app.config["MANGO_PREFIX"]
+        current_collection.metadata(timestamps=True).items(),
+        current_app.config["MANGO_PREFIX"],
     )
 
     schema_labels = {}
@@ -161,9 +179,7 @@ def collection_browse(collection):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
                 try:
-                    with open(
-                        f"{json_template_dir}/{schema}.json", "r"
-                    ) as schema_file:
+                    with open(f"{json_template_dir}/{schema}.json", "r") as schema_file:
                         form_dict = json.load(schema_file)
                         schema_labels[schema] = flatten_josse_schema(
                             ("", form_dict),
@@ -229,7 +245,11 @@ def collection_browse(collection):
         metadata_objects = query.execute()
 
     # end temp
-    view_template = 'browse.html.j2' if not co_path.startswith(f"/{g.irods_session.zone}/trash") else 'browse_trash.html.j2'
+    view_template = (
+        "browse.html.j2"
+        if not co_path.startswith(f"/{g.irods_session.zone}/trash")
+        else "browse_trash.html.j2"
+    )
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
 
     return render_template(
@@ -251,36 +271,35 @@ def collection_browse(collection):
         current_user_rights=get_current_user_rights(
             g.irods_session.username, current_collection
         ),
-        user_trash_path = user_trash_path,
+        user_trash_path=user_trash_path,
     )
 
 
 @browse_bp.route("/data-object/view/<path:data_object_path>")
 def view_object(data_object_path):
-    """
-    """
+    """ """
     MIME_TYPE_ATTRIBUTE_NAME = f"{current_app.config['MANGO_PREFIX']}.mime_type"
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
-    data_object : iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
-    current_user_rights=get_current_user_rights(
-            g.irods_session.username, data_object
-        )
+    data_object: iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
+    current_user_rights = get_current_user_rights(g.irods_session.username, data_object)
 
-    #meta_data_items = data_object.metadata.items()
-    #if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
-    if (set(current_user_rights).intersection(set(["own", "write"]))):
+    # meta_data_items = data_object.metadata.items()
+    # if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
+    if set(current_user_rights).intersection(set(["own", "write"])):
         try:
             mime_avu = data_object.metadata.get_one(MIME_TYPE_ATTRIBUTE_NAME)
         except:
             try:
                 with data_object.open("r") as f:
-                    blub = f.read(50 * 1024) #read max 50k from data object
+                    blub = f.read(50 * 1024)  # read max 50k from data object
                 mime_type = magic.from_buffer(blub, mime=True)
                 mime_avu = iRODSMeta(MIME_TYPE_ATTRIBUTE_NAME, mime_type)
                 data_object.metadata.set(mime_avu)
-                #meta_data_items.append(mime_avu)
-                logging.info(f"mime-type was not set for object {data_object.path}, so we blubbed a bit into magic")
+                # meta_data_items.append(mime_avu)
+                logging.info(
+                    f"mime-type was not set for object {data_object.path}, so we blubbed a bit into magic"
+                )
 
             except:
                 flash(
@@ -292,8 +311,8 @@ def view_object(data_object_path):
     grouped_metadata = group_prefix_metadata_items(
         meta_data_items := data_object.metadata(timestamps=True).items(),
         current_app.config["MANGO_PREFIX"],
-        no_schema_label = current_app.config['MANGO_NOSCHEMA_LABEL'],
-        group_analysis_unit = group_analysis_unit,
+        no_schema_label=current_app.config["MANGO_NOSCHEMA_LABEL"],
+        group_analysis_unit=group_analysis_unit,
     )
     schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
     # template_files = glob.glob("static/metadata-templates/*.json")
@@ -314,9 +333,7 @@ def view_object(data_object_path):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
                 try:
-                    with open(
-                        f"{json_template_dir}/{schema}.json", "r"
-                    ) as schema_file:
+                    with open(f"{json_template_dir}/{schema}.json", "r") as schema_file:
                         form_dict = json.load(schema_file)
                         schema_labels[schema] = flatten_josse_schema(
                             ("", form_dict),
@@ -327,11 +344,21 @@ def view_object(data_object_path):
                 except:
                     pass
     if group_analysis_unit:
-        consolidated_analysis_metadata_names = [avu_name for avu_name in grouped_metadata['analysis']] if 'analysis' in grouped_metadata else []
+        consolidated_analysis_metadata_names = (
+            [avu_name for avu_name in grouped_metadata["analysis"]]
+            if "analysis" in grouped_metadata
+            else []
+        )
     else:
-        #consolidated_analysis_metadata_names = []
-        #pprint.pprint(grouped_metadata['other'].items())
-        consolidated_analysis_metadata_names = [avu.name for avu in grouped_metadata[current_app.config["MANGO_NOSCHEMA_LABEL"]].values() if avu.units and avu.units.startswith('analysis')]
+        # consolidated_analysis_metadata_names = []
+        # pprint.pprint(grouped_metadata['other'].items())
+        consolidated_analysis_metadata_names = [
+            avu.name
+            for avu in grouped_metadata[
+                current_app.config["MANGO_NOSCHEMA_LABEL"]
+            ].values()
+            if avu.units and avu.units.startswith("analysis")
+        ]
     # see if the mime type is present in the metadata, if not
     acl_users = []
 
@@ -344,7 +371,6 @@ def view_object(data_object_path):
     # permissions2 = g.irods_session.acls.get(data_object)
     # print(f"New acls")
     # pprint.pprint(permissions2)
-
 
     # Workaround for a bug with report_raw_acls for data objects where every ACL is listed twice
     PermissionTuple = namedtuple(
@@ -401,7 +427,11 @@ def view_object(data_object_path):
                 tzinfo=datetime.timezone.utc, microsecond=0
             ).isoformat()
 
-    view_template = 'view_object.html.j2' if not data_object_path.startswith(f"/{g.irods_session.zone}/trash") else 'view_object_trash.html.j2'
+    view_template = (
+        "view_object.html.j2"
+        if not data_object_path.startswith(f"/{g.irods_session.zone}/trash")
+        else "view_object_trash.html.j2"
+    )
 
     return render_template(
         view_template,
@@ -413,12 +443,12 @@ def view_object(data_object_path):
         acl_counts=acl_counts,
         my_groups=my_groups,
         metadata_objects=metadata_objects,
-        grouped_metadata = grouped_metadata,
-        schema_labels = schema_labels,
-        metadata_schema_filenames = metadata_schema_filenames,
+        grouped_metadata=grouped_metadata,
+        schema_labels=schema_labels,
+        metadata_schema_filenames=metadata_schema_filenames,
         tika_result=tika_result,
-        consolidated_names = consolidated_analysis_metadata_names,
-        current_user_rights = current_user_rights,
+        consolidated_names=consolidated_analysis_metadata_names,
+        current_user_rights=current_user_rights,
     )
 
 
@@ -453,8 +483,7 @@ def view_object(data_object_path):
 
 @browse_bp.route("/data-object/download/<path:data_object_path>")
 def download_object(data_object_path):
-    """
-    """
+    """ """
 
     # convert url encoded characters back to their utf-8 equivalent so iRODS
     data_object_path = unquote(data_object_path)
@@ -472,7 +501,7 @@ def download_object(data_object_path):
     if object_type is None:
         object_type = "application/octet-stream"
 
-    read_buffer_size = 2 ** 22
+    read_buffer_size = 2**22
     print(f"Current read buffer size is {read_buffer_size}")
 
     def data_object_chunks():
@@ -496,14 +525,13 @@ def download_object(data_object_path):
         stream_with_context(data_object_chunks()),
         mimetype=object_type,
         direct_passthrough=True,
-        headers={'Content-Disposition': 'attachment'}
+        headers={"Content-Disposition": "attachment"},
     )
 
 
 @browse_bp.route("/collection/delete", methods=["POST", "DELETE"])
 def delete_collection():
-    """
-    """
+    """ """
     collection_path = request.form["collection_path"]
     if "force_delete" in request.values:
         force_delete = True
@@ -523,10 +551,18 @@ def delete_collection():
     g.irods_session.collections.remove(collection_path, force=force_delete)
 
     if force_delete:
-        signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+        signals.collection_deleted.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            collection_path=collection_path,
+        )
         flash(f"Successfully deleted {collection_path}", "success")
     else:
-        signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = collection_path)
+        signals.collection_trashed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            collection_path=collection_path,
+        )
         flash(f"Collection {collection_path} moved to trash", "success")
 
     if "redirect_route" in request.values:
@@ -540,8 +576,7 @@ def delete_collection():
 
 @browse_bp.route("/data-object/delete", methods=["POST", "DELETE"])
 def delete_data_object():
-    """
-    """
+    """ """
     data_object_path = request.form["data_object_path"]
     if "force_delete" in request.values:
         force_delete = True
@@ -554,10 +589,18 @@ def delete_data_object():
     g.irods_session.data_objects.get(data_object_path).unlink(force=force_delete)
 
     if force_delete:
-        signals.data_object_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object_path)
+        signals.data_object_deleted.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            data_object_path=data_object_path,
+        )
         flash(f"Successfully deleted {data_object_path}", "success")
     else:
-        signals.data_object_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object_path)
+        signals.data_object_trashed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            data_object_path=data_object_path,
+        )
         flash(f"Data object {data_object_path} moved to trash", "success")
 
     if "redirect_route" in request.values:
@@ -590,8 +633,7 @@ def delete_data_object():
 
 @browse_bp.route("/collection/upload/file", methods=["POST"])
 def collection_upload_file():
-    """
-    """
+    """ """
 
     collection = request.form["collection"]
     print(f"Requested upload file for collection {collection}")
@@ -601,9 +643,15 @@ def collection_upload_file():
 
     # current_collection = irods_session.collections.get(collection)
     g.irods_session.data_objects.put(filename, collection + "/" + f.filename)
-    data_object : iRODSDataObject = g.irods_session.data_objects.get(f"{collection}/{f.filename}")
+    data_object: iRODSDataObject = g.irods_session.data_objects.get(
+        f"{collection}/{f.filename}"
+    )
 
-    signals.data_object_added.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = data_object.path)
+    signals.data_object_added.send(
+        current_app._get_current_object(),
+        irods_session=g.irods_session,
+        data_object_path=data_object.path,
+    )
 
     os.unlink(filename)
 
@@ -618,8 +666,7 @@ def collection_upload_file():
 
 @browse_bp.route("/collection/add/subcollection", methods=["POST"])
 def add_collection():
-    """
-    """
+    """ """
     parent_collection_path = request.form["parent_collection_path"]
     collection_name = request.form["collection_name"]
     # parent_collection = irods_session.collections.get(parent_collection_path)
@@ -630,12 +677,25 @@ def add_collection():
     except Exception as e:
         g.irods_session.collections.create(full_path)
 
-        if '/' in collection_name:
-            new_collection_tree_root = f"{parent_collection_path}/{collection_name.split('/')[0]}"
-            signals.subtree_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = new_collection_tree_root)
+        if "/" in collection_name:
+            new_collection_tree_root = (
+                f"{parent_collection_path}/{collection_name.split('/')[0]}"
+            )
+            signals.subtree_added.send(
+                current_app._get_current_object(),
+                irods_session=g.irods_session,
+                collection_path=new_collection_tree_root,
+            )
         else:
-            signals.collection_added.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = full_path)
-            flash(f"Collection {collection_name} added to {parent_collection_path}", "success")
+            signals.collection_added.send(
+                current_app._get_current_object(),
+                irods_session=g.irods_session,
+                collection_path=full_path,
+            )
+            flash(
+                f"Collection {collection_name} added to {parent_collection_path}",
+                "success",
+            )
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -648,14 +708,13 @@ def add_collection():
 
 @browse_bp.route("/data-object/ask_tika/<path:data_object_path>")
 def ask_tika(data_object_path):
-    """
-    """
+    """ """
     # impose referral:
-    referral = url_for('browse_bp.view_object', data_object_path = data_object_path )
+    referral = url_for("browse_bp.view_object", data_object_path=data_object_path)
     logging.info(f"Tika referral: {referral}")
 
     # FETCH FROM CONFIG INSTEAD
-    tika_host = current_app.config['TIKA_URL'].rstrip('/')
+    tika_host = current_app.config["TIKA_URL"].rstrip("/")
     tika_url = f"{tika_host}/tika/text"
     tika_storage = f"storage/{g.irods_session.zone}/tika_output"
     if not os.path.exists(tika_storage):
@@ -680,7 +739,7 @@ def ask_tika(data_object_path):
     else:
 
         try:
-            #ping_tika = requests.get(tika_host)
+            # ping_tika = requests.get(tika_host)
             destination = f"/tmp/irods-{data_object.id}.download"
 
             options = {irods.keywords.FORCE_FLAG_KW: True}
@@ -730,9 +789,7 @@ def ask_tika(data_object_path):
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
-        return redirect(
-            referral.split("#")[0] + request.values["redirect_hash"]
-        )
+        return redirect(referral.split("#")[0] + request.values["redirect_hash"])
     return redirect(referral)
 
     # return render_template(
@@ -745,8 +802,7 @@ def ask_tika(data_object_path):
 
 @browse_bp.route("/data-object/preview/<path:data_object_path>")
 def object_preview(data_object_path):
-    """
-    """
+    """ """
     thumbnail_storage = f"storage/{g.irods_session.zone}/{__name__}/object_preview"
     if not os.path.exists(thumbnail_storage):
         os.makedirs(thumbnail_storage)
@@ -803,8 +859,7 @@ def object_preview(data_object_path):
 
 @browse_bp.route("/permission/set/<path:item_path>", methods=["POST"])
 def set_permissions(item_path: str):
-    """
-    """
+    """ """
     groups = request.form.get("groups", [])
     permission_type = request.form.get("permission_type", "null")
     recursive = True if "recursive" in request.form else False
@@ -827,7 +882,12 @@ def set_permissions(item_path: str):
         print(e)
         abort(500, "failed to set permissions")
 
-    signals.permissions_changed.send(current_app._get_current_object(), irods_session = g.irods_session, item_path=item_path, recursive = recursive)
+    signals.permissions_changed.send(
+        current_app._get_current_object(),
+        irods_session=g.irods_session,
+        item_path=item_path,
+        recursive=recursive,
+    )
     flash(f"Permissions changed for {item_path}", "success")
 
     if "redirect_route" in request.values:
@@ -841,8 +901,7 @@ def set_permissions(item_path: str):
 
 @browse_bp.route("/permission/inheritance/set/<path:collection_path>", methods=["POST"])
 def set_inheritance(collection_path: str):
-    """
-    """
+    """ """
     if not collection_path.startswith("/"):
         collection_path = "/" + collection_path
     if "inheritance" in request.form:
@@ -850,7 +909,11 @@ def set_inheritance(collection_path: str):
     else:
         g.irods_session.permissions.set(iRODSAccess("noinherit", collection_path))
 
-    signals.collection_changed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path=collection_path)
+    signals.collection_changed.send(
+        current_app._get_current_object(),
+        irods_session=g.irods_session,
+        collection_path=collection_path,
+    )
     flash(f"Inheritance updated for {collection_path}", "success")
 
     if "redirect_route" in request.values:
@@ -861,13 +924,14 @@ def set_inheritance(collection_path: str):
         )
     return redirect(request.referrer)
 
+
 @browse_bp.route("/trash/empty/user", methods=["POST"])
 def empty_user_trash():
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
     user_trash = g.irods_session.collections.get(user_trash_path)
 
     for sub_collection in user_trash.subcollections:
-         g.irods_session.collections.remove(sub_collection.path, force=True)
+        g.irods_session.collections.remove(sub_collection.path, force=True)
     for data_object in user_trash.data_objects:
         g.irods_session.data_objects.get(data_object.path).unlink(force=True)
 
@@ -879,13 +943,14 @@ def empty_user_trash():
         return redirect(
             request.referrer.split("#")[0] + request.values["redirect_hash"]
         )
-    return redirect(url_for('browse_bp.collection_browse', collection=user_trash_path))
+    return redirect(url_for("browse_bp.collection_browse", collection=user_trash_path))
 
-@browse_bp.route('/items/bulk', methods=["POST"])
+
+@browse_bp.route("/items/bulk", methods=["POST"])
 @csrf.exempt
 def bulk_operation_items():
-    """
-    """
+    """ """
+
     def return_error(message):
         flash(message, category="warning")
         if "redirect_route" in request.values:
@@ -900,17 +965,19 @@ def bulk_operation_items():
         return return_error("Missing selection")
     if not ("action" in request.form):
         return return_error("Don't know what you want to do!")
-    if (request.form["action"] in ["move", "copy"]) and not ("destination" in request.form):
+    if (request.form["action"] in ["move", "copy"]) and not (
+        "destination" in request.form
+    ):
         return_error("Destination for move or copy is missing")
 
-    irods_session : iRODSSession = g.irods_session
+    irods_session: iRODSSession = g.irods_session
     irods_session.collections
 
-    ITEM_TYPE_PART = {"data_object" : "dobj", "collection" : "col"}
+    ITEM_TYPE_PART = {"data_object": "dobj", "collection": "col"}
 
     if request.form["action"] in ["delete", "force_delete"]:
         force_delete = True if request.form["action"] == "force_delete" else False
-        for item in request.form.getlist('items'):
+        for item in request.form.getlist("items"):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
                 (item_type, item_path) = (match.group(1), match.group(2))
@@ -918,42 +985,134 @@ def bulk_operation_items():
                     irods_session.data_objects.get(item_path).unlink(force=force_delete)
 
                     if force_delete:
-                        signals.data_object_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = item_path)
+                        signals.data_object_deleted.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            data_object_path=item_path,
+                        )
                     else:
-                        signals.data_object_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = item_path)
+                        signals.data_object_trashed.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            data_object_path=item_path,
+                        )
                 if item_type == ITEM_TYPE_PART["collection"]:
-                    irods_session.collections.remove(item_path, force = force_delete)
+                    irods_session.collections.remove(item_path, force=force_delete)
                     if force_delete:
-                        signals.collection_deleted.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path)
+                        signals.collection_deleted.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            collection_path=item_path,
+                        )
                     else:
-                        signals.collection_trashed.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path)
-        flash(f"Successfully deleted {len(request.form.getlist('items'))} items", "success")
+                        signals.collection_trashed.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            collection_path=item_path,
+                        )
+        flash(
+            f"Successfully deleted {len(request.form.getlist('items'))} items",
+            "success",
+        )
 
     if request.form["action"] == "move":
-        for item in request.form.getlist('items'):
+        for item in request.form.getlist("items"):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
                 (item_type, item_path) = (match.group(1), match.group(2))
+                new_path = (PurePath(request.form["destination"]) / PurePath(item_path).name).as_posix()
                 if item_type == ITEM_TYPE_PART["data_object"]:
-                    irods_session.data_objects.move(item_path, request.form["destination"])
-                    signals.data_object_moved.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = item_path, destination_path = request.form["destination"])
+                    irods_session.data_objects.move(
+                        item_path, request.form["destination"]
+                    )
+                    signals.data_object_moved.send(
+                        current_app._get_current_object(),
+                        irods_session=g.irods_session,
+                        original_path=item_path,
+                        destination_path=request.form["destination"],
+                        new_path = new_path
+                    )
                 if item_type == ITEM_TYPE_PART["collection"]:
-                    irods_session.collections.move(item_path, request.form["destination"])
-                    signals.collection_moved.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path, destination_path = request.form["destination"])
-        flash(f"Successfully moved {len(request.form.getlist('items'))} items", "success")
+                    irods_session.collections.move(
+                        item_path, request.form["destination"]
+                    )
+                    signals.collection_moved.send(
+                        current_app._get_current_object(),
+                        irods_session=g.irods_session,
+                        original_path=item_path,
+                        destination_path=request.form["destination"],
+                        new_path = new_path
+                    )
+        flash(
+            f"Successfully moved {len(request.form.getlist('items'))} items", "success"
+        )
 
     if request.form["action"] == "copy":
-        for item in request.form.getlist('items'):
+        for item in request.form.getlist("items"):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
                 (item_type, item_path) = (match.group(1), match.group(2))
+                new_path = (PurePath(request.form["destination"]) / PurePath(item_path).name).as_posix()
                 if item_type == ITEM_TYPE_PART["data_object"]:
-                    irods_session.data_objects.copy(item_path, request.form["destination"])
-                    signals.data_object_copied.send(current_app._get_current_object(), irods_session = g.irods_session, data_object_path = item_path, destination_path = request.form["destination"])
+                    irods_session.data_objects.copy(
+                        item_path, request.form["destination"]
+                    )
+                    signals.data_object_copied.send(
+                        current_app._get_current_object(),
+                        irods_session=g.irods_session,
+                        data_object_path=item_path,
+                        destination_path=request.form["destination"],
+                        new_path = new_path
+                    )
                 # if item_type == ITEM_TYPE_PART["collection"]:
                 #     irods_session.collections.move(item_path, request.form["destination"])
                 #     signals.collection_moved.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path, destination_path = request.form["destination"])
-        flash(f"Successfully copied {len(request.form.getlist('items'))} items", "success")
+        flash(
+            f"Successfully copied {len(request.form.getlist('items'))} items", "success"
+        )
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
+
+
+@browse_bp.route("/item/rename", methods=["GET"])
+@csrf.exempt
+def rename_item():
+    if "item_path" not in request.form or "new_name" not in request.form:
+        abort(400, "Required parameters are missing")
+
+    new_name = request.form["new_name"]
+    if re.search(r"/", new_name):
+        abort(400, f"Illegal characters in new name {new_name}")
+
+    item_path = iRODSPath(request.form["item_path"])
+    new_path = iRODSPath(*item_path.split("/")[:-1], new_name)
+    irods_session: iRODSSession = g.irods_session
+
+    if irods_session.collections.exists(item_path):
+        irods_session.collections.move(item_path, new_path)
+        signals.collection_renamed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            original_path=item_path,
+            new_path=new_path,
+        )
+
+    elif irods_session.data_objects.exists(item_path):
+        irods_session.data_objects.move(item_path, new_path)
+        signals.data_object_renamed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            original_path=item_path,
+            new_path=new_path,
+        )
+    else:
+        abort(400, f"Path {item_path} does not exist")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
