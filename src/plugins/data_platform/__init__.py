@@ -62,7 +62,8 @@ def openid_login_required(func):
   @wraps(func)
   def inner(*args, **kwargs):
     if 'openid_session' not in session:
-        return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
+        session['openid_redirect'] = request.full_path
+        return redirect(url_for("data_platform_user_bp.login_openid"))
     
     s = Session(session['openid_session'])
 
@@ -74,7 +75,8 @@ def openid_login_required(func):
             print(e)
 
     if not s.valid():
-        return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
+        session['openid_redirect'] = request.full_path
+        return redirect(url_for("data_platform_user_bp.login_openid"))
 
     return func(*args, **kwargs)
   

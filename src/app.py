@@ -169,6 +169,7 @@ def init_and_secure_views():
         "data_platform_project_bp.add_generic_project",
         "data_platform_project_bp.modify_project",
         "data_platform_autocomplete_bp.autocomplete_username",
+        "data_platform_user_bp.local_client_retrieve_token_callback",
     ]:
         return None
 

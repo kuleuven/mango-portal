@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import requests
+from requests.models import PreparedRequest
 import json
 from flask import (
     Blueprint,
@@ -99,6 +100,9 @@ def login_openid_callback(openid_provider):
     # We are logged on
     session['openid_provider'] = openid_provider
     session['openid_session'] = dict(s)
+
+    if 'openid_redirect' in session:
+        return redirect(session.pop('openid_redirect'))
 
     return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 
@@ -255,3 +259,58 @@ def connection_info():
     }
 
     return render_template("user/connection_info.html.j2", info=info, setup_json=setup_json)
+
+
+@data_platform_user_bp.route('/data-platform/retrieve-token', methods=["GET", "POST"])
+@openid_login_required
+def local_client_retrieve_token_callback():
+    if request.method == 'POST':
+        redirect_uri = request.form.get('redirect_uri')
+        irods_zone = request.form.get('irods_zone')
+
+        if not redirect_uri.startswith('http://localhost:'):
+            flash('Invalid redirect uri')
+            return redirect(url_for("data_platform_user_bp.local_client_retrieve_token_callback"))
+
+        response = requests.post(
+            f"{API_URL}/v1/token/exchange",
+            json={
+                "id_token": Session(session['openid_session']).jwt_token,
+                "drop_permissions": True,
+            },
+        )
+        response.raise_for_status()
+
+        payload = response.json()
+
+        params = {
+            'token': payload['token'],
+            'irods_zone': irods_zone,
+            'jobid': current_app.config['irods_zones'][irods_zone]["jobid"],
+        }
+
+        req = PreparedRequest()
+        req.prepare_url(redirect_uri, params)
+    
+        return redirect(req.url)
+
+    all_projects, _ = current_user_projects()
+
+    projects = []
+    zones = []
+    for project in all_projects:
+        if project['platform'] != 'irods':
+            continue
+        if 'zone' not in project:
+            continue
+        if project['my_role'] == '' or project['archived']:
+            continue
+        if project['zone'] not in zones:
+            zones.append(project['zone'])
+        projects.append(project)
+
+    return render_template('user/local_client_select_zone.html.j2',
+        zones=zones,
+        projects=projects,
+        redirect_uri=request.args.get('redirect_uri'),
+    )
