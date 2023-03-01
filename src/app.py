@@ -198,8 +198,6 @@ def init_and_secure_views():
         g.user_home = f"/{g.irods_session.zone}/home/{irods_session.username}"
         g.zone_home = f"/{g.irods_session.zone}/home"
 
-        g.user_home = user_home
-        g.zone_home = zone_home
         g.mango_server_info = mango_server_info
 
         return None
