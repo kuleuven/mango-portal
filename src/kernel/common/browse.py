@@ -399,17 +399,17 @@ def view_object(data_object_path):
     my_groups = [group for group in my_groups if group.name != g.irods_session.username]
 
     # temp: look up metadata items in full, including create_time and modify_time
-    from irods.query import Query
-    from irods.column import Criterion, In
-    from irods.models import DataObjectMeta
+    # from irods.query import Query
+    # from irods.column import Criterion, In
+    # from irods.models import DataObjectMeta
 
-    objects = [DataObjectMeta]
-    filters = []
-    avu_ids = [metadata.avu_id for metadata in meta_data_items]
-    filters += [In(DataObjectMeta.id, avu_ids)]
+    # objects = [DataObjectMeta]
+    # filters = []
+    # avu_ids = [metadata.avu_id for metadata in meta_data_items]
+    # filters += [In(DataObjectMeta.id, avu_ids)]
 
-    query = Query(g.irods_session, *objects).filter(*filters)
-    metadata_objects = query.execute()
+    # query = Query(g.irods_session, *objects).filter(*filters)
+    # metadata_objects = query.execute()
 
     # end temp
     tika_result = {}
@@ -442,7 +442,6 @@ def view_object(data_object_path):
         acl_users_dict=acl_users_dict,
         acl_counts=acl_counts,
         my_groups=my_groups,
-        metadata_objects=metadata_objects,
         grouped_metadata=grouped_metadata,
         schema_labels=schema_labels,
         metadata_schema_filenames=metadata_schema_filenames,
