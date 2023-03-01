@@ -63,8 +63,6 @@ app.config.from_pyfile("config.py")
 app.config["irods_zones"] = irods_zones
 
 
-
-
 if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.mango_open_search.search import mango_open_search_bp
     from plugins.mango_open_search.admin import mango_open_search_admin_bp
@@ -72,7 +70,9 @@ if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
 
 if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.data_platform import update_zone_info
-    update_zone_info(app.config["irods_zones"])
+
+    if not app.config["MANGO_AUTH"] == "localdev":
+        update_zone_info(app.config["irods_zones"])
 
     from plugins.data_platform.user import data_platform_user_bp
     from plugins.data_platform.project import data_platform_project_bp
@@ -195,8 +195,8 @@ def init_and_secure_views():
             irods_session_pool.add_irods_session(session["userid"], irods_session)
         g.irods_session = irods_session
         print(f"Session id: {session['userid']}")
-        user_home = f"/{g.irods_session.zone}/home/{irods_session.username}"
-        zone_home = f"/{g.irods_session.zone}/home"
+        g.user_home = f"/{g.irods_session.zone}/home/{irods_session.username}"
+        g.zone_home = f"/{g.irods_session.zone}/home"
 
         return None
 
@@ -254,35 +254,44 @@ def release_irods_session_lock(response):
 def intersection(set1, set2):
     return set(set1).intersection(set(set2))
 
+
 # html and js escape dangerous content
 @app.template_filter("bleach_clean")
 def bleach_clean(suspect, **kwargs):
     return bleach.clean(suspect, **kwargs)
 
+
 # return date into local time zone
 @app.template_filter("localize_datetime")
-def localize_datetime(value, format="%Y-%m-%d %H:%M:%S", local_timezone='Europe/Brussels'):
-    tz = pytz.timezone(local_timezone) # timezone you want to convert to from UTC
-    utc = pytz.timezone('UTC')
+def localize_datetime(
+    value, format="%Y-%m-%d %H:%M:%S", local_timezone="Europe/Brussels"
+):
+    tz = pytz.timezone(local_timezone)  # timezone you want to convert to from UTC
+    utc = pytz.timezone("UTC")
     value = utc.localize(value, is_dst=None).astimezone(pytz.utc)
     local_dt = value.astimezone(tz)
     return local_dt.strftime(format)
+
 
 @app.template_filter("format_timestamp")
 def format_timestamp(ts):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
 
+
 @app.template_filter("format_time")
 def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
+
 
 @app.template_filter("format_size")
 def format_size(size):
     return humanize.naturalsize(size)
 
+
 @app.template_filter("format_intword")
 def format_intword(size):
     return humanize.intword(size)
+
 
 @app.route("/")
 def index():
