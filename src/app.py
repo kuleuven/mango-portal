@@ -273,14 +273,33 @@ def localize_datetime(
     return local_dt.strftime(format)
 
 
+@app.template_filter("parse_json_date")
+def parse_json_date(ts):
+    return datetime.datetime.strptime(ts, '%Y-%m-%d')
+
+
+@app.template_filter("parse_json_timestamp")
+def parse_json_timestamp(ts):
+    return datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S%z')
+
+
+@app.template_filter("format_date")
+def format_date(ts):
+    return ts.strftime("%Y-%m-%d")
+
+
 @app.template_filter("format_timestamp")
 def format_timestamp(ts):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
 
+@app.template_filter("yesterday")
+def yesterday(ts):
+    return ts - datetime.timedelta(days=1)
 
 @app.template_filter("format_time")
 def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
+
 
 
 @app.template_filter("format_size")

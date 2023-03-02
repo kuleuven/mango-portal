@@ -156,6 +156,8 @@ def current_user_projects():
 
     # Map projects to zones
     for project in projects:
+        project['activated'] = not project['archived'] or not project['valid_after'] or datetime.strptime(project['valid_after'], '%Y-%m-%d') < datetime.now()
+
         project['my_role'] = ''
 
         for m in project['members']:
