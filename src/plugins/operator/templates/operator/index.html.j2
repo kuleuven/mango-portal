@@ -1,0 +1,21 @@
+{% extends "base.html.j2" %}
+{% block body %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Zone</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for zone, zone_operator_session in zone_operator_sessions.items() %}
+                <tr>
+                    <td>{{ zone }}</td>
+                    <td>
+                        <pre>{{ zone_operator_session|pprint }}</pre>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock body %}

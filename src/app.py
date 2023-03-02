@@ -40,7 +40,7 @@ from kernel.metadata_schema.editor import metadata_schema_editor_bp
 from kernel.metadata_schema.form import metadata_schema_form_bp
 
 import platform
-
+import importlib
 
 from irods_zones_config import (
     irods_zones,
@@ -77,6 +77,16 @@ if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.data_platform.user import data_platform_user_bp
     from plugins.data_platform.project import data_platform_project_bp
     from plugins.data_platform.autocomplete import data_platform_autocomplete_bp
+
+other_plugins = [
+    plugin
+    for plugin in app.config["MANGO_ENABLE_CORE_PLUGINS"]
+    if plugin not in ["mango_open_search", "data_platform"]
+]
+if "group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+    from plugins.group_manager.admin import group_manager_admin_bp
+if "operator" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+    from plugins.operator.admin import operator_admin_bp
 
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 irods_sessions = {}
@@ -129,6 +139,11 @@ with app.app_context():
         app.register_blueprint(data_platform_user_bp)
         app.register_blueprint(data_platform_project_bp)
         app.register_blueprint(data_platform_autocomplete_bp)
+
+    if "operator" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        app.register_blueprint(operator_admin_bp)
+    if "group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        app.register_blueprint(group_manager_admin_bp)
 
 
 @app.context_processor

@@ -1,6 +1,6 @@
 import os
 
-MANGO_AUTH = os.environ.get("MANGO_AUTH", "login") # "localdev" or "login"
+MANGO_AUTH = os.environ.get("MANGO_AUTH", "login")  # "localdev" or "login"
 MANGO_LOGIN_ACTION = "data_platform_user_bp.login_openid"
 MANGO_LOGOUT_ACTION = "data_platform_user_bp.logout_openid"
 UPLOAD_FOLDER = "/tmp"
@@ -22,4 +22,9 @@ TIKA_URL = os.environ.get("TIKA_URL", "http://localhost:9998/")
 USER_MAX_HOME_SIZE = 100 * 10**6  # 100MB
 MANGO_GLOBAL_SEARCH_ACTION = "mango_open_search_bp.zone_search"
 HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
-MANGO_ENABLE_CORE_PLUGINS = ["mango_open_search", "data_platform"]
+MANGO_ENABLE_CORE_PLUGINS = [
+    "mango_open_search",
+    "data_platform",
+    "operator",
+    "group_manager",
+]

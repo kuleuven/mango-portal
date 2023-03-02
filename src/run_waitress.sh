@@ -15,7 +15,7 @@ export OIDC_ISSUER_URL=https://idp.kuleuven.be/auth/realms/kuleuven
 export OIDC_CLIENT_ID=oidcapp
 export OPENID_REDIRECT_BASE=http://localhost:3000
 
-# To test kuleuven login locally, ask Peter for the secret and run 
+# To test kuleuven login locally, ask Peter for the secret and run
 #   export OIDC_SECRET=XXXX
 # in your shell prior to running this script. You also need to set
 # a local alias voor oidcapp.icts.kuleuven.be.
