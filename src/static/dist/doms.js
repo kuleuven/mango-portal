@@ -711,9 +711,9 @@ class NavBar {
             
     }
 
-    add_item(item_id, button_text, active = false) {
-        this.add_button(item_id, button_text, active = active);
-        this.add_tab(item_id, active = active);
+    add_item(item_id, button_text, active = false, position = -1) {
+        this.add_button(item_id, button_text, active, position);
+        this.add_tab(item_id, active, position);
     }
 
     remove_item(item_id) {
@@ -721,7 +721,7 @@ class NavBar {
         document.getElementById(`${item_id}-pane-${this.id}`).remove();
     }
 
-    add_button(item_id, button_text, active) {
+    add_button(item_id, button_text, active, position = -1) {
         let li = Field.quick('li', 'nav-item');
         let button = document.createElement('button');
         button.className = active ? 'nav-link active' : 'nav-link';
@@ -737,18 +737,28 @@ class NavBar {
         button.role = 'tab';
         button.setAttribute('aria-controls', `${item_id}-pane-${this.id}`);
         li.appendChild(button);
-        this.nav_bar.appendChild(li);
+        if (position != -1 && this.nav_bar.children.length > position) {
+            let sibling = this.nav_bar.children[position];
+            this.nav_bar.insertBefore(li, sibling);
+        } else {
+            this.nav_bar.appendChild(li);
+        }
     }
 
 
-    add_tab(item_id, active) {
+    add_tab(item_id, active, position = -1) {
         let tab = Field.quick('div',
             active ? 'tab-pane fade show active' : 'tab-pane fade');
         tab.id = `${item_id}-pane-${this.id}`;
         tab.role = 'tabpanel';
         tab.setAttribute('aria-labelledby', `${item_id}-tab-${this.id}`);
         tab.tabIndex = '0';
-        this.tab_content.appendChild(tab);
+        if (position != -1 && this.tab_content.children.length > position) {
+            let sibling = this.tab_content.children[position];
+            this.tab_content.insertBefore(tab, sibling);
+        } else {
+            this.tab_content.appendChild(tab);
+        }
     }
 
     add_tab_content(item_id, content) {

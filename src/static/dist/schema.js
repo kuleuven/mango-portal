@@ -44,7 +44,7 @@ class ComplexField {
                 let new_field = InputField.choose_class(this.initial_name, this.data_status, entry);
                 new_field.create_form();
                 new_field.create_modal(this);
-                
+
                 this.fields[entry[0]] = new_field;
             }
         }
@@ -59,7 +59,7 @@ class ComplexField {
             return 'draft';
         } else {
             return 'copy';
-        } 
+        }
     }
 
     display_options() {
@@ -315,12 +315,12 @@ class Schema extends ComplexField {
             form.form.querySelector(`#${this.card_id}-label`).setAttribute('readonly', '');
         } else if (!this.field_ids.length > 0) {
             form.form.querySelector('button#publish').setAttribute('disabled', '');
-    
+
         }
 
         if (this.field_ids.length == 0) {
             form.form.querySelector('button#publish').setAttribute('disabled', '');
-        }        
+        }
 
         form.add_submit_action('publish', (e) => {
             e.preventDefault();
@@ -331,7 +331,7 @@ class Schema extends ComplexField {
                 console.log('Ready to publish');
 
                 let second_sentence = schemas[this.name] && schemas[this.name].published.length > 0 ?
-                    ` Version ${schemas[this.name].published[0]} will be archived.` :
+                    ` Version ${schemas[this.name].published[0].version} will be archived.` :
                     ''
                 const toast = new Toast(this.card_id + '-pub',
                     "Published schemas cannot be edited." + second_sentence);
@@ -350,7 +350,7 @@ class Schema extends ComplexField {
         this.parent = `${parent.name}-${parent.version}`;
         this.initial_name = `${parent.name}-new`;
         this.status = 'draft';
-        this.origin = { ids: [...parent.field_ids], json : {...parent.properties} };
+        this.origin = { ids: [...parent.field_ids], json: { ...parent.properties } };
         if (this.field_ids.length > 0) {
             for (let entry of Object.entries(parent.properties)) {
                 let new_field = InputField.choose_class(this.initial_name, 'child', entry);
@@ -370,28 +370,36 @@ class Schema extends ComplexField {
 
     create_navbar() {
         // design navbar
-        let nav_bar = new NavBar(this.card_id, ['justify-content-end', 'nav-pills']);
-        nav_bar.add_item('view', 'View', true);
+        this.nav_bar = new NavBar(this.card_id, ['justify-content-end', 'nav-pills']);
+        this.nav_bar.add_item('view', 'View', true);
 
         let viewer = ComplexField.create_viewer(this);
-        nav_bar.add_tab_content('view', viewer);
+        this.nav_bar.add_tab_content('view', viewer);
 
         if (this.status == 'draft') {
-            nav_bar.add_item('edit', 'Edit');
+            this.nav_bar.add_item('edit', 'Edit');
 
             this.display_options(this.status);
             let form = this.create_editor(this.status);
             let inputs = form.form.querySelectorAll('input.form-control');
             inputs[0].value = this.name; // id
             inputs[1].value = this.title; // label
-            nav_bar.add_tab_content('edit', form.form);
+            this.nav_bar.add_tab_content('edit', form.form);
 
-            nav_bar.add_action_button('Discard', 'danger', () => {
+            this.nav_bar.add_action_button('Discard', 'danger', () => {
                 const toast = new Toast(this.card_id + '-discard',
                     "A deleted draft cannot be recovered.");
                 toast.show(() => {
                     schemas[this.name].draft = [];
                     this.delete();
+                    let published_version = schemas[this.name].published[0];
+                    if (published_version != undefined) {
+                        published_version.draft_from_publish();
+                        published_version.field_ids.forEach((field_id, idx) => {
+                            published_version.new_field_idx = idx;
+                            published_version.view_field(this.fields[field_id]);
+                        });
+                    }
                     if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
                         // if there are no published or archived versions, delete the accordion item
                         document.querySelector(`.accordion-collapse#${this.name}-schemas`)
@@ -407,30 +415,19 @@ class Schema extends ComplexField {
                 });
             });
         } else if (this.status == 'published') {
-            if (schemas[this.name].draft.length == 0) {
-                this.display_options();
-                nav_bar.add_item('new', 'New (draft) version');
-                let new_form = this.create_editor();
-                let inputs = new_form.form.querySelectorAll('input.form-control');
-                inputs[0].value = this.name; // id
-                inputs[1].value = this.title; // label
-
-                nav_bar.add_tab_content('new', new_form.form);
-            }
-            console.log(schemas[this.name].draft)
-
+            this.draft_from_publish();
             this.setup_copy();
             this.child.display_options();
-            nav_bar.add_item('child', 'Copy to new schema');
+            this.nav_bar.add_item('child', 'Copy to new schema');
             let child_form = this.child.create_editor();
-            nav_bar.add_tab_content('child', child_form.form);
+            this.nav_bar.add_tab_content('child', child_form.form);
 
-            nav_bar.add_action_button('Archive', 'danger', () => {
+            this.nav_bar.add_action_button('Archive', 'danger', () => {
                 const toast = new Toast(this.card_id + '-discard',
                     "Archived schemas cannot be implemented.");
                 toast.show(() => {
+                    // schemas[this.name].archived.push = schemas[this.name].published[0];
                     schemas[this.name].published = [];
-                    // schemas[this.name].archived = [this.version];
                     this.delete();
                     if (schemas[this.name].draft.length + schemas[this.name].archived.length == 0) {
                         // if there are no published or archived versions, delete the accordion item
@@ -447,25 +444,34 @@ class Schema extends ComplexField {
                 });
             });
         }
+    }
 
-        this.nav_bar = nav_bar.nav_bar;
-        this.tab_content = nav_bar.tab_content;
+    draft_from_publish() {
+        if (schemas[this.name].draft.length == 0) {
+            this.display_options();
+            this.nav_bar.add_item('new', 'New (draft) version', false, 1);
+            let new_form = this.create_editor();
+            let inputs = new_form.form.querySelectorAll('input.form-control');
+            inputs[0].value = this.name; // id
+            inputs[1].value = this.title; // label
 
+            this.nav_bar.add_tab_content('new', new_form.form);
+        }
     }
 
     view() {
         this.create_navbar();
         this.card = document.createElement('div')
         this.card.id = this.card_id;
-        this.card.appendChild(this.nav_bar);
-        this.card.appendChild(this.tab_content);
+        this.card.appendChild(this.nav_bar.nav_bar);
+        this.card.appendChild(this.nav_bar.tab_content);
         document.getElementById(this.container).appendChild(this.card);
         if (this.field_ids.length == 0) {
             let msg = Field.quick('div', 'viewer',
                 'This schema does not have any fields yet. Go to "edit" mode to add one.');
-            this.tab_content.querySelector('.input-view').appendChild(msg);
+            this.nav_bar.tab_content.querySelector('.input-view').appendChild(msg);
         }
-        
+
         this.field_ids.forEach((field_id, idx) => {
             this.new_field_idx = idx;
             this.view_field(this.fields[field_id]);
@@ -522,7 +528,7 @@ class Schema extends ComplexField {
                     });
                 }
             }
-            
+
         } else if (this.data_status == 'draft') {
             // this schema was modified
             this.name = form.form.querySelector(`#${this.card_id}-name`).value;
@@ -539,13 +545,13 @@ class Schema extends ComplexField {
             // update internal tabs
             if (action == 'publish') {
                 if (schemas[this.name].published.length > 0) {
-                    let published_version = schemas[this.name].published[0];
-                    schemas[this.name].archived.push(published_version);
+                    let published_version = schemas[this.name].published[0].version;
+                    schemas[this.name].archived.push(schemas[this.name].published[0]);
                     let nav_bar = new NavBar(this.name);
                     nav_bar.remove_item(`v${published_version.replaceAll('.', '')}`);
                     // actually archive it
                 }
-                schemas[this.name].published = [this.version];
+                schemas[this.name].published = [this];
                 schemas[this.name].draft = [];
                 document.getElementById(this.card_id).remove();
                 this.field_ids.forEach((field_id) => {
@@ -575,21 +581,21 @@ class Schema extends ComplexField {
             let nav_bar = new NavBar(this.name);
             nav_bar.add_item('v' + no_dots, badges);
 
+            let new_schema = new Schema(`${this.name}-${no_dots}`,
+                'v' + incremented_major + this.container.slice(2), // adapt to other increments
+                this.urls, new_version);
             if (action == 'published') {
-                schemas[this.name].archived.push(this.version);
-                schemas[this.name].draft = [new_version];
+                schemas[this.name].archived.push(schemas[this.name].published[0]);
+                schemas[this.name].published = [new_schema];
                 new NavBar(this.name).remove_item(`v${published_version.replaceAll('.', '')}`);
                 let trigger = document.querySelector(`#nav-tab-${this.name} button`);
                 bootstrap.Tab.getOrCreateInstance(trigger).show();
             } else {
-                schemas[this.name].draft = [new_version];
+                schemas[this.name].draft = [new_schema];
                 new NavBar(this.card_id).remove_item('new');
                 let trigger = document.querySelector(`#nav-tab-${this.card_id} button`);
                 bootstrap.Tab.getOrCreateInstance(trigger).show();
             }
-            let new_schema = new Schema(`${this.name}-${no_dots}`,
-                'v' + incremented_major + this.container.slice(2), // adapt to other increments
-                this.urls, new_version,);
             this.fields_to_json();
             let json_contents = {
                 schema_name: this.name,
@@ -616,7 +622,7 @@ class Schema extends ComplexField {
         xhr.send(to_post);
         console.log(`${this.name} version ${this.version} (${this.status}) ${this.status == 'draft' ? 'deleted' : 'archived'}.`);
     }
-    
+
     post() {
         const to_post = new FormData();
         this.fields_to_json();
@@ -678,9 +684,11 @@ class SchemaGroup {
             let version_number = version.version.replaceAll('\.', '');
             nav_bar.add_item(`v${version_number}`, badges, active);
             let tab_id = `v${version_number}-pane-${this.name}`;
+            let this_version = schemas[this.name][version.status].indexOf(version.version)
             let schema = new Schema(
                 `${version.name}-${version_number}`, tab_id,
                 this.urls, version.version);
+            schemas[this.name][version.status][this_version] = schema;
             schema.loaded = false;
             if (version.json != undefined) {
                 schema.loaded = true;
