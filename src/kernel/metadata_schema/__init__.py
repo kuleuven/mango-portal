@@ -108,7 +108,9 @@ class FileSystemSchemaManager:
         return {
             "total_count": total_count,
             "published_count": published_count,
+            "published": True if published_count > 0 else False,
             "draft_count": draft_count,
+            "draft": True if draft_count > 0 else False,
             "published_name": sorted(published_files)[-1].name
             if published_count >= 1
             else "",
@@ -120,7 +122,7 @@ class FileSystemSchemaManager:
             "title": title,
         }
 
-    def list_schemas(self, filters=["published_count", "draft_count"]) -> dict:
+    def list_schemas(self, filters=["published", "draft"]) -> dict:
         """
         filters: possible values: "published", meaning they contain a published version. This is needed for using schemas to add / edit metadata
         """
@@ -136,10 +138,10 @@ class FileSystemSchemaManager:
             for schema_path in realm_schemas_path.glob("*")
             if schema_path.is_dir()
         ]
-        pprint.pprint(schemas)
+        #pprint.pprint(schemas)
         schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
-        pprint.pprint(realm_schemas_path)
-        pprint.pprint(schemas_dict)
+        #pprint.pprint(realm_schemas_path)
+        #pprint.pprint(schemas_dict)
 
         if not filters:
             return schemas_dict
