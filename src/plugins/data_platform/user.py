@@ -193,10 +193,20 @@ def logout_openid():
 @data_platform_user_bp.route('/user/openid/drop_permissions', methods=["GET"])
 @openid_login_required
 def drop_permissions():
-    session['drop_data_platform_privileges'] = True
+    s = Session(session['openid_session'])
+    s.drop_permissions()
+    session['openid_session'] = dict(s)
 
     return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 
+@data_platform_user_bp.route('/user/openid/impersonate', methods=["POST"])
+@openid_login_required
+def impersonate():
+    s = Session(session['openid_session'])
+    s.impersonate(request.form.get('username'))
+    session['openid_session'] = dict(s)
+
+    return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 
 @data_platform_user_bp.route("/data-platform/connection-info/modal/<zone>", methods=["GET"])
 @openid_login_required

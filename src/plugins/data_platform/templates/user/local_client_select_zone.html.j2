@@ -48,7 +48,9 @@
                         <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
                       </td>
                       <td class="fs-6 align-middle">
-                        {% if project['archived'] %}
+                        {% if not project['activated'] %}
+                        not yet activated
+                        {% elif project['archived'] %}
                         archived
                         {% else %}
                         active

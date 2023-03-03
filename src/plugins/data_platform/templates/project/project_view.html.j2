@@ -36,10 +36,19 @@
             <th>Project name</th>
             <td>{{ project['name'] }}</td>
           </tr>
-          {% if project['archived'] %}
+          {% if not project['activated'] %}
           <tr>
             <th>Status</th>
-            <td>Archived</td>
+            <td>
+            Will be activated at {{ project['valid_after'] }}
+            </td>
+          </tr>
+          {% elif project['archived'] %}
+          <tr>
+            <th>Status</th>
+            <td>
+            Archived at {{ status['archived_at']|parse_json_timestamp|format_timestamp }}
+            </td>
           </tr>
           {% elif not status['provisioned'] %}
           <tr>
@@ -56,6 +65,55 @@
             {% endif %}
             </td>
           </tr>
+
+          {% if project['sap_ref'] %}
+          <tr>
+            <th>SAP Project ID</th>
+            <td>
+            {{ project['sap_ref'] }}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            </td>
+          </tr>
+          {% endif %}
+
+          {% if project['vsc_call'] %}
+          <tr>
+            <th>VSC Project Call</th>
+            <td>
+            {{ project['vsc_call'] }}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            </td>
+          </tr>
+          {% endif %}
+
+          <tr>
+            <th>Lifetime</th>
+            <td>
+            {% if project['valid_after'] %}
+            {{ project['valid_after']|parse_json_date|format_date }}
+            {% else %}
+            {{ status['created_at']|parse_json_timestamp|format_date }}
+            {% endif %}
+
+            &#8212;
+
+            {% if project['archived'] %}
+            {{ status['archived_at']|parse_json_timestamp|yesterday|format_date }}
+            {% elif project['invalid_after'] %}
+            {{ project['invalid_after']|parse_json_date|yesterday|format_date  }}
+            {% else %}
+            infinite
+            {% endif %}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            </td>
+          </tr>
+
           <tr>
             <th>Platform</th>
             <td>
@@ -87,7 +145,7 @@
             <th>Size</th>
             <td>{{ status['used_size']|format_size }} of {{ project['quota_size']|format_size }} used
             {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyQuota"><i class="bi bi-pencil"></i></a>
             {% endif %}
 
             {% if project['quota_size'] > 0 %}
@@ -106,7 +164,7 @@
             {{ status['platform_info']['meta_count'] }} metadata records) 
             {% endif %}
             {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyQuota"><i class="bi bi-pencil"></i></a>
             {% endif %}
 
             {% if project['quota_inodes'] > 0 %}
@@ -454,7 +512,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="deleteMemberLabel">
+          <h5 class="modal-title" id="modifyProjectLabel">
             Modify project settings
           </h5>
           <button type="button"
@@ -482,6 +540,102 @@
                 Description is required
               </div>
             </div>
+
+            <div class="mb-3">
+              <label for="sap_ref" class="col-form-label">
+                SAP Project ID
+              </label>
+              <input type="text"
+                     class="form-control"
+                     name="sap_ref"
+                     value="{{ project['sap_ref'] }}" />
+              <div class="invalid-feedback">
+                SAP project id is required
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="vsc_call" class="col-form-label">
+                VSC Project Call
+              </label>
+              <input type="text"
+                     class="form-control"
+                     name="vsc_call"
+                     value="{{ project['vsc_call'] }}" />
+              <div class="invalid-feedback">
+                VSC project call is required
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="valid_after" class="col-form-label">
+                Activation date
+              </label>
+              <input type="date"
+                     class="form-control"
+                     name="valid_after"
+                     value="{{ project['valid_after'] }}" />
+              <div class="invalid-feedback">
+                Action date is required
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="invalid_after" class="col-form-label">
+                Deactivation date
+              </label>
+              <input type="date"
+                     class="form-control"
+                     name="invalid_after"
+                     value="{{ project['invalid_after'] }}" />
+              <div class="invalid-feedback">
+                Deactivation date is required
+              </div>
+            </div>
+
+            <input type="hidden"
+                   id="project-modify"
+                   name="project"
+                   value="{{ project['name']}}"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modify quota modal -->
+  <div class="modal fade"
+       id="modifyQuota"
+       tabindex="-1"
+       aria-labelledby="modifyQuotaLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modifyQuotaLabel">
+            Modify quota
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.modify_project') }}"
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
             <div class="mb-3">
               <label for="description" class="col-form-label">
                 Max Size (bytes)

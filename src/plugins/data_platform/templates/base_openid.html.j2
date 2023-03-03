@@ -49,6 +49,9 @@
                     <li>
                         <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.drop_permissions') }}">Drop permissions</a>
                     </li>
+                    <li>
+                        <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#impersonate">Impersonate user</a>
+                    </li>
                     {% endif %}
                     <li>
                         <a class="dropdown-item" href="{{ url_for(config['MANGO_LOGOUT_ACTION']) }}">Sign out</a>
@@ -62,4 +65,57 @@
 {% endblock header %}
 
 {% block footer %}
+{% if admin|default(False) %}
+  <!-- impersonate -->
+  <div class="modal fade"
+       id="impersonate"
+       tabindex="-1"
+       aria-labelledby="impersonateLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="impersonateLabel">
+            Impersonate
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_user_bp.impersonate') }}""
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="username-impersonate" class="col-form-label">
+                Username
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="username-impersonate"
+                     name="username"
+                     required autocomplete="off" pattern="^vsc[0-9]{5}$|^[urbcms][0-9]{7}$" />
+              <div class="invalid-feedback">
+                A valid username is required, e.g. {% if session['openid_provider'] == 'vsc' %}vsc12345{% else %}u0123456{% endif %}.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Impersonate
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
 {% endblock footer %}
