@@ -51,6 +51,8 @@ def project(project_name):
 
     status = response.json()
 
+    project['activated'] = not project['archived'] or not project['valid_after'] or datetime.strptime(project['valid_after'], '%Y-%m-%d') < datetime.now()
+
     # find out whether we are project owner
     project['my_role'] = ""
     project['responsibles'] = 0
@@ -123,12 +125,32 @@ def modify_project():
 
     id = request.form.get('project')
 
-    response = requests.patch(
-        f"{API_URL}/v1/projects/{id}", headers=header, json={
+    if "description" in request.form:
+        data = {
             "description": request.form.get("description"),
+            "sap_ref": request.form.get("sap_ref"),
+            "vsc_call": request.form.get("vsc_call"),
+            "valid_after": request.form.get("valid_after"),
+            "invalid_after": request.form.get("invalid_after"),
+        }
+
+        now = datetime.now()
+
+        if data["invalid_after"] and datetime.strptime(data["invalid_after"], "%Y-%m-%d") < now:
+            data["archived"] = True
+        elif data["valid_after"] and datetime.strptime(data["valid_after"], "%Y-%m-%d") < now:
+            data["archived"] = False
+        elif data["valid_after"]:
+            data["archived"] = True
+
+    elif "quota_inodes" in request.form:
+        data = {
             "quota_inodes": int(request.form.get("quota_inodes")),
             "quota_size": int(request.form.get("quota_size")),
-        }
+        }        
+
+    response = requests.patch(
+        f"{API_URL}/v1/projects/{id}", headers=header, json=data,
     )
     response.raise_for_status()
 
@@ -144,15 +166,17 @@ def deploy_project():
 
     id = request.form.get('project')
 
+    now = datetime.now().strftime("%Y-%m-%d")
+
     if request.form.get('submit') == 'Archive':
         response = requests.patch(
-            f"{API_URL}/v1/projects/{id}", headers=header, json={"archived": True}
+            f"{API_URL}/v1/projects/{id}", headers=header, json={"archived": True, "invalid_after": now}
         )
         response.raise_for_status()
 
     if request.form.get('submit') == 'Unarchive':
         response = requests.patch(
-            f"{API_URL}/v1/projects/{id}", headers=header, json={"archived": False}
+            f"{API_URL}/v1/projects/{id}", headers=header, json={"archived": False, "valid_after": now}
         )
         response.raise_for_status()
 
