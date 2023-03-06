@@ -2,6 +2,7 @@ import os
 from irods.collection import iRODSCollection
 from irods.data_object import iRODSDataObject
 from irods.session import iRODSSession
+import base64
 
 
 def generate_breadcrumbs(path_string: str):
@@ -65,6 +66,26 @@ def flatten_josse_schema(object_tuple, level=0, prefix="", result_dict={}):
     return result_dict
 
 
+def flatten_schema(object_tuple, level=0, prefix="", result_dict={}):
+    (_key, _dict) = object_tuple
+    for p_key, _property in _dict["properties"].items():
+        if _property["type"] == "object":
+            result_dict = flatten_josse_schema(
+                (p_key, _property),
+                level=(level + 1),
+                prefix=f"{prefix}.{p_key}",
+                result_dict=result_dict,
+            )
+
+        else:
+
+            result_dict[f"{prefix}.{p_key}"] = {
+                "label": _property["title"],
+                "type": _property["type"],
+            }
+    return result_dict
+
+
 def get_collection_size(collection: iRODSCollection):
     total_size = 0
     num_data_objects = 0
@@ -116,3 +137,12 @@ def get_type_for_path(irods_session: iRODSSession, item_path: str):
         return "collection"
     except Exception:
         return "data_object"
+
+
+# equivalents to javascript btoa and atob
+def btoa(x):
+    return base64.b64encode(bytes(x, "utf-8")).decode("utf-8")
+
+
+def atob(x):
+    return base64.b64decode(x)

@@ -123,18 +123,24 @@ class MovingField {
 
 class MovingViewer extends MovingField {
     // Specific class for viewing fields of a schema
-    constructor(form, schema, schema_status) {
+    constructor(form, schema) {
         super(form.id);
-        this.rem = this.add_btn('rem', 'trash', () => this.remove(schema_status));
+        this.rem = this.add_btn('rem', 'trash', () => this.remove());
         this.title = form.required ? form.title + '*' : form.title;
         this.repeatable = form.repeatable;
         this.div = Field.quick("div", "card border-primary viewer");
         this.div.id = form.id;
         this.body = form.viewer_input();
-        let modal_id = `mod-${form.id}-${form.schema_name}-${schema_status}`;
+        let modal_id = `mod-${form.id}-${form.schema_name}-${form.schema_status}`;
         let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modal_id));
-        this.copy = this.add_btn('copy', 'front', () => this.duplicate(form, schema, schema_status));
-        this.edit = this.add_btn('edit', 'pencil', () => modal.toggle());
+        this.copy = this.add_btn('copy', 'front', () => this.duplicate(form));
+        this.edit = this.add_btn('edit', 'pencil', () => {
+            if (form.schema_status.startsWith('object')) {
+                let parent_modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(schema.card_id));
+                parent_modal.toggle();
+            }
+            modal.toggle();
+        });
         if (form.is_duplicate) {
             this.copy.setAttribute('disabled', '');
             // this.edit.classList.replace('btn-outline-primary', 'btn-primary');
@@ -145,28 +151,32 @@ class MovingViewer extends MovingField {
         this.schema = schema;        
     }
 
-    duplicate(form, schema, schema_status) {
-        const clone = new form.constructor(schema.initial_name);
-        const pattern = `^${form.id}(\d+)$`;
-        const existing_copies = schema.field_ids
-            .filter(fid => fid.match(pattern))
-            .map(fid => parseInt(fid.match(pattern)[1]));
-        clone.id = existing_copies.length == 0 ? form.id + '0' : form.id + String(Math.max(...existing_copies) + 1);
+    duplicate(form) {
+        const clone = new form.constructor(this.schema.initial_name);
+        if (form.copies) {
+            form.copies += 1;
+        } else {
+            form.copies = 1;
+        }
+        clone.id = `${form.id}-copy${form.copies}`;
         clone.title = form.title;
         clone.is_duplicate = true;
         clone.required = form.required;
         clone.repeatable = form.repeatable;
-        clone.values = form.values;
+        clone.values = {...form.values};
         clone.type = form.type;
         clone.default = form.default;
+        clone.viewer_subtitle = form.viewer_subtitle;
         if (form.constructor.name == 'ObjectInput') {
             clone.editor = form.editor;
         }
         clone.mode = 'mod';
         clone.create_form();
-        clone.create_modal(schema, schema_status);
-        schema.new_field_idx = schema.field_ids.indexOf(form.id) + 1;
-        schema.add_field(clone, schema_status);
+        clone.create_modal(this.schema);
+
+        this.schema.new_field_idx = this.schema.field_ids.indexOf(form.id) + 1;
+        this.schema.add_field(clone);
+
     }
 
     assemble() {
@@ -238,7 +248,7 @@ class MovingViewer extends MovingField {
         this.schema.field_ids.splice(form_index - 1, 0, this.idx);
     }
 
-    remove(schema_status) {
+    remove() {
         // Method to remove a viewing field (and thus also the field itself)
         let form_index = this.schema.field_ids.indexOf(this.idx);
         
@@ -254,9 +264,7 @@ class MovingViewer extends MovingField {
         this.div.parentNode.removeChild(this.div);
         this.schema.field_ids.splice(form_index, 1);
         delete this.schema.fields[this.idx];
-        if (this.constructor.name == 'MovingViewer') {
-            this.schema.toggle_saving(schema_status);
-        }
+        this.schema.toggle_saving();
     }
 
 }
@@ -693,8 +701,6 @@ class NavBar {
             this.nav_bar.id = 'nav-tab-' + id;    
             this.tab_content = Field.quick('div', 'tab-content');
         } else {
-            console.log(this.nav_bar);
-            console.log(this.nav_bar.nextSibling)
             this.tab_content = this.nav_bar.nextSibling;
         }
         this.id = id;
@@ -705,9 +711,9 @@ class NavBar {
             
     }
 
-    add_item(item_id, button_text, active = false) {
-        this.add_button(item_id, button_text, active = active);
-        this.add_tab(item_id, active = active);
+    add_item(item_id, button_text, active = false, position = -1) {
+        this.add_button(item_id, button_text, active, position);
+        this.add_tab(item_id, active, position);
     }
 
     remove_item(item_id) {
@@ -715,7 +721,7 @@ class NavBar {
         document.getElementById(`${item_id}-pane-${this.id}`).remove();
     }
 
-    add_button(item_id, button_text, active) {
+    add_button(item_id, button_text, active, position = -1) {
         let li = Field.quick('li', 'nav-item');
         let button = document.createElement('button');
         button.className = active ? 'nav-link active' : 'nav-link';
@@ -731,18 +737,28 @@ class NavBar {
         button.role = 'tab';
         button.setAttribute('aria-controls', `${item_id}-pane-${this.id}`);
         li.appendChild(button);
-        this.nav_bar.appendChild(li);
+        if (position != -1 && this.nav_bar.children.length > position) {
+            let sibling = this.nav_bar.children[position];
+            this.nav_bar.insertBefore(li, sibling);
+        } else {
+            this.nav_bar.appendChild(li);
+        }
     }
 
 
-    add_tab(item_id, active) {
+    add_tab(item_id, active, position = -1) {
         let tab = Field.quick('div',
             active ? 'tab-pane fade show active' : 'tab-pane fade');
         tab.id = `${item_id}-pane-${this.id}`;
         tab.role = 'tabpanel';
         tab.setAttribute('aria-labelledby', `${item_id}-tab-${this.id}`);
         tab.tabIndex = '0';
-        this.tab_content.appendChild(tab);
+        if (position != -1 && this.tab_content.children.length > position) {
+            let sibling = this.tab_content.children[position];
+            this.tab_content.insertBefore(tab, sibling);
+        } else {
+            this.tab_content.appendChild(tab);
+        }
     }
 
     add_tab_content(item_id, content) {

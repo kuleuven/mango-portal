@@ -29,7 +29,12 @@ import mimetypes
 import tempfile
 from urllib.parse import unquote
 
-from lib.util import generate_breadcrumbs, flatten_josse_schema, get_collection_size
+from lib.util import (
+    generate_breadcrumbs,
+    flatten_josse_schema,
+    get_collection_size,
+    flatten_schema,
+)
 import magic
 import os
 import glob
@@ -48,6 +53,8 @@ from multidict import MultiDict
 from operator import itemgetter
 from pathlib import PurePath
 
+from kernel.metadata_schema import get_schema_manager
+
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
 
 # proxy so it can also be imported in blueprints from csrf.py independently
@@ -55,6 +62,19 @@ from csrf import csrf
 
 from kernel.metadata_schema.editor import get_metadata_schema_dir
 import signals
+
+# rudimentary code to obtain schema realm (project) from url
+
+
+def get_realm(item: iRODSCollection | iRODSDataObject) -> str:
+    realm = False
+    item_path = item.path
+    path_elements = item_path.split("/")
+    if (len(path_elements) >= 4) and path_elements[2] in ["home", "projects"]:
+        realm = path_elements[3]
+    else:
+        logging.warn(f"No realm for {item_path}")
+    return realm
 
 
 def group_prefix_metadata_items(
@@ -152,13 +172,23 @@ def collection_browse(collection):
     sub_collections = current_collection.subcollections
     data_objects = current_collection.data_objects
 
-    schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
-    # template_files = glob.glob("static/metadata-templates/*.json")
-    metadata_schema_filenames = [
-        base_file_name
-        for template_file in schema_files
-        if (base_file_name := os.path.basename(template_file)) != "uischema.json"
-    ]
+    ######################### new schema handling
+    schemas = []
+    schema_manager = False
+    realm = ""
+    if realm := get_realm(current_collection):
+        schema_manager = get_schema_manager(g.irods_session.zone, realm)
+    if schema_manager:
+        schemas = schema_manager.list_schemas(filters=["published"])
+        logging.info(f"Schema manager found schemas: {'|'.join(schemas.keys())}")
+    # schema_names = schemas.keys()
+
+    # schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
+    # metadata_schema_filenames = [
+    #     base_file_name
+    #     for template_file in schema_files
+    #     if (base_file_name := os.path.basename(template_file)) != "uischema.json"
+    # ]
 
     # metadata grouping  to be moved to proper function for re-use
     other = current_app.config["MANGO_NOSCHEMA_LABEL"]
@@ -174,19 +204,20 @@ def collection_browse(collection):
     ):
         pass
     else:
-        json_template_dir = get_metadata_schema_dir(g.irods_session)
+        # json_template_dir = get_metadata_schema_dir(g.irods_session)
 
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
-            if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
+            if schema != current_app.config["MANGO_NOSCHEMA_LABEL"] and schema_manager:
                 try:
-                    with open(f"{json_template_dir}/{schema}.json", "r") as schema_file:
-                        form_dict = json.load(schema_file)
-                        schema_labels[schema] = flatten_josse_schema(
-                            ("", form_dict),
-                            level=0,
-                            prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
-                            result_dict={},
-                        )
+
+                    schema_dict = json.loads(schema_manager.load_schema(schema))
+                    schema_labels[schema] = flatten_schema(
+                        ("", schema_dict),
+                        level=0,
+                        prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
+                        result_dict={},
+                    )
+                    logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
                 except:
                     pass
 
@@ -263,7 +294,9 @@ def collection_browse(collection):
         acl_users=acl_users,
         acl_users_dict=acl_users_dict,
         acl_counts=acl_counts,
-        metadata_schema_filenames=metadata_schema_filenames,
+        realm=realm,
+        # metadata_schema_filenames=metadata_schema_filenames,
+        schemas=schemas,
         grouped_metadata=grouped_metadata,  # sorted_metadata,
         schema_labels=schema_labels,
         my_groups=my_groups,
@@ -306,6 +339,16 @@ def view_object(data_object_path):
                     f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
                     "warning",
                 )
+    ######################### new schema handling
+    schemas = []
+    schema_manager = False
+    realm = ""
+    if realm := get_realm(data_object):
+        schema_manager = get_schema_manager(g.irods_session.zone, realm)
+    if schema_manager:
+        schemas = schema_manager.list_schemas(filters=["published"])
+        logging.info(f"Schema manager found schemas: {'|'.join(schemas.keys())}")
+
     acl_users = []
     group_analysis_unit = True
     grouped_metadata = group_prefix_metadata_items(
@@ -333,14 +376,14 @@ def view_object(data_object_path):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
                 try:
-                    with open(f"{json_template_dir}/{schema}.json", "r") as schema_file:
-                        form_dict = json.load(schema_file)
-                        schema_labels[schema] = flatten_josse_schema(
-                            ("", form_dict),
-                            level=0,
-                            prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
-                            result_dict={},
-                        )
+                    schema_dict = json.loads(schema_manager.load_schema(schema))
+                    schema_labels[schema] = flatten_schema(
+                        ("", schema_dict),
+                        level=0,
+                        prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
+                        result_dict={},
+                    )
+                    logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
                 except:
                     pass
     if group_analysis_unit:
@@ -433,6 +476,8 @@ def view_object(data_object_path):
         else "view_object_trash.html.j2"
     )
 
+    logging.info(f"Realm: {realm}")
+
     return render_template(
         view_template,
         data_object=data_object,
@@ -444,7 +489,8 @@ def view_object(data_object_path):
         my_groups=my_groups,
         grouped_metadata=grouped_metadata,
         schema_labels=schema_labels,
-        metadata_schema_filenames=metadata_schema_filenames,
+        realm=realm,
+        schemas=schemas,
         tika_result=tika_result,
         consolidated_names=consolidated_analysis_metadata_names,
         current_user_rights=current_user_rights,
@@ -1019,7 +1065,9 @@ def bulk_operation_items():
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
                 (item_type, item_path) = (match.group(1), match.group(2))
-                new_path = (PurePath(request.form["destination"]) / PurePath(item_path).name).as_posix()
+                new_path = (
+                    PurePath(request.form["destination"]) / PurePath(item_path).name
+                ).as_posix()
                 if item_type == ITEM_TYPE_PART["data_object"]:
                     irods_session.data_objects.move(
                         item_path, request.form["destination"]
@@ -1029,7 +1077,7 @@ def bulk_operation_items():
                         irods_session=g.irods_session,
                         original_path=item_path,
                         destination_path=request.form["destination"],
-                        new_path = new_path
+                        new_path=new_path,
                     )
                 if item_type == ITEM_TYPE_PART["collection"]:
                     irods_session.collections.move(
@@ -1040,7 +1088,7 @@ def bulk_operation_items():
                         irods_session=g.irods_session,
                         original_path=item_path,
                         destination_path=request.form["destination"],
-                        new_path = new_path
+                        new_path=new_path,
                     )
         flash(
             f"Successfully moved {len(request.form.getlist('items'))} items", "success"
@@ -1051,7 +1099,9 @@ def bulk_operation_items():
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
                 (item_type, item_path) = (match.group(1), match.group(2))
-                new_path = (PurePath(request.form["destination"]) / PurePath(item_path).name).as_posix()
+                new_path = (
+                    PurePath(request.form["destination"]) / PurePath(item_path).name
+                ).as_posix()
                 if item_type == ITEM_TYPE_PART["data_object"]:
                     irods_session.data_objects.copy(
                         item_path, request.form["destination"]
@@ -1061,7 +1111,7 @@ def bulk_operation_items():
                         irods_session=g.irods_session,
                         data_object_path=item_path,
                         destination_path=request.form["destination"],
-                        new_path = new_path
+                        new_path=new_path,
                     )
                 # if item_type == ITEM_TYPE_PART["collection"]:
                 #     irods_session.collections.move(item_path, request.form["destination"])
