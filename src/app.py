@@ -160,6 +160,7 @@ def init_and_secure_views():
         "data_platform_user_bp.logout_openid",
         "data_platform_user_bp.connection_info_modal",
         "data_platform_user_bp.drop_permissions",
+        "data_platform_user_bp.impersonate",
         "data_platform_project_bp.project",
         "data_platform_project_bp.add_project_member",
         "data_platform_project_bp.delete_project_member",
@@ -275,14 +276,33 @@ def localize_datetime(
     return local_dt.strftime(format)
 
 
+@app.template_filter("parse_json_date")
+def parse_json_date(ts):
+    return datetime.datetime.strptime(ts, '%Y-%m-%d')
+
+
+@app.template_filter("parse_json_timestamp")
+def parse_json_timestamp(ts):
+    return datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S%z')
+
+
+@app.template_filter("format_date")
+def format_date(ts):
+    return ts.strftime("%Y-%m-%d")
+
+
 @app.template_filter("format_timestamp")
 def format_timestamp(ts):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
 
+@app.template_filter("yesterday")
+def yesterday(ts):
+    return ts - datetime.timedelta(days=1)
 
 @app.template_filter("format_time")
 def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
+
 
 
 @app.template_filter("format_size")

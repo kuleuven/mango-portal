@@ -18,25 +18,28 @@ def autocomplete_username(term):
     header = {"Authorization": "Bearer " + token}
     params = [('term', t) for t in term.split(' ')]
 
-    response = requests.get(
-        f"{API_URL}/v1/users/autocomplete", headers=header, params=params
-    )
-    response.raise_for_status() 
+    providers = [session['openid_provider']]
 
-    result = response.json()
+    if 'operator' in perms or 'admin' in perms:
+        providers = ['vsc', 'kuleuven']
 
-    if not result:
-        return jsonify([])
+    results = []
 
-    # Limit suggestions to the right 'source'
-    vsc = session['openid_provider'] == 'vsc'
-    admin = 'operator' in perms or 'admin' in perms
+    for provider in providers:
+        response = requests.get(
+            f"{API_URL}/v1/users/autocomplete/{provider}", headers=header, params=params
+        )
+        response.raise_for_status() 
 
-    return jsonify([
-        {
-            'username': u['username'],
-            'label': u['name'],
-        } 
-        for u in result
-        if (u['username'].startswith('vsc') == vsc) or admin
-    ])
+        provider_results = response.json()
+
+        if provider_results:
+            results += [
+                {
+                    'username': u['username'],
+                    'label': u['name'],
+                } 
+                for u in provider_results
+            ]
+    
+    return jsonify(results)

@@ -120,22 +120,8 @@ def update_zone_info(irods_zones, token=API_TOKEN):
 
 
 def current_user_api_token():
-    drop = False
-
-    if 'drop_data_platform_privileges' in session:
-        drop = session['drop_data_platform_privileges']
-
-    response = requests.post(
-        f"{API_URL}/v1/token/exchange",
-        json={
-            "id_token": Session(session['openid_session']).jwt_token,
-            "drop_permissions": drop,
-        },
-    )
-    response.raise_for_status()
-
-    payload = response.json()
-
+    payload = Session(session['openid_session']).data_platform_token()
+    
     update_zone_info(current_app.config['irods_zones'], payload["token"])
 
     return payload["token"], payload["permissions"]
@@ -156,6 +142,8 @@ def current_user_projects():
 
     # Map projects to zones
     for project in projects:
+        project['activated'] = not project['archived'] or not project['valid_after'] or datetime.strptime(project['valid_after'], '%Y-%m-%d') < datetime.now()
+
         project['my_role'] = ''
 
         for m in project['members']:
@@ -302,3 +290,48 @@ class Session(dict):
         redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}") 
 
         return f"{redirect_base}/user/openid/callback/{self['provider']}"
+    
+    def drop_permissions(self):
+        self['drop_permissions'] = True
+
+    def impersonate(self, username):
+        if not 'orig_user_info' in self:
+            self['orig_user_info'] = self['user_info'].copy()
+        self['user_info']['preferred_username'] = username
+        self['user_info']['name'] = self['orig_user_info']['name'] + " (impersonating " + username + ")"
+        self['impersonate'] = True
+
+    def data_platform_token(self):
+        drop = 'drop_permissions' in self
+        impersonate = 'impersonate' in self
+       
+        response = requests.post(
+            f"{API_URL}/v1/token/exchange",
+            json={
+                "id_token": self.jwt_token,
+                "drop_permissions": drop and not impersonate,
+            },
+        )
+        response.raise_for_status()
+
+        payload = response.json()
+
+        if not impersonate:
+            return payload
+        
+        header = {"Authorization": "Bearer " + payload["token"]}
+
+        response = requests.post(
+            f"{API_URL}/v1/token",
+            json={
+                "username": self.username,
+                "lookup_user_permissions": not drop,
+                "permissions": ["user"],
+            },
+            headers=header,
+        )
+        response.raise_for_status()
+
+        payload = response.json()
+
+        return payload
