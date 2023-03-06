@@ -1,0 +1,109 @@
+{% extends "base_openid.html.j2" %}
+
+{% block custom_style %}
+<style type="text/css">
+.progress {
+  position: relative;
+  cursor: pointer;
+}
+.progress:hover {
+  position: inherit;
+}
+.progress .progress-text {
+  position: absolute;
+  padding-left: 2px;
+  padding-right: 2px;
+  margin-top: -1px;
+  z-index: 10;
+}
+.progress:hover .progress-text {
+  background-color: #fff;
+  z-index: 99;
+}
+</style>
+{% endblock %}
+
+{% block container %}
+   <div class="m-2">
+   <nav aria-label="breadcrumb m-2">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+          <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Usage report</li>
+    </ol>
+  </nav>
+  </div>
+  
+  <table class="table table-striped table-hover">
+    <thead>
+    <tr>
+      <th>Project</th>
+      <th>Reference</th>
+      <th>Responsible</th>
+      <th>Usage Jan</th>
+      <th>Usage Feb</th>
+      <th>Usage Mar</th>
+      <th>Usage Apr</th>
+      <th>Usage May</th>
+      <th>Usage Jun</th>
+      <th>Usage Jul</th>
+      <th>Usage Aug</th>
+      <th>Usage Sep</th>
+      <th>Usage Oct</th>
+      <th>Usage Nov</th>
+      <th>Usage Dec</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    {% for item in projects %}
+    {% set project = item['project'] %}
+    <tr>
+      <td class="align-middle">
+        <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
+      </td>
+      <td class="align-middle">
+        {% if project['sap_ref'] %}SAP {{ project['sap_ref'] }}{% endif %}
+        {% if project['vsc_call'] %}VSC {{ project['vsc_call'] }}{% endif %}
+      </td>
+      <td class="align-middle">
+        {% for member in project['members'] %}
+        {% if member['role'] == 'responsible' %}
+        <span>{{ member['username'] }}</span>
+        {% endif %}
+        {% endfor %}
+      </td>
+
+      {% for m in ["-01","-02","-03","-04","-05","-6","-7","-8","-9","-10","-11","-12"] %}
+      <td>
+      {% for usage in item['usage'] %}
+      {% if usage['date'].endswith(m) %}
+      
+      <div class="progress">
+        <div class="progress-text">
+          {{ usage['used_size']|format_size }} of {{ usage['quota_size']|format_size }}
+        </div>
+        {% if usage['quota_size'] > 0 %}
+        <div class="progress-bar{% if usage['used_size'] > usage['quota_size'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ usage['used_size'] * 100 / usage['quota_size'] }}%" aria-valuenow="{{ usage['used_size'] }}" aria-valuemin="0" aria-valuemax="{{ usage['quota_size'] }}"></div>
+        {% endif %}
+      </div>
+
+      <div class="progress">
+        <div class="progress-text">
+          {{ usage['used_inodes']|format_intword }} of {{ usage['quota_inodes']|format_intword }} inodes
+        </div>
+        {% if usage['quota_inodes'] > 0 %}
+        <div class="progress-bar{% if usage['used_inodes'] > usage['quota_inodes'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ usage['used_inodes'] * 100 / usage['quota_inodes'] }}%" aria-valuenow="{{ usage['used_inodes'] }}" aria-valuemin="0" aria-valuemax="{{ usage['quota_inodes'] }}"></div>
+        {% endif %}
+      </div>
+
+      {% endif %}
+      {% endfor %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endblock container %}
