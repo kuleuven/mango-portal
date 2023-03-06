@@ -38,7 +38,7 @@ from wtforms import (
     FloatField,
 )
 import wtforms.widgets
-from multidict import MultiDict
+from werkzeug.datastructures import MultiDict
 
 from irods.meta import iRODSMeta, AVUOperation
 
