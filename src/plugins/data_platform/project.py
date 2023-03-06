@@ -280,7 +280,7 @@ def project_overview():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
 
-    year = request.form.get('year')
+    year = request.args.get('year')
 
     if not year:
         year = datetime.now().year
@@ -291,8 +291,13 @@ def project_overview():
 
     projects = response.json()
 
+    if not projects:
+        flash(f"No project information found in {year}.")
+        projects = []                            
+
     projects = sorted(projects, key=lambda p: p['project']['name']) 
 
     return render_template('project/projects_overview.html.j2',
         projects=projects,
+        year=year,
     )
