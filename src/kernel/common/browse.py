@@ -476,6 +476,8 @@ def view_object(data_object_path):
         else "view_object_trash.html.j2"
     )
 
+    logging.info(f"Realm: {realm}")
+
     return render_template(
         view_template,
         data_object=data_object,
