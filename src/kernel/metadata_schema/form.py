@@ -61,6 +61,7 @@ import logging
 
 import signals
 
+
 metadata_schema_form_bp = Blueprint(
     "metadata_schema_form_bp",
     __name__,
@@ -425,7 +426,7 @@ def edit_schema_metadata_for_item2():
                 meta_data_item.name, meta_data_item.value.replace("<br/>", "\n")
             )
 
-    values_json = json.dumps(form_values, separators=(",", ":"))
+    values_json = json.dumps(form_values)
 
     if request.method == "GET":
 
@@ -441,7 +442,7 @@ def edit_schema_metadata_for_item2():
             "schema_form_edit2.html.j2",
             schema=schema,
             realm=realm,
-            schema_values=values_json,
+            schema_values=lib.util.btoa(values_json),
             prefix=prefix,
             item=catalog_item,
         )

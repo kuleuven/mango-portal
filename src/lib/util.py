@@ -2,6 +2,7 @@ import os
 from irods.collection import iRODSCollection
 from irods.data_object import iRODSDataObject
 from irods.session import iRODSSession
+import base64
 
 
 def generate_breadcrumbs(path_string: str):
@@ -136,3 +137,12 @@ def get_type_for_path(irods_session: iRODSSession, item_path: str):
         return "collection"
     except Exception:
         return "data_object"
+
+
+# equivalents to javascript btoa and atob, maybe move to lib.util
+def btoa(x):
+    return base64.b64encode(bytes(x, "utf-8")).decode("utf-8")
+
+
+def atob(x):
+    return base64.b64decode(x)
