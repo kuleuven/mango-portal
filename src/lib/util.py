@@ -139,7 +139,7 @@ def get_type_for_path(irods_session: iRODSSession, item_path: str):
         return "data_object"
 
 
-# equivalents to javascript btoa and atob, maybe move to lib.util
+# equivalents to javascript btoa and atob
 def btoa(x):
     return base64.b64encode(bytes(x, "utf-8")).decode("utf-8")
 
