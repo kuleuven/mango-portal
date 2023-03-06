@@ -1,7 +1,7 @@
 class InputField {
     constructor(schema_name, data_status = 'draft') {
         this.description = ""; // description to show in the options viewer
-        this.dummy_title = "Title"; // dummy title in options viewer (probably could go)
+        this.dummy_title = "Informative label"; // dummy title in options viewer (probably could go)
         this.required = false; // whether the field is required
         this.values = {}; // values to return in the json
         this.mode = 'add'; // whether the form has to be created or edited ("mod")
@@ -31,7 +31,7 @@ class InputField {
         let inner_label = Field.quick("label", "form-label h6", this.dummy_title);
 
         example.appendChild(inner_label);
-        example.appendChild(this.ex_input());
+        example.appendChild(this.constructor.ex_input());
         return example;
     }
 
@@ -39,9 +39,9 @@ class InputField {
         this.id = `${this.form_type}-${schema.id}`;
         this.create_form();
 
-        let new_form = Field.quick("div", "border HTMLElement rounded");
+        let new_form = Field.quick("div", "shadow border rounded p-4 mb-3");
 
-        let new_button = Field.quick("button", "btn btn-primary HTMLElementButton", this.button_title);
+        let new_button = Field.quick("button", "btn btn-primary choice-button", this.button_title);
         this.create_modal(schema)
 
         new_button.setAttribute("data-bs-toggle", "modal");
@@ -83,16 +83,17 @@ class InputField {
 
         // Add require switch and submit button to form
         this.form_field.form.appendChild(document.createElement('br'));
-        let repeatable = !(this_class == 'SelectInput' | this_class == 'CheckboxInput');
+        let dropdownable = this_class == 'SelectInput' | this_class == 'CheckboxInput';
+        let in_object = this.schema_status.startsWith('object');
         let requirable = !(this_class == 'CheckboxInput' | this_class == 'ObjectInput');
         let switchnames = requirable ? ['required'] : [];
         let switches = requirable ? { required: this.required } : {};
-        if (repeatable) {
-            switchnames.push('repeatable');
-            switches.repeatable = this.repeatable;
-        } else {
+        if (dropdownable) {
             switchnames.push('dropdown');
             switches.dropdown = this.values.ui == 'dropdown';
+        } else if (!in_object) {
+            switchnames.push('repeatable');
+            switches.repeatable = this.repeatable;
         }
         this.form_field.add_switches(this.id, switchnames, switches);
 
@@ -103,21 +104,24 @@ class InputField {
                 this.required ? req_input.setAttribute('checked', '') : req_input.removeAttribute('checked');
             });
         }
-        if (repeatable) {
-            let rep_input = this.form_field.form.querySelector(`#${this.id}-repeatable`);
-            rep_input.addEventListener('change', () => {
-                this.repeatable = !this.repeatable;
-                this.repeatable ? rep_input.setAttribute('checked', '') : rep_input.removeAttribute('checked');
-            });
-        } else {
+        if (dropdownable) {
             let dd_input = this.form_field.form.querySelector(`#${this.id}-dropdown`);
             dd_input.addEventListener('change', () => {
                 this.values.ui = this.values.ui == 'dropdown' ? this.dropdown_alt : 'dropdown';
                 this.values.ui == 'dropdown' ? dd_input.setAttribute('checked', '') : dd_input.removeAttribute('checked');
             });
+        } else if (!in_object) {
+            let rep_input = this.form_field.form.querySelector(`#${this.id}-repeatable`);
+            rep_input.addEventListener('change', () => {
+                this.repeatable = !this.repeatable;
+                this.repeatable ? rep_input.setAttribute('checked', '') : rep_input.removeAttribute('checked');
+            });
         }
 
-        this.form_field.add_action_button(this.mode == 'add' ? "Add to schema" : "Update", 'add');
+        this.form_field.add_action_button(this.mode == 'add'
+            ? `Add to ${this.schema_status.startsWith('object') ? 'object' : 'schema'}`
+            : "Update",
+            'add');
 
     }
 
@@ -275,9 +279,10 @@ class TypedInput extends InputField {
     button_title = "Text input";
     description = "Text options: regular text, number (integer or float), date, time, e-mail or URL.<br>"
 
-    ex_input() {
+    static ex_input() {
         let inner_input = Field.quick("input", "form-control");
-        inner_input.placeholder = "example placeholder";
+        inner_input.value = "Some text";
+        inner_input.setAttribute('readonly', '');
         return inner_input;
     }
     add_default_field() {
@@ -346,11 +351,7 @@ class TypedInput extends InputField {
         let par_text = this.type;
         if (this.type == 'integer' | this.type == 'float') {
             this.values = { 'minimum': data.minimum, 'maximum': data.maximum };
-            let range_text = this.values.minimum != undefined && this.values.maximum != undefined
-                ? `between ${this.values.minimum} and ${this.values.maximum}`
-                : this.values.minimum != undefined
-                    ? `larger than ${this.values.minimum}`
-                    : `smaller than ${this.values.maximum}`;
+            let range_text = this.print_range();
             par_text = `${this.type} ${range_text}`;
         }
         this.viewer_subtitle = `Input type: ${par_text}`;
@@ -397,14 +398,16 @@ class TypedInput extends InputField {
                     {
                         placeholder: '0',
                         value: has_range ? this.values.minimum : false,
-                        validation_message: "This field is compulsory and the value must be lower than the maximum."
+                        validation_message: "This field is compulsory and the value must be lower than the maximum.",
+                        required: false
                     });
 
                 this.form_field.add_input("Maximum", max_id,
                     {
                         placeholder: '100',
                         value: has_range ? this.values.maximum : false,
-                        validation_message: "This field is compulsory and the value must be lower than the minimum."
+                        validation_message: "This field is compulsory and the value must be lower than the minimum.",
+                        required: false
                     });
 
             }
@@ -448,9 +451,7 @@ class TypedInput extends InputField {
             }
         }
         if (default_input !== null) {
-            let num_validator = default_input.input == 'number' ?
-                ` with values between ${default_input.min} and ${default_input.max}` :
-                '';
+            let num_validator = default_input.input == 'number' ? this.print_range() : '';
             let validator = `This field must be of type ${format}${num_validator}.`
             default_input.parentElement
                 .querySelector('.invalid-feedback')
@@ -477,14 +478,27 @@ class TypedInput extends InputField {
             this.values.minimum = data.get(`${this.id}-min`);
             this.values.maximum = data.get(`${this.id}-max`);
             // this.type = "number";
-            let range_text = this.values.minimum != undefined && this.values.maximum != undefined
-                ? `between ${this.values.minimum} and ${this.values.maximum}`
-                : this.values.minimum != undefined
-                    ? `larger than ${this.values.minimum}`
-                    : `smaller than ${this.values.maximum}`;
+            let range_text = this.print_range();
             par_text = `${this.type} ${range_text}`;
         }
         this.viewer_subtitle = `Input type: ${par_text}`;
+    }
+
+    print_range() {
+        if (this.values.minimum && this.values.maximum) {
+            // if we have both values
+            return `between ${this.values.minimum} and ${this.values.maximum}`;
+        } else if (this.values.minimum) {
+            // if we have the minimum
+            return `larger than ${this.values.minimum}`;
+        } else if (this.values.maximum) {
+            // if we have the maximum
+            return `smaller than ${this.values.maximum}`;
+        } else {
+            // if we don't have any
+            return '';
+        }
+        
     }
 
 }
@@ -493,13 +507,15 @@ class ObjectInput extends InputField {
     constructor(schema_name, data_status = 'draft') {
         super(schema_name, data_status);
         this.form_type = "object";
-        this.button_title = "Object";
-        this.dummy_title = "";
+        this.button_title = "Composite field";
         this.description = "This can contain any combination of the previous form elements.<br>"
     }
 
-    ex_input() {
-        let inner_input = document.createElement("p");
+    static ex_input() {
+        let mini_object = new DummyObject();
+        let inner_input = ComplexField.create_viewer(mini_object, true);
+        inner_input.querySelectorAll('input').forEach((input) => input.setAttribute('readonly', ''));
+        inner_input.setAttribute('style', 'display:block;');
         return inner_input;
     }
 
@@ -579,19 +595,6 @@ class MultipleInput extends InputField {
 
     repeatable = false;
 
-    ex_input() {
-        let columns = Field.quick('div', 'row');
-        let dropdown = Field.dropdown(this);
-        let radio = Field.checkbox_radio(this);
-        let col1 = Field.quick('div', 'col-6');
-        col1.appendChild(dropdown);
-        let col2 = Field.quick('div', 'col-6');
-        col2.appendChild(radio);
-        columns.appendChild(col1);
-        columns.appendChild(col2);
-        return columns;
-    }
-
     viewer_input(active = false) {
         // I just send the Fields data (values, actual value, and name if active)
         let div = this.values.ui == 'dropdown' ?
@@ -637,7 +640,7 @@ class SelectInput extends MultipleInput {
     constructor(schema_name, data_status = 'draft') {
         super(schema_name, data_status);
         this.form_type = "selection";
-        this.button_title = "Select input";
+        this.button_title = "Singe-value multiple choice";
         this.values.multiple = false;
         this.values.ui = 'radio';
     }
@@ -646,16 +649,57 @@ class SelectInput extends MultipleInput {
     add_default_field() {
         this.form_field.add_select("Default value (if field is required)", `${this.id}-default`, this.values.values);
     }
+    static ex_input() {
+        let columns = Field.quick('div', 'row h-50');
+        let example_input = new SelectInput('example');
+        example_input.name = 'select-example';
+        let dropdown = Field.dropdown(example_input);
+        dropdown.querySelector('option[value="one"]').setAttribute('selected', '');
+        dropdown.setAttribute('readonly', '');
+        let radio = Field.checkbox_radio(example_input);
+        radio.querySelector('input[value="one"]').setAttribute('checked', '');
+        radio.querySelectorAll('input').forEach((input) => input.setAttribute('readonly', ''));
+        let col1 = Field.quick('div', 'col-6 p-2 mb-2');
+        col1.appendChild(dropdown);
+        let col2 = Field.quick('div', 'col-6 p-2 mb-2');
+        col2.appendChild(radio);
+        columns.appendChild(col1);
+        columns.appendChild(col2);
+        return columns;
+    }
 }
 
 class CheckboxInput extends MultipleInput {
     constructor(schema_name, data_status = 'draft') {
         super(schema_name, data_status);
         this.form_type = "checkbox";
-        this.button_title = "Checkboxes";
+        this.button_title = "Multiple-value multiple choice";
         this.values.multiple = true;
         this.values.ui = 'checkbox';
     }
     dropdown_alt = 'checkbox';
-
+    
+    static ex_input() {
+        let columns = Field.quick('div', 'row');
+        let example_input = new CheckboxInput('example');
+        example_input.name = 'checkbox-example';
+        let dropdown = Field.dropdown(example_input);
+        dropdown.querySelectorAll('option')
+            .forEach((option) => {
+                if (option.value == "one" || option.value == "two") option.setAttribute('selected', '');
+            });
+        dropdown.setAttribute('readonly', '');
+        let checkboxes = Field.checkbox_radio(example_input);
+        checkboxes.querySelectorAll('input').forEach((input) => {
+            if (input.value != "three") input.setAttribute('checked', '');
+            input.setAttribute('readonly', '');
+        })
+        let col1 = Field.quick('div', 'col-6 p-2');
+        col1.appendChild(dropdown);
+        let col2 = Field.quick('div', 'col-6 p-2');
+        col2.appendChild(checkboxes);
+        columns.appendChild(col1);
+        columns.appendChild(col2);
+        return columns;
+    }
 }

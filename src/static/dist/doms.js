@@ -19,9 +19,11 @@ class Field {
         }
         values = values ? values : Field.example_values;
         // inner_input.setAttribute("multiple", "");
-        let empty_option = document.createElement("option");
-        inner_input.appendChild(empty_option);
-
+        if (active) {
+            let empty_option = document.createElement("option");
+            inner_input.appendChild(empty_option);        
+        }
+        
         for (let i of values) {
             let new_option = document.createElement("option");
             new_option.value = i;
@@ -54,8 +56,8 @@ class Field {
             new_input.type = multiple ? "checkbox" : "radio";
             new_input.value = i;
             new_input.id = `check-${i}`;
+            new_input.name = field.name;
             if (active) {
-                new_input.name = field.name;
                 if (value && value.indexOf(i) > -1) {
                     new_input.setAttribute('checked', '');
                 }
@@ -80,9 +82,9 @@ class Field {
     }
 
     static include_value(field) {
-        if (this.value != undefined) {
+        if (field.value != undefined) {
             return field.value;
-        } else if (this.required && field.default != undefined) {
+        } else if (field.required && field.default != undefined) {
             return field.default;
         } else {
             return;
@@ -167,12 +169,17 @@ class MovingViewer extends MovingField {
         clone.type = form.type;
         clone.default = form.default;
         clone.viewer_subtitle = form.viewer_subtitle;
-        if (form.constructor.name == 'ObjectInput') {
-            clone.editor = form.editor;
-        }
         clone.mode = 'mod';
         clone.create_form();
         clone.create_modal(this.schema);
+        if (form.constructor.name == 'ObjectInput') {
+            clone.editor.field_ids = [...form.editor.field_ids];
+            clone.editor.fields = {...form.editor.fields};
+            clone.editor.field_ids.forEach((field_id, idx) => {
+                clone.editor.new_field_idx = idx;
+                clone.editor.view_field(clone.editor.fields[field_id]);
+            });
+        }
 
         this.schema.new_field_idx = this.schema.field_ids.indexOf(form.id) + 1;
         this.schema.add_field(clone);
@@ -341,11 +348,11 @@ class MovingChoice extends MovingField {
     static remove_div(div) {
         // static method to remove a div element
         // (because this is also called programmatically to reset the form)
-        if (div.nextSibling.id == "add-mover") {
+        if (div.nextSibling.classList.contains('mover')) {
             // if this is the last option
             div.previousSibling.querySelector(".down").setAttribute("disabled", "");
         }
-        if (div.previousSibling.className == "form-control") {
+        if (div.previousSibling.classList.contains('form-container')) {
             // if this was the first option
             div.nextSibling.querySelector(".up").setAttribute("disabled", "");
         }

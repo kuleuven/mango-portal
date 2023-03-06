@@ -50,6 +50,8 @@ from irods.query import Query
 
 from slugify import slugify
 
+from csrf import csrf
+
 from pprint import pprint
 
 import lib.util
@@ -366,6 +368,7 @@ def edit_schema_metadata_for_item():
 
 
 @metadata_schema_form_bp.route("/metada-schema/edit2", methods=["POST", "GET"])
+@csrf.exempt
 def edit_schema_metadata_for_item2():
     """ """
     _parameters = request.values.to_dict()
@@ -462,7 +465,7 @@ def edit_schema_metadata_for_item2():
         for _key, _value in _parameters.items():
 
             if _key.startswith(prefix) and _value:
-                if flat_form_dict[_key]["type"] == "checkboxes":
+                if flat_form_dict[_key]["type"] == "checkbox":
                     _value = json.dumps(_value)
                 if flat_form_dict[_key]["type"] == "textarea":
                     # the value is transformed to replace newlines as iRODS cannot handle this.
