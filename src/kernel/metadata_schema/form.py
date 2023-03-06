@@ -53,8 +53,11 @@ from slugify import slugify
 from pprint import pprint
 
 import lib.util
-from lib.util import flatten_josse_schema
+from lib.util import flatten_josse_schema, flatten_schema
 from .editor import get_metadata_schema_dir
+
+from kernel.metadata_schema import get_schema_manager, FileSystemSchemaManager
+import logging
 
 import signals
 
@@ -371,19 +374,33 @@ def edit_schema_metadata_for_item2():
     if not object_path.startswith("/"):
         object_path = "/" + object_path
     template_name = schema = _parameters["schema"]
+    realm = _parameters["realm"]
     prefix = get_schema_prefix(
         schema_identifier=schema
     )  # f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(template_name)}"
-    # form_dict={}
+
+    schema_manager: FileSystemSchemaManager = get_schema_manager(
+        zone=g.irods_session.zone, realm=realm
+    )
+    logging.info(f"Using metadata schema {schema}")
+
+    schema_as_json = schema_manager.load_schema(schema_name=schema, status="published")
+    logging.info(schema_as_json)
+    form_dict = {}
+    flat_form_dict = {}
+    if schema_as_json:
+        form_dict = json.loads(schema_as_json)
+
     # json_template_dir = get_metadata_schema_dir(g.irods_session)
 
     # with open(f"{json_template_dir}/{template_name}") as template_file:
     #     form_dict = json.load(template_file)
 
     # needed for getting and setting specific values, for example multivalued fields like the checkboxes
-    # flat_form_dict = flatten_josse_schema(
-    #     ("", form_dict), level=0, prefix=prefix, result_dict={}
-    # )
+    if schema_as_json:
+        flat_form_dict = flatten_schema(
+            ("", form_dict), level=0, prefix=prefix, result_dict={}
+        )
 
     catalog_item = (
         g.irods_session.data_objects.get(object_path)
@@ -423,7 +440,7 @@ def edit_schema_metadata_for_item2():
         return render_template(
             "schema_form_edit2.html.j2",
             schema=schema,
-            realm=_parameters["realm"],
+            realm=realm,
             schema_values=values_json,
             prefix=prefix,
             item=catalog_item,

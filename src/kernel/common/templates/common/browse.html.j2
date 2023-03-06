@@ -127,7 +127,7 @@
   </ul>
   <div class="tab-content" id="pills-tab-content">
     <div class="tab-pane" id="collection-metadata">
-      {{ block_macros.metadata_block(collection.id, collection.path.lstrip("/"), grouped_metadata, schemas, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="collection", current_user_rights=current_user_rights)}}
+      {{ block_macros.metadata_block(collection.id, collection.path.lstrip("/"), grouped_metadata, schemas, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="collection", current_user_rights=current_user_rights, realm=realm)}}
     </div>
     <div class="tab-pane show active" id="collection-content">
       {% if ('own' in current_user_rights) %}

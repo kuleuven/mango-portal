@@ -209,14 +209,7 @@ def collection_browse(collection):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"] and schema_manager:
                 try:
-                    # with open(f"{json_template_dir}/{schema}.json", "r") as schema_file:
-                    #     form_dict = json.load(schema_file)
-                    #     schema_labels[schema] = flatten_josse_schema(
-                    #         ("", form_dict),
-                    #         level=0,
-                    #         prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
-                    #         result_dict={},
-                    #     )
+
                     schema_dict = json.loads(schema_manager.load_schema(schema))
                     schema_labels[schema] = flatten_schema(
                         ("", schema_dict),
@@ -346,6 +339,16 @@ def view_object(data_object_path):
                     f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
                     "warning",
                 )
+    ######################### new schema handling
+    schemas = []
+    schema_manager = False
+    realm = ""
+    if realm := get_realm(data_object):
+        schema_manager = get_schema_manager(g.irods_session.zone, realm)
+    if schema_manager:
+        schemas = schema_manager.list_schemas(filters=["published"])
+        logging.info(f"Schema manager found schemas: {'|'.join(schemas.keys())}")
+
     acl_users = []
     group_analysis_unit = True
     grouped_metadata = group_prefix_metadata_items(
@@ -373,14 +376,14 @@ def view_object(data_object_path):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
                 try:
-                    with open(f"{json_template_dir}/{schema}.json", "r") as schema_file:
-                        form_dict = json.load(schema_file)
-                        schema_labels[schema] = flatten_josse_schema(
-                            ("", form_dict),
-                            level=0,
-                            prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
-                            result_dict={},
-                        )
+                    schema_dict = json.loads(schema_manager.load_schema(schema))
+                    schema_labels[schema] = flatten_schema(
+                        ("", schema_dict),
+                        level=0,
+                        prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
+                        result_dict={},
+                    )
+                    logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
                 except:
                     pass
     if group_analysis_unit:
@@ -485,7 +488,8 @@ def view_object(data_object_path):
         metadata_objects=metadata_objects,
         grouped_metadata=grouped_metadata,
         schema_labels=schema_labels,
-        metadata_schema_filenames=metadata_schema_filenames,
+        realm=realm,
+        schemas=schemas,
         tika_result=tika_result,
         consolidated_names=consolidated_analysis_metadata_names,
         current_user_rights=current_user_rights,
