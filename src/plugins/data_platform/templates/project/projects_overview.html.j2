@@ -79,11 +79,11 @@
         {% if project['vsc_call'] %}VSC {{ project['vsc_call'] }}{% endif %}
       </td>
       <td class="align-middle">
-        {% for member in project['members'] %}
-        {% if member['role'] == 'responsible' %}
-        <span>{{ member['username'] }}</span>
-        {% endif %}
+        {% if item['responsibles'] %}
+        {% for member in item['responsibles'] %}
+        <span>{{ member['name']|default(member['username']) }}</span>
         {% endfor %}
+        {% endif %}
       </td>
 
       {% for m in ["-01","-02","-03","-04","-05","-6","-7","-8","-9","-10","-11","-12"] %}
