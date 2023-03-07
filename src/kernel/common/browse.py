@@ -180,7 +180,7 @@ def collection_browse(collection):
         schema_manager = get_schema_manager(g.irods_session.zone, realm)
     if schema_manager:
         schemas = schema_manager.list_schemas(filters=["published"])
-        logging.info(f"Schema manager found schemas: {'|'.join(schemas.keys())}")
+        logging.info(f"Schema manager found published schemas: {'|'.join(schemas.keys())}")
     # schema_names = schemas.keys()
 
     # schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
@@ -194,7 +194,7 @@ def collection_browse(collection):
     other = current_app.config["MANGO_NOSCHEMA_LABEL"]
     grouped_metadata = group_prefix_metadata_items(
         current_collection.metadata(timestamps=True).items(),
-        current_app.config["MANGO_PREFIX"],
+        current_app.config["MANGO_SCHEMA_PREFIX"],
     )
 
     schema_labels = {}
@@ -214,7 +214,7 @@ def collection_browse(collection):
                     schema_labels[schema] = flatten_schema(
                         ("", schema_dict),
                         level=0,
-                        prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
+                        prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                         result_dict={},
                     )
                     logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
@@ -353,7 +353,7 @@ def view_object(data_object_path):
     group_analysis_unit = True
     grouped_metadata = group_prefix_metadata_items(
         meta_data_items := data_object.metadata(timestamps=True).items(),
-        current_app.config["MANGO_PREFIX"],
+        current_app.config["MANGO_SCHEMA_PREFIX"],
         no_schema_label=current_app.config["MANGO_NOSCHEMA_LABEL"],
         group_analysis_unit=group_analysis_unit,
     )
@@ -380,7 +380,7 @@ def view_object(data_object_path):
                     schema_labels[schema] = flatten_schema(
                         ("", schema_dict),
                         level=0,
-                        prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
+                        prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                         result_dict={},
                     )
                     logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")

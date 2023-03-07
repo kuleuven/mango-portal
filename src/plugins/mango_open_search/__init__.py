@@ -11,6 +11,7 @@ from threading import Lock, Thread, Event
 import datetime, time, logging
 from lib import util
 import signals
+from flask import current_app
 
 API_URL = os.environ.get(
     "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
@@ -240,7 +241,7 @@ def get_basic_index_doc_for_item(
 ):
     """ """
     fields = {}
-    mango_prefix = "mg."
+    mango_prefix = current_app.config["MANGO_SCHEMA_PREFIX"]
     field_mappings = {}
 
     metadata = item.metadata.items()

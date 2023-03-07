@@ -145,7 +145,8 @@
          id="meta-data"
          role="tabpanel"
          aria-labelledby="meta-data-tab">
-      {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/"), grouped_metadata, schemas, schema_labels, readonly_prefixes=('mt.', 'mg.', 'irods::'), item_type="data_object", current_user_rights=current_user_rights, realm=realm)}}
+      {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/"), grouped_metadata, schemas, schema_labels,
+        readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="data_object", current_user_rights=current_user_rights, realm=realm)}}
     </div>
     <div class="tab-pane" id="item-permissions">
       {{ block_macros.permission_block(data_object.path.lstrip("/"), permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights)}}
