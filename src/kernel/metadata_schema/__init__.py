@@ -128,25 +128,23 @@ class FileSystemSchemaManager:
         """
 
         realm_schemas_path = self._get_realm_schemas_path()
+        schemas = []
         if hasattr(self, "_schemas_dir_mtime") and (
             realm_schemas_path.stat().st_mtime == self._schemas_dir_mtime
         ):
-            return self._schemas
+            schemas = self._schemas.keys()
+        else:
+            schemas = [
+                schema_path.name
+                for schema_path in realm_schemas_path.glob("*")
+                if schema_path.is_dir()
+            ]
 
-        schemas = [
-            schema_path.name
-            for schema_path in realm_schemas_path.glob("*")
-            if schema_path.is_dir()
-        ]
-        #pprint.pprint(schemas)
         schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
-        #pprint.pprint(realm_schemas_path)
-        #pprint.pprint(schemas_dict)
 
         if not filters:
             return schemas_dict
         if filters:
-
             return {
                 schema: schema_info
                 for schema, schema_info in schemas_dict.items()

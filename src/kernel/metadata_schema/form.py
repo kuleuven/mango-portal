@@ -233,9 +233,9 @@ def get_schema_prefix_from_filename(filename):
 
 def get_schema_prefix(schema_identifier=False, schema_filename=False):
     if schema_identifier:
-        return f"{current_app.config['MANGO_PREFIX']}.{schema_identifier}"
+        return f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema_identifier}"
     if schema_filename:
-        return f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(schema_filename)}"
+        return f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{get_schema_prefix_from_filename(schema_filename)}"
 
 
 @metadata_schema_form_bp.route("/metada-schema/edit", methods=["POST", "GET"])
@@ -252,9 +252,7 @@ def edit_schema_metadata_for_item():
     if not object_path.startswith("/"):
         object_path = "/" + object_path
     template_name = _parameters["schema"]
-    prefix = get_schema_prefix(
-        schema_filename=template_name
-    )  # f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(template_name)}"
+    prefix = get_schema_prefix(schema_filename=template_name)
     form_dict = {}
     json_template_dir = get_metadata_schema_dir(g.irods_session)
 
@@ -379,9 +377,7 @@ def edit_schema_metadata_for_item2():
         object_path = "/" + object_path
     template_name = schema = _parameters["schema"]
     realm = _parameters["realm"]
-    prefix = get_schema_prefix(
-        schema_identifier=schema
-    )  # f"{current_app.config['MANGO_PREFIX']}.{get_schema_prefix_from_filename(template_name)}"
+    prefix = get_schema_prefix(schema_identifier=schema)
 
     schema_manager: FileSystemSchemaManager = get_schema_manager(
         zone=g.irods_session.zone, realm=realm
@@ -462,11 +458,10 @@ def edit_schema_metadata_for_item2():
                 avu_operation_list.append(
                     AVUOperation(operation="remove", avu=meta_data_item)
                 )
-        for _key, _value in _parameters.items():
+        for _key, _value in request.values.items(multi=True):
 
             if _key.startswith(prefix) and _value:
-                if flat_form_dict[_key]["type"] == "checkbox":
-                    _value = json.dumps(_value)
+              
                 if flat_form_dict[_key]["type"] == "textarea":
                     # the value is transformed to replace newlines as iRODS cannot handle this.
                     # Most likely this is only for schemas which can have textarea boxes
