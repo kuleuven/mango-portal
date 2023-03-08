@@ -425,7 +425,7 @@ def edit_schema_metadata_for_item2():
                 meta_data_item.name, meta_data_item.value.replace("<br/>", "\n")
             )
 
-    values_json = json.dumps(form_values)
+    values_json = json.dumps(form_values.to_dict(flat=False))
 
     if request.method == "GET":
 

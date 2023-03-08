@@ -437,7 +437,7 @@ class Schema extends ComplexField {
                         published_version.draft_from_publish();
                         published_version.field_ids.forEach((field_id, idx) => {
                             published_version.new_field_idx = idx;
-                            published_version.view_field(published_Version.fields[field_id]);
+                            published_version.view_field(published_version.fields[field_id]);
                         });
                     }
                     if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
@@ -844,7 +844,8 @@ class SchemaForm {
                 console.log(`${pair[0]}, ${pair[1]}`);
             }
         }
-        const url_params = new URL(window.location.href).searchParams;
+        const url = new URL(window.location.href)
+        const url_params = url.searchParams;
         for (let item of ['item_type', 'object_path', 'schema', 'realm']) {
             data.append(item, url_params.get(item));
         }
@@ -852,7 +853,8 @@ class SchemaForm {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', post_url, true);
         xhr.send(data);
-        console.log('Metadata sent');
+        const path_url = `${url.origin}/${url_params.get('item_type')}/browse/${url_params.get('object_path')}`
+        window.open(path_url, '_self');
     }
 
     add_annotation(annotated_data) {

@@ -246,7 +246,7 @@ class MovingViewer extends MovingField {
             this.up.setAttribute("disabled", "");
             sibling.querySelector(".up").removeAttribute("disabled");
         }
-        if (!sibling.nextSibling.classList.contains("adder")) {
+        if (!sibling.nextSibling.nextSibling.classList.contains("viewer")) {
             // if we were in the last place
             this.down.removeAttribute("disabled");
             sibling.querySelector(".down").setAttribute("disabled", "")
@@ -356,13 +356,14 @@ class MovingChoice extends MovingField {
             // if this was the first option
             div.nextSibling.querySelector(".up").setAttribute("disabled", "");
         }
+        
         let existing_children = div.parentElement.querySelectorAll(".blocked");
-        if (existing_children.length < 4) {
+        if (existing_children.length <= 3) {
+            console.log('too few children')
             existing_children.forEach((child) => {
                 child.querySelector(".rem").setAttribute("disabled", "");
             });
         }
-        
         div.parentNode.removeChild(div);
     }
 
@@ -479,6 +480,9 @@ class BasicForm {
         for (let i in options) {
             let input = this.add_mover(label_text, i,
                 has_values ? options[i] : false);
+            if (options.length > 2) {
+                input.querySelector('.rem').removeAttribute('disabled');
+            }
             if (i == 0) {
                 input.querySelector(".up").setAttribute("disabled", "");
             }

@@ -84,7 +84,8 @@ class InputField {
         // Add require switch and submit button to form
         this.form_field.form.appendChild(document.createElement('br'));
         let dropdownable = this_class == 'SelectInput' | this_class == 'CheckboxInput';
-        let in_object = this.schema_status.startsWith('object');
+        // ObjectInput included as in_object to TEMPORARILY disable repeatable objects
+        let in_object = this.schema_status.startsWith('object') || this_class == 'ObjectInput';
         let requirable = !(this_class == 'CheckboxInput' | this_class == 'ObjectInput');
         let switchnames = requirable ? ['required'] : [];
         let switches = requirable ? { required: this.required } : {};
