@@ -280,7 +280,7 @@
                                         class="btn btn-danger float-end"
                                         data-bs-toggle="modal"
                                         data-bs-target="#delete_schema_data_{{ schema }}">
-                                    Delete metadata for schema "{{ schemas[schema]['title'] }}"
+                                    Delete metadata for schema "{{ schemas[schema]['title'] if schemas[schema] else schema }}"
                                 </button>
                                 {{ dialogs.confirm_delete_dialog('delete_schema_data_' ~ schema, url_for('metadata_schema_form_bp.delete_schema_metadata_for_item'), title='Are you sure you want to delete all metadata', mode="custom", readonly_fields = [{'name' : 'item_path', 'value': object_path,  'label': 'Item'}, {'name' : 'schema_identifier', 'value': schema, 'label': 'Schema'}], hidden_fields=[{'name':'redirect_hash', 'value': '#metadata'}, {'name': 'item_type', 'value': item_type}], modal_class='modal-lg') }}
                             </div>
