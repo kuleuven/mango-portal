@@ -70,7 +70,7 @@ class AnnotationRequest extends MangoRequest {
             let json = this.json;
             let schema = new SchemaForm(json, container_id, prefix);
             console.log(annotated_data);
-            // schema.add_annotation(annotated_data);
+            schema.add_annotation(annotated_data);
         })
     }
 }
