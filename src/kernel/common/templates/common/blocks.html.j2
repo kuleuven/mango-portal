@@ -95,7 +95,7 @@
         </form>
     {% endif %}
 {% endmacro %}
-{% macro metadata_block(object_id, object_path, grouped_metadata, schemas, schema_labels, readonly_prefixes=(""), item_type="collection", read_only=False, current_user_rights=[], realm="") %}
+{% macro metadata_block(object_id, object_path, grouped_metadata, schemas, schema_labels, readonly_prefixes=(""), item_type="collection", read_only=False, current_user_rights=[], realm="", flattened_schemas={}) %}
     {% if grouped_metadata|length == 1 and config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata %}
         <table class="table table-striped table-hover mt-2">
             <tbody>
@@ -189,46 +189,68 @@
                      aria-labelledby="pills-{{ schema }}-tab">
                     <table class="table table-striped table-hover mt-2">
                         <tbody>
-                            {% for _key, item in grouped_metadata[schema].items() %}
-                                <tr>
-                                    <th class="text-start">
-                                        <span title="{{ item.name }}">{{ schema_labels[schema][item.name]['label'] if (schema_labels[schema] and schema_labels[schema][item.name]) else item.name }}</span>
-                                    </th>
-                                    <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}"
-                                        class="text-break">
-                                        {{ item.value | bleach_clean(tags=['br']) | safe }}
-                                    </td>
-                                    <td class="text-left">{{ item.units if item.units is not none }}</td>
-                                    {% if not read_only and (current_user_rights | intersection(own_or_write)) and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
-                                        <td>
-                                            {% if not (item.units and item.units.startswith('analysis')) %}
-                                                <a href="#"
-                                                   data-bs-toggle="modal"
-                                                   data-bs-target="#editMetaData"
-                                                   data-bs-meta-data-name="{{ item.name }}"
-                                                   data-bs-meta-data-value="{{ item.value }}"
-                                                   data-bs-meta-data-units="{{ item.units if item.units is not none }}"
-                                                   data-bs-object-path="{{ object_path }}"><i class="bi bi-pencil"></i></a>
-                                            {% endif %}
+                            {% if schema in schema_labels %}
+                                {% for name, info in schema_labels[schema].items() %}
+                                    {% set items=grouped_metadata[schema].getall(name, []) %}
+                                    <tr>
+                                        <th class="text-start">
+                                            <span title="{{ name }}">{{ info['label'] }}</span>
+                                        </th>
+                                        <td class="text-break">
+                                            {% for item in items %}<p>{{ item.value | bleach_clean(tags=['br']) | safe }}</p>{% endfor %}
                                         </td>
-                                        <td>
-                                            <a href="#"
-                                               data-bs-toggle="modal"
-                                               data-bs-target="#deleteMetaData"
-                                               class="text-danger"
-                                               data-bs-meta-data-name="{{ item.name }}"
-                                               data-bs-meta-data-value="{{ item.value }}"
-                                               data-bs-meta-data-units="{{ item.units if item.units is not none }}"
-                                               data-bs-object-path="{{ object_path }}"><i class="bi bi-trash"></i></a>
-                                        </td>
-                                    {% else %}
+                                        <td class="text-left"></td>
                                         <td></td>
                                         <td>
                                             <i class="bi bi-lock" title="locked"></i>
                                         </td>
-                                    {% endif %}
-                                </tr>
-                            {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                {% for _key, item in grouped_metadata[schema].items() %}
+                                    <tr>
+                                        <th class="text-start">
+                                            <span title="{{ item.name }}">{{ schema_labels[schema][item.name]['label'] if (schema_labels[schema] and schema_labels[schema][item.name]) else item.name }}</span>
+                                        </th>
+                                        <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}"
+                                            class="text-break">
+                                            {{ item.value | bleach_clean(tags=['br']) | safe }}
+                                        </td>
+                                        <td class="text-left">
+                                            {{ item.units if item.units is not none }}
+                                        </td>
+                                        {% if not read_only and (current_user_rights | intersection(own_or_write)) and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
+                                            <td>
+                                                {% if not (item.units and item.units.startswith('analysis')) %}
+                                                    <a href="#"
+                                                       data-bs-toggle="modal"
+                                                       data-bs-target="#editMetaData"
+                                                       data-bs-meta-data-name="{{ item.name }}"
+                                                       data-bs-meta-data-value="{{ item.value }}"
+                                                       data-bs-meta-data-units="{{ item.units if item.units is not none }}"
+                                                       data-bs-object-path="{{ object_path }}"><i class="bi bi-pencil"></i></a>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="#"
+                                                   data-bs-toggle="modal"
+                                                   data-bs-target="#deleteMetaData"
+                                                   class="text-danger"
+                                                   data-bs-meta-data-name="{{ item.name }}"
+                                                   data-bs-meta-data-value="{{ item.value }}"
+                                                   data-bs-meta-data-units="{{ item.units if item.units is not none }}"
+                                                   data-bs-object-path="{{ object_path }}"><i class="bi bi-trash"></i></a>
+                                            </td>
+                                        {% else %}
+                                            <td>
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-lock" title="locked"></i>
+                                            </td>
+                                        {% endif %}
+                                    </tr>
+                                {% endfor %}
+                            {% endif %}
                         </tbody>
                     </table>
                     {% if schema == config['MANGO_NOSCHEMA_LABEL'] and not read_only and (current_user_rights | intersection(own_or_write)) %}
@@ -238,7 +260,9 @@
                                 data-bs-target="#addMetaData">
                             Add metadata
                         </button>
-                        <div class="h4 pt-4 mt-4 mb-2 border-top border-success">Edit/add metadata via schema</div>
+                        <div class="h4 pt-4 mt-4 mb-2 border-top border-success">
+                            Edit/add metadata via schema
+                        </div>
                         <form class="row g-3 col-md-6 mt-4"
                               method="get"
                               action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item2')}}">

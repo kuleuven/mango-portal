@@ -209,15 +209,15 @@ def collection_browse(collection):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"] and schema_manager:
                 try:
-
                     schema_dict = json.loads(schema_manager.load_schema(schema))
-                    schema_labels[schema] = flatten_schema(
-                        ("", schema_dict),
-                        level=0,
-                        prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
-                        result_dict={},
-                    )
-                    logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
+                    if schema_dict:
+                        schema_labels[schema] = flatten_schema(
+                            ("", schema_dict),
+                            level=0,
+                            prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
+                            result_dict={},
+                        )
+                        logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
                 except:
                     pass
 
