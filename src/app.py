@@ -64,8 +64,6 @@ app.config["openid_providers"] = openid_providers
 app.config["irods_zones"] = irods_zones
 
 
-
-
 if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.mango_open_search.search import mango_open_search_bp
     from plugins.mango_open_search.admin import mango_open_search_admin_bp
@@ -240,23 +238,29 @@ def release_irods_session_lock(response):
 def intersection(set1, set2):
     return set(set1).intersection(set(set2))
 
+
 # html and js escape dangerous content
 @app.template_filter("bleach_clean")
 def bleach_clean(suspect, **kwargs):
     return bleach.clean(suspect, **kwargs)
 
+
 # return date into local time zone
 @app.template_filter("localize_datetime")
-def localize_datetime(value, format="%Y-%m-%d %H:%M:%S", local_timezone='Europe/Brussels'):
-    tz = pytz.timezone(local_timezone) # timezone you want to convert to from UTC
-    utc = pytz.timezone('UTC')
+def localize_datetime(
+    value, format="%Y-%m-%d %H:%M:%S", local_timezone="Europe/Brussels"
+):
+    tz = pytz.timezone(local_timezone)  # timezone you want to convert to from UTC
+    utc = pytz.timezone("UTC")
     value = utc.localize(value, is_dst=None).astimezone(pytz.utc)
     local_dt = value.astimezone(tz)
     return local_dt.strftime(format)
 
+
 @app.template_filter("format_timestamp")
 def format_timestamp(ts):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
+
 
 @app.template_filter("format_time")
 def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):

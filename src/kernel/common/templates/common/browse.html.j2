@@ -37,13 +37,19 @@
             <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
           </li>
         {% endfor %}
-        <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li>
+        {# <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li> #}
       </ol>
     </div>
   </nav>
   <div class="row">
     <div class="col-12 mr-auto">
-      <h2 class="mb-4">{{ collection.name }}</h2>
+      <h3 class="mb-4">
+        <i class="bi bi-folder fs-4"></i> {{ collection.name }} <a href="#" data-bs-toggle="modal" data-bs-target="#rename">
+          <i class="bi bi-pencil"></i></a>
+      </h3>
+      {{ dialogs.general_dialog("rename", url_for("browse_bp.rename_item"), title="Rename this collection", mode="custom",
+      fields=[{"name": "new_name", "label": "Name", "value": collection.name, "required": true}],
+      hidden_fields=[{"name": "item_path", "value": collection.path}]) }}
     </div>
   </div>
   {% if (('own' in current_user_rights) or ('modify object' in current_user_rights)) %}
@@ -189,9 +195,7 @@
               </td>
               <td>{{ collection.owner_name }}</td>
               <td>{{ collection.create_time | localize_datetime }}</td>
-              <td>
-                {{ collection.modify_time | localize_datetime }}
-              </td>
+              <td>{{ collection.modify_time | localize_datetime }}</td>
               <td>
               </td>
               <td>

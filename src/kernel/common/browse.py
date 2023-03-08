@@ -1129,8 +1129,7 @@ def bulk_operation_items():
     return redirect(request.referrer)
 
 
-@browse_bp.route("/item/rename", methods=["GET"])
-@csrf.exempt
+@browse_bp.route("/item/rename", methods=["POST"])
 def rename_item():
     if "item_path" not in request.form or "new_name" not in request.form:
         abort(400, "Required parameters are missing")
@@ -1143,30 +1142,33 @@ def rename_item():
     new_path = iRODSPath(*item_path.split("/")[:-1], new_name)
     irods_session: iRODSSession = g.irods_session
 
-    if irods_session.collections.exists(item_path):
-        irods_session.collections.move(item_path, new_path)
-        signals.collection_renamed.send(
-            current_app._get_current_object(),
-            irods_session=g.irods_session,
-            original_path=item_path,
-            new_path=new_path,
-        )
+    redirect_route = request.referrer
 
-    elif irods_session.data_objects.exists(item_path):
-        irods_session.data_objects.move(item_path, new_path)
-        signals.data_object_renamed.send(
-            current_app._get_current_object(),
-            irods_session=g.irods_session,
-            original_path=item_path,
-            new_path=new_path,
-        )
+    if item_path == new_path:
+        flash("The name has not changed", "danger")
     else:
-        abort(400, f"Path {item_path} does not exist")
+        if irods_session.collections.exists(item_path):
+            irods_session.collections.move(item_path, new_path)
+            signals.collection_renamed.send(
+                current_app._get_current_object(),
+                irods_session=g.irods_session,
+                original_path=item_path,
+                new_path=new_path,
+            )
+            redirect_route = url_for("browse_bp.collection_browse", collection = new_path)
+            flash("Renamed collection successfully", "success")
 
-    if "redirect_route" in request.values:
-        return redirect(request.values["redirect_route"])
-    if "redirect_hash" in request.values:
-        return redirect(
-            request.referrer.split("#")[0] + request.values["redirect_hash"]
-        )
-    return redirect(request.referrer)
+        elif irods_session.data_objects.exists(item_path):
+            irods_session.data_objects.move(item_path, new_path)
+            signals.data_object_renamed.send(
+                current_app._get_current_object(),
+                irods_session=g.irods_session,
+                original_path=item_path,
+                new_path=new_path,
+            )
+            redirect_route = url_for("browse_bp.view_object", data_object_path = new_path)
+            flash("Renamed data object successfully", "success")
+        else:
+            flash("{item_path} does not exist","danger")
+
+    return redirect(redirect_route)

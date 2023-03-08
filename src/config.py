@@ -5,7 +5,9 @@ MANGO_AUTH = os.environ.get(
 )  # "localdev", "basic", "openid", "via_callback"
 UPLOAD_FOLDER = "/tmp"
 SECRET_KEY = os.environ.get("SECRET_KEY", "HV44H6oH-eKMqJDU0W6Xw6ch_c4wpmDWf5tgD0p-0Gc")
-DATA_OBJECT_MAX_SIZE_PREVIEW = 1024 * 1024 * 16  # 16MB
+DATA_OBJECT_MAX_SIZE_PREVIEW = 1024 * 1024 * 128  # 128MiB
+DATA_OBJECT_MAX_SIZE_DOWNLOAD = 1024 * 1024 * 1024 * 2  # 2GiB
+DATA_OBJECT_PREVIEW_ALLOWED_SUFFIXES = ('jpg','jpeg','png', 'pdf', 'tif', 'tiff', 'gif')
 CACHE_TYPE = "SimpleCache"
 CACHE_DEFAULT_TIMEOUT = 300
 CACHE_DIR = "storage/cache"

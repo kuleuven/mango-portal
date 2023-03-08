@@ -12,15 +12,21 @@
           <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
         </li>
       {% endfor %}
-      <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li>
+      {# <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li> #}
     </ol>
   </nav>
   <div class="row">
     <div class="col-11">
-      <h2 class="mb-4">{{ data_object.name }}</h2>
+      <h3 class="mb-4">
+        <i class="bi bi-file-earmark fs-4"></i> {{ data_object.name }} <a href="#" data-bs-toggle="modal" data-bs-target="#rename">
+          <i class="bi bi-pencil"></i></a>
+      </h3>
+      {{ dialogs.general_dialog("rename", url_for("browse_bp.rename_item"), title="Rename this data object", mode="custom",
+      fields=[{"name": "new_name", "label": "Name", "value": data_object.name, "required": true}],
+      hidden_fields=[{"name": "item_path", "value": data_object.path}]) }}
     </div>
     <div class="col-1 display-6">
-      {% if data_object.size < 20000000000 %}
+      {% if data_object.size < config["DATA_OBJECT_MAX_SIZE_DOWNLOAD"] %}
         <a href="{{ url_for('browse_bp.download_object', data_object_path = data_object.path.lstrip('/'))}}"><i class="bi bi-download"></i></a>
       {% endif %}
     </div>
@@ -146,7 +152,7 @@
          role="tabpanel"
          aria-labelledby="meta-data-tab">
       {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/"), grouped_metadata, schemas, schema_labels,
-        readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="data_object", current_user_rights=current_user_rights, realm=realm)}}
+      readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="data_object", current_user_rights=current_user_rights, realm=realm)}}
     </div>
     <div class="tab-pane" id="item-permissions">
       {{ block_macros.permission_block(data_object.path.lstrip("/"), permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights)}}
@@ -156,7 +162,7 @@
          role="tabpanel"
          aria-labelledby="preview-tab">
       {# to be moved to its own server side handler + template to include #}
-      {% if data_object.name.lower().endswith(('jpg','jpeg','png', 'pdf', 'tif', 'tiff', 'gif')) %}
+      {% if data_object.name.lower().endswith(config["DATA_OBJECT_PREVIEW_ALLOWED_SUFFIXES"]) %}
         <div class="row">
           <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path)}}"
                class="w-50"
@@ -182,9 +188,7 @@
                      value="true"
                      id="tika-ocr"
                      name="do-tika-ocr"/>
-              <label class="form-check-label" for="tika-ocr">
-                Perform OCR on the image to extract text
-              </label>
+              <label class="form-check-label" for="tika-ocr">Perform OCR on the image to extract text</label>
             </div>
           {% endif %}
           {% if tika_result %}
@@ -219,9 +223,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="editMetaDataLabel">
-            Update metadata
-          </h5>
+          <h5 class="modal-title" id="editMetaDataLabel">Update metadata</h5>
           <button type="button"
                   class="btn-close"
                   data-bs-dismiss="modal"
