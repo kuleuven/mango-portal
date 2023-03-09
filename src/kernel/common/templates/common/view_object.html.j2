@@ -3,6 +3,7 @@
 {% import "blocks.html.j2" as block_macros %}
 {% set own_or_write = ['own', 'modify', 'modify object', 'modify_object', 'write'] %}
 {% block body %}
+  {% set own_or_write = ['own', 'modify', 'modify object', 'modify_object', 'write'] %}
   <nav aria-label="breadcrumb"
        class="navbar-light bg-light sticky-top pb-2 pt-1">
     <ol class="breadcrumb">
@@ -18,8 +19,11 @@
   <div class="row">
     <div class="col-11">
       <h3 class="mb-4">
-        <i class="bi bi-file-earmark fs-4"></i> {{ data_object.name }} <a href="#" data-bs-toggle="modal" data-bs-target="#rename">
-          <i class="bi bi-pencil"></i></a>
+        <i class="bi bi-file-earmark fs-4"></i> {{ data_object.name }}
+        {% if (current_user_rights | intersection(own_or_write)) and ((data_object.path.count("/")) > 3) %}
+          <a href="#" data-bs-toggle="modal" data-bs-target="#rename">
+            <i class="bi bi-pencil"></i></a>
+        {% endif %}
       </h3>
       {{ dialogs.general_dialog("rename", url_for("browse_bp.rename_item"), title="Rename this data object", mode="custom",
       fields=[{"name": "new_name", "label": "Name", "value": data_object.name, "required": true}],

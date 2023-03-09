@@ -26,6 +26,7 @@
   </style>
 {% endblock head %}
 {% block body %}
+  {% set own_or_write = ['own', 'modify', 'modify object', 'modify_object', 'write'] %}
   <nav aria-label="breadcrumb"
        class="navbar-light bg-light sticky-top pb-2 pt-1">
     <div class="text-bg-light">
@@ -44,8 +45,11 @@
   <div class="row">
     <div class="col-12 mr-auto">
       <h3 class="mb-4">
-        <i class="bi bi-folder fs-4"></i> {{ collection.name }} <a href="#" data-bs-toggle="modal" data-bs-target="#rename">
-          <i class="bi bi-pencil"></i></a>
+        <i class="bi bi-folder fs-4"></i> {{ collection.name }}
+        {% if (current_user_rights | intersection(own_or_write)) and ((collection.path.count("/")) > 3) %}
+          <a href="#" data-bs-toggle="modal" data-bs-target="#rename">
+            <i class="bi bi-pencil"></i></a>
+        {% endif %}
       </h3>
       {{ dialogs.general_dialog("rename", url_for("browse_bp.rename_item"), title="Rename this collection", mode="custom",
       fields=[{"name": "new_name", "label": "Name", "value": collection.name, "required": true}],
