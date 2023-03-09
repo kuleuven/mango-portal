@@ -39,8 +39,8 @@ irods_zones = {
         },
         "ssl_settings": {},
         "admin_users": ["vsc33436", "x0116999"],
-        'logo': 'vsc-combi.webp', # path in static folder
-        'splash_image' : 'portal2.jpg',
+        "logo": "vsc-combi.webp",  # path in static folder
+        "splash_image": "portal2.jpg",
     },
     "set": {
         "jobid": "icts-p-lnx-irods-set",
@@ -98,9 +98,9 @@ irods_zones = {
     },
     "kuleuven_tier1_poc": {
         "admin_users": ["vsc33436", "x0116999"],
-        'logo': 'vsc-combi.webp', # path in static folder
-        'splash_image' : 'portal2.jpg',
-    }
+        "logo": "vsc-combi.webp",  # path in static folder
+        "splash_image": "portal2.jpg",
+    },
 }
 
 
@@ -127,13 +127,19 @@ def refresh_zone_info():
                 "zone": zone_info["zone"],
             },
             "ssl_settings": {},
-            #"admin_users": ["u0123318", "vsc33436", "x0116999"],
+            # "admin_users": ["u0123318", "vsc33436", "x0116999"],
         }
 
         if zone_info["zone"] in irods_zones:
-            extra_zone_configs = [extra_zone_config for extra_zone_config in irods_zones[zone_info["zone"]].keys() if extra_zone_config not in ['job_id', 'parameters', 'ssl_settings']]
+            extra_zone_configs = [
+                extra_zone_config
+                for extra_zone_config in irods_zones[zone_info["zone"]].keys()
+                if extra_zone_config not in ["job_id", "parameters", "ssl_settings"]
+            ]
             for extra_zone_config in extra_zone_configs:
-                zones[zone_info["zone"]][extra_zone_config] = irods_zones[zone_info["zone"]][extra_zone_config]
+                zones[zone_info["zone"]][extra_zone_config] = irods_zones[
+                    zone_info["zone"]
+                ][extra_zone_config]
 
     irods_zones.clear()
     irods_zones.update(zones)
@@ -205,7 +211,8 @@ def irods_connection_info(login_method, zone, username, password=None):
 
 
 # Refresh zone information from api
-refresh_zone_info()
+if os.environ.get("MANGO_AUTH", "") != "localdev":
+    refresh_zone_info()
 
 # Dict of openid providers, can be empty
 openid_providers = {
