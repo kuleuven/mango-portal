@@ -182,7 +182,7 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
                       novalidate>
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="modal-body">
-                        <p>{{ body_text }}</p>
+                        {{ body_text }}
                         {% for field in hidden_fields %}
                             <input type="hidden"
                                    id="{{ dialog_id + field['name'] }}"
@@ -190,18 +190,16 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
                                    value="{{ field['value'] }}"/>
                         {% endfor %}
                         {% for field in fields %}
-                            <div class="mb-3">
-                                <label for="{{ dialog_id + field['name'] }}" class="col-form-label">
-                                    {{ field['label'] if field['label'] else field['name']|capitalize }}
-                                </label>
-                                <input type="text"
-                                       class="form-control"
-                                       id="{{ dialog_id + field['name'] }}"
-                                       name="{{ field['name'] }}"
-                                       value="{{ field['value'] }}"
-                                       {% if field['readonly'] %}readonly{% endif %}
-                                       {% if field['required'] %}required{% endif %}/>
-                            </div>
+                            <label for="{{ dialog_id + field['name'] }}" class="col-form-label">
+                                {{ field['label'] if field['label'] else field['name']|capitalize }}
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="{{ dialog_id + field['name'] }}"
+                                   name="{{ field['name'] }}"
+                                   value="{{ field['value'] }}"
+                                   {% if field['readonly'] %}readonly{% endif %}
+                                   {% if field['required'] %}required{% endif %}/>
                         {% endfor %}
                     </div>
                     <div class="modal-footer">

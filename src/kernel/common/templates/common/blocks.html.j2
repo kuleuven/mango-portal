@@ -193,8 +193,10 @@
                                 {% for name, info in schema_labels[schema].items() %}
                                     {% set items=grouped_metadata[schema].getall(name, []) %}
                                     <tr>
-                                        <th class="text-start">
-                                            <span title="{{ name }}">{{ info['label'] }}</span>
+                                        <th {% if info['level'] > 0 %}class="text-start ps-{{ 1+(info['level']*2) }} border-start border-bottom-0 border-{{ info['level']*4 }} border-dark" {% endif %}>
+                                            <span title="{{ name }}">{{ info['label'] }}
+                                                {% if info['type'] == 'object' %}&ddarr;{% endif %}
+                                            </span>
                                         </th>
                                         <td class="text-break">
                                             {% for item in items %}<p>{{ item.value | bleach_clean(tags=['br']) | safe }}</p>{% endfor %}
@@ -216,9 +218,7 @@
                                             class="text-break">
                                             {{ item.value | bleach_clean(tags=['br']) | safe }}
                                         </td>
-                                        <td class="text-left">
-                                            {{ item.units if item.units is not none }}
-                                        </td>
+                                        <td class="text-left">{{ item.units if item.units is not none }}</td>
                                         {% if not read_only and (current_user_rights | intersection(own_or_write)) and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
                                             <td>
                                                 {% if not (item.units and item.units.startswith('analysis')) %}
