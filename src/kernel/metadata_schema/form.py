@@ -459,9 +459,7 @@ def edit_schema_metadata_for_item2():
                     AVUOperation(operation="remove", avu=meta_data_item)
                 )
         for _key, _value in request.values.items(multi=True):
-
             if _key.startswith(prefix) and _value:
-              
                 if flat_form_dict[_key]["type"] == "textarea":
                     # the value is transformed to replace newlines as iRODS cannot handle this.
                     # Most likely this is only for schemas which can have textarea boxes
@@ -507,7 +505,7 @@ def edit_schema_metadata_for_item2():
         return redirect(request.referrer)
 
 
-@metadata_schema_form_bp.route("/metadata-schema/delete", methods=["POST"])
+@metadata_schema_form_bp.route("/metadata-schema/delete-metadata", methods=["POST"])
 def delete_schema_metadata_for_item():
     """ """
     form_parameters = request.values.to_dict()
