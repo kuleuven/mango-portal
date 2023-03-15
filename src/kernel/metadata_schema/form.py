@@ -416,8 +416,7 @@ def edit_schema_metadata_for_item2():
     #     pprint(f"Key is: {_key}")
 
     #     form_values.add(_key, _value)
-    form_values.add("redirect_hash", "#metadata")
-
+    form_values.add("redirect_route", request.referrer + "#metadata")
     for meta_data_item in catalog_item.metadata.items():
         if meta_data_item.name.startswith(prefix):
 
@@ -443,7 +442,7 @@ def edit_schema_metadata_for_item2():
             realm=realm,
             schema_values=lib.util.btoa(values_json),
             prefix=prefix,
-            item=catalog_item,
+            item=catalog_item
         )
 
     if request.method == "POST":

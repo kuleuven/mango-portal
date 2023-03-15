@@ -837,9 +837,7 @@ class SchemaForm {
                 e.preventDefault();
                 e.stopPropagation();
             }
-            
             form_div.classList.add('was-validated');
-            console.log('validating')
         });
         
         document.getElementById(this.container).appendChild(form_div);
@@ -857,6 +855,12 @@ class SchemaForm {
         let in_objects = keys.filter((fid) => fid.split('.').length > 3);
         let objs = [...new Set(in_objects.map((x) => x.match(`${this.prefix}.(?<field>[^\.]+).*`).groups.field))];
         objs.forEach((fid) => this.register_object(fid, annotated_data, in_objects));
+
+        let hidden_input = document.createElement('input')
+        hidden_input.type = 'hidden';
+        hidden_input.name = 'redirect_route';
+        hidden_input.value = annotated_data['redirect_route'];
+        this.form.appendChild(hidden_input);
         return;
     }
 
