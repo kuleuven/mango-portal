@@ -137,7 +137,6 @@ class MovingViewer extends MovingField {
         let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modal_id));
         this.copy = this.add_btn('copy', 'front', () => this.duplicate(form));
         this.edit = this.add_btn('edit', 'pencil', () => {
-            console.log(form.schema_status)
             if (form.schema_status.startsWith('object')) {
                 let parent_modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(schema.card_id));
                 parent_modal.toggle();
