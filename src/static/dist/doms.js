@@ -256,9 +256,7 @@ class MovingViewer extends MovingField {
     }
 
     remove() {
-        const toast = new Toast(`confirm-${this.schema.name}-${this.schema.fields[this.idx]}-rem`,
-            "Deleted fields cannot be recovered.")
-        toast.show(() => {
+        Modal.send_confirmation('Deleted fields cannot be recovered.', () => {
             // Method to remove a viewing field (and thus also the field itself)
             let form_index = this.schema.field_ids.indexOf(this.idx);
 
@@ -275,7 +273,7 @@ class MovingViewer extends MovingField {
             this.schema.field_ids.splice(form_index, 1);
             delete this.schema.fields[this.idx];
             this.schema.toggle_saving();
-        })
+        });
     }
 
 }
@@ -657,6 +655,19 @@ class Modal {
         modal.appendChild(modal_dialog);
 
         document.querySelector("body").appendChild(modal);
+    }
+
+    static send_confirmation(body, action) {
+        let conf_modal = document.querySelector('div.modal#confirmation-dialog');
+        let modal = bootstrap.Modal.getOrCreateInstance(conf_modal);
+        conf_modal.querySelector('p#confirmation-text')
+            .innerHTML = body;
+        conf_modal.querySelector('button#action')
+            .addEventListener('click', () => {
+                action();
+                modal.hide();
+            });
+        modal.show();
     }
 
 }

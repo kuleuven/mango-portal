@@ -1,8 +1,8 @@
 {% extends "base.html.j2" %}
 {% block body %}
     <main>
-        <h1>Metadata schema manager</h1>
         {% if not realm %}
+        <h2>Metadata schema manager</h1>
             <h4>Please choose a realm from the list below</h4>
             <div class="list-group realms">
                 {% for realm in realms %}
@@ -11,6 +11,7 @@
                 {% endfor %}
             </div>
         {% else %}
+        <h2>Metadata schema manager for {{ realm }}</h1>
             <div id="metadata_template_list_container">
                 {% set blueprint = "metadata_schema_editor_bp" %}
                 {% set mdt = "meta_data_template" %}
@@ -20,6 +21,23 @@
                 {% endfor %}
                 <link href="{{ url_for('static', filename='dist/mdschema.css') }}"
                       rel="stylesheet"/>
+            </div>
+            <div class="modal" id="confirmation-dialog" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h6 class="modal-title">Are you sure?</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p id="confirmation-text">.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" id="action">I'm sure</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         {% endif %}
     </main>
