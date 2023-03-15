@@ -144,6 +144,7 @@ class InputField {
                 let clone = this.register_fields(schema);
                 form.classList.remove('was-validated');
                 this.modal.toggle();
+                console.log(schema.constructor.name)
                 if (schema.constructor.name == 'ObjectEditor') {
                     let parent_modal_dom = document.getElementById(`${schema.card_id}`);
                     let parent_modal = bootstrap.Modal.getOrCreateInstance(parent_modal_dom);

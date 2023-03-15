@@ -350,13 +350,12 @@ class Schema extends ComplexField {
 
         if (!is_new) {
             name_input.setAttribute('readonly', '');
+            if (schemas[this.name].published.length + schemas[this.name].archived.length > 0) {
+                form.form.querySelector(`#${this.card_id}-label`).setAttribute('readonly', '');
+            }
         } else if (!this.field_ids.length > 0) {
             form.form.querySelector('button#publish').setAttribute('disabled', '');
-        }
-
-        if (this.card_id.startsWith('schema-editor') || schemas[this.name].published.length + schemas[this.name].archived.length > 0) {
-            form.form.querySelector(`#${this.card_id}-label`).setAttribute('readonly', '');
-        }
+        }        
 
         if (this.field_ids.length == 0) {
             form.form.querySelector('button#publish').setAttribute('disabled', '');
@@ -819,7 +818,9 @@ class SchemaForm {
 
         let submitter = Field.quick('button', 'btn btn-primary', 'Save metadata');
         submitter.type = 'submit';
-        submitter.addEventListener('click', (e) => {
+        submitting_row.appendChild(submitter);
+        form_div.appendChild(submitting_row);
+        form_div.addEventListener('submit', (e) => {
             e.preventDefault();
             if (!form_div.checkValidity()) {
                 e.stopPropagation();
@@ -830,9 +831,7 @@ class SchemaForm {
                 this.post();
             }
         });
-        submitting_row.appendChild(submitter);
-        form_div.appendChild(submitting_row);
-
+        
         document.getElementById(this.container).appendChild(form_div);
         this.form = form_div;
         this.names = [...this.form.querySelectorAll('input, select')].map((x) => x.name);
