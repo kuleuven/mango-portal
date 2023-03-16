@@ -18,7 +18,7 @@ def generate_breadcrumbs(path_string: str):
 def collection_tree_to_dict(collection: iRODSCollection, level=0):
     (_, label) = os.path.split(collection.path)
     d = {"id": collection.path, "label": label}
-    if collection.subcollections and len(collection.subcollections) < 100:
+    if collection.subcollections and level < 3 and len(collection.subcollections) < 100:
         level += 1
         d["children"] = [
             collection_tree_to_dict(subcollection, level)

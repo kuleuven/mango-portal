@@ -164,7 +164,7 @@
         </div>
         <div id="selection_help" class="form-text">Copying is only available for data objects.</div>
       {% endif %}
-      <bulk-links post="{{ url_for('browse_bp.bulk_operation_items') }}" tree="{{ url_for('browse_bp.') }}"/>
+      <bulk-links post="{{ url_for('browse_bp.bulk_operation_items') }}" tree="{{ url_for('browse_bp.get_sub_collections') }}"/>
       <table class="table table-striped table-hover mt-2" id="browseTable">
         <thead>
           <tr>
