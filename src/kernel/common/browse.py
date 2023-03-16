@@ -1025,7 +1025,11 @@ def bulk_operation_items():
     ITEM_TYPE_PART = {"data_object": "dobj", "collection": "col"}
 
     if request.form["action"] in ["delete"]:
-        force_delete = True if request.form["force_delete"] else False
+        force_delete = (
+            True
+            if "force_delete" in request.form and request.form["force_delete"]
+            else False
+        )
         for item in request.form.getlist("items"):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
