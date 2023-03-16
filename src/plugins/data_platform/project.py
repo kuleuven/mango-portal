@@ -273,3 +273,31 @@ def add_generic_project():
     flash(response.json()['message'], "success")
 
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
+
+@data_platform_project_bp.route('/data-platform/projects', methods=["GET"])
+@openid_login_required
+def project_overview():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    year = request.args.get('year')
+
+    if not year:
+        year = datetime.now().year
+
+    response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
+
+    response.raise_for_status()
+
+    projects = response.json()
+
+    if not projects:
+        flash(f"No project information found in {year}.")
+        projects = []                            
+
+    projects = sorted(projects, key=lambda p: p['project']['name']) 
+
+    return render_template('project/projects_overview.html.j2',
+        projects=projects,
+        year=year,
+    )

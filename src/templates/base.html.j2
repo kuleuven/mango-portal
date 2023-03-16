@@ -77,6 +77,7 @@
         {% endif %}
       </div>
     {% endwith %}
+    {% block container %}
     <main class="container">
       <div class="row flex-grow-sm-1 flex-grow-0">
         {% if 'irods_session' in g %}
@@ -93,6 +94,7 @@
         </div>
         <div class="row mt-5">{% include "footer.html.j2" %}</div>
       </main>
+      {% endblock container %}
       {% block footer %}
       {% endblock footer %}
       <script src="{{url_for('static', filename='dist/index.js')}}"></script>
