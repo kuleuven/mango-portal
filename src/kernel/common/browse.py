@@ -1,4 +1,5 @@
 from curses import meta
+import flask
 from flask import (
     Blueprint,
     render_template,
@@ -1180,3 +1181,24 @@ def rename_item():
             flash("{item_path} does not exist", "danger")
 
     return redirect(redirect_route)
+
+
+@browse_bp.route(
+    "/api/collection/subcollections",
+    methods=["GET"],
+    defaults={"collection": None},
+    strict_slashes=False,
+)
+@browse_bp.route("/api/collection/subcollections/<path:collection>")
+def get_sub_collections(collection):
+    if collection is None or collection == "~":
+        collection = g.zone_home
+    if not collection.startswith("/"):
+        collection = "/" + collection
+    current_collection = g.irods_session.collections.get(collection)
+    d = {"path": current_collection.path, "name": current_collection.name}
+    d["children"] = [
+        {"path": collection.path, "name": collection.name}
+        for collection in current_collection.subcollections
+    ]
+    return flask.jsonify(d)

@@ -304,6 +304,8 @@ def dump_meta_data_body_json(filename):
 
 # Blueprint api
 # Endpoint for obtaining collection trees
+
+
 @app.route(
     "/api/collection/tree",
     methods=["GET"],
@@ -317,7 +319,15 @@ def api_collection_tree(collection):
     if not collection.startswith("/"):
         collection = "/" + collection
     current_collection = g.irods_session.collections.get(collection)
-    return flask.jsonify([collection_tree_to_dict(current_collection)])
+
+    @cache.cached(
+        timeout=50,
+        key_prefix=f"{g.irods_session.username}-{g.irods_session.zone}-{request.path}",
+    )
+    def json_tree(collection):
+        return flask.jsonify([collection_tree_to_dict(current_collection)])
+
+    return json_tree(current_collection)
 
 
 @app.route("/test", methods=["GET"])
