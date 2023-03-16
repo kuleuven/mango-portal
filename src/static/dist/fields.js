@@ -144,7 +144,6 @@ class InputField {
                 let clone = this.register_fields(schema);
                 form.classList.remove('was-validated');
                 this.modal.toggle();
-                console.log(schema.constructor.name)
                 if (schema.constructor.name == 'ObjectEditor') {
                     let parent_modal_dom = document.getElementById(`${schema.card_id}`);
                     let parent_modal = bootstrap.Modal.getOrCreateInstance(parent_modal_dom);
@@ -278,7 +277,7 @@ class TypedInput extends InputField {
 
     form_type = "text";
     form_type = "text";
-    button_title = "Text input";
+    button_title = "Simple field";
     description = "Text options: regular text, number (integer or float), date, time, e-mail or URL.<br>"
 
     static ex_input() {
@@ -592,7 +591,7 @@ class MultipleInput extends InputField {
     constructor(schema_name, data_status = 'draft') {
         super(schema_name, data_status);
         this.type = "select";
-        this.values.values = ['one', 'two', 'three'];
+        this.values.values = [];
     }
 
     repeatable = false;
@@ -654,6 +653,7 @@ class SelectInput extends MultipleInput {
     static ex_input() {
         let columns = Field.quick('div', 'row h-50');
         let example_input = new SelectInput('example');
+        example_input.values.values = ['one', 'two', 'three'];
         example_input.name = 'select-example';
         let dropdown = Field.dropdown(example_input);
         dropdown.querySelector('option[value="one"]').setAttribute('selected', '');
@@ -684,6 +684,7 @@ class CheckboxInput extends MultipleInput {
     static ex_input() {
         let columns = Field.quick('div', 'row');
         let example_input = new CheckboxInput('example');
+        example_input.values.values = ['one', 'two', 'three'];
         example_input.name = 'checkbox-example';
         let dropdown = Field.dropdown(example_input);
         dropdown.querySelectorAll('option')
