@@ -15,12 +15,13 @@ def generate_breadcrumbs(path_string: str):
     return breadcrumbs
 
 
-def collection_tree_to_dict(collection: iRODSCollection):
+def collection_tree_to_dict(collection: iRODSCollection, level=0):
     (_, label) = os.path.split(collection.path)
     d = {"id": collection.path, "label": label}
-    if collection.subcollections:
+    if collection.subcollections and level < 3 and len(collection.collections) < 100:
+        level += 1
         d["children"] = [
-            collection_tree_to_dict(subcollection)
+            collection_tree_to_dict(subcollection, level)
             for subcollection in collection.subcollections
         ]
     return d

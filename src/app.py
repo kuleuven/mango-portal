@@ -313,7 +313,7 @@ def dump_meta_data_body_json(filename):
 @app.route("/api/collection/tree/<path:collection>")
 def api_collection_tree(collection):
     if collection is None or collection == "~":
-        collection = g.user_home
+        collection = g.zone_home
     if not collection.startswith("/"):
         collection = "/" + collection
     current_collection = g.irods_session.collections.get(collection)

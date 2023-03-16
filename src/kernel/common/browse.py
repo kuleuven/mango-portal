@@ -180,7 +180,9 @@ def collection_browse(collection):
         schema_manager = get_schema_manager(g.irods_session.zone, realm)
     if schema_manager:
         schemas = schema_manager.list_schemas(filters=["published"])
-        logging.info(f"Schema manager found published schemas: {'|'.join(schemas.keys())}")
+        logging.info(
+            f"Schema manager found published schemas: {'|'.join(schemas.keys())}"
+        )
     # schema_names = schemas.keys()
 
     # schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
@@ -217,7 +219,9 @@ def collection_browse(collection):
                             prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                             result_dict={},
                         )
-                        logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
+                        logging.info(
+                            f"Flattened schema {schema}: {schema_labels[schema]}"
+                        )
                 except:
                     pass
 
@@ -1020,8 +1024,8 @@ def bulk_operation_items():
 
     ITEM_TYPE_PART = {"data_object": "dobj", "collection": "col"}
 
-    if request.form["action"] in ["delete", "force_delete"]:
-        force_delete = True if request.form["action"] == "force_delete" else False
+    if request.form["action"] in ["delete"]:
+        force_delete = True if request.form["force_delete"] else False
         for item in request.form.getlist("items"):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
@@ -1155,7 +1159,7 @@ def rename_item():
                 original_path=item_path,
                 new_path=new_path,
             )
-            redirect_route = url_for("browse_bp.collection_browse", collection = new_path)
+            redirect_route = url_for("browse_bp.collection_browse", collection=new_path)
             flash("Renamed collection successfully", "success")
 
         elif irods_session.data_objects.exists(item_path):
@@ -1166,9 +1170,9 @@ def rename_item():
                 original_path=item_path,
                 new_path=new_path,
             )
-            redirect_route = url_for("browse_bp.view_object", data_object_path = new_path)
+            redirect_route = url_for("browse_bp.view_object", data_object_path=new_path)
             flash("Renamed data object successfully", "success")
         else:
-            flash("{item_path} does not exist","danger")
+            flash("{item_path} does not exist", "danger")
 
     return redirect(redirect_route)
