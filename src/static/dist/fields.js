@@ -100,6 +100,9 @@ class InputField {
 
         if (requirable) {
             let req_input = this.form_field.form.querySelector(`#${this.id}-required`);
+            if (this.type == 'checkbox') {
+                req_input.setAttribute('disabled', '');
+            }
             req_input.addEventListener('change', () => {
                 this.required = !this.required;
                 this.required ? req_input.setAttribute('checked', '') : req_input.removeAttribute('checked');
@@ -113,6 +116,9 @@ class InputField {
             });
         } else if (!in_object) {
             let rep_input = this.form_field.form.querySelector(`#${this.id}-repeatable`);
+            if (this.type == 'checkbox') {
+                rep_input.setAttribute('disabled', '');
+            }
             rep_input.addEventListener('change', () => {
                 this.repeatable = !this.repeatable;
                 this.repeatable ? rep_input.setAttribute('checked', '') : rep_input.removeAttribute('checked');
@@ -315,7 +321,7 @@ class TypedInput extends InputField {
             input_input.type = 'checkbox';
             input_input.value = true;
             input_input.id = 'check-' + this.id;
-            let input_label = Field.quick('label', 'form-check-label', 'Check if true.');
+            let input_label = Field.quick('label', 'form-check-label visually-hidden', 'Check if true.');
             input_label.setAttribute('for', 'check-' + this.id);
             input.appendChild(input_input);
             input.appendChild(input_label);
@@ -340,7 +346,6 @@ class TypedInput extends InputField {
         } else { // when implementing form
             div.appendChild(input);
             let value = Field.include_value(this);
-            console.log(value)
             
             if (this.type == 'checkbox') {
                 input.querySelector('input').name = this.name;
@@ -412,6 +417,10 @@ class TypedInput extends InputField {
                 this.form_field.form.removeChild(default_div);
             }
             this.default = undefined;
+            if (format == 'checkbox') {
+                this.required = false;
+                this.repeatable = false;
+            }
         } else {
             this.add_default_field();
         }
@@ -421,7 +430,10 @@ class TypedInput extends InputField {
         if (switches_div != undefined) {
             let switches = switches_div.querySelectorAll('input[role="switch"]');
             if (format == 'checkbox') {
-                switches.forEach((sw) => sw.setAttribute('disabled', ''));
+                switches.forEach((sw) => {
+                    sw.setAttribute('disabled', '')
+                    sw.removeAttribute('checked');
+                });
             } else {
                 switches.forEach((sw) => sw.removeAttribute('disabled'));
             }    
