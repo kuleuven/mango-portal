@@ -230,6 +230,12 @@ def connection_info_modal(zone):
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
 
+    sftp_host = "rdmsftp.icts.kuleuven.be"
+    if "-q-" in jobid:
+        sftp_host = "rdmsftp.q.icts.kuleuven.be"
+    if "-t-" in jobid:
+        sftp_host = "rdmsftp.t.icts.kuleuven.be"
+
     info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
     setup_json={
@@ -237,7 +243,7 @@ def connection_info_modal(zone):
         'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
     }
 
-    return render_template("user/connection_info_body.html.j2", info=info, setup_json=setup_json)
+    return render_template("user/connection_info_body.html.j2", info=info, setup_json=setup_json, sftp_host=sftp_host)
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 @openid_login_required
@@ -261,6 +267,12 @@ def connection_info():
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
 
+    sftp_host = "rdmsftp.icts.kuleuven.be"
+    if "-q-" in jobid:
+        sftp_host = "rdmsftp.q.icts.kuleuven.be"
+    if "-t-" in jobid:
+        sftp_host = "rdmsftp.t.icts.kuleuven.be"
+
     info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
     setup_json={
@@ -268,7 +280,7 @@ def connection_info():
         'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
     }
 
-    return render_template("user/connection_info.html.j2", info=info, setup_json=setup_json)
+    return render_template("user/connection_info.html.j2", info=info, setup_json=setup_json, sftp_host=sftp_host)
 
 
 @data_platform_user_bp.route('/data-platform/retrieve-token', methods=["GET", "POST"])
