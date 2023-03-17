@@ -430,10 +430,7 @@ class TypedInput extends InputField {
         if (switches_div != undefined) {
             let switches = switches_div.querySelectorAll('input[role="switch"]');
             if (format == 'checkbox') {
-                switches.forEach((sw) => {
-                    sw.setAttribute('disabled', '')
-                    sw.removeAttribute('checked');
-                });
+                switches.forEach((sw) => {sw.setAttribute('disabled', '')});
             } else {
                 switches.forEach((sw) => sw.removeAttribute('disabled'));
             }    

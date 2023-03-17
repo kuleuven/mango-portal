@@ -70,7 +70,6 @@ class ComplexField {
         let form_choice_modal = new Modal(modal_id, "What form element would you like to add?", "choiceTitle");
         form_choice_modal.create_modal([formTemp], 'lg');
         let this_modal = document.getElementById(modal_id);
-        console.log(modal_id)
         this_modal.addEventListener('show.bs.modal', () => {
             let formTemp = this_modal.querySelector('div.formContainer');
             if (formTemp.childNodes.length == 0) {
@@ -91,7 +90,6 @@ class ComplexField {
 
     view_field(form_object) {
         let form = this.form_div;
-        console.log(form)
         let clicked_button = form.querySelectorAll('.adder')[this.new_field_idx];
         let below = clicked_button.nextSibling;
         let moving_viewer = form_object.view(this);
@@ -136,6 +134,7 @@ class ComplexField {
         this.toggle_saving();
 
         this.view_field(form_object);
+        console.log(this.fields)
     }
 
     update_field(form_object) {
@@ -610,7 +609,9 @@ class Schema extends ComplexField {
                 let old_input_view = document
                     .querySelector(`#view-pane-${this.card_id}`)
                     .querySelector('.input-view');
+                console.log(this)
                 let new_input_view = ComplexField.create_viewer(this);
+                console.log(new_input_view)
                 old_input_view.parentElement.replaceChild(new_input_view, old_input_view);
             }
 
@@ -675,6 +676,7 @@ class Schema extends ComplexField {
     post() {
         const to_post = new FormData();
         this.fields_to_json();
+        console.log(this.properties)
         to_post.append('realm', realm);
         to_post.append('schema_name', this.name);
         to_post.append('current_version', this.version);
