@@ -132,6 +132,12 @@ def login_openid_select_zone():
             if project['my_role'] != '' and not project['archived'] and project['zone'] not in my_zones:
                 my_zones.append(project['zone'])
 
+        sftp_host = "rdmsftp.icts.kuleuven.be"
+        if "-q-" in API_URL:
+            sftp_host = "rdmsftp.q.icts.kuleuven.be"
+        if "-t-" in API_URL:
+            sftp_host = "rdmsftp.t.icts.kuleuven.be"
+
         return render_template('user/login_openid_select_zone.html.j2',
             projects=projects,
             zones=zones,
@@ -139,6 +145,7 @@ def login_openid_select_zone():
             other_platforms=other_platforms,
             last_zone_name=last_zone_name,
             admin=('operator' in perms or 'admin' in perms),
+            sftp_host=sftp_host,
         )
 
     zone = request.form.get('irods_zone')

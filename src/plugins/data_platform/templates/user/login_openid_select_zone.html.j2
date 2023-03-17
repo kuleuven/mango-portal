@@ -87,6 +87,13 @@
             {% for platform in other_platforms %}
             <div class="accordion-item">
                 <h4 class="accordion-header" id="#{{ platform }}Header" style="position: relative">
+                    {% if platform == "generic" %}
+                    <div style="position: absolute; z-index: 99; top: 3px; right: 60px">
+                        <button type="button" class="btn btn-block btn-primary m-1" data-bs-toggle="modal" data-bs-target="#connectInformationGeneric" data-zone="{{ zone_name }}">
+                            How to connect
+                        </button>
+                    </div>
+                    {% endif %}
                     <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#{{ platform }}" aria-expanded="false" aria-controls="{{ platform }}">
                         {{ platform|replace('generic', 'Globus Shares') }}
                     </button>
@@ -318,6 +325,35 @@
             </div>
             <div class="modal-body" id="connectInformationBody">
                 
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Close
+                </button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+        id="connectInformationGeneric"
+        tabindex="-1"
+        aria-labelledby="connectInformationGenericLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="connectInformationGenericLabel">
+                How to connect
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <div class="modal-body" id="connectInformationGenericBody">
+                {% include "user/connection_info_generic.html.j2" %}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
