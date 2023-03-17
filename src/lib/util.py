@@ -15,12 +15,13 @@ def generate_breadcrumbs(path_string: str):
     return breadcrumbs
 
 
-def collection_tree_to_dict(collection: iRODSCollection):
+def collection_tree_to_dict(collection: iRODSCollection, level=0):
     (_, label) = os.path.split(collection.path)
     d = {"id": collection.path, "label": label}
-    if collection.subcollections:
+    if collection.subcollections and level < 3 and len(collection.subcollections) < 100:
+        level += 1
         d["children"] = [
-            collection_tree_to_dict(subcollection)
+            collection_tree_to_dict(subcollection, level)
             for subcollection in collection.subcollections
         ]
     return d
@@ -69,20 +70,20 @@ def flatten_josse_schema(object_tuple, level=0, prefix="", result_dict={}):
 def flatten_schema(object_tuple, level=0, prefix="", result_dict={}):
     (_key, _dict) = object_tuple
     for p_key, _property in _dict["properties"].items():
+        result_dict[f"{prefix}.{p_key}"] = {
+            "label": _property["title"],
+            "type": _property["type"],
+            "level": level,
+        }
+
         if _property["type"] == "object":
-            result_dict = flatten_josse_schema(
+            result_dict = flatten_schema(
                 (p_key, _property),
                 level=(level + 1),
                 prefix=f"{prefix}.{p_key}",
                 result_dict=result_dict,
             )
 
-        else:
-
-            result_dict[f"{prefix}.{p_key}"] = {
-                "label": _property["title"],
-                "type": _property["type"],
-            }
     return result_dict
 
 

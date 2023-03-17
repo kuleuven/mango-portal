@@ -1,4 +1,5 @@
 from curses import meta
+import flask
 from flask import (
     Blueprint,
     render_template,
@@ -180,7 +181,9 @@ def collection_browse(collection):
         schema_manager = get_schema_manager(g.irods_session.zone, realm)
     if schema_manager:
         schemas = schema_manager.list_schemas(filters=["published"])
-        logging.info(f"Schema manager found schemas: {'|'.join(schemas.keys())}")
+        logging.info(
+            f"Schema manager found published schemas: {'|'.join(schemas.keys())}"
+        )
     # schema_names = schemas.keys()
 
     # schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
@@ -194,7 +197,7 @@ def collection_browse(collection):
     other = current_app.config["MANGO_NOSCHEMA_LABEL"]
     grouped_metadata = group_prefix_metadata_items(
         current_collection.metadata(timestamps=True).items(),
-        current_app.config["MANGO_PREFIX"],
+        current_app.config["MANGO_SCHEMA_PREFIX"],
     )
 
     schema_labels = {}
@@ -209,15 +212,17 @@ def collection_browse(collection):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"] and schema_manager:
                 try:
-
                     schema_dict = json.loads(schema_manager.load_schema(schema))
-                    schema_labels[schema] = flatten_schema(
-                        ("", schema_dict),
-                        level=0,
-                        prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
-                        result_dict={},
-                    )
-                    logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
+                    if schema_dict:
+                        schema_labels[schema] = flatten_schema(
+                            ("", schema_dict),
+                            level=0,
+                            prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
+                            result_dict={},
+                        )
+                        logging.info(
+                            f"Flattened schema {schema}: {schema_labels[schema]}"
+                        )
                 except:
                     pass
 
@@ -353,7 +358,7 @@ def view_object(data_object_path):
     group_analysis_unit = True
     grouped_metadata = group_prefix_metadata_items(
         meta_data_items := data_object.metadata(timestamps=True).items(),
-        current_app.config["MANGO_PREFIX"],
+        current_app.config["MANGO_SCHEMA_PREFIX"],
         no_schema_label=current_app.config["MANGO_NOSCHEMA_LABEL"],
         group_analysis_unit=group_analysis_unit,
     )
@@ -380,7 +385,7 @@ def view_object(data_object_path):
                     schema_labels[schema] = flatten_schema(
                         ("", schema_dict),
                         level=0,
-                        prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
+                        prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                         result_dict={},
                     )
                     logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
@@ -1020,8 +1025,12 @@ def bulk_operation_items():
 
     ITEM_TYPE_PART = {"data_object": "dobj", "collection": "col"}
 
-    if request.form["action"] in ["delete", "force_delete"]:
-        force_delete = True if request.form["action"] == "force_delete" else False
+    if request.form["action"] in ["delete"]:
+        force_delete = (
+            True
+            if "force_delete" in request.form and request.form["force_delete"]
+            else False
+        )
         for item in request.form.getlist("items"):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
@@ -1129,8 +1138,7 @@ def bulk_operation_items():
     return redirect(request.referrer)
 
 
-@browse_bp.route("/item/rename", methods=["GET"])
-@csrf.exempt
+@browse_bp.route("/item/rename", methods=["POST"])
 def rename_item():
     if "item_path" not in request.form or "new_name" not in request.form:
         abort(400, "Required parameters are missing")
@@ -1143,30 +1151,54 @@ def rename_item():
     new_path = iRODSPath(*item_path.split("/")[:-1], new_name)
     irods_session: iRODSSession = g.irods_session
 
-    if irods_session.collections.exists(item_path):
-        irods_session.collections.move(item_path, new_path)
-        signals.collection_renamed.send(
-            current_app._get_current_object(),
-            irods_session=g.irods_session,
-            original_path=item_path,
-            new_path=new_path,
-        )
+    redirect_route = request.referrer
 
-    elif irods_session.data_objects.exists(item_path):
-        irods_session.data_objects.move(item_path, new_path)
-        signals.data_object_renamed.send(
-            current_app._get_current_object(),
-            irods_session=g.irods_session,
-            original_path=item_path,
-            new_path=new_path,
-        )
+    if item_path == new_path:
+        flash("The name has not changed", "danger")
     else:
-        abort(400, f"Path {item_path} does not exist")
+        if irods_session.collections.exists(item_path):
+            irods_session.collections.move(item_path, new_path)
+            signals.collection_renamed.send(
+                current_app._get_current_object(),
+                irods_session=g.irods_session,
+                original_path=item_path,
+                new_path=new_path,
+            )
+            redirect_route = url_for("browse_bp.collection_browse", collection=new_path)
+            flash("Renamed collection successfully", "success")
 
-    if "redirect_route" in request.values:
-        return redirect(request.values["redirect_route"])
-    if "redirect_hash" in request.values:
-        return redirect(
-            request.referrer.split("#")[0] + request.values["redirect_hash"]
-        )
-    return redirect(request.referrer)
+        elif irods_session.data_objects.exists(item_path):
+            irods_session.data_objects.move(item_path, new_path)
+            signals.data_object_renamed.send(
+                current_app._get_current_object(),
+                irods_session=g.irods_session,
+                original_path=item_path,
+                new_path=new_path,
+            )
+            redirect_route = url_for("browse_bp.view_object", data_object_path=new_path)
+            flash("Renamed data object successfully", "success")
+        else:
+            flash("{item_path} does not exist", "danger")
+
+    return redirect(redirect_route)
+
+
+@browse_bp.route(
+    "/api/collection/subcollections",
+    methods=["GET"],
+    defaults={"collection": None},
+    strict_slashes=False,
+)
+@browse_bp.route("/api/collection/subcollections/<path:collection>")
+def get_sub_collections(collection):
+    if collection is None or collection == "~":
+        collection = g.zone_home
+    if not collection.startswith("/"):
+        collection = "/" + collection
+    current_collection = g.irods_session.collections.get(collection)
+    d = {"path": current_collection.path, "name": current_collection.name}
+    d["children"] = [
+        {"path": collection.path, "name": collection.name}
+        for collection in current_collection.subcollections
+    ]
+    return flask.jsonify(d)

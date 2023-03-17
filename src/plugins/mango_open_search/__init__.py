@@ -11,6 +11,16 @@ from threading import Lock, Thread, Event
 import datetime, time, logging
 from lib import util
 import signals
+from flask import current_app
+
+
+mango_prefix = ""  #
+
+from app import app
+
+with app.app_context():
+    mango_prefix = current_app.config["MANGO_SCHEMA_PREFIX"] + "."
+
 
 API_URL = os.environ.get(
     "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
@@ -240,7 +250,6 @@ def get_basic_index_doc_for_item(
 ):
     """ """
     fields = {}
-    mango_prefix = "mg."
     field_mappings = {}
 
     metadata = item.metadata.items()
@@ -369,6 +378,12 @@ def generate_docs_for_children(
 
 def index_item(irods_session: iRODSSession, item_type: str, item_path: str):
     # normalize item_path
+    if not irods_session:
+        logging.warn(
+            f"Failed indexing {item_type} {item_path}: no valid indexing session"
+        )
+        return None
+
     if not item_type in ["collection", "data_object"]:
         return None
     if not item_path.startswith("/"):
@@ -395,6 +410,11 @@ def index_item(irods_session: iRODSSession, item_type: str, item_path: str):
 def index_children(
     irods_session: iRODSSession, collection_path: str, schedule_sub_collections=True
 ):
+    if not irods_session:
+        logging.warn(
+            f"Failed indexing children of {collection_path}: no valid indexing session"
+        )
+        return None
     try:
         collection = irods_session.collections.get(collection_path)
         logging.info(
@@ -507,17 +527,23 @@ def execute_index_job(zone: str, job_type: str, item_type, item_path, item_id, t
 
     irods_session_for_zone = get_zone_index_session(zone)
     if not irods_session_for_zone:
-        logging.warn(
-            f"Cannot index, no valid irods indexing session, aborting, but adding job again to the queue for node {MANGO_HOSTNAME}"
-        )
-        add_index_job(
-            zone=zone,
-            job_type=job_type,
-            item_type=item_type,
-            item_path=item_path,
-            item_id=item_id,
-        )
-        return
+        if not API_TOKEN:
+            logging.warn(
+                f"Cannot index, no valid API_TOKEN, aborting and removing job for node {MANGO_HOSTNAME}"
+            )
+        else:
+
+            logging.warn(
+                f"Cannot index, no valid irods indexing session, aborting, but adding job again to the queue for node {MANGO_HOSTNAME}"
+            )
+            add_index_job(
+                zone=zone,
+                job_type=job_type,
+                item_type=item_type,
+                item_path=item_path,
+                item_id=item_id,
+            )
+            return
     if job_type == "index_item":
         result = index_item(irods_session_for_zone, item_type, item_path)
     if job_type == "index_subtree" and item_type == "collection":

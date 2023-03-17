@@ -9,6 +9,7 @@ export SERVICE_PORT=3000
 export spOption="mango_portal"
 
 #export MANGO_AUTH="via_callback"
+export MANGO_AUTH=localdev
 export HOSTNAME
 
 export OIDC_ISSUER_URL=https://idp.kuleuven.be/auth/realms/kuleuven

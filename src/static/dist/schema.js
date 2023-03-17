@@ -70,10 +70,12 @@ class ComplexField {
         let form_choice_modal = new Modal(modal_id, "What form element would you like to add?", "choiceTitle");
         form_choice_modal.create_modal([formTemp], 'lg');
         let this_modal = document.getElementById(modal_id);
+        console.log(modal_id)
         this_modal.addEventListener('show.bs.modal', () => {
             let formTemp = this_modal.querySelector('div.formContainer');
             if (formTemp.childNodes.length == 0) {
                 Object.values(this.initials).forEach((initial) => {
+                    initial.schema_status = this.data_status;
                     formTemp.appendChild(initial.render(this));
                 });
             }
@@ -89,6 +91,7 @@ class ComplexField {
 
     view_field(form_object) {
         let form = this.form_div;
+        console.log(form)
         let clicked_button = form.querySelectorAll('.adder')[this.new_field_idx];
         let below = clicked_button.nextSibling;
         let moving_viewer = form_object.view(this);
@@ -188,6 +191,7 @@ class ComplexField {
         schema.field_ids.forEach((field_id) => {
             let subfield = schema.fields[field_id];
             let small_div = Field.quick('div', 'mini-viewer');
+            small_div.name = `viewer-${field_id}`;
             let label;
             if (subfield.constructor.name == 'ObjectInput') {
                 label = Field.quick('h5', 'border-bottom border-secondary');
@@ -234,16 +238,51 @@ class ComplexField {
 
 }
 
+class DummyObject extends ComplexField {
+    constructor() {
+        super('example', 'example', 'example');
+        delete this.initials;
+        this.field_ids = ['text', 'date', 'hair'];
+
+        let name = new TypedInput('example');
+        name.id = 'text';
+        name.title = "Full name";
+        name.value = "Jane Doe";
+        this.fields.text = name;
+
+
+        let bday = new TypedInput('example');
+        bday.type = 'date';
+        bday.title = "Birth date";
+        bday.value = "1970-05-03";
+        this.fields.date = bday;
+
+        let hair = new SelectInput('example');
+        hair.name = 'hair'
+        hair.values.values = ['brown', 'red', 'blond', 'dark', 'pink'];
+        hair.value = 'red';
+        hair.title = "Hair color";
+        this.fields.hair = hair;
+    }
+}
+
 class ObjectEditor extends ComplexField {
     constructor(parent) {
         super('choice', parent.id, `object-${parent.schema_status}`);
         this.parent_status = parent.schema_status;
-        this.form_id = parent.form_field.form.id;
+        if (parent.form_field) this.form_id = parent.form_field.form.id;
         this.id_field = `${parent.id}-id`;
     }
 
     get button() {
         return this.create_button();
+    }
+
+    clone(new_parent) {
+        let clone = new ObjectEditor(new_parent);
+        clone.field_ids = [...this.field_ids];
+        clone.fields = { ...this.fields };
+        return clone;
     }
 
 }
@@ -289,7 +328,7 @@ class Schema extends ComplexField {
         form.add_input("Schema label", this.card_id + '-label', {
             placeholder: "Some informative label",
             validation_message: "This field is compulsory.",
-            description: is_new ? "This cannot be changed after the draft is saved." : false
+            description: is_new ? "This cannot be changed once a version has been published." : false
         });
 
         let button = this.create_button();
@@ -312,11 +351,12 @@ class Schema extends ComplexField {
 
         if (!is_new) {
             name_input.setAttribute('readonly', '');
-            form.form.querySelector(`#${this.card_id}-label`).setAttribute('readonly', '');
+            if (schemas[this.name].published.length + schemas[this.name].archived.length > 0) {
+                form.form.querySelector(`#${this.card_id}-label`).setAttribute('readonly', '');
+            }
         } else if (!this.field_ids.length > 0) {
             form.form.querySelector('button#publish').setAttribute('disabled', '');
-
-        }
+        }        
 
         if (this.field_ids.length == 0) {
             form.form.querySelector('button#publish').setAttribute('disabled', '');
@@ -333,9 +373,7 @@ class Schema extends ComplexField {
                 let second_sentence = schemas[this.name] && schemas[this.name].published.length > 0 ?
                     ` Version ${schemas[this.name].published[0].version} will be archived.` :
                     ''
-                const toast = new Toast(this.card_id + '-pub',
-                    "Published schemas cannot be edited." + second_sentence);
-                toast.show(() => {
+                Modal.send_confirmation("Published schemas cannot be edited." + second_sentence, () => {
                     // save form!
                     this.save_draft(form, 'publish');
                     form.form.classList.remove('was-validated');
@@ -387,9 +425,7 @@ class Schema extends ComplexField {
             this.nav_bar.add_tab_content('edit', form.form);
 
             this.nav_bar.add_action_button('Discard', 'danger', () => {
-                const toast = new Toast(this.card_id + '-discard',
-                    "A deleted draft cannot be recovered.");
-                toast.show(() => {
+                Modal.send_confirmation("A deleted draft cannot be recovered.", () => {
                     schemas[this.name].draft = [];
                     this.delete();
                     let published_version = schemas[this.name].published[0];
@@ -397,7 +433,7 @@ class Schema extends ComplexField {
                         published_version.draft_from_publish();
                         published_version.field_ids.forEach((field_id, idx) => {
                             published_version.new_field_idx = idx;
-                            published_version.view_field(this.fields[field_id]);
+                            published_version.view_field(published_version.fields[field_id]);
                         });
                     }
                     if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
@@ -423,9 +459,7 @@ class Schema extends ComplexField {
             this.nav_bar.add_tab_content('child', child_form.form);
 
             this.nav_bar.add_action_button('Archive', 'danger', () => {
-                const toast = new Toast(this.card_id + '-discard',
-                    "Archived schemas cannot be implemented.");
-                toast.show(() => {
+                Modal.send_confirmation("Archived schemas cannot be implemented.", () => {
                     // schemas[this.name].archived.push = schemas[this.name].published[0];
                     schemas[this.name].published = [];
                     this.delete();
@@ -528,6 +562,12 @@ class Schema extends ComplexField {
                     });
                 }
             }
+            console.log(name)
+            let accordion = new bootstrap.Collapse(`#${name}-schemas`);
+            accordion.show();
+            let trigger = document.querySelector(`#nav-tab-${name} button`);
+            console.log(trigger)
+            bootstrap.Tab.getOrCreateInstance(trigger).show();
 
         } else if (this.data_status == 'draft') {
             // this schema was modified
@@ -535,12 +575,20 @@ class Schema extends ComplexField {
             this.title = form.form.querySelector(`#${this.card_id}-label`).value;
             this.status = status;
 
+            // update accordion title
+            if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
+                document.getElementById(`${this.name}-schemas-header`)
+                    .querySelector(`button.h4`)
+                    .innerHTML = this.title;
+            }
+
             // update badge
             let status_badge = document
                 .querySelectorAll(`#v${this.version.replaceAll('.', '')}-tab-${this.name} img`)[1];
             status_badge.setAttribute('alt', 'status published');
             status_badge.setAttribute('name', 'published');
-            status_badge.setAttribute('src', `${SchemaGroup.badge_url}-${status}-${SchemaGroup.status_colors[status]}`)
+            status_badge.setAttribute('src', `${SchemaGroup.badge_url}-${status}-${SchemaGroup.status_colors[status]}`);
+
 
             // update internal tabs
             if (action == 'publish') {
@@ -584,10 +632,11 @@ class Schema extends ComplexField {
             let new_schema = new Schema(`${this.name}-${no_dots}`,
                 'v' + incremented_major + this.container.slice(2), // adapt to other increments
                 this.urls, new_version);
-            if (action == 'published') {
-                schemas[this.name].archived.push(schemas[this.name].published[0]);
+            if (action == 'publish') {
+                let published_version = schemas[this.name].published[0];
+                schemas[this.name].archived.push(published_version);
                 schemas[this.name].published = [new_schema];
-                new NavBar(this.name).remove_item(`v${published_version.replaceAll('.', '')}`);
+                new NavBar(this.name).remove_item(`v${published_version.version.replaceAll('.', '')}`);
                 let trigger = document.querySelector(`#nav-tab-${this.name} button`);
                 bootstrap.Tab.getOrCreateInstance(trigger).show();
             } else {
@@ -735,51 +784,132 @@ class SchemaGroup {
 }
 
 class SchemaForm {
-    constructor(schema_name, container_id, url, prefix) {
-        this.name = schema_name;
+    constructor(json, container_id, prefix) {
+        this.name = json.schema_name;
+        this.title = json.title;
+
         this.container = container_id; // div in which to render
-        this.url = url; // for posting
         this.prefix = prefix; // for flattening
-        this.fields = {}
+
+        this.realm = json.realm;
+        this.version = json.version;
+        this.parent = json.parent;
+
+        this.fields = {};
+        this.field_ids = Object.keys(json.properties);
+        this.from_json(json.properties);
     }
 
-    from_json(schema_json, annotated_data = {}) {
-        let schema_data = schema_json[this.name];
-        this.field_ids = Object.keys(schema_data.properties);
-        for (let entry of Object.entries(schema_data.properties)) {
+    from_json(schema_json) {
+        for (let entry of Object.entries(schema_json)) {
             let new_field = InputField.choose_class(this.name, '', entry);
+            if (new_field.constructor.name == 'ObjectInput') {
+                new_field.editor = new ObjectEditor(new_field);
+                new_field.editor.from_json(new_field.json_source);
+            }
             this.fields[entry[0]] = new_field;
         }
         SchemaForm.flatten_object(this, this.prefix);
         let form_div = ComplexField.create_viewer(this, true);
 
         let title = document.createElement('h3');
-        title.innerHTML = `<small class="text-muted">Metadata schema:</small> ${schema_data.title}`;
+        title.innerHTML = `<small class="text-muted">Metadata schema:</small> ${this.title} ${this.version}`;
         document.getElementById(this.container).appendChild(title);
+
+        const url = new URL(window.location.href)
+        const url_params = url.searchParams;
+        for (let item of ['item_type', 'object_path', 'schema', 'realm']) {
+            let hidden_input = document.createElement('input')
+            hidden_input.type = 'hidden';
+            hidden_input.name = item;
+            hidden_input.value = url_params.get(item);
+            form_div.appendChild(hidden_input);
+        }
 
         let submitting_row = Field.quick('div', 'row border-top pt-2')
 
         let submitter = Field.quick('button', 'btn btn-primary', 'Save metadata');
         submitter.type = 'submit';
-        submitter.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (!form_div.checkValidity()) {
-                e.stopPropagation();
-                form_div.classList.add('was-validated');
-            } else {
-                // save form!
-                console.log('submitting');
-                let data = new FormData(form_div);
-                for (const pair of data.entries()) {
-                    // if (pair[1].length == 0) { data.delete(pair[0]); }
-                    console.log(`${pair[0]}, ${pair[1]}`);
-                }
-            }
-        });
         submitting_row.appendChild(submitter);
         form_div.appendChild(submitting_row);
-
+        form_div.setAttribute('action', post_url);
+        form_div.setAttribute('method', 'POST');
+        form_div.addEventListener('submit', (e) => {
+            if (!form_div.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            form_div.classList.add('was-validated');
+        });
+        
         document.getElementById(this.container).appendChild(form_div);
+        this.form = form_div;
+        this.names = [...this.form.querySelectorAll('input, select')].map((x) => x.name);
+        
+    }
+
+    add_annotation(annotated_data) {
+        // this still needs to be tested
+        // as list of key-value pairs?
+        let keys = Object.keys(annotated_data).filter((x) => x.startsWith(this.prefix));
+        let non_objects = [...new Set(keys)].filter((fid) => fid.split('.').length == 3);
+        non_objects.forEach((fid) => this.register_non_object(fid, annotated_data));
+        let in_objects = keys.filter((fid) => fid.split('.').length > 3);
+        let objs = [...new Set(in_objects.map((x) => x.match(`${this.prefix}.(?<field>[^\.]+).*`).groups.field))];
+        objs.forEach((fid) => this.register_object(fid, annotated_data, in_objects));
+
+        let hidden_input = document.createElement('input')
+        hidden_input.type = 'hidden';
+        hidden_input.name = 'redirect_route';
+        hidden_input.value = annotated_data['redirect_route'];
+        this.form.appendChild(hidden_input);
+        return;
+    }
+
+    register_object(obj, annotated_data, object_fields, prefix = null) {
+        prefix = prefix || this.prefix;
+        console.log(obj);
+        let fields = object_fields.filter((fid) => fid.startsWith(`${prefix}.${obj}.`));
+        console.log(fields);
+        // THIS CODE DOES NOT DEAL WITH DUPLICATED OBJECTS (TEMPORARILY DISABLED)
+        let viewer = this.form.querySelector(`h5#viewer-${obj}`).parentElement;
+        
+        let not_nested = fields.filter((fid) => fid.split('.').length == (prefix.split('.').length + 2));
+        not_nested.forEach((fid) => this.register_non_object(fid, annotated_data, viewer));
+
+        let nested = fields.filter((fid) => fid.split('.').length > (prefix.split('.').length + 2));
+        let sub_objs = [...new Set(nested.map((x) => x.match(`${prefix}.${obj}.(?<field>[^\.]+).*`).groups.field))];      
+        sub_objs.forEach((fid) => this.register_object(fid, annotated_data, nested, `${prefix}.${obj}`));
+    }
+
+    register_non_object(fid, annotated_data, form = null) {
+        form = form || this.form;
+        let existing_values = annotated_data[fid];
+        let is_checkbox = this.names.filter((x) => x == fid).length > 1;
+        
+        if (is_checkbox) {
+            form.querySelectorAll(`[name="${fid}"]`)
+                .forEach((chk) => {
+                    if (existing_values.indexOf(chk.value) > -1) chk.setAttribute('checked', '');
+                });
+        } else if (existing_values.length == 1) {
+            form.querySelector(`[name="${fid}"]`).value = existing_values[0];
+        } else {
+            // if the field has been duplicated
+            let field_id = fid.match(`${this.prefix}.(?<field>.+)`).groups.field;
+            for (let i = 0; i < existing_values.length; i++) {
+                let viewer = form.querySelectorAll(`div.mini-viewer[name="${field_id}"]`)[i];
+                let sibling = viewer.nextSibling;
+                let value = existing_values[i];
+                if (i == 0) {
+                    viewer.querySelector('input').value = value;
+                } else {
+                    let new_viewer = viewer.cloneNode(true);
+                    new_viewer.querySelector('input').value = value;
+                    sibling == undefined ? form.appendChild(new_viewer) : form.insertBefore(new_viewer, sibling);
+                }
+            }
+        }
     }
 
     static flatten_object(object_editor, flattened_id) {

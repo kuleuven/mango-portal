@@ -151,7 +151,8 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
         </script>
     {% endif %}
 {% endmacro %}
-{% macro general_dialog(dialog_id, post_url, title="", body_text = "", mode="standalone", btn_ok="delete", btn_cancel="cancel", hidden_fields=[], readonly_fields=[], modal_class="", button_classes={"button_ok": "btn-primary", "button_cancel": "btn-secondary"}) %}
+{% macro general_dialog(dialog_id, url, method= "POST", title="", body_text = "", mode="standalone", btn_ok="ok", btn_cancel="cancel",
+    hidden_fields=[], fields=[], modal_class="", button_classes={"button_ok": "btn-primary", "button_cancel": "btn-secondary"}) %}
     {% if mode == "standalone" %}
         <button type="button"
                 class="btn btn-primary"
@@ -174,41 +175,40 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
                             data-bs-dismiss="modal"
                             aria-label="Close"></button>
                 </div>
-                <form action="{{ post_url }}"
-                      method="post"
+                <form action="{{ url }}"
+                      method="{{ method }}"
                       enctype="multipart/form-data"
                       class="row g-3 needs-validation"
                       novalidate>
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="modal-body">
-                        <p>{{ body_text }}</p>
+                        {{ body_text }}
                         {% for field in hidden_fields %}
                             <input type="hidden"
                                    id="{{ dialog_id + field['name'] }}"
                                    name="{{ field['name'] }}"
                                    value="{{ field['value'] }}"/>
                         {% endfor %}
-                        {% for field in readonly_fields %}
-                            <div class="mb-3">
-                                <label for="{{ dialog_id + field['name'] }}" class="col-form-label">
-                                    {{ field['label'] if field['label'] else field['name']|capitalize }}
-                                </label>
-                                <input type="text"
-                                       class="form-control"
-                                       id="{{ dialog_id + field['name'] }}"
-                                       name="{{ field['name'] }}"
-                                       value="{{ field['value'] }}"
-                                       readonly/>
-                            </div>
+                        {% for field in fields %}
+                            <label for="{{ dialog_id + field['name'] }}" class="col-form-label">
+                                {{ field['label'] if field['label'] else field['name']|capitalize }}
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="{{ dialog_id + field['name'] }}"
+                                   name="{{ field['name'] }}"
+                                   value="{{ field['value'] }}"
+                                   {% if field['readonly'] %}readonly{% endif %}
+                                   {% if field['required'] %}required{% endif %}/>
                         {% endfor %}
                     </div>
                     <div class="modal-footer">
                         <button type="button"
-                                class="btn {{ buton_classes['button_cancel'] if buton_classes['button_cancel'] else 'btn-primary' }}"
+                                class="btn {{ button_classes['button_cancel'] if button_classes['button_cancel'] else 'btn-primary' }}"
                                 data-bs-dismiss="modal">
                             {{ btn_cancel }}
                         </button>
-                        <button class="btn {{ buton_classes['button_ok'] if buton_classes['button_ok'] else 'btn-primary' }}"
+                        <button class="btn {{ button_classes['button_ok'] if button_classes['button_ok'] else 'btn-primary' }}"
                                 type="submit">
                             {{ btn_ok }}
                         </button>
@@ -225,7 +225,7 @@ var {{dialog_id}} = document.getElementById('{{dialog_id}}');
   // Button that triggered the modal
 var button = event.relatedTarget;
 // update the values in the modal from the button data attributes
-{% for field in hidden_fields + readonly_fields %}
+{% for field in hidden_fields + fields %}
 if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
 {{dialog_id}}.querySelector('#{{dialog_id + field["name"]}}').value = button.getAttribute('data-bs-field-{{field["name"]}}') ;
 }

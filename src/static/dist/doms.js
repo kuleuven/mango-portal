@@ -19,8 +19,10 @@ class Field {
         }
         values = values ? values : Field.example_values;
         // inner_input.setAttribute("multiple", "");
-        let empty_option = document.createElement("option");
-        inner_input.appendChild(empty_option);
+        if (active) {
+            let empty_option = document.createElement("option");
+            inner_input.appendChild(empty_option);
+        }
 
         for (let i of values) {
             let new_option = document.createElement("option");
@@ -54,8 +56,8 @@ class Field {
             new_input.type = multiple ? "checkbox" : "radio";
             new_input.value = i;
             new_input.id = `check-${i}`;
+            new_input.name = field.name;
             if (active) {
-                new_input.name = field.name;
                 if (value && value.indexOf(i) > -1) {
                     new_input.setAttribute('checked', '');
                 }
@@ -80,9 +82,9 @@ class Field {
     }
 
     static include_value(field) {
-        if (this.value != undefined) {
+        if (field.value != undefined) {
             return field.value;
-        } else if (this.required && field.default != undefined) {
+        } else if (field.required && field.default != undefined) {
             return field.default;
         } else {
             return;
@@ -93,7 +95,7 @@ class Field {
 class MovingField {
     // Parent class for a form element that can move around
     // to use in the design of multiple choice elements and to view form fields of a schema
-    
+
     constructor(idx) {
         // Each field will have an id and a label / title
         // This creates a div with, a label and three buttons: up, down and remove
@@ -101,7 +103,7 @@ class MovingField {
         this.up = this.add_btn('up', 'arrow-up-circle', () => this.move_up());
         this.down = this.add_btn('down', 'arrow-down-circle', () => this.move_down());
     }
-    
+
     add_btn(className, symbol, action = false) {
         // Method to create a button, e.g. up, down, remove and edit
         let button_color = this.constructor.name == 'MovingViewer' ? 'btn-outline-primary' : 'btn-primary'
@@ -111,14 +113,14 @@ class MovingField {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 action();
-            });    
+            });
         }
-        
+
         let icon = Field.quick('i', `bi bi-${symbol}`);
         btn.appendChild(icon);
         return btn;
     }
-    
+
 }
 
 class MovingViewer extends MovingField {
@@ -145,14 +147,14 @@ class MovingViewer extends MovingField {
             this.copy.setAttribute('disabled', '');
             // this.edit.classList.replace('btn-outline-primary', 'btn-primary');
             this.edit.classList.add('shadow');
-        }        
-        
+        }
+
         this.assemble();
-        this.schema = schema;        
+        this.schema = schema;
     }
 
     duplicate(form) {
-        const clone = new form.constructor(this.schema.initial_name);
+        const clone = new form.constructor(this.schema.initial_name, form.schema_status);
         if (form.copies) {
             form.copies += 1;
         } else {
@@ -163,16 +165,21 @@ class MovingViewer extends MovingField {
         clone.is_duplicate = true;
         clone.required = form.required;
         clone.repeatable = form.repeatable;
-        clone.values = {...form.values};
+        clone.values = { ...form.values };
         clone.type = form.type;
         clone.default = form.default;
         clone.viewer_subtitle = form.viewer_subtitle;
-        if (form.constructor.name == 'ObjectInput') {
-            clone.editor = form.editor;
-        }
         clone.mode = 'mod';
         clone.create_form();
         clone.create_modal(this.schema);
+        if (form.constructor.name == 'ObjectInput') {
+            clone.editor.field_ids = [...form.editor.field_ids];
+            clone.editor.fields = { ...form.editor.fields };
+            clone.editor.field_ids.forEach((field_id, idx) => {
+                clone.editor.new_field_idx = idx;
+                clone.editor.view_field(clone.editor.fields[field_id]);
+            });
+        }
 
         this.schema.new_field_idx = this.schema.field_ids.indexOf(form.id) + 1;
         this.schema.add_field(clone);
@@ -186,7 +193,7 @@ class MovingViewer extends MovingField {
         if (this.repeatable) {
             header_title.appendChild(Field.quick('i', 'bi bi-front px-2'));
         }
-        
+
         let header_buttons = Field.quick('div', 'btn-list');
         for (let button of [this.up, this.down, this.copy, this.edit, this.rem]) {
             header_buttons.appendChild(button);
@@ -210,7 +217,7 @@ class MovingViewer extends MovingField {
         let form_index = this.schema.field_ids.indexOf(this.idx);
         let sibling = this.below.nextSibling; // element under the bottom button
         let sibling_button = sibling.nextSibling; // button under the bottom button
-        
+
         this.div.parentElement.insertBefore(sibling, this.div);
         this.div.parentElement.insertBefore(sibling_button, this.div);
         if (!sibling.previousSibling.previousSibling.classList.contains("viewer")) {
@@ -223,7 +230,7 @@ class MovingViewer extends MovingField {
             sibling.querySelector(".down").removeAttribute("disabled");
             this.down.setAttribute("disabled", "")
         }
-        
+
         this.schema.field_ids.splice(form_index, 1);
         this.schema.field_ids.splice(form_index + 1, 0, this.idx);
     }
@@ -239,7 +246,7 @@ class MovingViewer extends MovingField {
             this.up.setAttribute("disabled", "");
             sibling.querySelector(".up").removeAttribute("disabled");
         }
-        if (!sibling.nextSibling.classList.contains("adder")) {
+        if (!sibling.nextSibling.nextSibling.classList.contains("viewer")) {
             // if we were in the last place
             this.down.removeAttribute("disabled");
             sibling.querySelector(".down").setAttribute("disabled", "")
@@ -249,22 +256,24 @@ class MovingViewer extends MovingField {
     }
 
     remove() {
-        // Method to remove a viewing field (and thus also the field itself)
-        let form_index = this.schema.field_ids.indexOf(this.idx);
-        
-        if (this.below.nextSibling.id == "col-12") {
-            // if this is the last option
-            this.div.previousSibling.previousSibling.querySelector(".down").setAttribute("disabled", "");
-        }
-        if (this.div.previousSibling.className == "form-control") {
-            // if this was the first option
-            this.below.nextSibling.querySelector(".up").setAttribute("disabled", "");
-        }
-        this.div.parentNode.removeChild(this.below);
-        this.div.parentNode.removeChild(this.div);
-        this.schema.field_ids.splice(form_index, 1);
-        delete this.schema.fields[this.idx];
-        this.schema.toggle_saving();
+        Modal.send_confirmation('Deleted fields cannot be recovered.', () => {
+            // Method to remove a viewing field (and thus also the field itself)
+            let form_index = this.schema.field_ids.indexOf(this.idx);
+
+            if (this.below.nextSibling.id == "col-12") {
+                // if this is the last option
+                this.div.previousSibling.previousSibling.querySelector(".down").setAttribute("disabled", "");
+            }
+            if (this.div.previousSibling.className == "form-control") {
+                // if this was the first option
+                this.below.nextSibling.querySelector(".up").setAttribute("disabled", "");
+            }
+            this.div.parentNode.removeChild(this.below);
+            this.div.parentNode.removeChild(this.div);
+            this.schema.field_ids.splice(form_index, 1);
+            delete this.schema.fields[this.idx];
+            this.schema.toggle_saving();
+        });
     }
 
 }
@@ -305,7 +314,7 @@ class MovingChoice extends MovingField {
         }
         return input_tag
     }
-    
+
     move_down() {
         // Method to move the field down
         let sibling = this.div.nextSibling;
@@ -341,21 +350,22 @@ class MovingChoice extends MovingField {
     static remove_div(div) {
         // static method to remove a div element
         // (because this is also called programmatically to reset the form)
-        if (div.nextSibling.id == "add-mover") {
+        if (div.nextSibling.classList.contains('mover')) {
             // if this is the last option
             div.previousSibling.querySelector(".down").setAttribute("disabled", "");
         }
-        if (div.previousSibling.className == "form-control") {
+        if (div.previousSibling.classList.contains('form-container')) {
             // if this was the first option
             div.nextSibling.querySelector(".up").setAttribute("disabled", "");
         }
+
         let existing_children = div.parentElement.querySelectorAll(".blocked");
-        if (existing_children.length < 4) {
+        if (existing_children.length <= 3) {
+            console.log('too few children')
             existing_children.forEach((child) => {
                 child.querySelector(".rem").setAttribute("disabled", "");
             });
         }
-        
         div.parentNode.removeChild(div);
     }
 
@@ -372,19 +382,19 @@ class BasicForm {
         this.form.id = `form-${id}`;
         this.form.setAttribute('novalidate', '')
         this.option_indices = [];
-        
+
         this.divider = document.createElement('hr');
         this.form.appendChild(this.divider);
         this.rowsub = Field.quick('div', 'row justify-content-between');
         this.rowsub.id = 'submitters';
         this.form.appendChild(this.rowsub);
-    }    
+    }
 
     add_input(label_text, input_id, {
         description = false, placeholder = "Some text",
         value = false, validation_message = "This field is compulsory",
         pattern = ".*", required = true
-        } = {}) {
+    } = {}) {
         // Create and append a required text input
         let input_tag = Field.quick("input", "form-control");
         input_tag.id = input_id;
@@ -454,7 +464,7 @@ class BasicForm {
         // Create a moving field for the selection editor
         let input = new MovingChoice(label_text, idx, value).div;
         if (idx < 2) {
-            input.querySelector(".rem").setAttribute("disabled", "");    
+            input.querySelector(".rem").setAttribute("disabled", "");
         }
         this.option_indices.push(idx);
         return input;
@@ -472,6 +482,9 @@ class BasicForm {
         for (let i in options) {
             let input = this.add_mover(label_text, i,
                 has_values ? options[i] : false);
+            if (options.length > 2) {
+                input.querySelector('.rem').removeAttribute('disabled');
+            }
             if (i == 0) {
                 input.querySelector(".up").setAttribute("disabled", "");
             }
@@ -480,7 +493,7 @@ class BasicForm {
             }
             this.form.insertBefore(input, this.divider);
         }
-        
+
         let plus_div = Field.quick('div', 'd-grid gap-2 mover mt-2');
         let plus = Field.quick("button", "btn btn-primary btn-sm", "Add option");
         plus.type = "button";
@@ -488,7 +501,7 @@ class BasicForm {
         plus.addEventListener('click', (e) => {
             e.preventDefault();
             let current_max = Math.max(...this.option_indices);
-            
+
             let new_input = this.add_mover(label_text, current_max + 1);
             new_input.querySelector(".down").setAttribute("disabled", "");
 
@@ -504,24 +517,24 @@ class BasicForm {
             }
         });
         plus_div.appendChild(plus);
-        
-    //    this.form.appendChild(plus_div);
+
+        //    this.form.appendChild(plus_div);
         this.form.insertBefore(plus_div, this.divider);
     }
 
     add_switches(id, switchnames = ['required', 'repeatable'],
-    {required = false, repeatable = false, dropdown = false} = {}) {
+        { required = false, repeatable = false, dropdown = false } = {}) {
         // Add a radio switch to select a field as required
         // I'm adding the radio switch for "repeatable" and "dropdown" here as well
         // For multiple choice fields, add 'dropdown' to switchnames and the Object.
         this.switches = Field.quick("div", "col-3 mt-2");
         this.switches.id = 'switches-div';
         let subdiv = Field.quick("div", "form-check form-switch form-check-inline");
-        
+
         let switches = {
-            'required' : { 'id' : 'required', 'text' : 'Require', 'value' : required },
-            'repeatable' : { 'id' : 'repeatable', 'text' : 'Make repeatable', 'value' : repeatable },
-            'dropdown' : { 'id' : 'dropdown', 'text' : 'As dropdown', 'value' : dropdown}
+            'required': { 'id': 'required', 'text': 'Required', 'value': required },
+            'repeatable': { 'id': 'repeatable', 'text': 'Repeatable', 'value': repeatable },
+            'dropdown': { 'id': 'dropdown', 'text': 'As dropdown', 'value': dropdown }
         }
 
         for (let sname of switchnames) {
@@ -529,7 +542,7 @@ class BasicForm {
             let label = Field.quick("label", "form-check-label", sw.text);
             label.id = `label-${id}-${sw.id}`;
             label.setAttribute('for', `${sw.id}-${id}`);
-    
+
             let input = Field.quick("input", "form-check-input");
             input.type = "checkbox";
             input.role = "switch"
@@ -537,11 +550,11 @@ class BasicForm {
             if (sw.value) {
                 input.setAttribute('checked', '');
             }
-    
+
             subdiv.appendChild(label);
             subdiv.appendChild(input);
         }
-        
+
         this.switches.appendChild(subdiv);
         this.form.insertBefore(this.switches, this.divider);
         // this.form.appendChild(div);
@@ -569,7 +582,7 @@ class BasicForm {
         }
         this.form.classList.remove('was-validated');
     }
-    
+
 }
 
 // create a modal - needs both the constructor and .create_modal()
@@ -582,9 +595,9 @@ class Modal {
 
     create_header() {
         let modal_header = Field.quick("div", "modal-header");
-        
+
         let modal_title = Field.quick("h5", "modal-title", this.header_title, this.header_id);
-        
+
         let modal_close = Field.quick("button", "btn-close");
         modal_close.setAttribute("data-bs-dismiss", "modal");
         modal_close.ariaLabel = "Close";
@@ -598,17 +611,17 @@ class Modal {
         // content has to be a node to append
         let modal_body = Field.quick("div", "modal-body");
         body_contents.forEach((x) => modal_body.appendChild(x));
-        
+
         return modal_body;
     }
 
     create_footer() {
         let modal_footer = Field.quick("div", "modal-footer");
-        
+
         let footer_close = Field.quick("button", "btn btn-secondary", "Cancel");
         footer_close.type = "button";
         footer_close.setAttribute("data-bs-dismiss", "modal");
-        
+
         // let footer_save = Field.quick("button", "btn btn-primary submit", "Submit");
         // footer_save.type = "button";
 
@@ -623,17 +636,17 @@ class Modal {
         modal.id = this.id;
         modal.tabIndex = "-1";
         modal.role = "dialog";
-        
+
         let modal_dialog = Field.quick("div", size == null ? "modal-dialog" : `modal-dialog modal-${size}`);
-        
+
         let modal_content = Field.quick("div", "modal-content");
 
         let modal_header = this.create_header();
-        
+
         let modal_body = this.create_body(body_contents);
-        
+
         let modal_footer = this.create_footer();
-        
+
         modal_content.appendChild(modal_header);
         modal_content.appendChild(modal_body);
         modal_content.appendChild(modal_footer);
@@ -644,49 +657,62 @@ class Modal {
         document.querySelector("body").appendChild(modal);
     }
 
+    static send_confirmation(body, action) {
+        let conf_modal = document.querySelector('div.modal#confirmation-dialog');
+        let modal = bootstrap.Modal.getOrCreateInstance(conf_modal);
+        conf_modal.querySelector('p#confirmation-text')
+            .innerHTML = body;
+        conf_modal.querySelector('button#action')
+            .addEventListener('click', () => {
+                action();
+                modal.hide();
+            });
+        modal.show();
+    }
+
 }
 
 class AccordionItem {
-	constructor(id, header_title, accordion, is_new = false) {
-		this.id = id;
-		this.parent = accordion;
-		this.header_title = header_title;
-		this.div = Field.quick('div', 'accordion-item');
-		this.new = is_new;
-		this.create();
-	}
-	create() {
-		let header = Field.quick('div', 'accordion-header');
-		header.id = this.id + '-header';
-		let header_button = Field.quick('button', this.new ? 'btn btn-primary m-2' : 'accordion-button h4', this.header_title);
+    constructor(id, header_title, accordion, is_new = false) {
+        this.id = id;
+        this.parent = accordion;
+        this.header_title = header_title;
+        this.div = Field.quick('div', 'accordion-item');
+        this.new = is_new;
+        this.create();
+    }
+    create() {
+        let header = Field.quick('div', 'accordion-header');
+        header.id = this.id + '-header';
+        let header_button = Field.quick('button', this.new ? 'btn btn-primary m-2' : 'accordion-button h4', this.header_title);
         header_button.type = 'button'
-		header_button.setAttribute('data-bs-toggle', 'collapse');
-		header_button.setAttribute('data-bs-target', '#' + this.id)
-		header_button.ariaControls = this.id;
-		header.appendChild(header_button);
-		
-		let body = Field.quick('div', 'accordion-collapse collapse');
-		body.id = this.id;
-		body.setAttribute('aria-labelledby', this.id + '-header');
-		body.setAttribute('data-bs-parent', '#' + this.parent);
+        header_button.setAttribute('data-bs-toggle', 'collapse');
+        header_button.setAttribute('data-bs-target', '#' + this.id)
+        header_button.ariaControls = this.id;
+        header.appendChild(header_button);
+
+        let body = Field.quick('div', 'accordion-collapse collapse');
+        body.id = this.id;
+        body.setAttribute('aria-labelledby', this.id + '-header');
+        body.setAttribute('data-bs-parent', '#' + this.parent);
         this.card_body = Field.quick('div', 'accordion-body');
         body.appendChild(this.card_body);
 
-		this.div.appendChild(header);
-		this.div.appendChild(body);
-		
-        this.collapse = new bootstrap.Collapse(body, { toggle: false });
-	}
+        this.div.appendChild(header);
+        this.div.appendChild(body);
 
-	append(element, i = null) {
+        this.collapse = new bootstrap.Collapse(body, { toggle: false });
+    }
+
+    append(element, i = null) {
         let elements = this.card_body.childNodes;
         if (i == null || i >= elements.childNodes.length - 1) {
             this.card_body.appendChild(element);
         } else {
-            this.card_body.insertBefore(element, elements[i+1]);
+            this.card_body.insertBefore(element, elements[i + 1]);
         }
-	}
-    
+    }
+
     toggle() {
         this.collapse.toggle();
     }
@@ -698,7 +724,7 @@ class NavBar {
         if (this.nav_bar == null) {
             this.nav_bar = Field.quick('ul', 'nav');
             this.nav_bar.role = 'tablist';
-            this.nav_bar.id = 'nav-tab-' + id;    
+            this.nav_bar.id = 'nav-tab-' + id;
             this.tab_content = Field.quick('div', 'tab-content');
         } else {
             this.tab_content = this.nav_bar.nextSibling;
@@ -708,7 +734,7 @@ class NavBar {
             // pills would be called with extra_classes = ['justify-content-end', 'nav-pills']
             this.nav_bar.classList.add(extra_class)
         }
-            
+
     }
 
     add_item(item_id, button_text, active = false, position = -1) {
@@ -822,7 +848,7 @@ class Toast {
             action();
             toast.dispose();
         });
-        
+
         toast.show();
     }
 }
