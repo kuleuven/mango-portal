@@ -82,6 +82,7 @@ class Field {
     }
 
     static include_value(field) {
+        console.log(field.value)
         if (field.value != undefined) {
             return field.value;
         } else if (field.required && field.default != undefined) {

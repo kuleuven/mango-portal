@@ -164,7 +164,7 @@
         </div>
         <div id="selection_help" class="form-text">Copying is only available for data objects.</div>
       {% endif %}
-      <bulk-links post="{{ url_for('browse_bp.bulk_operation_items') }}" tree="{{ url_for('browse_bp.get_sub_collections') }}"/>
+      <bulk-links tree="{{ url_for('browse_bp.get_sub_collections') }}"/>
       <table class="table table-striped table-hover mt-2" id="browseTable">
         <thead>
           <tr>
@@ -718,6 +718,27 @@
       </p>
     {% endfor %} #}
     {# endtemp #}
+  </div>
+  <div class="modal" id="confirmation-dialog" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title">Are you sure?</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="confirmation-form" method="POST" action="{{ url_for('browse_bp.bulk_operation_items') }}">
+          <div class="modal-body">
+            <input type="hidden" id="action" name="action"/>
+            <input type="hidden" id="destination" name="destination"/>
+            <p id="confirmation-text">.</p>
+          </div>
+          <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">I'm sure</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
   <!-- Delete modal -->
 {% endblock body %}

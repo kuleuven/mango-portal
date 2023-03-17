@@ -885,8 +885,9 @@ class SchemaForm {
     register_non_object(fid, annotated_data, form = null) {
         form = form || this.form;
         let existing_values = annotated_data[fid];
-        let is_checkbox = this.names.filter((x) => x == fid).length > 1;
-        
+        let is_checkbox = [...form.querySelectorAll(`[name="${fid}"]`)]
+            .filter((x) => x.classList.contains('form-check-input'))
+            .length > 0;
         if (is_checkbox) {
             form.querySelectorAll(`[name="${fid}"]`)
                 .forEach((chk) => {
