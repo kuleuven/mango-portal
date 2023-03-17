@@ -161,7 +161,7 @@ with iRODSSession(irods_env_file=env_file) as session:
                 Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
               </dd>
             </dl>
-            Or use <code>lftp {{ info['irods_environment']['irods_user_name'] }}@{{ sftp_host }}</code>.
+            Or use <code>lftp -l {{ info['irods_environment']['irods_user_name'] }}, sftp://{{ sftp_host }}</code>.
           </li>
         </ol>
       </div>

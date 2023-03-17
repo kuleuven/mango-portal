@@ -53,7 +53,7 @@
                 Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
               </dd>
             </dl>
-            Or use <code>lftp {{ session.openid_session.user_info.preferred_username }}@{{ sftp_host }}</code>.
+            Or use <code>lftp -l {{ session.openid_session.user_info.preferred_username }}, sftp://{{ sftp_host }}</code>.
           </li>
         </ol>
       </div>
