@@ -235,7 +235,7 @@ def add_irods_project():
 
     response = requests.put(
         f"{API_URL}/v1/projects/{id}", headers=header, json={
-            "platform": "irods",
+            "platform": request.form.get('platform'),
             "platform_options": [
                 {
                     "key": "zone-jobid",

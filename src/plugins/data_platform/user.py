@@ -123,7 +123,7 @@ def login_openid_select_zone():
         my_zones = [] # Zones in which the user exist (user must be on a project that is not archived)
         other_platforms = []
         for project in projects:
-            if project['platform'] != 'irods' and project['platform'] not in other_platforms:
+            if not project['platform'].startswith('irods') and project['platform'] not in other_platforms:
                 other_platforms.append(project['platform'])
             if 'zone' not in project:
                 continue
@@ -328,7 +328,7 @@ def local_client_retrieve_token_callback():
     projects = []
     zones = []
     for project in all_projects:
-        if project['platform'] != 'irods':
+        if not project['platform'].startswith('irods'):
             continue
         if 'zone' not in project:
             continue
