@@ -276,9 +276,8 @@ class TypedInput extends InputField {
     }
 
     form_type = "text";
-    form_type = "text";
     button_title = "Simple field";
-    description = "Text options: regular text, number (integer or float), date, time, e-mail or URL.<br>"
+    description = "Text options: regular text, number (integer or float), date, time, e-mail, URL or single checkbox.<br>"
 
     static ex_input() {
         let inner_input = Field.quick("input", "form-control");
@@ -286,6 +285,7 @@ class TypedInput extends InputField {
         inner_input.setAttribute('readonly', '');
         return inner_input;
     }
+
     add_default_field() {
         if (this.form_field.form.querySelector(`#div-${this.id}-default`) == null) {
             this.form_field.add_input(
@@ -304,37 +304,63 @@ class TypedInput extends InputField {
             Field.quick('div', 'form-text', this.viewer_subtitle) :
             Field.quick('p', 'card-subtitle', this.viewer_subtitle);
         subtitle.id = 'help-' + this.id;
+
+        // define input shape
         let input;
-        if (this.type != 'textarea') {
+        if (this.type == 'textarea') {
+            input = Field.quick("textarea", "form-control input-view");
+        } else if (this.type == 'checkbox') {
+            input = Field.quick('div', 'form-check');
+            let input_input = Field.quick('input', 'form-check-input');
+            input_input.type = 'checkbox';
+            input_input.value = true;
+            input_input.id = 'check-' + this.id;
+            let input_label = Field.quick('label', 'form-check-label', 'Check if true.');
+            input_label.setAttribute('for', 'check-' + this.id);
+            input.appendChild(input_input);
+            input.appendChild(input_label);
+        } else {
             input = Field.quick("input", "form-control input-view");
             input.type = this.type == 'float' | this.type == 'integer' ? 'number' : this.type;
             input.setAttribute('aria-describedby', subtitle.id);
             if (this.required && this.default !== undefined) {
                 input.value = this.default;
             }
-        } else {
-            input = Field.quick("textarea", "form-control input-view");
         }
-        if (!active) {
-            input.setAttribute('readonly', '');
-            div.appendChild(subtitle);
-            div.appendChild(input);
-        } else {
-            input.name = this.name;
-            if (this.required) {
-                input.setAttribute('required', '');
-            }
-            let value = Field.include_value(this);
-            if (value != undefined) {
-                input.value = value;
-            }
-            if (this.values.minimum != undefined) {
-                input.min = this.values.minimum;
-                input.max = this.values.maximum;
-            }
-            div.appendChild(input);
-            div.appendChild(subtitle);
 
+        // define value
+        if (!active) { // in the manager
+            if (this.type == 'checkbox') {
+                input.querySelector('input').setAttribute('readonly', '')
+            } else {
+                input.setAttribute('readonly', '');
+                div.appendChild(subtitle);
+            }
+            div.appendChild(input);
+        } else { // when implementing form
+            div.appendChild(input);
+            let value = Field.include_value(this);
+            console.log(value)
+            
+            if (this.type == 'checkbox') {
+                input.querySelector('input').name = this.name;
+                if (value) {
+                    input.querySelector('input').setAttribute('checked', '');
+                }
+            } else {
+                input.name = this.name;
+                if (this.required) {
+                    input.setAttribute('required', '');
+                }
+                if (value != undefined) {
+                    input.value = value;
+                }
+                if (this.values.minimum != undefined) {
+                    input.min = this.values.minimum;
+                    input.max = this.values.maximum;
+                }
+                div.appendChild(subtitle);
+            }
         }
         return div;
     }
@@ -380,7 +406,8 @@ class TypedInput extends InputField {
         let default_div = this.form_field.form.querySelector(`#div-${this.id}-default`);
         let default_input = this.form_field.form.querySelector(`#${this.id}-default`);
 
-        if (format == 'textarea') {
+        // add or remove default based on type
+        if (format == 'textarea' || format == 'checkbox') {
             if (default_div != null) {
                 this.form_field.form.removeChild(default_div);
             }
@@ -389,6 +416,18 @@ class TypedInput extends InputField {
             this.add_default_field();
         }
 
+        // disable or enable switches based on type
+        let switches_div = this.form_field.form.querySelector('div#switches-div');
+        if (switches_div != undefined) {
+            let switches = switches_div.querySelectorAll('input[role="switch"]');
+            if (format == 'checkbox') {
+                switches.forEach((sw) => sw.setAttribute('disabled', ''));
+            } else {
+                switches.forEach((sw) => sw.removeAttribute('disabled'));
+            }    
+        }
+
+        // add or remove range based on type
         if (format == "integer" | format == 'float') {
             if (default_input !== null) {
                 default_input.type = 'number';
@@ -462,8 +501,8 @@ class TypedInput extends InputField {
 
     create_form() {
         this.setup_form();
-        let text_options = ["text", "textarea", "date", "email", "time", "url", "integer", "float"];
-        this.form_field.add_select("Text type", `${this.id}-format`, text_options, this.type);
+        let text_options = ["text", "textarea", "date", "email", "time", "url", "integer", "float", "checkbox"];
+        this.form_field.add_select("Input type", `${this.id}-format`, text_options, this.type);
         this.manage_format(this.type);
         this.form_field.form.querySelector(".form-select").addEventListener('change', () => {
             let selected = this.form_field.form.elements[`${this.id}-format`].value;
