@@ -30,6 +30,7 @@ import os
 import glob
 import json
 from pprint import pprint
+import lib.util
 
 # from flask_wtf import CSRFProtect
 from csrf import csrf
@@ -92,7 +93,9 @@ def list_meta_data_schemas(realm):
     if not realm:
         realm = session["current_schema_editor_realm"]
     schema_manager = get_schema_manager(g.irods_session.zone, realm)
-    schemas: dict = schema_manager.list_schemas()
+    schemas: dict = schema_manager.list_schemas(
+        filters=["published", "draft", "archived"]
+    )
 
     return json.dumps(
         [
@@ -128,10 +131,17 @@ def get_schema(realm: str, schema: str, status="published"):
 def save_schema():
     if "realm" in request.form:
         schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
+        raw_schema = {}
+        # either we get a json string or a decoded json string
+        try:
+            raw_schema = json.loads(request.form["raw_schema"])
+        except Exception as e:
+            raw_schema = json.loads(lib.util.atob(request.form["raw_schema"]))
+
         result = schema_manager.store_schema(
             schema_name=request.form["schema_name"],
             current_version=request.form["current_version"],
-            raw_schema=json.loads(request.form["raw_schema"]),
+            raw_schema=raw_schema,
             with_status=request.form["with_status"],
             title=request.form["title"],
             username=g.irods_session.username,
@@ -140,7 +150,8 @@ def save_schema():
     for key, value in result.items():
         if not value["valid"]:
             flash(f"Problem for {key}: {value['message']}", "danger")
-    return json.dumps(result)
+    realm = request.form.get("realm", "")
+    return redirect(url_for("metadata_schema_editor_bp.metadata_schemas", realm=realm))
 
 
 @metadata_schema_editor_bp.route("/metadata-schema/delete", methods=["POST", "DELETE"])
