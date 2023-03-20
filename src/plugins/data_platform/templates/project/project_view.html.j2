@@ -123,14 +123,14 @@
             {% endif %}
             </td>
           </tr>
-          {% if project['platform'] == "irods" and 'zone' in zone and project['my_role'] != '' and not project['archived'] %}
+          {% if project['platform'].startswith("irods") and 'zone' in zone and project['my_role'] != '' and not project['archived'] %}
           <tr>
             <th>Home folder</th>
             <td>
               <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}" method="post">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="hidden" name="irods_zone" value="{{ zone['zone'] }}" />
-                {% if opts['folder-layout'] == 'v0' %}
+                {% if opts['folder-layout'] == 'v0' or project['platform'] != "irods" %}
                 <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/home/{{ project['name'] }}" />
                 {% else %}
                 <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/projects/{{ project['name'] }}/data" /><br />
