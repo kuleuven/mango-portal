@@ -2,7 +2,7 @@
 {% block body %}
     <main>
         {% if not realm %}
-        <h2>Metadata schema manager</h1>
+            <h2>Metadata schema manager</h2>
             <h4>Please choose a realm from the list below</h4>
             <div class="list-group realms">
                 {% for realm in realms %}
@@ -11,11 +11,11 @@
                 {% endfor %}
             </div>
         {% else %}
-        <h2>Metadata schema manager for {{ realm }}</h1>
+            <h2>Metadata schema manager for {{ realm }}</h2>
             <div id="metadata_template_list_container">
                 {% set blueprint = "metadata_schema_editor_bp" %}
                 {% set mdt = "meta_data_template" %}
-                <url-list new="{{ url_for('{}.save_schema'.format(blueprint)) }}" list="{{ url_for('{}.list_meta_data_schemas'.format(blueprint)) }}" delete="{{ url_for('{}.delete_meta_data_schema'.format(blueprint)) }}" archive="{{ url_for('{}.archive_meta_data_schema'.format(blueprint)) }}" realm="{{ realm }}"></url-list>
+                <url-list new="{{ url_for('{}.save_schema'.format(blueprint)) }}" list="{{ url_for('{}.list_meta_data_schemas'.format(blueprint)) }}" delete="{{ url_for('{}.delete_meta_data_schema'.format(blueprint)) }}" archive="{{ url_for('{}.archive_meta_data_schema'.format(blueprint)) }}" realm="{{ realm }}" schema-name="{{ schema_name }}", schema-version="{{ schema_version }}"></url-list>
                 {% for file in ['doms', 'fields', 'schema', 'httprequests', 'manager'] %}
                     <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
                 {% endfor %}
@@ -27,7 +27,10 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h6 class="modal-title">Are you sure?</h6>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <p id="confirmation-text">.</p>
