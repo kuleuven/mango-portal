@@ -47,7 +47,7 @@ class FileSystemSchemaManager:
         # load schemas if any exist yet
         self.zone = zone
         self.realm = realm
-        self._schemas = self.list_schemas()
+        self._schemas = self.list_schemas(filters=[])
         self._schemas_dir_mtime = self._storage_schemas_path.stat().st_mtime
 
         print(self)
@@ -89,7 +89,7 @@ class FileSystemSchemaManager:
             return self._schemas[schema_name]
 
         all_schema_files = list(schema_dir.glob("*.json"))
-        # pprint.pprint(all_schema_files)
+        pprint.pprint(all_schema_files)
         published_files = list(schema_dir.glob("*published.json"))
         draft_files = list(schema_dir.glob("*draft.json"))
         total_count = len(all_schema_files)
@@ -122,6 +122,9 @@ class FileSystemSchemaManager:
             "published": True if published_count > 0 else False,
             "draft_count": draft_count,
             "draft": True if draft_count > 0 else False,
+            "archived": True
+            if all([draft_count == 0, published_count == 0, total_count > 0])
+            else False,
             "published_name": sorted(published_files)[-1].name
             if published_count >= 1
             else "",
@@ -150,6 +153,8 @@ class FileSystemSchemaManager:
                 for schema_path in realm_schemas_path.glob("*")
                 if schema_path.is_dir()
             ]
+            print(f"Found schemas for filters {filters}:")
+        pprint.pprint(schemas)
 
         schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
 
