@@ -1025,7 +1025,13 @@ def bulk_operation_items():
 
     ITEM_TYPE_PART = {"data_object": "dobj", "collection": "col"}
 
-    if request.form["action"] in ["delete"]:
+    success_count = 0
+    failure_count = 0
+    success = True
+
+    action = request.form["action"]
+
+    if action == "delete":
         force_delete = (
             True
             if "force_delete" in request.form and request.form["force_delete"]
@@ -1036,38 +1042,52 @@ def bulk_operation_items():
             if match:
                 (item_type, item_path) = (match.group(1), match.group(2))
                 if item_type == ITEM_TYPE_PART["data_object"]:
-                    irods_session.data_objects.get(item_path).unlink(force=force_delete)
-
-                    if force_delete:
-                        signals.data_object_deleted.send(
-                            current_app._get_current_object(),
-                            irods_session=g.irods_session,
-                            data_object_path=item_path,
+                    try:
+                        irods_session.data_objects.get(item_path).unlink(
+                            force=force_delete
                         )
-                    else:
-                        signals.data_object_trashed.send(
-                            current_app._get_current_object(),
-                            irods_session=g.irods_session,
-                            data_object_path=item_path,
+
+                        if force_delete:
+                            signals.data_object_deleted.send(
+                                current_app._get_current_object(),
+                                irods_session=g.irods_session,
+                                data_object_path=item_path,
+                            )
+                        else:
+                            signals.data_object_trashed.send(
+                                current_app._get_current_object(),
+                                irods_session=g.irods_session,
+                                data_object_path=item_path,
+                            )
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(
+                            f"Problem removing data object {item_path} : {e}", "danger"
                         )
                 if item_type == ITEM_TYPE_PART["collection"]:
-                    irods_session.collections.remove(item_path, force=force_delete)
-                    if force_delete:
-                        signals.collection_deleted.send(
-                            current_app._get_current_object(),
-                            irods_session=g.irods_session,
-                            collection_path=item_path,
+                    try:
+                        irods_session.collections.remove(item_path, force=force_delete)
+                        if force_delete:
+                            signals.collection_deleted.send(
+                                current_app._get_current_object(),
+                                irods_session=g.irods_session,
+                                collection_path=item_path,
+                            )
+                        else:
+                            signals.collection_trashed.send(
+                                current_app._get_current_object(),
+                                irods_session=g.irods_session,
+                                collection_path=item_path,
+                            )
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(
+                            f"Problem removing data object {item_path} : {e}", "danger"
                         )
-                    else:
-                        signals.collection_trashed.send(
-                            current_app._get_current_object(),
-                            irods_session=g.irods_session,
-                            collection_path=item_path,
-                        )
-        flash(
-            f"Successfully deleted {len(request.form.getlist('items'))} items",
-            "success",
-        )
 
     if request.form["action"] == "move":
         for item in request.form.getlist("items"):
@@ -1078,30 +1098,40 @@ def bulk_operation_items():
                     PurePath(request.form["destination"]) / PurePath(item_path).name
                 ).as_posix()
                 if item_type == ITEM_TYPE_PART["data_object"]:
-                    irods_session.data_objects.move(
-                        item_path, request.form["destination"]
-                    )
-                    signals.data_object_moved.send(
-                        current_app._get_current_object(),
-                        irods_session=g.irods_session,
-                        original_path=item_path,
-                        destination_path=request.form["destination"],
-                        new_path=new_path,
-                    )
+                    try:
+                        irods_session.data_objects.move(
+                            item_path, request.form["destination"]
+                        )
+                        signals.data_object_moved.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            original_path=item_path,
+                            destination_path=request.form["destination"],
+                            new_path=new_path,
+                        )
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(f"Problem moving data object {item_path} : {e}", "danger")
+
                 if item_type == ITEM_TYPE_PART["collection"]:
-                    irods_session.collections.move(
-                        item_path, request.form["destination"]
-                    )
-                    signals.collection_moved.send(
-                        current_app._get_current_object(),
-                        irods_session=g.irods_session,
-                        original_path=item_path,
-                        destination_path=request.form["destination"],
-                        new_path=new_path,
-                    )
-        flash(
-            f"Successfully moved {len(request.form.getlist('items'))} items", "success"
-        )
+                    try:
+                        irods_session.collections.move(
+                            item_path, request.form["destination"]
+                        )
+                        signals.collection_moved.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            original_path=item_path,
+                            destination_path=request.form["destination"],
+                            new_path=new_path,
+                        )
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(f"Problem moving collection {item_path} : {e}", "danger")
 
     if request.form["action"] == "copy":
         for item in request.form.getlist("items"):
@@ -1112,22 +1142,40 @@ def bulk_operation_items():
                     PurePath(request.form["destination"]) / PurePath(item_path).name
                 ).as_posix()
                 if item_type == ITEM_TYPE_PART["data_object"]:
-                    irods_session.data_objects.copy(
-                        item_path, request.form["destination"]
-                    )
-                    signals.data_object_copied.send(
-                        current_app._get_current_object(),
-                        irods_session=g.irods_session,
-                        data_object_path=item_path,
-                        destination_path=request.form["destination"],
-                        new_path=new_path,
-                    )
-                # if item_type == ITEM_TYPE_PART["collection"]:
-                #     irods_session.collections.move(item_path, request.form["destination"])
-                #     signals.collection_moved.send(current_app._get_current_object(), irods_session = g.irods_session, collection_path = item_path, destination_path = request.form["destination"])
+                    try:
+                        irods_session.data_objects.copy(
+                            item_path, request.form["destination"]
+                        )
+                        signals.data_object_copied.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            data_object_path=item_path,
+                            destination_path=request.form["destination"],
+                            new_path=new_path,
+                        )
+                        success_count += 1
+                    except:
+                        success = False
+                        failure_count += 1
+                        flash(f"Problem copying {item_path} : {e}", "danger")
+
+    OPERATION_SUCCESS_STRINGS = {
+        "delete": "deleted",
+        "copy": "copied",
+        "move": "moved",
+    }
+    if success and failure_count == 0:
         flash(
-            f"Successfully copied {len(request.form.getlist('items'))} items", "success"
+            f"Successfully {OPERATION_SUCCESS_STRINGS[action]} {success_count} items",
+            "success",
         )
+    elif success_count > 0 and failure_count > 0:
+        flash(
+            f"Partial success ({success_count}), but also failures ({failure_count}) encountered in {action} operation",
+            "warning",
+        )
+    else:
+        flash(f"Failed all items ({failure_count}) for {action} operation", "danger")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -1181,7 +1229,6 @@ def rename_item():
             flash("{item_path} does not exist", "danger")
 
     return redirect(redirect_route)
-
 
 @browse_bp.route(
     "/api/collection/subcollections",
