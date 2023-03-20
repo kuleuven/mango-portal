@@ -128,7 +128,7 @@ def get_schema(realm: str, schema: str, status="published"):
 def save_schema():
     if "realm" in request.form:
         schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
-        schema_manager.store_schema(
+        result = schema_manager.store_schema(
             schema_name=request.form["schema_name"],
             current_version=request.form["current_version"],
             raw_schema=json.loads(request.form["raw_schema"]),
@@ -137,7 +137,10 @@ def save_schema():
             username=g.irods_session.username,
             parent=request.form["parent"] if "parent" in request.form else "",
         )
-    return redirect(request.referrer)
+    for key, value in result.items():
+        if not value["valid"]:
+            flash(f"Problem for {key}: {value['message']}", "danger")
+    return json.dumps(result)
 
 
 @metadata_schema_editor_bp.route("/metadata-schema/delete", methods=["POST", "DELETE"])

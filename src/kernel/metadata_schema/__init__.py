@@ -3,6 +3,7 @@
 import json
 import re
 import logging
+import semver
 
 # import time
 
@@ -54,8 +55,18 @@ class FileSystemSchemaManager:
     def increment_version(self, version_string: str, part="major"):
         if re.match(r"\d\.\d\.\d", version_string):
             (major, minor, bugfix) = version_string.split(".")
-            locals()[part] = str(int(locals()[part]) + 1)
-            return ".".join((major, minor, bugfix))
+            if part == "major":
+                major = str(int(major) + 1)
+            if part == "minor":
+                minor = str(int(minor) + 1)
+            if part == "bugfix":
+                bugfix = str(int(bugfix) + 1)
+            # locals()[part] = int(locals()[part]) + 1 this does not work :(((((
+            new_version = ".".join((major, minor, bugfix))
+            logging.info(
+                f"incrementing for {version_string} and part {part} to {locals()[part]}"
+            )
+            return new_version
 
         return ""
 
@@ -78,7 +89,7 @@ class FileSystemSchemaManager:
             return self._schemas[schema_name]
 
         all_schema_files = list(schema_dir.glob("*.json"))
-        pprint.pprint(all_schema_files)
+        # pprint.pprint(all_schema_files)
         published_files = list(schema_dir.glob("*published.json"))
         draft_files = list(schema_dir.glob("*draft.json"))
         total_count = len(all_schema_files)
@@ -180,6 +191,48 @@ class FileSystemSchemaManager:
         username="unknown",
         parent="",
     ):
+        current_schema_info = self.get_schema_info(schema_name)
+        # Check validity of save request
+        validity = {"version": {"valid": True}, "title": {"valid": True}}
+        if (
+            current_schema_info["latest_version"]
+            and semver.compare(current_version, current_schema_info["latest_version"])
+            < 0
+        ):
+            if not any(
+                (current_schema_info["draft"], current_schema_info["published"])
+            ):
+                # there are only archived versions
+                validity["version"] = {
+                    "valid": False,
+                    "message": f"Only archived versions for schema {schema_name} in zone {self.zone} and realm {self.realm}",
+                }
+                logging.warn(
+                    f"Only archived versions for schema {schema_name} in zone {self.zone} and realm {self.realm}. Requested version ({current_version}) is smaller than latest recorded version ({current_schema_info['latest_version']})"
+                )
+            else:
+                validity["version"] = {
+                    "valid": False,
+                    "message": f"Requested version ({current_version}) is smaller than latest recorded version ({current_schema_info['latest_version']})",
+                }
+                logging.warn(
+                    f"Problem: requested schema version ({current_version}) to store smaller than highest so far ({current_schema_info['latest_version']}) for {schema_name} in zone {self.zone} and realm {self.realm}"
+                )
+
+            current_version = self.increment_version(
+                current_schema_info["latest_version"], part="major"
+            )
+            logging.warn(f"")
+        if current_schema_info["title"] and current_schema_info["title"] != title:
+            title = current_schema_info["title"]
+            validity["title"] = {
+                "valid": False,
+                "message": f"requested schema title is different from existing for schema {schema_name} in zone {self.zone} and realm {self.realm}",
+            }
+            logging.warn(
+                f"Refused to change title for schema {schema_name} in zone {self.zone} and realm {self.realm}"
+            )
+
         json_contents = {
             "schema_name": schema_name,
             "version": current_version,
@@ -190,7 +243,7 @@ class FileSystemSchemaManager:
             "title": title,
             "parent": parent,
         }
-        current_schema_info = self.get_schema_info(schema_name)
+
         if with_status == "draft":
             if draft_file_name := current_schema_info["draft_name"]:
                 # file already exists, we will keep the version number if it corresponds to the latest one
@@ -247,6 +300,8 @@ class FileSystemSchemaManager:
             )
 
             new_published_file.write_text(json.dumps(json_contents))
+
+        return validity
 
         # return super().store_schema(**kwargs)
 
