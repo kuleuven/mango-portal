@@ -90,6 +90,9 @@ class ComplexField {
 
     view_field(form_object) {
         let form = this.form_div;
+        if (form == undefined) {
+            return;
+        }
         let clicked_button = form.querySelectorAll('.adder')[this.new_field_idx];
         let below = clicked_button.nextSibling;
         let moving_viewer = form_object.view(this);
@@ -319,8 +322,8 @@ class Schema extends ComplexField {
         let form = new SchemaDraftForm(this);
         let is_new = this.data_status == 'copy' || this.card_id.startsWith('schema-editor');
         form.add_input("Schema ID", this.card_id + '-name', {
-            placeholder: "schema-name", validation_message: "This field is compulsory, please only use lower case letters, '_' and '-'.",
-            pattern: "[a-z0-9-_]+", description: is_new ? "This cannot be changed after the draft is saved." : false
+            placeholder: "schema-name", validation_message: "This field is compulsory, please only use lower case letters or numbers, '_' and '-'. Existing IDs cannot be reused.",
+            pattern: schema_pattern, description: is_new ? "This cannot be changed after the draft is saved." : false
         });
         const name_input = form.form.querySelector(`#${this.card_id}-name`);
         name_input.name = 'schema_name'
@@ -438,64 +441,12 @@ class Schema extends ComplexField {
             this.nav_bar.add_tab_content('edit', this.form.form);
 
             this.nav_bar.add_action_button('Discard', 'danger', () => {
-                // this.nav_bar.add_mini_form(
-                //     this.urls.delete,
-                //     {'realm' : realm, 'schema_name' : this.name, 'with_status' : 'draft'},
-                //     'Discard',
-                //     () => {
                 Modal.submit_confirmation(
                     'A deleted draft cannot be recovered.',
                     this.urls.delete,
                     { 'realm': realm, 'schema_name': this.name, 'with_status': 'draft' },
-                    () => {
-                        schemas[this.name].draft = [];
-                        let published_version = schemas[this.name].published[0];
-                        if (published_version != undefined) {
-                            published_version.draft_from_publish();
-                            published_version.field_ids.forEach((field_id, idx) => {
-                                published_version.new_field_idx = idx;
-                                published_version.view_field(published_version.fields[field_id]);
-                            });
-                        }
-                        if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
-                            // if there are no published or archived versions, delete the accordion item
-                            document.querySelector(`.accordion-collapse#${this.name}-schemas`)
-                                .parentElement
-                                .remove();
-                        } else {
-                            // just delete the draft tab
-                            new NavBar(this.name)
-                                .remove_item(`v${this.version.replaceAll('.', '')}`);
-                            let trigger = document.querySelector(`#nav-tab-${this.name} button`);
-                            bootstrap.Tab.getOrCreateInstance(trigger).show();
-                        }
-                    }
+                    () => {}
                 );
-                //     Modal.send_confirmation("A deleted draft cannot be recovered.", () => {
-                //     schemas[this.name].draft = [];
-                //     this.nav_bar.querySelector('form button#discard').click();
-                //     // this.delete();
-                //     let published_version = schemas[this.name].published[0];
-                //     if (published_version != undefined) {
-                //         published_version.draft_from_publish();
-                //         published_version.field_ids.forEach((field_id, idx) => {
-                //             published_version.new_field_idx = idx;
-                //             published_version.view_field(published_version.fields[field_id]);
-                //         });
-                //     }
-                //     if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
-                //         // if there are no published or archived versions, delete the accordion item
-                //         document.querySelector(`.accordion-collapse#${this.name}-schemas`)
-                //             .parentElement
-                //             .remove();
-                //     } else {
-                //         // just delete the draft tab
-                //         new NavBar(this.name)
-                //             .remove_item(`v${this.version.replaceAll('.', '')}`);
-                //         let trigger = document.querySelector(`#nav-tab-${this.name} button`);
-                //         bootstrap.Tab.getOrCreateInstance(trigger).show();
-                //     }
-                // });
             });
         } else if (this.status == 'published') {
             this.draft_from_publish();
@@ -510,49 +461,8 @@ class Schema extends ComplexField {
                     'Archived schemas cannot be implemented.',
                     this.urls.archive,
                     { 'realm': realm, 'schema_name': this.name, 'with_status': 'published' },
-                    () => {
-                        schemas[this.name].archived.push(schemas[this.name].published[0]);
-                        schemas[this.name].published = [];
-                        this.nav_bar.querySelector('form button#archive').click();
-                        // this.delete();
-                        if (schemas[this.name].draft.length + schemas[this.name].archived.length == 0) {
-                            // if there are no published or archived versions, delete the accordion item
-                            document.querySelector(`.accordion-collapse#${this.name}-schemas`)
-                                .parentElement
-                                .remove();
-                        } else {
-                            // just delete the draft tab
-                            new NavBar(this.name)
-                                .remove_item(`v${this.version.replaceAll('.', '')}`);
-                            let trigger = document.querySelector(`#nav-tab-${this.name} button`);
-                            bootstrap.Tab.getOrCreateInstance(trigger).show();
-                        }
-                    });
+                    () => {});
             });
-            //     this.nav_bar.add_mini_form(
-            //     this.urls.archive,
-            //     {'realm' : realm, 'schema_name' : this.name, 'with_status' : 'published'},
-            //     'Archive',
-            //     () => {
-            //         Modal.send_confirmation("Archived schemas cannot be implemented.", () => {
-            //     // schemas[this.name].archived.push = schemas[this.name].published[0];
-            //     schemas[this.name].published = [];
-            //     this.nav_bar.querySelector('form button#archive').click();
-            //     // this.delete();
-            //     if (schemas[this.name].draft.length + schemas[this.name].archived.length == 0) {
-            //         // if there are no published or archived versions, delete the accordion item
-            //         document.querySelector(`.accordion-collapse#${this.name}-schemas`)
-            //             .parentElement
-            //             .remove();
-            //     } else {
-            //         // just delete the draft tab
-            //         new NavBar(this.name)
-            //             .remove_item(`v${this.version.replaceAll('.', '')}`);
-            //         let trigger = document.querySelector(`#nav-tab-${this.name} button`);
-            //         bootstrap.Tab.getOrCreateInstance(trigger).show();
-            //     }
-            // });
-            // });
         }
     }
 
@@ -581,7 +491,7 @@ class Schema extends ComplexField {
                 'This schema does not have any fields yet. Go to "edit" mode to add one.');
             this.nav_bar.tab_content.querySelector('.input-view').appendChild(msg);
         }
-
+        
         this.field_ids.forEach((field_id, idx) => {
             this.new_field_idx = idx;
             this.view_field(this.fields[field_id]);
@@ -594,156 +504,14 @@ class Schema extends ComplexField {
 
     save_draft(form, action) {
         // action indicates whether it's saved or published
-        let is_new = this.card_id.startsWith('schema-editor');
-        let is_copy = this.data_status == 'copy';
         let status = action == 'publish' ? 'published' : 'draft'
-        if (is_new | is_copy) {
-            // create a child/copy from a published version
-            let name = form.form.querySelector(`#${this.card_id}-name`).value;
-            let label = form.form.querySelector(`#${this.card_id}-label`).value;
-            this.fields_to_json();
-            let json_contents = {
-                schema_name: name,
-                title: label,
-                version: '1.0.0',
-                status: status,
-                properties: this.properties
-            };
-            if (is_copy) {
-                json_contents.parent = this.parent;
-            }
-
-            // container_id is the GLOBAL variable
-            new SchemaGroup(name, label,
-                [{ name: name, version: '1.0.0', status: status, json: json_contents }],
-                container_id, this.urls);
-            form.reset();
-            form.form.querySelectorAll('.viewer').forEach((viewer) => {
-                viewer.nextSibling.remove();
-                viewer.remove();
-            });
-            this.reset();
-            if (is_new) {
-                this.card.toggle();
-            } else {
-                this.field_ids = [...this.origin.ids];
-                if (this.field_ids.length > 0) {
-                    this.field_ids.forEach((field_id, idx) => {
-                        let new_field = InputField.choose_class(this.initial_name, 'draft', [field_id, this.origin.json[field_id]]);
-                        this.fields[field_id] = new_field;
-                        new_field.create_form();
-                        new_field.create_modal(this);
-                        this.new_field_idx = idx;
-                        this.view_field(new_field);
-                    });
-                }
-            }
-            let accordion = new bootstrap.Collapse(`#${name}-schemas`);
-            accordion.show();
-            let trigger = document.querySelector(`#nav-tab-${name} button`);
-            bootstrap.Tab.getOrCreateInstance(trigger).show();
-
-        } else if (this.data_status == 'draft') {
-            // this schema was modified
-            this.name = form.form.querySelector(`#${this.card_id}-name`).value;
-            this.title = form.form.querySelector(`#${this.card_id}-label`).value;
-            this.status = status;
-
-            // update accordion title
-            if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
-                document.getElementById(`${this.name}-schemas-header`)
-                    .querySelector(`button.h4`)
-                    .innerHTML = this.title;
-            }
-
-            // update badge
-            let status_badge = document
-                .querySelectorAll(`#v${this.version.replaceAll('.', '')}-tab-${this.name} img`)[1];
-            status_badge.setAttribute('alt', 'status published');
-            status_badge.setAttribute('name', 'published');
-            status_badge.setAttribute('src', `${SchemaGroup.badge_url}-${status}-${SchemaGroup.status_colors[status]}`);
-
-
-            // update internal tabs
-            if (action == 'publish') {
-                if (schemas[this.name].published.length > 0) {
-                    let published_version = schemas[this.name].published[0].version;
-                    schemas[this.name].archived.push(schemas[this.name].published[0]);
-                    let nav_bar = new NavBar(this.name);
-                    nav_bar.remove_item(`v${published_version.replaceAll('.', '')}`);
-                    // actually archive it
-                }
-                schemas[this.name].published = [this];
-                schemas[this.name].draft = [];
-                document.getElementById(this.card_id).remove();
-                this.field_ids.forEach((field_id) => {
-                    this.fields[field_id].create_modal(this);
-                });
-                this.view();
-            } else {
-                let old_input_view = document
-                    .querySelector(`#view-pane-${this.card_id}`)
-                    .querySelector('.input-view');
-                let new_input_view = ComplexField.create_viewer(this);
-                old_input_view.parentElement.replaceChild(new_input_view, old_input_view);
-            }
-
-
-            this.post();
-            let trigger = document.querySelector(`#nav-tab-${this.card_id} button`);
-            bootstrap.Tab.getOrCreateInstance(trigger).show();
-
-        } else if (this.data_status == 'new') {
-            // create the new version
+        if (this.data_status == 'new') {
             let incremented_major = parseInt(this.version.split('.')[0]) + 1;
             let new_version = `${incremented_major}.0.0`;
-            let no_dots = new_version.replaceAll('.', '');
-
-            let badges = SchemaGroup.add_version(new_version, status);
-            let nav_bar = new NavBar(this.name);
-            nav_bar.add_item('v' + no_dots, badges);
-
-            let new_schema = new Schema(`${this.name}-${no_dots}`,
-                'v' + incremented_major + this.container.slice(2), // adapt to other increments
-                this.urls, new_version);
-            if (action == 'publish') {
-                let published_version = schemas[this.name].published[0];
-                schemas[this.name].archived.push(published_version);
-                schemas[this.name].published = [new_schema];
-                new NavBar(this.name).remove_item(`v${published_version.version.replaceAll('.', '')}`);
-                let trigger = document.querySelector(`#nav-tab-${this.name} button`);
-                bootstrap.Tab.getOrCreateInstance(trigger).show();
-            } else {
-                schemas[this.name].draft = [new_schema];
-                new NavBar(this.card_id).remove_item('new');
-                let trigger = document.querySelector(`#nav-tab-${this.card_id} button`);
-                bootstrap.Tab.getOrCreateInstance(trigger).show();
-            }
-            this.fields_to_json();
-            let json_contents = {
-                schema_name: this.name,
-                title: this.title,
-                version: new_version,
-                status: status,
-                properties: this.properties
-            }
-            new_schema.from_json(json_contents);
-            new_schema.view();
-            new_schema.post();
-
+            this.version = new_version;
         }
-    }
-
-    delete() {
-        const to_post = new FormData();
-        to_post.append('realm', realm);
-        to_post.append('schema_name', this.name);
-        to_post.append('with_status', this.status);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', this.status == 'draft' ? this.urls.delete : this.urls.archive, true);
-        xhr.send(to_post);
-        console.log(`${this.name} version ${this.version} (${this.status}) ${this.status == 'draft' ? 'deleted' : 'archived'}.`);
+        this.status = status;
+        this.post();
     }
 
     post() {
@@ -798,7 +566,6 @@ class SchemaGroup {
         acc_item.append(nav_bar.tab_content);
         document.getElementById(container_id).appendChild(acc_item.div);
         this.load_versions(nav_bar);
-
     }
 
     load_versions(nav_bar) {
@@ -815,36 +582,26 @@ class SchemaGroup {
                 this.urls, version.version);
             schemas[this.name][version.status][this_version] = schema;
             schema.loaded = false;
-            if (version.json != undefined) {
-                schema.loaded = true;
-                schema.from_json(version.json);
-                schema.view();
-                schema.form.update_field('schema_name', version.name);
-                schema.form.update_field('current_version', version.version);
-                schema.form.update_field('with_status', version.status);
-                schema.post();
-            } else {
-                let reader = new TemplateReader(this.urls.get.replace('status', version.status), schema); // url to get this template
+            let reader = new TemplateReader(this.urls.get.replace('status', version.status), schema); // url to get this template
 
-                const accordion = nav_bar.tab_content.parentElement.parentElement;
-                accordion.addEventListener('show.bs.collapse', () => {
-                    const tab = accordion.querySelector('#' + tab_id);
-                    if (tab.classList.contains('show')) {
-                        if (!schema.loaded) {
-                            reader.retrieve();
-                            schema.loaded = true;
-                        }
-                    } else {
-                        nav_bar.nav_bar.querySelector(`button#v${version_number}-tab-${this.name}`)
-                            .addEventListener('show.bs.tab', () => {
-                                if (!schema.loaded) {
-                                    reader.retrieve();
-                                    schema.loaded = true;
-                                }
-                            });
+            const accordion = nav_bar.tab_content.parentElement.parentElement;
+            accordion.addEventListener('show.bs.collapse', () => {
+                const tab = accordion.querySelector('#' + tab_id);
+                if (tab.classList.contains('show')) {
+                    if (!schema.loaded) {
+                        reader.retrieve();
+                        schema.loaded = true;
                     }
-                });
-            }
+                } else {
+                    nav_bar.nav_bar.querySelector(`button#v${version_number}-tab-${this.name}`)
+                        .addEventListener('show.bs.tab', () => {
+                            if (!schema.loaded) {
+                                reader.retrieve();
+                                schema.loaded = true;
+                            }
+                        });
+                }
+            });
         };
     }
 

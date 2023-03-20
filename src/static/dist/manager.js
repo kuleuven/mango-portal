@@ -12,6 +12,7 @@ url_tag.remove();
 const realm = urls.realm;
 
 const schemas = {};
+let schema_pattern = "[a-z0-9-_]+";
 
 // first the button
 let starting_schema = new Schema('schema-editor-100', container_id, urls);

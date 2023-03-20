@@ -712,8 +712,9 @@ class Modal {
         let modal = bootstrap.Modal.getOrCreateInstance(conf_modal);
         conf_modal.querySelector('p#confirmation-text')
             .innerHTML = body;
-        conf_modal.querySelector('button#action')
-            .addEventListener('click', () => {
+        let action_btn = conf_modal.querySelector('button#action')
+        action_btn.type = 'button';
+        action_btn.addEventListener('click', () => {
                 action();
                 modal.hide();
             });
@@ -729,6 +730,7 @@ class Modal {
     }
     static submit_confirmation(body, url, form_data, extra_action) {
         let conf_modal = document.querySelector('div.modal#confirmation-dialog');
+        conf_modal.querySelector('button#action').type = 'submit';
         let modal = bootstrap.Modal.getOrCreateInstance(conf_modal);
         conf_modal.querySelector('p#confirmation-text')
             .innerHTML = body;
