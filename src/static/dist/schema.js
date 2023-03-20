@@ -309,7 +309,7 @@ class Schema extends ComplexField {
 
     create_creator() {
         this.status = 'draft';
-        this.display_options(this.status);
+        this.display_options();
         let form = this.create_editor();
         this.card = new AccordionItem(this.card_id, 'New schema', this.container, true);
         document.getElementById(this.container).appendChild(this.accordion_item);
@@ -369,7 +369,7 @@ class Schema extends ComplexField {
             } else {
                 console.log('Ready to publish');
 
-                let second_sentence = schemas[this.name] && schemas[this.name].published.length > 0 ?
+                let second_sentence = this.data_status == 'draft' && schemas[this.name] && schemas[this.name].published.length > 0 ?
                     ` Version ${schemas[this.name].published[0].version} will be archived.` :
                     ''
                 Modal.send_confirmation("Published schemas cannot be edited." + second_sentence, () => {
@@ -415,9 +415,9 @@ class Schema extends ComplexField {
 
         if (this.status == 'draft') {
             this.nav_bar.add_item('edit', 'Edit');
-
-            this.display_options(this.status);
-            let form = this.create_editor(this.status);
+            
+            this.display_options();
+            let form = this.create_editor();
             let inputs = form.form.querySelectorAll('input.form-control');
             inputs[0].value = this.name; // id
             inputs[1].value = this.title; // label
@@ -561,11 +561,9 @@ class Schema extends ComplexField {
                     });
                 }
             }
-            console.log(name)
             let accordion = new bootstrap.Collapse(`#${name}-schemas`);
             accordion.show();
             let trigger = document.querySelector(`#nav-tab-${name} button`);
-            console.log(trigger)
             bootstrap.Tab.getOrCreateInstance(trigger).show();
 
         } else if (this.data_status == 'draft') {
@@ -870,9 +868,7 @@ class SchemaForm {
 
     register_object(obj, annotated_data, object_fields, prefix = null) {
         prefix = prefix || this.prefix;
-        console.log(obj);
         let fields = object_fields.filter((fid) => fid.startsWith(`${prefix}.${obj}.`));
-        console.log(fields);
         // THIS CODE DOES NOT DEAL WITH DUPLICATED OBJECTS (TEMPORARILY DISABLED)
         let viewer = this.form.querySelector(`h5#viewer-${obj}`).parentElement;
         

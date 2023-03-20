@@ -136,10 +136,12 @@ class MovingViewer extends MovingField {
         let modal_id = `mod-${form.id}-${form.schema_name}-${form.schema_status}`;
         let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modal_id));
         this.copy = this.add_btn('copy', 'front', () => this.duplicate(form));
+        if (form.schema_status.startsWith('object')) {
+            this.parent_modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(schema.card_id));
+        }
         this.edit = this.add_btn('edit', 'pencil', () => {
-            if (form.schema_status.startsWith('object')) {
-                let parent_modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(schema.card_id));
-                parent_modal.toggle();
+            if (this.parent_modal) {
+                this.parent_modal.toggle();
             }
             modal.toggle();
         });
@@ -256,23 +258,41 @@ class MovingViewer extends MovingField {
     }
 
     remove() {
+        if (this.parent_modal) {
+            this.parent_modal.toggle();
+        }
         Modal.send_confirmation('Deleted fields cannot be recovered.', () => {
             // Method to remove a viewing field (and thus also the field itself)
             let form_index = this.schema.field_ids.indexOf(this.idx);
+            
+            if (this.schema.field_ids.length > 1) {
+                if (this.idx == this.schema.field_ids.length - 1) {
+                    // if this is the last option
+                    this.div.previousSibling.previousSibling.querySelector(".down").setAttribute("disabled", "");
+                }
+                if (this.idx == 0) {
+                    // if this was the first option
+                    this.below.nextSibling.querySelector(".up").setAttribute("disabled", "");
+                }    
+            }
 
-            if (this.below.nextSibling.id == "col-12") {
-                // if this is the last option
-                this.div.previousSibling.previousSibling.querySelector(".down").setAttribute("disabled", "");
-            }
-            if (this.div.previousSibling.className == "form-control") {
-                // if this was the first option
-                this.below.nextSibling.querySelector(".up").setAttribute("disabled", "");
-            }
             this.div.parentNode.removeChild(this.below);
             this.div.parentNode.removeChild(this.div);
             this.schema.field_ids.splice(form_index, 1);
             delete this.schema.fields[this.idx];
             this.schema.toggle_saving();
+            if (this.parent_modal) {
+                if (!document.querySelector(`.modal#${this.schema.card_id}`).classList.contains('show')) {
+                    this.parent_modal.toggle();
+                }
+            }
+        }, () => {
+            console.log('dismissed')
+            if (this.parent_modal) {
+                if (!document.querySelector(`.modal#${this.schema.card_id}`).classList.contains('show')) {
+                    this.parent_modal.toggle();
+                }
+            }
         });
     }
 
@@ -657,7 +677,7 @@ class Modal {
         document.querySelector("body").appendChild(modal);
     }
 
-    static send_confirmation(body, action) {
+    static send_confirmation(body, action, dismiss) {
         let conf_modal = document.querySelector('div.modal#confirmation-dialog');
         let modal = bootstrap.Modal.getOrCreateInstance(conf_modal);
         conf_modal.querySelector('p#confirmation-text')
@@ -666,6 +686,14 @@ class Modal {
             .addEventListener('click', () => {
                 action();
                 modal.hide();
+            });
+        conf_modal.querySelector('button[data-bs-dismiss="modal"]')
+            .addEventListener('click', () => {
+                if (dismiss != undefined) {
+                    dismiss();
+                } else {
+                    return;
+                }
             });
         modal.show();
     }
