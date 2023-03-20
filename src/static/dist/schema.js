@@ -134,7 +134,6 @@ class ComplexField {
         this.toggle_saving();
 
         this.view_field(form_object);
-        console.log(this.fields)
     }
 
     update_field(form_object) {
@@ -310,32 +309,37 @@ class Schema extends ComplexField {
     create_creator() {
         this.status = 'draft';
         this.display_options();
-        let form = this.create_editor();
+        this.create_editor();
         this.card = new AccordionItem(this.card_id, 'New schema', this.container, true);
         document.getElementById(this.container).appendChild(this.accordion_item);
-        this.card.append(form.form);
+        this.card.append(this.form.form);
     }
 
     create_editor() {
-        let form = new BasicForm(`${this.card_id}-${this.data_status}`);
+        let form = new SchemaDraftForm(this);
         let is_new = this.data_status == 'copy' || this.card_id.startsWith('schema-editor');
         form.add_input("Schema ID", this.card_id + '-name', {
             placeholder: "schema-name", validation_message: "This field is compulsory, please only use lower case letters, '_' and '-'.",
             pattern: "[a-z0-9-_]+", description: is_new ? "This cannot be changed after the draft is saved." : false
         });
+        const name_input = form.form.querySelector(`#${this.card_id}-name`);
+        name_input.name = 'schema_name'
 
         form.add_input("Schema label", this.card_id + '-label', {
             placeholder: "Some informative label",
             validation_message: "This field is compulsory.",
             description: is_new ? "This cannot be changed once a version has been published." : false
         });
+        const title_input = form.form.querySelector(`#${this.card_id}-label`);
+        title_input.name = 'title';
 
         let button = this.create_button();
         form.form.insertBefore(button, form.divider);
         form.add_action_button("Save draft", 'draft');
         form.add_submit_action('draft', (e) => {
-            e.preventDefault();
+            // e.preventDefault();                
             if (!form.form.checkValidity()) {
+                e.preventDefault();
                 e.stopPropagation();
                 form.form.classList.add('was-validated');
             } else {
@@ -346,16 +350,15 @@ class Schema extends ComplexField {
         });
         form.add_action_button("Publish", 'publish', 'warning');
 
-        let name_input = form.form.querySelector(`#${this.card_id}-name`);
 
         if (!is_new) {
             name_input.setAttribute('readonly', '');
             if (schemas[this.name].published.length + schemas[this.name].archived.length > 0) {
-                form.form.querySelector(`#${this.card_id}-label`).setAttribute('readonly', '');
+                title_input.setAttribute('readonly', '');
             }
         } else if (!this.field_ids.length > 0) {
             form.form.querySelector('button#publish').setAttribute('disabled', '');
-        }        
+        }
 
         if (this.field_ids.length == 0) {
             form.form.querySelector('button#publish').setAttribute('disabled', '');
@@ -371,15 +374,26 @@ class Schema extends ComplexField {
 
                 let second_sentence = this.data_status == 'draft' && schemas[this.name] && schemas[this.name].published.length > 0 ?
                     ` Version ${schemas[this.name].published[0].version} will be archived.` :
-                    ''
-                Modal.send_confirmation("Published schemas cannot be edited." + second_sentence, () => {
-                    // save form!
-                    this.save_draft(form, 'publish');
-                    form.form.classList.remove('was-validated');
-                });
+                    '';
+                let starting_data = {
+                    schema_name: this.name,
+                    title: this.title,
+                    current_version: this.version,
+                    with_status: this.status,
+                    realm: realm,
+                    raw_schema: '',
+                    parent: ''
+                }
+                Modal.submit_confirmation(
+                    "Published schemas cannot be edited." + second_sentence,
+                    this.urls.new, starting_data,
+                    () => { this.save_draft(form, 'publish'); }
+                );
+
+                form.form.classList.remove('was-validated');
             }
-        })
-        return form;
+        });
+        this.form = form;
     }
 
     from_parent(parent) {
@@ -415,67 +429,130 @@ class Schema extends ComplexField {
 
         if (this.status == 'draft') {
             this.nav_bar.add_item('edit', 'Edit');
-            
+
             this.display_options();
-            let form = this.create_editor();
-            let inputs = form.form.querySelectorAll('input.form-control');
+            this.create_editor();
+            let inputs = this.form.form.querySelectorAll('input.form-control');
             inputs[0].value = this.name; // id
             inputs[1].value = this.title; // label
-            this.nav_bar.add_tab_content('edit', form.form);
+            this.nav_bar.add_tab_content('edit', this.form.form);
 
             this.nav_bar.add_action_button('Discard', 'danger', () => {
-                Modal.send_confirmation("A deleted draft cannot be recovered.", () => {
-                    schemas[this.name].draft = [];
-                    this.delete();
-                    let published_version = schemas[this.name].published[0];
-                    if (published_version != undefined) {
-                        published_version.draft_from_publish();
-                        published_version.field_ids.forEach((field_id, idx) => {
-                            published_version.new_field_idx = idx;
-                            published_version.view_field(published_version.fields[field_id]);
-                        });
+                // this.nav_bar.add_mini_form(
+                //     this.urls.delete,
+                //     {'realm' : realm, 'schema_name' : this.name, 'with_status' : 'draft'},
+                //     'Discard',
+                //     () => {
+                Modal.submit_confirmation(
+                    'A deleted draft cannot be recovered.',
+                    this.urls.delete,
+                    { 'realm': realm, 'schema_name': this.name, 'with_status': 'draft' },
+                    () => {
+                        schemas[this.name].draft = [];
+                        let published_version = schemas[this.name].published[0];
+                        if (published_version != undefined) {
+                            published_version.draft_from_publish();
+                            published_version.field_ids.forEach((field_id, idx) => {
+                                published_version.new_field_idx = idx;
+                                published_version.view_field(published_version.fields[field_id]);
+                            });
+                        }
+                        if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
+                            // if there are no published or archived versions, delete the accordion item
+                            document.querySelector(`.accordion-collapse#${this.name}-schemas`)
+                                .parentElement
+                                .remove();
+                        } else {
+                            // just delete the draft tab
+                            new NavBar(this.name)
+                                .remove_item(`v${this.version.replaceAll('.', '')}`);
+                            let trigger = document.querySelector(`#nav-tab-${this.name} button`);
+                            bootstrap.Tab.getOrCreateInstance(trigger).show();
+                        }
                     }
-                    if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
-                        // if there are no published or archived versions, delete the accordion item
-                        document.querySelector(`.accordion-collapse#${this.name}-schemas`)
-                            .parentElement
-                            .remove();
-                    } else {
-                        // just delete the draft tab
-                        new NavBar(this.name)
-                            .remove_item(`v${this.version.replaceAll('.', '')}`);
-                        let trigger = document.querySelector(`#nav-tab-${this.name} button`);
-                        bootstrap.Tab.getOrCreateInstance(trigger).show();
-                    }
-                });
+                );
+                //     Modal.send_confirmation("A deleted draft cannot be recovered.", () => {
+                //     schemas[this.name].draft = [];
+                //     this.nav_bar.querySelector('form button#discard').click();
+                //     // this.delete();
+                //     let published_version = schemas[this.name].published[0];
+                //     if (published_version != undefined) {
+                //         published_version.draft_from_publish();
+                //         published_version.field_ids.forEach((field_id, idx) => {
+                //             published_version.new_field_idx = idx;
+                //             published_version.view_field(published_version.fields[field_id]);
+                //         });
+                //     }
+                //     if (schemas[this.name].published.length + schemas[this.name].archived.length == 0) {
+                //         // if there are no published or archived versions, delete the accordion item
+                //         document.querySelector(`.accordion-collapse#${this.name}-schemas`)
+                //             .parentElement
+                //             .remove();
+                //     } else {
+                //         // just delete the draft tab
+                //         new NavBar(this.name)
+                //             .remove_item(`v${this.version.replaceAll('.', '')}`);
+                //         let trigger = document.querySelector(`#nav-tab-${this.name} button`);
+                //         bootstrap.Tab.getOrCreateInstance(trigger).show();
+                //     }
+                // });
             });
         } else if (this.status == 'published') {
             this.draft_from_publish();
             this.setup_copy();
             this.child.display_options();
             this.nav_bar.add_item('child', 'Copy to new schema');
-            let child_form = this.child.create_editor();
-            this.nav_bar.add_tab_content('child', child_form.form);
+            this.child.create_editor();
+            this.nav_bar.add_tab_content('child', this.child.form.form);
 
             this.nav_bar.add_action_button('Archive', 'danger', () => {
-                Modal.send_confirmation("Archived schemas cannot be implemented.", () => {
-                    // schemas[this.name].archived.push = schemas[this.name].published[0];
-                    schemas[this.name].published = [];
-                    this.delete();
-                    if (schemas[this.name].draft.length + schemas[this.name].archived.length == 0) {
-                        // if there are no published or archived versions, delete the accordion item
-                        document.querySelector(`.accordion-collapse#${this.name}-schemas`)
-                            .parentElement
-                            .remove();
-                    } else {
-                        // just delete the draft tab
-                        new NavBar(this.name)
-                            .remove_item(`v${this.version.replaceAll('.', '')}`);
-                        let trigger = document.querySelector(`#nav-tab-${this.name} button`);
-                        bootstrap.Tab.getOrCreateInstance(trigger).show();
-                    }
-                });
+                Modal.submit_confirmation(
+                    'Archived schemas cannot be implemented.',
+                    this.urls.archive,
+                    { 'realm': realm, 'schema_name': this.name, 'with_status': 'published' },
+                    () => {
+                        schemas[this.name].archived.push(schemas[this.name].published[0]);
+                        schemas[this.name].published = [];
+                        this.nav_bar.querySelector('form button#archive').click();
+                        // this.delete();
+                        if (schemas[this.name].draft.length + schemas[this.name].archived.length == 0) {
+                            // if there are no published or archived versions, delete the accordion item
+                            document.querySelector(`.accordion-collapse#${this.name}-schemas`)
+                                .parentElement
+                                .remove();
+                        } else {
+                            // just delete the draft tab
+                            new NavBar(this.name)
+                                .remove_item(`v${this.version.replaceAll('.', '')}`);
+                            let trigger = document.querySelector(`#nav-tab-${this.name} button`);
+                            bootstrap.Tab.getOrCreateInstance(trigger).show();
+                        }
+                    });
             });
+            //     this.nav_bar.add_mini_form(
+            //     this.urls.archive,
+            //     {'realm' : realm, 'schema_name' : this.name, 'with_status' : 'published'},
+            //     'Archive',
+            //     () => {
+            //         Modal.send_confirmation("Archived schemas cannot be implemented.", () => {
+            //     // schemas[this.name].archived.push = schemas[this.name].published[0];
+            //     schemas[this.name].published = [];
+            //     this.nav_bar.querySelector('form button#archive').click();
+            //     // this.delete();
+            //     if (schemas[this.name].draft.length + schemas[this.name].archived.length == 0) {
+            //         // if there are no published or archived versions, delete the accordion item
+            //         document.querySelector(`.accordion-collapse#${this.name}-schemas`)
+            //             .parentElement
+            //             .remove();
+            //     } else {
+            //         // just delete the draft tab
+            //         new NavBar(this.name)
+            //             .remove_item(`v${this.version.replaceAll('.', '')}`);
+            //         let trigger = document.querySelector(`#nav-tab-${this.name} button`);
+            //         bootstrap.Tab.getOrCreateInstance(trigger).show();
+            //     }
+            // });
+            // });
         }
     }
 
@@ -483,12 +560,12 @@ class Schema extends ComplexField {
         if (schemas[this.name].draft.length == 0) {
             this.display_options();
             this.nav_bar.add_item('new', 'New (draft) version', false, 1);
-            let new_form = this.create_editor();
-            let inputs = new_form.form.querySelectorAll('input.form-control');
+            this.create_editor();
+            let inputs = this.form.form.querySelectorAll('input.form-control');
             inputs[0].value = this.name; // id
             inputs[1].value = this.title; // label
 
-            this.nav_bar.add_tab_content('new', new_form.form);
+            this.nav_bar.add_tab_content('new', this.form.form);
         }
     }
 
@@ -607,9 +684,7 @@ class Schema extends ComplexField {
                 let old_input_view = document
                     .querySelector(`#view-pane-${this.card_id}`)
                     .querySelector('.input-view');
-                console.log(this)
                 let new_input_view = ComplexField.create_viewer(this);
-                console.log(new_input_view)
                 old_input_view.parentElement.replaceChild(new_input_view, old_input_view);
             }
 
@@ -672,23 +747,24 @@ class Schema extends ComplexField {
     }
 
     post() {
-        const to_post = new FormData();
         this.fields_to_json();
         console.log(this.properties)
-        to_post.append('realm', realm);
-        to_post.append('schema_name', this.name);
-        to_post.append('current_version', this.version);
-        to_post.append('raw_schema', JSON.stringify(this.properties));
-        to_post.append('with_status', this.status);
-        to_post.append('title', this.title);
+        let form_fields = {
+            current_version: this.version,
+            with_status: this.status,
+            raw_schema: btoa(JSON.stringify(this.properties))
+        };
         if (this.parent) {
-            to_post.append('parent', this.parent);
+            form_fields.parent = this.parent;
         }
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', this.urls.new, true);
-        xhr.send(to_post);
-        console.log(`${this.name} version ${this.version} (${this.status}) posted.`);
+        if (this.status == 'draft') {
+            Object.entries(form_fields).forEach((item) => this.form.update_field(item[0], item[1]));
+            console.log(this.form.form)
+        } else {
+            form_fields.schema_name = this.name;
+            form_fields.title = this.title;
+            Modal.fill_confirmation_form(form_fields);
+        }
     }
 }
 
@@ -743,6 +819,9 @@ class SchemaGroup {
                 schema.loaded = true;
                 schema.from_json(version.json);
                 schema.view();
+                schema.form.update_field('schema_name', version.name);
+                schema.form.update_field('current_version', version.version);
+                schema.form.update_field('with_status', version.status);
                 schema.post();
             } else {
                 let reader = new TemplateReader(this.urls.get.replace('status', version.status), schema); // url to get this template
@@ -841,11 +920,11 @@ class SchemaForm {
             }
             form_div.classList.add('was-validated');
         });
-        
+
         document.getElementById(this.container).appendChild(form_div);
         this.form = form_div;
         this.names = [...this.form.querySelectorAll('input, select')].map((x) => x.name);
-        
+
     }
 
     add_annotation(annotated_data) {
@@ -871,12 +950,12 @@ class SchemaForm {
         let fields = object_fields.filter((fid) => fid.startsWith(`${prefix}.${obj}.`));
         // THIS CODE DOES NOT DEAL WITH DUPLICATED OBJECTS (TEMPORARILY DISABLED)
         let viewer = this.form.querySelector(`h5#viewer-${obj}`).parentElement;
-        
+
         let not_nested = fields.filter((fid) => fid.split('.').length == (prefix.split('.').length + 2));
         not_nested.forEach((fid) => this.register_non_object(fid, annotated_data, viewer));
 
         let nested = fields.filter((fid) => fid.split('.').length > (prefix.split('.').length + 2));
-        let sub_objs = [...new Set(nested.map((x) => x.match(`${prefix}.${obj}.(?<field>[^\.]+).*`).groups.field))];      
+        let sub_objs = [...new Set(nested.map((x) => x.match(`${prefix}.${obj}.(?<field>[^\.]+).*`).groups.field))];
         sub_objs.forEach((fid) => this.register_object(fid, annotated_data, nested, `${prefix}.${obj}`));
     }
 

@@ -261,7 +261,7 @@ class MovingViewer extends MovingField {
         if (this.parent_modal) {
             this.parent_modal.toggle();
         }
-        Modal.send_confirmation('Deleted fields cannot be recovered.', () => {
+        Modal.ask_confirmation('Deleted fields cannot be recovered.', () => {
             // Method to remove a viewing field (and thus also the field itself)
             let form_index = this.schema.field_ids.indexOf(this.idx);
             
@@ -605,6 +605,36 @@ class BasicForm {
 
 }
 
+class SchemaDraftForm extends BasicForm {
+    constructor(schema) {
+        super(`${schema.card_id}-${schema.data_status}`);
+        this.form.setAttribute('action', schema.urls.new);
+        this.form.setAttribute('method', 'POST');
+        const inputs = {
+            'realm' : realm,
+            'current_version' : schema.version,
+            'raw_schema' : '',
+            'with_status' : schema.status,
+            'parent' : schema.parent ? schema.parent : ''
+        }
+        for (let i of Object.entries(inputs)) {
+            this.add_hidden_field(i[0], i[1]);
+        }
+    }
+
+    add_hidden_field(name, value) {
+        const hidden_input = document.createElement('input');
+        hidden_input.type = 'hidden';
+        hidden_input.name = name;
+        hidden_input.value = value;
+        this.form.appendChild(hidden_input);
+    }
+
+    update_field(name, value) {
+        this.form.querySelector(`input[name="${name}"]`).value = value;
+    }
+}
+
 // create a modal - needs both the constructor and .create_modal()
 class Modal {
     constructor(modal_id, header_title, header_id) {
@@ -677,7 +707,7 @@ class Modal {
         document.querySelector("body").appendChild(modal);
     }
 
-    static send_confirmation(body, action, dismiss) {
+    static ask_confirmation(body, action, dismiss) {
         let conf_modal = document.querySelector('div.modal#confirmation-dialog');
         let modal = bootstrap.Modal.getOrCreateInstance(conf_modal);
         conf_modal.querySelector('p#confirmation-text')
@@ -696,6 +726,48 @@ class Modal {
                 }
             });
         modal.show();
+    }
+    static submit_confirmation(body, url, form_data, extra_action) {
+        let conf_modal = document.querySelector('div.modal#confirmation-dialog');
+        let modal = bootstrap.Modal.getOrCreateInstance(conf_modal);
+        conf_modal.querySelector('p#confirmation-text')
+            .innerHTML = body;
+        let form = conf_modal.querySelector('form');
+        form.setAttribute('method', 'POST');
+        form.setAttribute('action', url);
+        const modal_body = form.querySelector('div.modal-body');
+        for (let item of Object.entries(form_data)) {
+            let hidden_input = document.createElement('input')
+            hidden_input.type = 'hidden';
+            hidden_input.name = item[0];
+            hidden_input.value = item[1];
+            modal_body.appendChild(hidden_input);
+        }
+        if (extra_action != undefined) {
+            form.addEventListener('submit', () => {
+                extra_action();
+            });
+        }
+        modal.show();
+    }
+
+    static fill_confirmation_form(form_data) {
+        const form = document.querySelector('div.modal#confirmation-dialog div.modal-body');
+        console.log(form_data)
+        Object.entries(form_data).forEach((item) => {
+            form.querySelector(`input[name="${item[0]}"]`).value = item[1];
+        });
+        console.log(form);
+        
+    }
+
+    static clean_confirmation() {
+        let conf_modal = document.querySelector('div.modal#confirmation-dialog');
+        conf_modal.querySelectorAll('input[type="hidden"]')
+            .forEach((x) => x.remove());
+        const form = conf_modal.querySelector('form');
+        form.removeAttribute('action');
+        form.removeAttribute('method');
     }
 
 }

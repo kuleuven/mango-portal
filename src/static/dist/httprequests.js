@@ -23,6 +23,7 @@ class TemplatesRequest extends MangoRequest {
     parse_response(container_id, urls) {
         this.addEventListener('load', () => {
             let grouped_templates = this.json;
+            console.log(grouped_templates)
             for (let template of grouped_templates) {
                 let schema_name = template.name;
                 let re = /(?<name>.*)-v(?<version>\d\.\d\.\d)-(?<status>|published|draft).json/
