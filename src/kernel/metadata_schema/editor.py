@@ -79,7 +79,7 @@ def metadata_schemas(realm):
     elif "current_schema_editor_realm" in session:
         del session["current_schema_editor_realm"]
 
-    return render_template("metadata_schema_module.html.j2", realms=realms, realm=realm)
+    return render_template("metadata_schema_module.html.j2", realms=realms, realm=realm, schema_name=request.values.get("schema_name", ""), schema_version=request.values.get("schema_version", ""))
 
 
 @metadata_schema_editor_bp.route(
@@ -151,7 +151,10 @@ def save_schema():
         if not value["valid"]:
             flash(f"Problem for {key}: {value['message']}", "danger")
     realm = request.form.get("realm", "")
-    return redirect(url_for("metadata_schema_editor_bp.metadata_schemas", realm=realm))
+    return redirect(
+        url_for("metadata_schema_editor_bp.metadata_schemas", realm=realm)
+        + f"?schema_name={request.form['schema_name']}&schema_version={request.form['current_version']}"
+    )
 
 
 @metadata_schema_editor_bp.route("/metadata-schema/delete", methods=["POST", "DELETE"])
@@ -164,7 +167,11 @@ def delete_meta_data_schema():
             abort(400, "Can only delete draft versions of schemas")
         schema_manager.delete_draft_schema(schema_name=request.form["schema_name"])
 
-    return redirect(request.referrer)
+    realm = request.form.get("realm", "")
+    return redirect(
+        url_for("metadata_schema_editor_bp.metadata_schemas", realm=realm)
+        + f"?schema_name={request.form['schema_name']}&schema_version={request.form.get('current_version', '')}"
+    )
 
 
 @metadata_schema_editor_bp.route("/metadata-schema/archive", methods=["POST"])
@@ -175,7 +182,10 @@ def archive_meta_data_schema():
         schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
         if request.form["with_status"] != "published":
             abort(400, "Can only archive published versions of schemas")
-
         schema_manager.archive_published_schema(schema_name=request.form["schema_name"])
 
-    return redirect(request.referrer)
+    realm = request.form.get("realm", "")
+    return redirect(
+        url_for("metadata_schema_editor_bp.metadata_schemas", realm=realm)
+        + f"?schema_name={request.form['schema_name']}&schema_version={request.form.get('current_version', '')}"
+    )
