@@ -1,0 +1,61 @@
+    <ul class="nav nav-pills">
+      <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="pill" href="#globus">Globus</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="pill" href="#sftp">SFTP Client</a>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane container active p-1" id="globus">
+        <p style="margin-top: 10px">
+          To access the share via Globus, search for "KU LEUVEN - RDM SFTP Shares", <br />
+          or open the <a href="https://app.globus.org/file-manager?origin_id=04f4e3bb-f598-4903-811b-3b3a2c3ab7bd">file manager directly</a>.
+        </p>
+      </div>
+      <div class="tab-pane container fade p-1" id="sftp">
+        <p style="margin-top: 10px">
+          You can also use SFTP to connect to the share and use programs such as Filezilla, WinSCP or <code>lftp</code>.
+          It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
+        </p>
+        <ol>
+        
+        {% if session.openid_session.user_info.preferred_username.startswith('vsc') %}
+          <li>
+            You need to run an <code>ssh-agent</code> capable of handling SSH certificates.<br />
+            For Windows, <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">Pageant 0.78</a> or above can be used.
+            For Linux, the standard OpenSSH agent will work.
+          </li>
+          <li>
+            Connect with e.g. Putty to <code>login.hpc.kuleuven.be</code> with agent forwarding enabled.
+            After having successfully connected, an SSH certificate should be injected in your forwarded agent.
+            Verify it in e.g. the Pageant main window or with <code>ssh-add -l</code> on your local workstation.
+            You may disconnect the ssh connection afterwards.
+          </li>
+        {% else %}
+          <li>
+            Install <a href="https://ceifdoc.icts.kuleuven.be/lnx/tools/sshcerts/">certagent or kmk</a> on your local machine 
+            and use it to retrieve an SSH certificate.
+          </li>
+        {% endif %}
+          <li>
+            Open FileZilla or WinSCP, and connect using the following information:
+            <dl class="mx-auto ml-20 mt-3">
+              <dt>Hostname</dt>
+              <dd>{{ sftp_host }}</dd>
+              <dt>Port</dt>
+              <dd>22</dd>
+              <dt>Username</dt>
+              <dd>{{ session.openid_session.user_info.preferred_username }}</dd>
+              <dt>Password</dt>
+              <dd>
+                Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
+              </dd>
+            </dl>
+            Or use <code>lftp -l {{ session.openid_session.user_info.preferred_username }}, sftp://{{ sftp_host }}</code>.
+          </li>
+        </ol>
+      </div>
+    </div>
+    

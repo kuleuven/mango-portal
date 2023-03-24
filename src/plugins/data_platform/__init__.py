@@ -150,7 +150,7 @@ def current_user_projects():
             if m['username'] == Session(session['openid_session']).username:
                 project['my_role'] = m['role']
 
-        if project["platform"] != "irods":
+        if not project["platform"].startswith("irods"):
             continue
     
         jobid = ''

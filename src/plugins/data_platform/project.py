@@ -180,6 +180,16 @@ def deploy_project():
         )
         response.raise_for_status()
 
+    if request.form.get('submit') == 'Delete':
+        response = requests.delete(
+            f"{API_URL}/v1/projects/{id}", headers=header,
+        )
+        response.raise_for_status()
+
+        flash(response.json()['message'], "success")
+    
+        return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+
     response = requests.post(
         f"{API_URL}/v1/projects/{id}/deploy", headers=header, json={}
     )
@@ -235,7 +245,7 @@ def add_irods_project():
 
     response = requests.put(
         f"{API_URL}/v1/projects/{id}", headers=header, json={
-            "platform": "irods",
+            "platform": request.form.get('platform'),
             "platform_options": [
                 {
                     "key": "zone-jobid",
@@ -273,3 +283,31 @@ def add_generic_project():
     flash(response.json()['message'], "success")
 
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
+
+@data_platform_project_bp.route('/data-platform/projects', methods=["GET"])
+@openid_login_required
+def project_overview():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    year = request.args.get('year')
+
+    if not year:
+        year = datetime.now().year
+
+    response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
+
+    response.raise_for_status()
+
+    projects = response.json()
+
+    if not projects:
+        flash(f"No project information found in {year}.")
+        projects = []                            
+
+    projects = sorted(projects, key=lambda p: p['project']['name']) 
+
+    return render_template('project/projects_overview.html.j2',
+        projects=projects,
+        year=year,
+    )

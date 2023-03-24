@@ -7,13 +7,16 @@
         <a class="nav-link active" data-bs-toggle="pill" href="#password">Login data</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="pill" href="#linux">iCommands Client on Linux</a>
+        <a class="nav-link" data-bs-toggle="pill" href="#linux">iCommands on Linux</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="pill" href="#windows">Python Client on Windows</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="pill" href="#davrods">WebDAV Client </a>
+        <a class="nav-link" data-bs-toggle="pill" href="#sftp">SFTP Client</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="pill" href="#davrods">WebDAV</a>
       </li>
     </ul>
 
@@ -119,14 +122,60 @@ with iRODSSession(irods_env_file=env_file) as session:
     print(coll.id)</code></pre>
       -->
       </div>
+      <div class="tab-pane container fade p-1" id="sftp">
+        <p style="margin-top: 10px">
+          You can also use SFTP to connect to iRODS and use programs such as Filezilla, WinSCP or <code>lftp</code>.
+          It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
+        </p>
+        <ol>
+        
+        {% if info['irods_environment']['irods_user_name'].startswith('vsc') %}
+          <li>
+            You need to run an <code>ssh-agent</code> capable of handling SSH certificates.<br />
+            For Windows, <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">Pageant 0.78</a> or above can be used.
+            For Linux, the standard OpenSSH agent will work.
+          </li>
+          <li>
+            Connect with e.g. Putty to <code>login.hpc.kuleuven.be</code> with agent forwarding enabled.
+            After having successfully connected, an SSH certificate should be injected in your forwarded agent.
+            Verify it in e.g. the Pageant main window or with <code>ssh-add -l</code> on your local workstation.
+            You may disconnect the ssh connection afterwards.
+          </li>
+        {% else %}
+          <li>
+            Install <a href="https://ceifdoc.icts.kuleuven.be/lnx/tools/sshcerts/">certagent or kmk</a> on your local machine 
+            and use it to retrieve an SSH certificate.
+          </li>
+        {% endif %}
+          <li>
+            Open FileZilla or WinSCP, and connect using the following information:
+            <dl class="mx-auto ml-20 mt-3">
+              <dt>Hostname</dt>
+              <dd>{{ sftp_host }}</dd>
+              <dt>Port</dt>
+              <dd>22</dd>
+              <dt>Username</dt>
+              <dd>{{ info['irods_environment']['irods_user_name'] }}</dd>
+              <dt>Password</dt>
+              <dd>
+                Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
+              </dd>
+            </dl>
+            Or use <code>lftp -l {{ info['irods_environment']['irods_user_name'] }}, sftp://{{ sftp_host }}</code>.
+          </li>
+        </ol>
+      </div>
       <div class="tab-pane container fade p-1" id="davrods">
-        <p style="margin-top: 10px">You can also use WebDAV to connect to iRODS</p>
+        <p style="margin-top: 10px">Access via WebDAV to iRODS is enabled but not supported.
+          For programs that support it, use SFTP. 
+          If WebDAV access is used in Windows drive mapping, it is known to give regular timeouts.
+        </p>
         <p>
           To connect to Davrods via WebDAV, go to
           <a href="https://{{ info['irods_environment']['irods_host'] }}:8443/"
             >https://{{ info['irods_environment']['irods_host'] }}:8443/</a
           >
-          and enter the username and password displayed above. <br /><b
+          and enter the username and password displayed in the first tab. <br /><b
             >Make sure to copy the password without leading or trailing spaces.</b
           >
         </p>

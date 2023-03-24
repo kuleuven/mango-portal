@@ -123,7 +123,7 @@ def login_openid_select_zone():
         my_zones = [] # Zones in which the user exist (user must be on a project that is not archived)
         other_platforms = []
         for project in projects:
-            if project['platform'] != 'irods' and project['platform'] not in other_platforms:
+            if not project['platform'].startswith('irods') and project['platform'] not in other_platforms:
                 other_platforms.append(project['platform'])
             if 'zone' not in project:
                 continue
@@ -132,6 +132,12 @@ def login_openid_select_zone():
             if project['my_role'] != '' and not project['archived'] and project['zone'] not in my_zones:
                 my_zones.append(project['zone'])
 
+        sftp_host = "rdmsftp.icts.kuleuven.be"
+        if "-q-" in API_URL:
+            sftp_host = "rdmsftp.q.icts.kuleuven.be"
+        if "-t-" in API_URL:
+            sftp_host = "rdmsftp.t.icts.kuleuven.be"
+
         return render_template('user/login_openid_select_zone.html.j2',
             projects=projects,
             zones=zones,
@@ -139,6 +145,7 @@ def login_openid_select_zone():
             other_platforms=other_platforms,
             last_zone_name=last_zone_name,
             admin=('operator' in perms or 'admin' in perms),
+            sftp_host=sftp_host,
         )
 
     zone = request.form.get('irods_zone')
@@ -230,6 +237,12 @@ def connection_info_modal(zone):
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
 
+    sftp_host = "rdmsftp.icts.kuleuven.be"
+    if "-q-" in jobid:
+        sftp_host = "rdmsftp.q.icts.kuleuven.be"
+    if "-t-" in jobid:
+        sftp_host = "rdmsftp.t.icts.kuleuven.be"
+
     info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
     setup_json={
@@ -237,7 +250,7 @@ def connection_info_modal(zone):
         'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
     }
 
-    return render_template("user/connection_info_body.html.j2", info=info, setup_json=setup_json)
+    return render_template("user/connection_info_body.html.j2", info=info, setup_json=setup_json, sftp_host=sftp_host)
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 @openid_login_required
@@ -261,6 +274,12 @@ def connection_info():
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
 
+    sftp_host = "rdmsftp.icts.kuleuven.be"
+    if "-q-" in jobid:
+        sftp_host = "rdmsftp.q.icts.kuleuven.be"
+    if "-t-" in jobid:
+        sftp_host = "rdmsftp.t.icts.kuleuven.be"
+
     info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
     setup_json={
@@ -268,7 +287,7 @@ def connection_info():
         'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
     }
 
-    return render_template("user/connection_info.html.j2", info=info, setup_json=setup_json)
+    return render_template("user/connection_info.html.j2", info=info, setup_json=setup_json, sftp_host=sftp_host)
 
 
 @data_platform_user_bp.route('/data-platform/retrieve-token', methods=["GET", "POST"])
@@ -309,7 +328,7 @@ def local_client_retrieve_token_callback():
     projects = []
     zones = []
     for project in all_projects:
-        if project['platform'] != 'irods':
+        if not project['platform'].startswith('irods'):
             continue
         if 'zone' not in project:
             continue

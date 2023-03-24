@@ -68,7 +68,9 @@
                       <td class="text-nowrap">
                         {% if (project['my_role'] == 'responsible' or project['my_role'] == 'manager' or admin) and not project['archived'] %}
                         <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">Edit members</a>
+                        {% if project['platform'] == 'irods' %}
                         <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = "ingress")}}">Retrieve API token</a>
+                        {% endif %}
                         {% else %}
                         <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">View details</a>
                         {% endif %}
@@ -87,8 +89,15 @@
             {% for platform in other_platforms %}
             <div class="accordion-item">
                 <h4 class="accordion-header" id="#{{ platform }}Header" style="position: relative">
+                    {% if platform == "generic" %}
+                    <div style="position: absolute; z-index: 99; top: 3px; right: 60px">
+                        <button type="button" class="btn btn-block btn-primary m-1" data-bs-toggle="modal" data-bs-target="#connectInformationGeneric" data-zone="{{ zone_name }}">
+                            How to connect
+                        </button>
+                    </div>
+                    {% endif %}
                     <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#{{ platform }}" aria-expanded="false" aria-controls="{{ platform }}">
-                        {{ platform|replace('generic', 'Globus Shares') }}
+                        {{ platform|replace('generic', 'Data Transfer Shares') }}
                     </button>
                 </h4>
 
@@ -155,6 +164,8 @@
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGenericProject">
             Add globus share
         </button>
+
+        <a href="{{url_for('data_platform_project_bp.project_overview')}}" class="btn btn-block btn-primary">Usage report</a>
     </div>
 
     <!-- Add project model -->
@@ -215,6 +226,24 @@
                 </div>
 
                 <div class="mb-3">
+                <label for="layout" class="col-form-label">
+                    Type
+                </label>
+
+                <div>
+                    <input type="radio" class="btn-check" name="platform" id="p-irods" autocomplete="off" checked value="irods" />
+                    <label class="btn btn-outline-secondary" for="p-irods">Native iRODS</label>
+
+                    <input type="radio" class="btn-check" name="platform" id="p-irods-sftp" autocomplete="off" disabled value="irods-sftp" />
+                    <label class="btn btn-outline-secondary" for="p-irods-sftp">SFTP optimized - iRODS as index</label>
+                </div>
+
+                <div class="invalid-feedback">
+                    An irods folder layout is required
+                </div>
+                </div>
+
+                <div class="mb-3" id="folder-layout">
                 <label for="layout" class="col-form-label">
                     Folder layout
                 </label>
@@ -316,6 +345,35 @@
             </div>
             <div class="modal-body" id="connectInformationBody">
                 
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Close
+                </button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+        id="connectInformationGeneric"
+        tabindex="-1"
+        aria-labelledby="connectInformationGenericLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="connectInformationGenericLabel">
+                How to connect
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <div class="modal-body" id="connectInformationGenericBody">
+                {% include "user/connection_info_generic.html.j2" %}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
