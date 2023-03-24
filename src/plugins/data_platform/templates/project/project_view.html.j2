@@ -212,6 +212,9 @@
           </button>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <input type="hidden" name="project" value="{{ project['name'] }}" />
+          {% if not status['provisioned'] %}
+          <input type="submit" name="submit" value="Apply changes in {{ project['platform']|replace('generic', 'the globus share storage') }}" class="btn btn-block btn-primary"/>
+          {% endif %}
           {% if project['archived'] %}
           {% if admin %}
           <input type="submit" name="submit" value="Unarchive" class="btn btn-block btn-primary"/>
@@ -252,9 +255,6 @@
           {% endif %}
           {% endif %}
           {% else %}
-          {% if not status['provisioned'] %}
-          <input type="submit" name="submit" value="Apply changes in {{ project['platform']|replace('generic', 'the globus share storage') }}" class="btn btn-block btn-primary"/>
-          {% endif %}
           {% if admin %}
           <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#archiveProject">
               Archive
