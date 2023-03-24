@@ -215,7 +215,7 @@
           {% if project['archived'] %}
           {% if admin %}
           <input type="submit" name="submit" value="Unarchive" class="btn btn-block btn-primary"/>
-          {% if status['provisioned'] and status['used_inodes'] <= 10 %}
+          {% if status['provisioned'] and status['used_inodes'] <= 1 %}
           <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProject">
               Delete
           </button>
