@@ -18,7 +18,6 @@ from flask import (
 from irods.meta import iRODSMeta
 from irods.access import iRODSAccess
 import irods.keywords
-from irods.user import iRODSUserGroup, UserGroup, User
 from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
 from irods.session import iRODSSession
@@ -55,8 +54,9 @@ from operator import itemgetter
 from pathlib import PurePath
 
 from kernel.metadata_schema import get_schema_manager
+from kernel.template_overrides import get_template_override_manager
 
-browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
+browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -125,7 +125,7 @@ def get_current_user_rights(current_user_name, item):
             group.name
             for group in irods_session_pool.irods_user_sessions[
                 current_user_name
-            ].groups
+            ].my_groups
         ]
     for permission in permissions:
         if (
@@ -256,15 +256,7 @@ def collection_browse(collection):
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
-    my_groups = [
-        iRODSUserGroup(g.irods_session.user_groups, item)
-        for item in g.irods_session.query(UserGroup)
-        .filter(User.name == g.irods_session.username)
-        .all()
-    ]
-    # filter out current user group
-    my_groups = [group for group in my_groups if group.name != g.irods_session.username]
-
+    my_groups = g.irods_session.my_groups
     # temp: look up metadata items in full, including create_time and modify_time
     from irods.query import Query
     from irods.column import Criterion, In
@@ -281,11 +273,12 @@ def collection_browse(collection):
         metadata_objects = query.execute()
 
     # end temp
-    view_template = (
-        "browse.html.j2"
-        if not co_path.startswith(f"/{g.irods_session.zone}/trash")
-        else "browse_trash.html.j2"
+    view_template = get_template_override_manager(
+        g.irods_session.zone
+    ).get_template_for_catalog_item(
+        current_collection, "common/collection_view.html.j2"
     )
+    logging.info(f"Collection view: using template {view_template}")
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
 
     return render_template(
@@ -437,14 +430,7 @@ def view_object(data_object_path):
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
-    my_groups = [
-        iRODSUserGroup(g.irods_session.user_groups, item)
-        for item in g.irods_session.query(UserGroup)
-        .filter(User.name == g.irods_session.username)
-        .all()
-    ]
-    # filter out current user group
-    my_groups = [group for group in my_groups if group.name != g.irods_session.username]
+    my_groups = g.irods_session.my_groups
 
     # temp: look up metadata items in full, including create_time and modify_time
     # from irods.query import Query
@@ -475,12 +461,10 @@ def view_object(data_object_path):
                 tzinfo=datetime.timezone.utc, microsecond=0
             ).isoformat()
 
-    view_template = (
-        "view_object.html.j2"
-        if not data_object_path.startswith(f"/{g.irods_session.zone}/trash")
-        else "view_object_trash.html.j2"
-    )
-
+    view_template = get_template_override_manager(
+        g.irods_session.zone
+    ).get_template_for_catalog_item(data_object, "common/object_view.html.j2")
+    logging.info(f"Object view: using template {view_template}")
     logging.info(f"Realm: {realm}")
 
     return render_template(
@@ -1229,6 +1213,7 @@ def rename_item():
             flash("{item_path} does not exist", "danger")
 
     return redirect(redirect_route)
+
 
 @browse_bp.route(
     "/api/collection/subcollections",

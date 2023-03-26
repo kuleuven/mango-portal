@@ -1,0 +1,55 @@
+---
+zone: tier1_data_pilot
+
+my_gallery_view_override_for_collections:
+  source: common/collection_view.html.j2
+  target: myplugin/gallery.html.j2
+  matches:
+    any:
+      metadata:
+        match_type: any
+        items:
+          - mg.collection_type:
+            - gallery
+            - images
+          - mg.otheravu: hello
+      name:
+        - gallery
+      subtree:
+        - /a/e/f
+        - /gg/d/f
+    all:
+      path: /a/b/c
+      metadata:
+        match_type: any
+        items:
+          - mg.collection_type:
+            - gallery
+          - mg.anything: something
+
+match_all_collections:
+  source: common/collection_view.html.j2
+  target: overrides/collection_browse.html.j2
+  matches:
+    always: true
+
+
+---
+zone: icts_demo
+
+collection_view_iot:
+  source: collection_view
+  target: collection_iot.html.j2
+  matches:
+    always: true
+---
+zone: all
+gallery_carrousel:
+  source: common/collection_view.html.j2
+  target: overrides/gallery_carrousel.html.j2
+  matches:
+    all:
+      metadata:
+        match_type: any
+        items:
+          - mg.collection_type: gallery_carrousel

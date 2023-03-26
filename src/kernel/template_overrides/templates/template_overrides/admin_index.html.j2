@@ -1,0 +1,19 @@
+{% extends "base.html.j2" %}
+{% block body %}
+    <h3>Template overrides for zone {{ g.irods_session.zone }}</h3>
+    {% if source %}
+        <h4 class="text-success">Source: {{ source }}</h4>
+        <pre><code>{{ template_override_manager.rules[source]|pprint_as_json(3) }}</code></pre>
+        <p>
+            <a href="{{ url_for('template_overrides_admin_bp.index') }}">Back to overview</a>
+        </p>
+    {% else %}
+        <ul class="list-group">
+            {% for source in template_override_manager.rules %}
+                <li class="list-group-item">
+                    <a href="{{ url_for('template_overrides_admin_bp.index') + '?source=' + source }}">{{ source }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock body %}
