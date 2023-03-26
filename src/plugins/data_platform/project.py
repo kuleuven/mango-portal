@@ -180,6 +180,16 @@ def deploy_project():
         )
         response.raise_for_status()
 
+    if request.form.get('submit') == 'Delete':
+        response = requests.delete(
+            f"{API_URL}/v1/projects/{id}", headers=header,
+        )
+        response.raise_for_status()
+
+        flash(response.json()['message'], "success")
+    
+        return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+
     response = requests.post(
         f"{API_URL}/v1/projects/{id}/deploy", headers=header, json={}
     )
