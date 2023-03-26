@@ -16,7 +16,7 @@ EditorConfig==0.12.3
 Flask==2.2.2
 Flask-Caching==2.0.2
 Flask-Cors==3.0.10
-Flask-DebugToolbar==0.13.1
+-e git+https://github.com/pallets-eco/flask-debugtoolbar@ed8243e17e763a384e0808233d4ea75453bcb902#egg=Flask_DebugToolbar
 flask-paginate==2022.1.8
 Flask-WTF==1.1.1
 future==0.18.3
@@ -34,6 +34,7 @@ MarkupSafe==2.1.2
 multidict==6.0.4
 oic==1.5.0
 opensearch-py==2.1.1
+packaging==23.0
 pathspec==0.10.0
 pdf2image==1.16.2
 Pillow==9.4.0
@@ -43,7 +44,7 @@ pycryptodomex==3.16.0
 pyjwkest==1.4.2
 PyJWT==2.6.0
 python-dateutil==2.8.2
-python-irodsclient==1.1.6
+-e git+https://github.com/irods/python-irodsclient@09b826da8e18531d1ae341ae825677d7f97b07c3#egg=python_irodsclient
 python-magic==0.4.27
 python-slugify==7.0.0
 pytz==2022.7

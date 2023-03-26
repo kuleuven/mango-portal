@@ -57,7 +57,6 @@ from werkzeug.exceptions import HTTPException
 
 import datetime
 
-# from flask_debugtoolbar import DebugToolbarExtension
 
 print(f"Flask version {flask.__version__}")
 
@@ -110,7 +109,9 @@ with app.app_context():
     cache.clear()
 
 # Add debug toolbar
-# toolbar = DebugToolbarExtension(app)
+if os.getenv('FLASK_DEBUG_TOOLBAR', 'disabled').lower() == 'enabled':
+    from flask_debugtoolbar import DebugToolbarExtension
+    toolbar = DebugToolbarExtension(app)
 
 
 # Register blueprints

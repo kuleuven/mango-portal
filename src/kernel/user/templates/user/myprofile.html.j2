@@ -37,27 +37,29 @@
             <th>Logged in since</th>
             <td>{{ logged_in_since.isoformat(timespec='seconds') }}</td>
           </tr>
-          <tr class="align-middle"
-              title="{{ 'Your home collection {}'.format(g.user_home)}}">
-            <th>
-              <i class="bi bi-house-heart h4"></i> Number of data objects
-            </th>
-            <td>{{ n_data_objects }}</td>
-          </tr>
-          <tr class="align-middle"
-              title="{{ 'Your home collection {}'.format(g.user_home)}}">
-            <th>
-              <i class="bi bi-house-heart h4"></i> Disk space used
-            </th>
-            {# {% if home_total_size > config['USER_MAX_HOME_SIZE'] %}
+          {% if home_total_size > -1 %}
+            <tr class="align-middle"
+                title="{{ 'Your home collection {}'.format(g.user_home)}}">
+              <th>
+                <i class="bi bi-house-heart h4"></i> Number of data objects
+              </th>
+              <td>{{ n_data_objects }}</td>
+            </tr>
+            <tr class="align-middle"
+                title="{{ 'Your home collection {}'.format(g.user_home)}}">
+              <th>
+                <i class="bi bi-house-heart h4"></i> Disk space used
+              </th>
+              {# {% if home_total_size > config['USER_MAX_HOME_SIZE'] %}
               <td class="text-danger">
                 <i class="bi bi-exclamation-triangle"></i>
               {% else %} #}
-            <td class="text-success">
-              {# {% endif %} #}
-              {{ home_total_size | filesizeformat }}
-            </td>
-          </tr>
+              <td class="text-success">
+                {# {% endif %} #}
+                {{ home_total_size | filesizeformat }}
+              </td>
+            </tr>
+          {% endif %}
         </table>
       </div>
     </div>
