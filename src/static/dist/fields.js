@@ -613,8 +613,6 @@ class TypedInput extends InputField {
             }
 
             // adapt the type of the default input
-            console.log(this.id)
-            console.log(default_input)
             if (default_input !== null) { default_input.type = format; }
         }
 
@@ -1013,7 +1011,6 @@ class MultipleInput extends InputField {
         this.setup_form();
 
         // Add moving input fields to design the options
-        console.log(this.values)
         this.form_field.add_moving_options("Select option", this.values.values);
         
         // Finish form

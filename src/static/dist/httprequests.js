@@ -187,7 +187,6 @@ class TemplateReader extends MangoRequest {
 /**
  * Class representing a request for a schema for annotation.
  * @extends MangoRequest
- * @module Schema
  */
 class AnnotationRequest extends MangoRequest {
     /**
@@ -216,7 +215,6 @@ class AnnotationRequest extends MangoRequest {
             // generate the form
             let schema = new SchemaForm(json, container_id, prefix);
             // fill the form with existing metadata
-            console.log(annotated_data)
             schema.add_annotation(annotated_data);
         })
     }

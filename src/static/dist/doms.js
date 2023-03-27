@@ -341,10 +341,7 @@ class MovingViewer extends MovingField {
      */
     move_down() {
         let form_index = this.schema.field_ids.indexOf(this.idx); // index of the field among other fields
-        console.log(form_index)
-        console.log(this.below)
         let sibling = this.below.nextSibling; // element under the bottom button
-        console.log(sibling)
         let sibling_button = sibling.nextSibling; // button under the bottom button
 
         // first, move the field and its button
@@ -483,7 +480,6 @@ class MovingChoice extends MovingField {
         this.label = Field.labeller(label_text, `mover-${idx}`);
         this.input_tag = this.add_input();
         this.rem = this.add_btn('rem', 'trash', () => this.remove());
-        
         
         // Bring everything together
         this.assemble();
@@ -750,7 +746,6 @@ class BasicForm {
      * @returns {MovingChoice} Moving input field.
      */
     add_mover(label_text, idx, value = false) {
-        console.log(value)
         let input = new MovingChoice(label_text, idx, value).div;
         
         // if there aren't more than two fields yet, don't allow removal
@@ -770,7 +765,6 @@ class BasicForm {
      */
     add_moving_options(label_text, starting_values = []) {
         let options = starting_values;
-        console.log(options)
         let has_values = options.length > 0;
         // if no options are provided, start with two
         if (!has_values) {
@@ -780,8 +774,6 @@ class BasicForm {
         // go through each option and create a mover
         // with its value if provided
         for (let i in options) {
-            console.log(i)
-            console.log(options[i])
             let input = this.add_mover(label_text, i, has_values ? options[i] : false);
             
             // re-enable removing if there are more than two options
