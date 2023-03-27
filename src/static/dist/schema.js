@@ -616,7 +616,7 @@ class Schema extends ComplexField {
             } else {
                 // trigger confirmation message, which also has its hidden fields
                 let second_sentence = this.data_status == 'draft' && schemas[this.name] && schemas[this.name].published.length > 0 ?
-                    ` Version ${schemas[this.name].published[0].version} will be archived.` :
+                    ` Version ${schemas[this.name].published[0]} will be archived.` :
                     '';
                 let starting_data = {
                     schema_name: this.name,

@@ -178,7 +178,7 @@ class InputField {
 
         // define whether the field may be repeated
         // ObjectInput included as in_object to TEMPORARILY disable repeatable objects
-        let in_object = this.schema_status.startsWith('object') || this_class == 'ObjectInput';
+        let is_object = this_class == 'ObjectInput';
 
         // define whether the field may be required
         let requirable = !(this_class == 'CheckboxInput' | this_class == 'ObjectInput');
@@ -191,8 +191,8 @@ class InputField {
         if (dropdownable) {
             switchnames.push('dropdown');
             switches.dropdown = this.values.ui == 'dropdown';
-        } else if (!in_object) {
-            // only if it is NOT dropdownable and also not in a composite field (nor a composite field itself)
+        } else if (!is_object) {
+            // only if it is NOT dropdownable and also not a composite field
             // this could be limited to simple fields, but this way we can make the composite fields repeatable easily
             // which is the way it was for a while
             switchnames.push('repeatable');
@@ -221,7 +221,7 @@ class InputField {
                 this.values.ui = this.values.ui == 'dropdown' ? this.dropdown_alt : 'dropdown';
                 this.values.ui == 'dropdown' ? dd_input.setAttribute('checked', '') : dd_input.removeAttribute('checked');
             });
-        } else if (!in_object) { // define the behavior of the 'repeatable' switch
+        } else if (!is_object) { // define the behavior of the 'repeatable' switch
             let rep_input = this.form_field.form.querySelector(`#${this.id}-repeatable`);
             if (this.type == 'checkbox') {
                 rep_input.setAttribute('disabled', '');
