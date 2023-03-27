@@ -1138,7 +1138,7 @@ def bulk_operation_items():
                             new_path=new_path,
                         )
                         success_count += 1
-                    except:
+                    except Exception as e:
                         success = False
                         failure_count += 1
                         flash(f"Problem copying {item_path} : {e}", "danger")

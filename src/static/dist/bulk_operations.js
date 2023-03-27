@@ -59,7 +59,7 @@ function apply_bulk_operation() {
     const modal = bootstrap.Modal.getOrCreateInstance(confirmation_modal);
     const confirmation_form = confirmation_modal.querySelector('form#confirmation-form');
     confirmation_form.querySelector('input#action').value = selected_option.value;
-    
+
     const items_to_send = selected_option.value == 'copy'
         ? selected_items.filter((c) => c.startsWith('dobj-'))
         : selected_items;
@@ -87,7 +87,7 @@ function apply_bulk_operation() {
         toast_message = this.selected_option == 'copy' && n_collections > 0
             ? `${n_dobjects_printed} will be ${action} to "DESTINATION". Copying collections is not supported.`
             : `${n_items} will be ${action} to "DESTINATION."`
-                    
+
         offcanvas.toggle();
         offcanvas.link_data(selected_items, confirmation_text, confirmation_form, modal, selected_option.value, toast_message);
         offcanvas.update();
@@ -108,7 +108,7 @@ function apply_bulk_operation() {
             checkbox_label = Field.quick('label', 'form-check-label', 'Delete permanently');
             checkbox_label.setAttribute('for', 'force-checkbox');
             del_checkbox.appendChild(checkbox_label);
-            confirmation_form.insertBefore(del_checkbox, confirmation_text);
+            confirmation_form.querySelector('div.modal-body').insertBefore(del_checkbox, confirmation_text);
         } else {
             del_checkbox.removeAttribute('checked');
         }
@@ -202,7 +202,7 @@ class OffCanvas {
                 top_tree.fill();
             }
             this.update_radios();
-            
+
             this.offcanvas.querySelectorAll('.collapse.show').forEach((collapsible) => {
                 bootstrap.Collapse.getOrCreateInstance(collapsible).toggle();
             });
@@ -294,7 +294,7 @@ class TreeElement {
         const collapse = Field.quick('div', 'collapse ps-3 w-100');
         collapse.id = this.id + '-collapse';
         const icon = this.label.querySelector('i.bi');
-        
+
         const sub_button_group = TreeElement.create_button_group();
         collapse.appendChild(sub_button_group);
 
@@ -313,7 +313,7 @@ class TreeElement {
             }
             offcanvas.update();
             children_requested = true;
-            
+
         });
 
         collapse.addEventListener('hidden.bs.collapse', () => {
@@ -322,18 +322,18 @@ class TreeElement {
             }
         });
 
-        
+
         return collapse;
     }
 
     static create_spinner() {
         let spinner_div = Field.quick('div', 'd-flex justify-content-center');
         spinner_div.id = 'spinner-div';
-        
+
         let spinner = Field.quick('div', 'spinner-border spinner-border-sm text-primary');
         spinner.role = 'status';
         spinner_div.appendChild(spinner);
-        
+
         let spinner_span = Field.quick('span', 'text-muted ms-3', 'Loading tree...');
         spinner_div.appendChild(spinner_span);
 
@@ -344,7 +344,7 @@ class TreeElement {
         const button_group = Field.quick('div', 'btn-group-vertical w-100');
         button_group.role = 'group';
         button_group.setAttribute('aria-label', 'Collection tree to select destination');
-        
+
         button_group.appendChild(TreeElement.create_spinner());
         return button_group;
     }
@@ -356,4 +356,3 @@ offcanvas.body.appendChild(button_group);
 offcanvas.append_to(document.getElementById('collection-content'));
 
 const top_tree = new TreeElement(button_group);
-

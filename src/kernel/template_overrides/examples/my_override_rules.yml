@@ -31,7 +31,8 @@ match_all_collections:
   source: common/collection_view.html.j2
   target: overrides/collection_browse.html.j2
   matches:
-    always: true
+    all:
+      
 
 
 ---

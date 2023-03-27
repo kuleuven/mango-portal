@@ -109,8 +109,9 @@ with app.app_context():
     cache.clear()
 
 # Add debug toolbar
-if os.getenv('FLASK_DEBUG_TOOLBAR', 'disabled').lower() == 'enabled':
+if os.getenv("FLASK_DEBUG_TOOLBAR", "disabled").lower() == "enabled":
     from flask_debugtoolbar import DebugToolbarExtension
+
     toolbar = DebugToolbarExtension(app)
 
 

@@ -16,7 +16,7 @@ export OIDC_ISSUER_URL=https://idp.kuleuven.be/auth/realms/kuleuven
 export OIDC_CLIENT_ID=oidcapp
 export OPENID_REDIRECT_BASE=http://localhost:3000
 
-# To test kuleuven login locally, ask Peter for the secret and run 
+# To test kuleuven login locally, ask Peter for the secret and run
 #   export OIDC_SECRET=XXXX
 # in your shell prior to running this script. You also need to set
 # a local alias voor oidcapp.icts.kuleuven.be.
@@ -32,6 +32,10 @@ export API_URL=https://icts-q-coz-data-platform-api.cloud.q.icts.kuleuven.be
 if which data-platform-cli &>/dev/null; then
   export API_TOKEN=$(data-platform-cli token --tier q)
 fi
+
+export DEBUG=True
+# Enable the Flask debug toolbar by uncommenting the line below
+# export FLASK_DEBUG_TOOLBAR=enabled
 
 # Hupper will reload the app upon changed files after 5 secs
 hupper --shutdown-interval 5  -m  waitress_serve
