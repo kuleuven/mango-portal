@@ -32,7 +32,7 @@ openid_providers = {
     },
     "vsc": {
         "label": "VSC",
-        "client_id": "blub",
+        "client_id": "mango.vscentrum.be",
         "secret": "blub",
         "issuer_url": "https://auth.vscentrum.be",
         "auto_pick_on_host": "mango.vscentrum.be",
