@@ -756,8 +756,10 @@ class IndexingThread(Thread):
                 try:
                     execute_index_job(**index_queue.pop(0))
                 except Exception as e:
-                    logging.warn("Failed indexing, adding job to the queue again")
-                    index_queue += [current_job]
+                    logging.warn(
+                        f"Failed indexing {e}, not adding job to the queue again"
+                    )
+                    # index_queue += [current_job]
 
             if self.status == "sleep":
                 logging.info(f"Indexing thread in sleep mode on {MANGO_HOSTNAME}")
