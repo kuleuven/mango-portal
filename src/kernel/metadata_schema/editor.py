@@ -11,7 +11,8 @@ from flask import (
     Response,
     request,
     flash,
-    helpers
+    helpers,
+    session,
 )
 
 from irods.meta import iRODSMeta
@@ -29,18 +30,25 @@ import os
 import glob
 import json
 from pprint import pprint
+import lib.util
 
 # from flask_wtf import CSRFProtect
 from csrf import csrf
 
 from slugify import slugify
 
+from cache import cache
+from . import get_schema_manager
+
 metadata_schema_editor_bp = Blueprint(
-    "metadata_schema_editor_bp", __name__, template_folder="templates/metadata_schema",
+    "metadata_schema_editor_bp",
+    __name__,
+    template_folder="templates/metadata_schema",
 )
 
 
 schema_base_dir = os.path.abspath("storage")
+
 
 def get_metadata_schema_dir(irods_session: iRODSSession):
     # check if it exists and if not, then create it
@@ -50,82 +58,134 @@ def get_metadata_schema_dir(irods_session: iRODSSession):
     return meta_data_schema_path
 
 
-# Blueprint templates
-@metadata_schema_editor_bp.route("/metadata-template", methods=["GET"])
-def metadata_template():
-    """
-    """
-    return render_template("metadata_template_module.html.j2")
+@cache.memoize(1200)
+def get_realms_for_current_user(irods_session: iRODSSession, base_path):
+    # for now a simple listing of everything found in the home collection
+    project_collections = irods_session.collections.get(base_path).subcollections
+    realms = [sub_collection.name for sub_collection in project_collections]
+    return realms
 
 
-@metadata_schema_editor_bp.route("/metadata-template/list", methods=["GET"])
-def list_meta_data_templates():
-    """
-    """
-    template_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
-    # template_files = glob.glob("static/metadata-templates/*.json")
-    template_filenames = [
-        base_file_name
-        for template_file in template_files
-        if (base_file_name := os.path.basename(template_file)) != "uischema.json"
-    ]
+@metadata_schema_editor_bp.route(
+    "/metadata-schemas", defaults={"realm": None}, methods=["GET"]
+)
+@metadata_schema_editor_bp.route("/metadata-schemas/<realm>", methods=["GET"])
+def metadata_schemas(realm):
+    """ """
+    realms = get_realms_for_current_user(g.irods_session, g.zone_home)
+    # save the realm in the session if set, otherwise make sure it is not set
+    if realm:
+        session["current_schema_editor_realm"] = realm
+    elif "current_schema_editor_realm" in session:
+        del session["current_schema_editor_realm"]
+
+    return render_template("metadata_schema_module.html.j2", realms=realms, realm=realm, schema_name=request.values.get("schema_name", ""), schema_version=request.values.get("schema_version", ""))
+
+
+@metadata_schema_editor_bp.route(
+    "/metadata-schema/list", defaults={"realm": None}, methods=["GET"]
+)
+@metadata_schema_editor_bp.route("/metadata-schema/list/<realm>", methods=["GET"])
+def list_meta_data_schemas(realm):
+    """ """
+    if not realm and ("current_schema_editor_realm" not in session):
+        redirect(url_for("metadata_schema_editor_bp.metadata_schemas"))
+    if not realm:
+        realm = session["current_schema_editor_realm"]
+    schema_manager = get_schema_manager(g.irods_session.zone, realm)
+    schemas: dict = schema_manager.list_schemas(
+        filters=["published", "draft", "archived"]
+    )
 
     return json.dumps(
         [
             {
-                "name": name,
-                "url": url_for("metadata_schema_editor_bp.get_schema", schema=name),
+                "name": schema,
+                "url": url_for(
+                    "metadata_schema_editor_bp.get_schema",
+                    realm=realm,
+                    schema=schema,
+                    status="status",
+                ),
+                "schema_info": schema_info,
             }
-            for name in template_filenames
+            for (schema, schema_info) in schemas.items()
         ]
     )
 
 
-@metadata_schema_editor_bp.route("/metadata-schema/get/<schema>")
-def get_schema(schema: str):
-    schema_path = get_metadata_schema_dir(g.irods_session) + f"/{schema}"
-    return helpers.send_file(schema_path)
+@metadata_schema_editor_bp.route(
+    "/metadata-schema/get/<realm>/<schema>/<status>", methods=["GET"]
+)
+def get_schema(realm: str, schema: str, status="published"):
+    schema_manager = get_schema_manager(g.irods_session.zone, realm)
+    schema_content = schema_manager.load_schema(schema_name=schema, status=status)
+    if schema_content:
+        return Response(schema_content, status=200, mimetype="application/json")
+    else:
+        return Response("error, no content found", status=404)
 
 
-# Blueprint templates
-def save_metadata_template(filename, contents):
-    # normalize the filename, lowercase, no weird characters
-    filename = f"{slugify(filename[:-5])}.json"
-    with open(get_metadata_schema_dir(g.irods_session)+ "/" + filename, "w") as f:
-        f.write(contents)
-    return True
-
-
-# Blueprint templates
-@metadata_schema_editor_bp.route("/metadata-template/update", methods=["POST"])
+@metadata_schema_editor_bp.route("/metadata-schema/save", methods=["POST"])
 @csrf.exempt
-def update_meta_data_templates():
-    """
-    """
-    template_name = request.form["template_name"]
-    template_json = request.form["template_json"]
-    save_metadata_template(template_name, template_json)
+def save_schema():
+    if "realm" in request.form:
+        schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
+        raw_schema = {}
+        # either we get a json string or a decoded json string
+        try:
+            raw_schema = json.loads(request.form["raw_schema"])
+        except Exception as e:
+            raw_schema = json.loads(lib.util.atob(request.form["raw_schema"]))
 
-    return redirect(request.referrer)
+        result = schema_manager.store_schema(
+            schema_name=request.form["schema_name"],
+            current_version=request.form["current_version"],
+            raw_schema=raw_schema,
+            with_status=request.form["with_status"],
+            title=request.form["title"],
+            username=g.irods_session.username,
+            parent=request.form["parent"] if "parent" in request.form else "",
+        )
+    for key, value in result.items():
+        if not value["valid"]:
+            flash(f"Problem for {key}: {value['message']}", "danger")
+    realm = request.form.get("realm", "")
+    return redirect(
+        url_for("metadata_schema_editor_bp.metadata_schemas", realm=realm)
+        + f"?schema_name={request.form['schema_name']}&schema_version={request.form['current_version']}"
+    )
 
 
-@metadata_schema_editor_bp.route("/metadata-template/new", methods=["POST"])
+@metadata_schema_editor_bp.route("/metadata-schema/delete", methods=["POST", "DELETE"])
 @csrf.exempt
-def new_meta_data_template():
-    """
-    """
-    template_name = request.form["template_name"]
-    template_json = request.form["template_json"]
-    save_metadata_template(template_name, template_json)
+def delete_meta_data_schema():
+    """ """
+    if "realm" in request.form:
+        schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
+        if request.form["with_status"] != "draft":
+            abort(400, "Can only delete draft versions of schemas")
+        schema_manager.delete_draft_schema(schema_name=request.form["schema_name"])
 
-    return redirect(request.referrer)
+    realm = request.form.get("realm", "")
+    return redirect(
+        url_for("metadata_schema_editor_bp.metadata_schemas", realm=realm)
+        + f"?schema_name={request.form['schema_name']}&schema_version={request.form.get('current_version', '')}"
+    )
 
 
-@metadata_schema_editor_bp.route("/metadata-template/delete", methods=["POST"])
+@metadata_schema_editor_bp.route("/metadata-schema/archive", methods=["POST"])
 @csrf.exempt
-def delete_meta_data_template():
-    """
-    """
-    template_name = template_name = request.form["template_name"]
-    os.unlink("static/metadata-templates/" + template_name)
-    return redirect(request.referrer)
+def archive_meta_data_schema():
+    """ """
+    if "realm" in request.form:
+        schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
+        if request.form["with_status"] != "published":
+            abort(400, "Can only archive published versions of schemas")
+        schema_manager.archive_published_schema(schema_name=request.form["schema_name"])
+
+    realm = request.form.get("realm", "")
+    return redirect(
+        url_for("metadata_schema_editor_bp.metadata_schemas", realm=realm)
+        + f"?schema_name={request.form['schema_name']}&schema_version={request.form.get('current_version', '')}"
+    )

@@ -1,0 +1,114 @@
+```json
+{
+    "sample-schema": {
+        "title": "Book schema as an example",
+        "properties": {
+            "title": {
+                "type": "text",
+                "title": "Book title",
+                "required": "true"
+            },
+            "cover_colors": {
+                "type": "select",
+                "multiple": "true",
+                "ui": "checkbox",
+                "title": "Colors in the cover",
+                "values": [
+                    "red",
+                    "blue",
+                    "green",
+                    "yellow"
+                ]
+            },
+            "publisher": {
+                "type": "select",
+                "multiple": "false",
+                "ui": "dropdown",
+                "values": [
+                    "Penguin House",
+                    "Tor",
+                    "Corgi",
+                    "Nightshade books"
+                ],
+                "title": "Publishing house",
+                "required": "true"
+            },
+            "author": {
+                "type": "object",
+                "title": "Author",
+                "properties": {
+                    "name": {
+                        "type": "text",
+                        "title": "Name and Surname",
+                        "required": "true"
+                    },
+                    "age": {
+                        "type": "integer",
+                        "title": "Age",
+                        "minimum": "12",
+                        "maximum": "99"
+                    },
+                    "email": {
+                        "type": "email",
+                        "title": "Email address",
+                        "required": "true"
+                    }
+                },
+                "required": "true",
+                "repeatable": "true"
+            },
+            "ebook": {
+                "type": "select",
+                "multiple": "false",
+                "ui": "radio",
+                "values": [
+                    "Available",
+                    "Unavailable"
+                ],
+                "title": "Is there an e-book?",
+                "required": "true"
+            },
+            "genre": {
+                "type": "select",
+                "multiple": "true",
+                "ui": "dropdown",
+                "values": [
+                    "Speculative fiction",
+                    "Mystery",
+                    "Non-fiction",
+                    "Encyclopaedia",
+                    "Memoir",
+                    "Literary fiction"
+                ],
+                "title": "Genre"
+            },
+            "publishing_date": {
+                "type": "date",
+                "title": "Publishing date",
+                "required": "true",
+                "repeatable": "true"
+            },
+            "copies_published": {
+                "type": "integer",
+                "title": "Number of copies published",
+                "minimum": "100",
+                "maximum": "500000"
+            },
+            "market_price": {
+                "type": "float",
+                "title": "Market price (in euros)",
+                "minimum": "0.99",
+                "maximum": "999.99"
+            },
+            "website": {
+                "type": "url",
+                "title": "Website"
+            },
+            "synopsis": {
+                "type": "textbox",
+                "title": "Synopsis"
+            }
+        }
+    }
+}
+```

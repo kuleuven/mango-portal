@@ -1,4 +1,5 @@
 from curses import meta
+import flask
 from flask import (
     Blueprint,
     render_template,
@@ -17,9 +18,10 @@ from flask import (
 from irods.meta import iRODSMeta
 from irods.access import iRODSAccess
 import irods.keywords
-from irods.user import iRODSUserGroup, UserGroup, User
 from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
+from irods.session import iRODSSession
+from irods.path import iRODSPath
 
 from PIL import Image
 from pdf2image import convert_from_path
@@ -27,7 +29,12 @@ import mimetypes
 import tempfile
 from urllib.parse import unquote
 
-from lib.util import generate_breadcrumbs, flatten_josse_schema, get_collection_size
+from lib.util import (
+    generate_breadcrumbs,
+    flatten_josse_schema,
+    get_collection_size,
+    flatten_schema,
+)
 import magic
 import os
 import glob
@@ -44,11 +51,31 @@ import logging
 import irods_session_pool
 from multidict import MultiDict
 from operator import itemgetter
+from pathlib import PurePath
 
-browse_bp = Blueprint("browse_bp", __name__, template_folder="templates/common")
+from kernel.metadata_schema import get_schema_manager
+from kernel.template_overrides import get_template_override_manager
+
+browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
+
+# proxy so it can also be imported in blueprints from csrf.py independently
+from csrf import csrf
 
 from kernel.metadata_schema.editor import get_metadata_schema_dir
 import signals
+
+# rudimentary code to obtain schema realm (project) from url
+
+
+def get_realm(item: iRODSCollection | iRODSDataObject) -> str:
+    realm = False
+    item_path = item.path
+    path_elements = item_path.split("/")
+    if (len(path_elements) >= 4) and path_elements[2] in ["home", "projects"]:
+        realm = path_elements[3]
+    else:
+        logging.warn(f"No realm for {item_path}")
+    return realm
 
 
 def group_prefix_metadata_items(
@@ -98,7 +125,7 @@ def get_current_user_rights(current_user_name, item):
             group.name
             for group in irods_session_pool.irods_user_sessions[
                 current_user_name
-            ].groups
+            ].my_groups
         ]
     for permission in permissions:
         if (
@@ -146,19 +173,31 @@ def collection_browse(collection):
     sub_collections = current_collection.subcollections
     data_objects = current_collection.data_objects
 
-    schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
-    # template_files = glob.glob("static/metadata-templates/*.json")
-    metadata_schema_filenames = [
-        base_file_name
-        for template_file in schema_files
-        if (base_file_name := os.path.basename(template_file)) != "uischema.json"
-    ]
+    ######################### new schema handling
+    schemas = []
+    schema_manager = False
+    realm = ""
+    if realm := get_realm(current_collection):
+        schema_manager = get_schema_manager(g.irods_session.zone, realm)
+    if schema_manager:
+        schemas = schema_manager.list_schemas(filters=["published"])
+        logging.info(
+            f"Schema manager found published schemas: {'|'.join(schemas.keys())}"
+        )
+    # schema_names = schemas.keys()
+
+    # schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
+    # metadata_schema_filenames = [
+    #     base_file_name
+    #     for template_file in schema_files
+    #     if (base_file_name := os.path.basename(template_file)) != "uischema.json"
+    # ]
 
     # metadata grouping  to be moved to proper function for re-use
     other = current_app.config["MANGO_NOSCHEMA_LABEL"]
     grouped_metadata = group_prefix_metadata_items(
         current_collection.metadata(timestamps=True).items(),
-        current_app.config["MANGO_PREFIX"],
+        current_app.config["MANGO_SCHEMA_PREFIX"],
     )
 
     schema_labels = {}
@@ -168,18 +207,21 @@ def collection_browse(collection):
     ):
         pass
     else:
-        json_template_dir = get_metadata_schema_dir(g.irods_session)
+        # json_template_dir = get_metadata_schema_dir(g.irods_session)
 
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
-            if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
+            if schema != current_app.config["MANGO_NOSCHEMA_LABEL"] and schema_manager:
                 try:
-                    with open(f"{json_template_dir}/{schema}.json", "r") as schema_file:
-                        form_dict = json.load(schema_file)
-                        schema_labels[schema] = flatten_josse_schema(
-                            ("", form_dict),
+                    schema_dict = json.loads(schema_manager.load_schema(schema))
+                    if schema_dict:
+                        schema_labels[schema] = flatten_schema(
+                            ("", schema_dict),
                             level=0,
-                            prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
+                            prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                             result_dict={},
+                        )
+                        logging.info(
+                            f"Flattened schema {schema}: {schema_labels[schema]}"
                         )
                 except:
                     pass
@@ -214,15 +256,7 @@ def collection_browse(collection):
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
-    my_groups = [
-        iRODSUserGroup(g.irods_session.user_groups, item)
-        for item in g.irods_session.query(UserGroup)
-        .filter(User.name == g.irods_session.username)
-        .all()
-    ]
-    # filter out current user group
-    my_groups = [group for group in my_groups if group.name != g.irods_session.username]
-
+    my_groups = g.irods_session.my_groups
     # temp: look up metadata items in full, including create_time and modify_time
     from irods.query import Query
     from irods.column import Criterion, In
@@ -239,11 +273,12 @@ def collection_browse(collection):
         metadata_objects = query.execute()
 
     # end temp
-    view_template = (
-        "browse.html.j2"
-        if not co_path.startswith(f"/{g.irods_session.zone}/trash")
-        else "browse_trash.html.j2"
+    view_template = get_template_override_manager(
+        g.irods_session.zone
+    ).get_template_for_catalog_item(
+        current_collection, "common/collection_view.html.j2"
     )
+    logging.info(f"Collection view: using template {view_template}")
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
 
     return render_template(
@@ -257,7 +292,9 @@ def collection_browse(collection):
         acl_users=acl_users,
         acl_users_dict=acl_users_dict,
         acl_counts=acl_counts,
-        metadata_schema_filenames=metadata_schema_filenames,
+        realm=realm,
+        # metadata_schema_filenames=metadata_schema_filenames,
+        schemas=schemas,
         grouped_metadata=grouped_metadata,  # sorted_metadata,
         schema_labels=schema_labels,
         my_groups=my_groups,
@@ -300,11 +337,21 @@ def view_object(data_object_path):
                     f"An error occurred with reading from {data_object_path}, mime type missing but could not be determined",
                     "warning",
                 )
+    ######################### new schema handling
+    schemas = []
+    schema_manager = False
+    realm = ""
+    if realm := get_realm(data_object):
+        schema_manager = get_schema_manager(g.irods_session.zone, realm)
+    if schema_manager:
+        schemas = schema_manager.list_schemas(filters=["published"])
+        logging.info(f"Schema manager found schemas: {'|'.join(schemas.keys())}")
+
     acl_users = []
     group_analysis_unit = True
     grouped_metadata = group_prefix_metadata_items(
         meta_data_items := data_object.metadata(timestamps=True).items(),
-        current_app.config["MANGO_PREFIX"],
+        current_app.config["MANGO_SCHEMA_PREFIX"],
         no_schema_label=current_app.config["MANGO_NOSCHEMA_LABEL"],
         group_analysis_unit=group_analysis_unit,
     )
@@ -327,14 +374,14 @@ def view_object(data_object_path):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
                 try:
-                    with open(f"{json_template_dir}/{schema}.json", "r") as schema_file:
-                        form_dict = json.load(schema_file)
-                        schema_labels[schema] = flatten_josse_schema(
-                            ("", form_dict),
-                            level=0,
-                            prefix=f"{current_app.config['MANGO_PREFIX']}.{schema}",
-                            result_dict={},
-                        )
+                    schema_dict = json.loads(schema_manager.load_schema(schema))
+                    schema_labels[schema] = flatten_schema(
+                        ("", schema_dict),
+                        level=0,
+                        prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
+                        result_dict={},
+                    )
+                    logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
                 except:
                     pass
     if group_analysis_unit:
@@ -383,14 +430,7 @@ def view_object(data_object_path):
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
-    my_groups = [
-        iRODSUserGroup(g.irods_session.user_groups, item)
-        for item in g.irods_session.query(UserGroup)
-        .filter(User.name == g.irods_session.username)
-        .all()
-    ]
-    # filter out current user group
-    my_groups = [group for group in my_groups if group.name != g.irods_session.username]
+    my_groups = g.irods_session.my_groups
 
     # temp: look up metadata items in full, including create_time and modify_time
     # from irods.query import Query
@@ -421,11 +461,11 @@ def view_object(data_object_path):
                 tzinfo=datetime.timezone.utc, microsecond=0
             ).isoformat()
 
-    view_template = (
-        "view_object.html.j2"
-        if not data_object_path.startswith(f"/{g.irods_session.zone}/trash")
-        else "view_object_trash.html.j2"
-    )
+    view_template = get_template_override_manager(
+        g.irods_session.zone
+    ).get_template_for_catalog_item(data_object, "common/object_view.html.j2")
+    logging.info(f"Object view: using template {view_template}")
+    logging.info(f"Realm: {realm}")
 
     return render_template(
         view_template,
@@ -438,7 +478,8 @@ def view_object(data_object_path):
         my_groups=my_groups,
         grouped_metadata=grouped_metadata,
         schema_labels=schema_labels,
-        metadata_schema_filenames=metadata_schema_filenames,
+        realm=realm,
+        schemas=schemas,
         tika_result=tika_result,
         consolidated_names=consolidated_analysis_metadata_names,
         current_user_rights=current_user_rights,
@@ -937,3 +978,259 @@ def empty_user_trash():
             request.referrer.split("#")[0] + request.values["redirect_hash"]
         )
     return redirect(url_for("browse_bp.collection_browse", collection=user_trash_path))
+
+
+@browse_bp.route("/items/bulk", methods=["POST"])
+@csrf.exempt
+def bulk_operation_items():
+    """ """
+
+    def return_error(message):
+        flash(message, category="warning")
+        if "redirect_route" in request.values:
+            return redirect(request.values["redirect_route"])
+        if "redirect_hash" in request.values:
+            return redirect(
+                request.referrer.split("#")[0] + request.values["redirect_hash"]
+            )
+        return redirect(request.referrer)
+
+    if not ("items" in request.form):
+        return return_error("Missing selection")
+    if not ("action" in request.form):
+        return return_error("Don't know what you want to do!")
+    if (request.form["action"] in ["move", "copy"]) and not (
+        "destination" in request.form
+    ):
+        return_error("Destination for move or copy is missing")
+
+    irods_session: iRODSSession = g.irods_session
+    irods_session.collections
+
+    ITEM_TYPE_PART = {"data_object": "dobj", "collection": "col"}
+
+    success_count = 0
+    failure_count = 0
+    success = True
+
+    action = request.form["action"]
+
+    if action == "delete":
+        force_delete = (
+            True
+            if "force_delete" in request.form and request.form["force_delete"]
+            else False
+        )
+        for item in request.form.getlist("items"):
+            match = re.match(r"(dobj|col)-(.*)", item)
+            if match:
+                (item_type, item_path) = (match.group(1), match.group(2))
+                if item_type == ITEM_TYPE_PART["data_object"]:
+                    try:
+                        irods_session.data_objects.get(item_path).unlink(
+                            force=force_delete
+                        )
+
+                        if force_delete:
+                            signals.data_object_deleted.send(
+                                current_app._get_current_object(),
+                                irods_session=g.irods_session,
+                                data_object_path=item_path,
+                            )
+                        else:
+                            signals.data_object_trashed.send(
+                                current_app._get_current_object(),
+                                irods_session=g.irods_session,
+                                data_object_path=item_path,
+                            )
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(
+                            f"Problem removing data object {item_path} : {e}", "danger"
+                        )
+                if item_type == ITEM_TYPE_PART["collection"]:
+                    try:
+                        irods_session.collections.remove(item_path, force=force_delete)
+                        if force_delete:
+                            signals.collection_deleted.send(
+                                current_app._get_current_object(),
+                                irods_session=g.irods_session,
+                                collection_path=item_path,
+                            )
+                        else:
+                            signals.collection_trashed.send(
+                                current_app._get_current_object(),
+                                irods_session=g.irods_session,
+                                collection_path=item_path,
+                            )
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(
+                            f"Problem removing data object {item_path} : {e}", "danger"
+                        )
+
+    if request.form["action"] == "move":
+        for item in request.form.getlist("items"):
+            match = re.match(r"(dobj|col)-(.*)", item)
+            if match:
+                (item_type, item_path) = (match.group(1), match.group(2))
+                new_path = (
+                    PurePath(request.form["destination"]) / PurePath(item_path).name
+                ).as_posix()
+                if item_type == ITEM_TYPE_PART["data_object"]:
+                    try:
+                        irods_session.data_objects.move(
+                            item_path, request.form["destination"]
+                        )
+                        signals.data_object_moved.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            original_path=item_path,
+                            destination_path=request.form["destination"],
+                            new_path=new_path,
+                        )
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(f"Problem moving data object {item_path} : {e}", "danger")
+
+                if item_type == ITEM_TYPE_PART["collection"]:
+                    try:
+                        irods_session.collections.move(
+                            item_path, request.form["destination"]
+                        )
+                        signals.collection_moved.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            original_path=item_path,
+                            destination_path=request.form["destination"],
+                            new_path=new_path,
+                        )
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(f"Problem moving collection {item_path} : {e}", "danger")
+
+    if request.form["action"] == "copy":
+        for item in request.form.getlist("items"):
+            match = re.match(r"(dobj|col)-(.*)", item)
+            if match:
+                (item_type, item_path) = (match.group(1), match.group(2))
+                new_path = (
+                    PurePath(request.form["destination"]) / PurePath(item_path).name
+                ).as_posix()
+                if item_type == ITEM_TYPE_PART["data_object"]:
+                    try:
+                        irods_session.data_objects.copy(
+                            item_path, request.form["destination"]
+                        )
+                        signals.data_object_copied.send(
+                            current_app._get_current_object(),
+                            irods_session=g.irods_session,
+                            data_object_path=item_path,
+                            destination_path=request.form["destination"],
+                            new_path=new_path,
+                        )
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(f"Problem copying {item_path} : {e}", "danger")
+
+    OPERATION_SUCCESS_STRINGS = {
+        "delete": "deleted",
+        "copy": "copied",
+        "move": "moved",
+    }
+    if success and failure_count == 0:
+        flash(
+            f"Successfully {OPERATION_SUCCESS_STRINGS[action]} {success_count} items",
+            "success",
+        )
+    elif success_count > 0 and failure_count > 0:
+        flash(
+            f"Partial success ({success_count}), but also failures ({failure_count}) encountered in {action} operation",
+            "warning",
+        )
+    else:
+        flash(f"Failed all items ({failure_count}) for {action} operation", "danger")
+
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
+
+
+@browse_bp.route("/item/rename", methods=["POST"])
+def rename_item():
+    if "item_path" not in request.form or "new_name" not in request.form:
+        abort(400, "Required parameters are missing")
+
+    new_name = request.form["new_name"]
+    if re.search(r"/", new_name):
+        abort(400, f"Illegal characters in new name {new_name}")
+
+    item_path = iRODSPath(request.form["item_path"])
+    new_path = iRODSPath(*item_path.split("/")[:-1], new_name)
+    irods_session: iRODSSession = g.irods_session
+
+    redirect_route = request.referrer
+
+    if item_path == new_path:
+        flash("The name has not changed", "danger")
+    else:
+        if irods_session.collections.exists(item_path):
+            irods_session.collections.move(item_path, new_path)
+            signals.collection_renamed.send(
+                current_app._get_current_object(),
+                irods_session=g.irods_session,
+                original_path=item_path,
+                new_path=new_path,
+            )
+            redirect_route = url_for("browse_bp.collection_browse", collection=new_path)
+            flash("Renamed collection successfully", "success")
+
+        elif irods_session.data_objects.exists(item_path):
+            irods_session.data_objects.move(item_path, new_path)
+            signals.data_object_renamed.send(
+                current_app._get_current_object(),
+                irods_session=g.irods_session,
+                original_path=item_path,
+                new_path=new_path,
+            )
+            redirect_route = url_for("browse_bp.view_object", data_object_path=new_path)
+            flash("Renamed data object successfully", "success")
+        else:
+            flash("{item_path} does not exist", "danger")
+
+    return redirect(redirect_route)
+
+
+@browse_bp.route(
+    "/api/collection/subcollections",
+    methods=["GET"],
+    defaults={"collection": None},
+    strict_slashes=False,
+)
+@browse_bp.route("/api/collection/subcollections/<path:collection>")
+def get_sub_collections(collection):
+    if collection is None or collection == "~":
+        collection = g.zone_home
+    if not collection.startswith("/"):
+        collection = "/" + collection
+    current_collection = g.irods_session.collections.get(collection)
+    d = {"path": current_collection.path, "name": current_collection.name}
+    d["children"] = [
+        {"path": collection.path, "name": collection.name}
+        for collection in current_collection.subcollections
+    ]
+    return flask.jsonify(d)

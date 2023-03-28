@@ -1,0 +1,59 @@
+.row>button{
+    width: auto
+}
+
+.formContainer {
+    display: flex;
+    flex-flow: column wrap;
+}
+
+button.mover {
+    margin-left: 0.2em;
+    width: 2em;
+    padding: 0.2em;
+    display: inline-block;
+}
+
+input.mover {
+    display: inline-block;
+    width: calc(100% - 8em);
+}
+
+.input-view {
+    display: inline-block;
+    width: calc(100% - 9em);
+}
+
+div.blocked {
+    display: block;
+}
+
+.modal-title {
+    font-size: 2em;
+}
+
+.form-label {
+    font-size: 1em;
+    font-weight: bold;
+    padding-top: 0.3em;
+}
+
+.list-mover {
+    padding: 0;
+}
+
+.mover-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.viewer {
+    margin-top: 0.5rem;
+}
+
+.choice-button {
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+}
+

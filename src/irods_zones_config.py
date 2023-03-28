@@ -39,8 +39,8 @@ irods_zones = {
         },
         "ssl_settings": {},
         "admin_users": ["vsc33436", "x0116999", "vsc31987"],
-        'logo': 'vsc-combi.webp', # path in static folder
-        'splash_image' : 'portal2.jpg',
+        "logo": "vsc-combi.webp",  # path in static folder
+        "splash_image": "portal2.jpg",
     },
     "set": {
         "jobid": "icts-p-lnx-irods-set",
@@ -98,8 +98,7 @@ irods_zones = {
     },
     "kuleuven_tier1_poc": {
         "admin_users": ["vsc33436", "x0116999"],
-        'logo': 'vsc-combi.webp', # path in static folder
-        'splash_image' : 'portal2.jpg',
-    }
+        "logo": "vsc-combi.webp",  # path in static folder
+        "splash_image": "portal2.jpg",
+    },
 }
-

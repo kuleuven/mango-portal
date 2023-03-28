@@ -1,3 +1,9 @@
+import logging
+
+# get the root logger and set the level to INFO to catch any start up info messages
+rootlogger = logging.getLogger()
+rootlogger.setLevel("INFO")
+
 from irods.session import iRODSSession
 from flask import (
     Flask,
@@ -27,7 +33,6 @@ from csrf import csrf
 from flask_bootstrap import Bootstrap5
 from lib.util import collection_tree_to_dict
 from pprint import pprint
-from operator import itemgetter
 
 # Blueprints
 from kernel.user.user import user_bp
@@ -38,7 +43,7 @@ from kernel.search.basic_search import basic_search_bp
 from kernel.admin.admin import admin_bp
 from kernel.metadata_schema.editor import metadata_schema_editor_bp
 from kernel.metadata_schema.form import metadata_schema_form_bp
-
+from kernel.template_overrides.admin import template_overrides_admin_bp
 import platform
 
 
@@ -49,10 +54,9 @@ from irods_zones_config import (
 )
 import irods_session_pool
 from werkzeug.exceptions import HTTPException
-import logging
+
 import datetime
 
-# from flask_debugtoolbar import DebugToolbarExtension
 
 print(f"Flask version {flask.__version__}")
 
@@ -62,6 +66,8 @@ app = Flask(__name__)
 app.config.from_pyfile("config.py")
 app.config["irods_zones"] = irods_zones
 
+# set the loggin level to the configured one
+rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
 
 if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.mango_open_search.search import mango_open_search_bp
@@ -83,9 +89,6 @@ irods_sessions = {}
 ## Allow cross origin requests for SPA/Ajax situations
 CORS(app)
 
-# get the root logger and set the
-rootlogger = logging.getLogger()
-rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
 
 mango_server_info = {"server_start": datetime.datetime.now()}
 # app.config["EXPLAIN_TEMPLATE_LOADING"] = True
@@ -106,7 +109,10 @@ with app.app_context():
     cache.clear()
 
 # Add debug toolbar
-# toolbar = DebugToolbarExtension(app)
+if os.getenv("FLASK_DEBUG_TOOLBAR", "disabled").lower() == "enabled":
+    from flask_debugtoolbar import DebugToolbarExtension
+
+    toolbar = DebugToolbarExtension(app)
 
 
 # Register blueprints
@@ -119,6 +125,7 @@ with app.app_context():
     app.register_blueprint(admin_bp)
     app.register_blueprint(metadata_schema_editor_bp)
     app.register_blueprint(metadata_schema_form_bp)
+    app.register_blueprint(template_overrides_admin_bp)
 
     if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
         app.register_blueprint(mango_open_search_bp)
@@ -200,6 +207,8 @@ def init_and_secure_views():
         g.user_home = f"/{g.irods_session.zone}/home/{irods_session.username}"
         g.zone_home = f"/{g.irods_session.zone}/home"
 
+        g.mango_server_info = mango_server_info
+
         return None
 
     else:
@@ -277,12 +286,12 @@ def localize_datetime(
 
 @app.template_filter("parse_json_date")
 def parse_json_date(ts):
-    return datetime.datetime.strptime(ts, '%Y-%m-%d')
+    return datetime.datetime.strptime(ts, "%Y-%m-%d")
 
 
 @app.template_filter("parse_json_timestamp")
 def parse_json_timestamp(ts):
-    return datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S%z')
+    return datetime.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S%z")
 
 
 @app.template_filter("format_date")
@@ -294,14 +303,15 @@ def format_date(ts):
 def format_timestamp(ts):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
 
+
 @app.template_filter("yesterday")
 def yesterday(ts):
     return ts - datetime.timedelta(days=1)
 
+
 @app.template_filter("format_time")
 def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
     return ts.strftime("%Y-%m-%dT%H:%M:%S")
-
 
 
 @app.template_filter("format_size")
@@ -312,6 +322,11 @@ def format_size(size):
 @app.template_filter("format_intword")
 def format_intword(size):
     return humanize.intword(size)
+
+
+@app.template_filter("pprint_as_json")
+def pprint_as_json(anything, indent=2):
+    return json.dumps(anything, indent=indent)
 
 
 @app.route("/")
@@ -351,6 +366,8 @@ def dump_meta_data_body_json(filename):
 
 # Blueprint api
 # Endpoint for obtaining collection trees
+
+
 @app.route(
     "/api/collection/tree",
     methods=["GET"],
@@ -360,11 +377,19 @@ def dump_meta_data_body_json(filename):
 @app.route("/api/collection/tree/<path:collection>")
 def api_collection_tree(collection):
     if collection is None or collection == "~":
-        collection = g.user_home
+        collection = g.zone_home
     if not collection.startswith("/"):
         collection = "/" + collection
     current_collection = g.irods_session.collections.get(collection)
-    return flask.jsonify([collection_tree_to_dict(current_collection)])
+
+    @cache.cached(
+        timeout=50,
+        key_prefix=f"{g.irods_session.username}-{g.irods_session.zone}-{request.path}",
+    )
+    def json_tree(collection):
+        return flask.jsonify([collection_tree_to_dict(current_collection)])
+
+    return json_tree(current_collection)
 
 
 @app.route("/test", methods=["GET"])

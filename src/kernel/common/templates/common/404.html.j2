@@ -1,8 +1,5 @@
 {% extends "base.html.j2" %}
-
 {% block body %}
-
-<div class="alert alert-danger" role="alert">
-  Resource not found or you do not have the permission to access it
-</div>
+  <div class="alert alert-danger" role="alert">Resource not found or you do not have the permission to access it</div>
+  {% if e %}<div class="alert alert-danger" role="alert">{{ e }}</div>{% endif %}
 {% endblock body %}
