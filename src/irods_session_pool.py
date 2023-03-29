@@ -1,16 +1,9 @@
 from irods.session import iRODSSession
 import irods
 
-# PRC 1.1.7 introduces BC break :S
-try:
-    from irods.user import iRODSUserGroup, UserGroup, User
-except:
-    from irods.user import iRODSGroup, Group, User
-
-    iRODSUserGroup = iRODSGroup
-    UserGroup = Group
-
-# Avoid BC break for
+# Since PRC 1.1.7
+from irods.user import iRODSGroup
+from irods.models import Group, User
 
 
 from threading import Lock, Thread, Event
@@ -36,8 +29,8 @@ class iRODSUserSession(iRODSSession):
             irods_session.username
         )
         my_groups = [
-            iRODSUserGroup(irods_session.user_groups, item)
-            for item in irods_session.query(UserGroup)
+            iRODSGroup(irods_session.user_groups, item)
+            for item in irods_session.query(Group)
             .filter(User.name == irods_session.username)
             .all()
         ]

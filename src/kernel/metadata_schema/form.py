@@ -238,7 +238,7 @@ def get_schema_prefix(schema_identifier=False, schema_filename=False):
         return f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{get_schema_prefix_from_filename(schema_filename)}"
 
 
-@metadata_schema_form_bp.route("/metada-schema/edit", methods=["POST", "GET"])
+@metadata_schema_form_bp.route("/metadata-schema/edit", methods=["POST", "GET"])
 def edit_schema_metadata_for_item():
     """ """
     _parameters = request.values.to_dict()
@@ -365,7 +365,7 @@ def edit_schema_metadata_for_item():
         return redirect(request.referrer)
 
 
-@metadata_schema_form_bp.route("/metada-schema/edit2", methods=["POST", "GET"])
+@metadata_schema_form_bp.route("/metadata-schema/edit2", methods=["POST", "GET"])
 @csrf.exempt
 def edit_schema_metadata_for_item2():
     """ """
@@ -442,7 +442,7 @@ def edit_schema_metadata_for_item2():
             realm=realm,
             schema_values=lib.util.btoa(values_json),
             prefix=prefix,
-            item=catalog_item
+            item=catalog_item,
         )
 
     if request.method == "POST":

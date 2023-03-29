@@ -62,7 +62,11 @@ def get_metadata_schema_dir(irods_session: iRODSSession):
 def get_realms_for_current_user(irods_session: iRODSSession, base_path):
     # for now a simple listing of everything found in the home collection
     project_collections = irods_session.collections.get(base_path).subcollections
-    realms = [sub_collection.name for sub_collection in project_collections]
+    realms = [
+        sub_collection.name
+        for sub_collection in project_collections
+        if sub_collection.name != "public"
+    ]
     return realms
 
 
@@ -79,7 +83,13 @@ def metadata_schemas(realm):
     elif "current_schema_editor_realm" in session:
         del session["current_schema_editor_realm"]
 
-    return render_template("metadata_schema_module.html.j2", realms=realms, realm=realm, schema_name=request.values.get("schema_name", ""), schema_version=request.values.get("schema_version", ""))
+    return render_template(
+        "metadata_schema_module.html.j2",
+        realms=realms,
+        realm=realm,
+        schema_name=request.values.get("schema_name", ""),
+        schema_version=request.values.get("schema_version", ""),
+    )
 
 
 @metadata_schema_editor_bp.route(
