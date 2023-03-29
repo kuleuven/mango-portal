@@ -83,10 +83,11 @@ function apply_bulk_operation() {
         if (del_checkbox != undefined) {
             del_checkbox.remove();
         }
-        const action = this.selected_option == 'copy' ? 'copied' : 'moved';
-        toast_message = this.selected_option == 'copy' && n_collections > 0
+        
+        const action = selected_option.value == 'copy' ? 'copied' : 'moved';
+        toast_message = selected_option.value == 'copy' && n_collections > 0
             ? `${n_dobjects_printed} will be ${action} to "DESTINATION". Copying collections is not supported.`
-            : `${n_items} will be ${action} to "DESTINATION."`
+            : `${n_items} will be ${action} to "DESTINATION."`;
 
         offcanvas.toggle();
         offcanvas.link_data(selected_items, confirmation_text, confirmation_form, modal, selected_option.value, toast_message);
