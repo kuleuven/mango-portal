@@ -369,6 +369,7 @@ class InputField {
             clone.required = this.required;
             clone.repeatable = this.repeatable;
             clone.default = this.default;
+            clone.values = this.values;
             clone.id = this.id // temporarily, to recover data
 
             if (this.constructor.name == 'ObjectInput') {
