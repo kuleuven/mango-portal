@@ -1073,6 +1073,22 @@ def bulk_operation_items():
                             f"Problem removing data object {item_path} : {e}", "danger"
                         )
 
+    def get_safe_path_if_data_object_exists(path_to_check: PurePath):
+        if irods_session.data_objects.exists(path_to_check.as_posix()):
+            alternate_path = path_to_check.parent / (
+                path_to_check.stem + "-copy" + path_to_check.suffix
+            )
+            logging.info(
+                f"{path_to_check} already exists, renaming to {alternate_path}"
+            )
+            flash(
+                f"{path_to_check} already exists, renaming to {alternate_path}",
+                "warning",
+            )
+            return get_safe_path_if_data_object_exists(alternate_path)
+        # logging.info(f"get safe path: {path_to_check} does not exist yet")
+        return path_to_check
+
     if request.form["action"] == "move":
         for item in request.form.getlist("items"):
             match = re.match(r"(dobj|col)-(.*)", item)
@@ -1080,17 +1096,26 @@ def bulk_operation_items():
                 (item_type, item_path) = (match.group(1), match.group(2))
                 new_path = (
                     PurePath(request.form["destination"]) / PurePath(item_path).name
-                ).as_posix()
+                )
+                if new_path.as_posix() == item_path:
+                    flash(
+                        f"Source {item_path} is equal to destination {new_path}, not moving",
+                        "warning",
+                    )
+                    success = False
+                    failure_count += 1
+                    break
                 if item_type == ITEM_TYPE_PART["data_object"]:
                     try:
-                        irods_session.data_objects.move(
-                            item_path, request.form["destination"]
-                        )
+                        safe_path = get_safe_path_if_data_object_exists(new_path)
+                        safe_path_as_string = safe_path.as_posix()
+                        # logging.info(f"Moving {item_path} to {safe_path_as_string}")
+                        irods_session.data_objects.move(item_path, safe_path_as_string)
                         signals.data_object_moved.send(
                             current_app._get_current_object(),
                             irods_session=g.irods_session,
                             original_path=item_path,
-                            destination_path=request.form["destination"],
+                            destination_path=safe_path_as_string,
                             new_path=new_path,
                         )
                         success_count += 1
@@ -1124,18 +1149,19 @@ def bulk_operation_items():
                 (item_type, item_path) = (match.group(1), match.group(2))
                 new_path = (
                     PurePath(request.form["destination"]) / PurePath(item_path).name
-                ).as_posix()
+                )
                 if item_type == ITEM_TYPE_PART["data_object"]:
                     try:
-                        irods_session.data_objects.copy(
-                            item_path, request.form["destination"]
-                        )
+                        safe_path = get_safe_path_if_data_object_exists(new_path)
+                        safe_path_as_string = safe_path.as_posix()
+                        # logging.info(f"Copying {item_path} to {safe_path_as_string}")
+                        irods_session.data_objects.copy(item_path, safe_path_as_string)
                         signals.data_object_copied.send(
                             current_app._get_current_object(),
                             irods_session=g.irods_session,
                             data_object_path=item_path,
-                            destination_path=request.form["destination"],
-                            new_path=new_path,
+                            destination_path=safe_path_as_string,
+                            new_path=safe_path_as_string,
                         )
                         success_count += 1
                     except Exception as e:
