@@ -1081,7 +1081,8 @@ class SelectInput extends MultipleInput {
         this.form_field.add_select(
             "Default value (if field is required)",
             `${this.id}-default`,
-            this.values.values);
+            this.values.values,
+            this.default);
     }
 
     /**
