@@ -1161,19 +1161,22 @@ class SchemaForm {
         } else if (existing_values.length == 1) { // if there is only one value for this field
             form.querySelector(`[name="${fid}"]`).value = existing_values[0];
         } else { // if the field has been duplicated
-            let field_id = fid.match(`${this.prefix}.(?<field>.+)`).groups.field;
             // go through each of the values and repeat the input field with its corresponding value
             for (let i = 0; i < existing_values.length; i++) {
-                let viewer = form.querySelectorAll(`div.mini-viewer[name="${field_id}"]`)[i];
+                let input = form.querySelectorAll(`[name="${fid}"]`)[i];
+                let viewer = input.parentElement.parentElement;
                 let sibling = viewer.nextSibling;
                 let value = existing_values[i];
-                if (i == 0) {
-                    viewer.querySelector('input').value = value; // use the existing field if this is the first item
-                } else {
+                console.log(value)
+                input.value = value; // use the existing field if this is the first item
+                if (i < existing_values.length - 1) {
                     // clone the input field and fill it if it's not the first item
-                    let new_viewer = viewer.cloneNode(true);
-                    new_viewer.querySelector('input').value = value;
-                    sibling == undefined ? form.appendChild(new_viewer) : form.insertBefore(new_viewer, sibling);
+                    let clone = viewer.cloneNode(true);
+                    let clone_button = clone.querySelector('button i');
+                    clone_button.classList.remove('bi-front');
+                    clone_button.classList.add('bi-trash');
+                    clone_button.parentElement.addEventListener('click', () => clone.remove());
+                    sibling == undefined ? form.appendChild(clone) : form.insertBefore(clone, sibling);
                 }
             }
         }
