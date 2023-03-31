@@ -24,7 +24,6 @@ tbody_checkboxes.forEach((checkbox) => {
         let are_checked = [...tbody_checkboxes].filter((c) => c.checked).length;
         badge_counter.innerHTML = are_checked;
         if (checkbox.checked) {
-            console.log(`File "${checkbox.value}" has been selected.`);
             go_button.removeAttribute('disabled');
             if (are_checked == 1) {
                 select_all.parentElement.appendChild(badge_counter)
@@ -33,7 +32,6 @@ tbody_checkboxes.forEach((checkbox) => {
                 select_all.checked = true;
             }
         } else {
-            console.log(`File "${checkbox.value}" has been unselected.`);
             select_all.checked = false;
             if (are_checked == 0) {
                 go_button.setAttribute('disabled', '');
@@ -171,7 +169,6 @@ class OffCanvas {
     update_radios() {
         this.offcanvas.querySelectorAll('input[type="radio"]')
         .forEach((input) => input.addEventListener('change', () => {
-            console.log(input)
             this.offcanvas.querySelectorAll('i.bi-folder-symlink-fill')
                 .forEach((i) => i.remove());
             // parent_folders == 0 if the destination folder is not the direct parent of a selected folder
