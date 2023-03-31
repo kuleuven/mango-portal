@@ -42,7 +42,7 @@ class Field {
         values = values ? values : Field.example_values;
         
         // if this will be used for annotation
-        if (active) {
+        if (active && !field.required) {
             let empty_option = document.createElement("option");
             inner_input.appendChild(empty_option);
         }
@@ -58,12 +58,13 @@ class Field {
             inner_input.name = field.name;
             if (field.required) {
                 inner_input.setAttribute('required', '');
-            }
-            let value = Field.include_value(field);
-            if (value != undefined) {
-                inner_input.querySelector(`option[value="${value}"]`)
-                    .setAttribute('selected', '');
-            }
+            }   
+        }
+        
+        let value = Field.include_value(field);
+        if (value != undefined) {
+            inner_input.querySelector(`option[value="${value}"]`)
+                .setAttribute('selected', '');
         }
         return inner_input;
     }
@@ -87,12 +88,14 @@ class Field {
             new_input.type = multiple ? "checkbox" : "radio";
             new_input.value = i;
             new_input.id = `check-${i}`;
-            new_input.name = field.name;
-            // if it will be used for annotation
+            
             if (active) {
-                if (value && value.indexOf(i) > -1) {
-                    new_input.setAttribute('checked', '');
-                }
+                new_input.name = field.name;
+            }
+            
+            if (value) {
+                let this_is_the_value = multiple ? value.indexOf(i) > -1 : value == i;
+                if (this_is_the_value) { new_input.setAttribute('checked', ''); }
             }
 
             let new_label = Field.quick('label', "form-check-label", i);

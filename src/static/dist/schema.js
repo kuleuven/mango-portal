@@ -615,7 +615,7 @@ class Schema extends ComplexField {
                 form.form.classList.add('was-validated');
             } else {
                 // trigger confirmation message, which also has its hidden fields
-                let second_sentence = this.data_status == 'draft' && schemas[this.name] && schemas[this.name].published.length > 0 ?
+                let second_sentence = this.data_status != 'copy' && schemas[this.name] && schemas[this.name].published.length > 0 ?
                     ` Version ${schemas[this.name].published[0]} will be archived.` :
                     '';
                 let starting_data = {
@@ -801,7 +801,8 @@ class Schema extends ComplexField {
      */
     save_draft(action) {
         // update the status
-        let status = action == 'publish' ? 'published' : 'draft'
+        let status = action == 'publish' ? 'published' : 'draft';
+        console.log(status)
 
         // if this is a new version from an existing published one, increment the versio number
         if (this.data_status == 'new') {
@@ -810,15 +811,14 @@ class Schema extends ComplexField {
         }
         this.name = this.form.form.querySelector('[name="schema_name"]').value;
         this.title = this.form.form.querySelector('[name="title"]').value;
-        this.status = status;
-
+        
         // retrieve Object-version of the fields as this.properties
         this.fields_to_json();
 
         // group updated date to submit
         let form_fields = {
             current_version: this.version,
-            with_status: this.status,
+            with_status: status,
             raw_schema: btoa(JSON.stringify(this.properties)) // stringify fields (properties)
         };
 
@@ -826,7 +826,7 @@ class Schema extends ComplexField {
         if (this.parent) { form_fields.parent = this.parent; }
 
         // update the form right before submission
-        if (this.status == 'draft') { // original form for drafts
+        if (status == 'draft') { // original form for drafts
             Object.entries(form_fields).forEach((item) => this.form.update_field(item[0], item[1]));
         } else { // confirmation form (which does not include name and title yet) for published
             form_fields.schema_name = this.name;

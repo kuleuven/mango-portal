@@ -45,6 +45,7 @@ from kernel.metadata_schema.editor import metadata_schema_editor_bp
 from kernel.metadata_schema.form import metadata_schema_form_bp
 from kernel.template_overrides.admin import template_overrides_admin_bp
 import platform
+import version
 
 
 from irods_zones_config import (
@@ -186,6 +187,7 @@ def init_and_secure_views():
     g.prc_version = irods.__version__
     g.flask_version = flask.__version__
     g.python_version = platform.python_version()
+    g.mango_version = version.__version__
 
     # check sessions cleanup daemon and spawn a new one if needed
     irods_session_pool.check_and_restart_cleanup()

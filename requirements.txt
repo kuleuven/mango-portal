@@ -44,7 +44,7 @@ pycryptodomex==3.16.0
 pyjwkest==1.4.2
 PyJWT==2.6.0
 python-dateutil==2.8.2
--e git+https://github.com/irods/python-irodsclient@09b826da8e18531d1ae341ae825677d7f97b07c3#egg=python_irodsclient
+python-irodsclient==1.1.7
 python-magic==0.4.27
 python-slugify==7.0.0
 pytz==2022.7

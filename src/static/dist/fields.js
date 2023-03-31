@@ -369,6 +369,7 @@ class InputField {
             clone.required = this.required;
             clone.repeatable = this.repeatable;
             clone.default = this.default;
+            clone.values = this.values;
             clone.id = this.id // temporarily, to recover data
 
             if (this.constructor.name == 'ObjectInput') {
@@ -1080,7 +1081,8 @@ class SelectInput extends MultipleInput {
         this.form_field.add_select(
             "Default value (if field is required)",
             `${this.id}-default`,
-            this.values.values);
+            this.values.values,
+            this.default);
     }
 
     /**
