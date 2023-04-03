@@ -819,7 +819,7 @@ class Schema extends ComplexField {
         let form_fields = {
             current_version: this.version,
             with_status: status,
-            raw_schema: btoa(JSON.stringify(this.properties)) // stringify fields (properties)
+            raw_schema: JSON.stringify(this.properties) // stringify fields (properties)
         };
 
         // register parent if relevant
