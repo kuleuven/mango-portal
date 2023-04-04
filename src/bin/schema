@@ -1,0 +1,165 @@
+#!/usr/bin/env python
+# temp custom command to convert older templates to the new format
+import click
+from slugify import slugify
+import json
+import pathlib
+
+
+# schema_cli = flask.cli.AppGroup("schema")
+
+
+@click.group()
+def schema():
+    """Schema handling utility scripts, currently only convert is provided"""
+    pass
+
+
+@click.command()
+@click.argument(
+    "schema_file_name", metavar="<schema file>", type=click.Path(exists=True)
+)
+@click.argument("realm", metavar="<realm>")
+@click.option(
+    "-o",
+    "--output",
+    default=".",
+    metavar="<dir>",
+    help="This options specifies the output directory for the converted schema file",
+    show_default=True,
+)
+@click.option(
+    "-crp",
+    "--create-realm-path",
+    "zone",
+    help="If you want to place the generated file into its correct location, specify the correct zone: storage/<zone>/mango/realms/<realm>/schemas/<output file>",
+    default="",
+    metavar="<zone>",
+    show_default=True,
+    prompt="Zone: ",
+)
+def convert(schema_file_name, realm, output, zone):
+    """Converts pre 2023-04 metadata schema files to the newer version.
+    Optionally, the correct final location is used by specifying a <zone>.
+    The output file will be in draft mode with version set as 1.0.0"""
+
+    def normalize_key(_key):
+        return slugify(_key, separator="_")
+
+    def walk_object(object_tuple):
+        (_key, _dict) = object_tuple
+        _key = normalize_key(_key)
+        required_keys = [normalize_key(r_key) for r_key in _dict["required"]]
+        result_dict = {}
+        checkbox_fields = []
+
+        for p_key, _property in _dict["properties"].items():
+            # Preprocessing/sanitizing
+            # Checkboxes type
+            p_key = normalize_key(p_key)
+            if p_key.endswith("_checkboxes"):
+                # chop off the type from the label
+                p_key = p_key[: -len("_checkboxes")]
+                # put the type where it belongs
+                _property["type"] = "select"
+                checkbox_fields.append(p_key)
+            # select or radio buttons: presence of enum list and its size
+            if "enum" in _property:
+                _property["type"] = "select"
+
+            if _property["type"] == "number":
+                _property["type"] = "integer"
+            if "format" in _property:
+                _property["type"] = _property["format"]
+
+            if _property["type"] == "object":
+                result_dict[p_key] = {}
+                result_dict[p_key]["properties"] = walk_object(
+                    (p_key, _property),
+                )
+                result_dict[p_key]["title"] = _property["title"]
+                result_dict[p_key]["type"] = _property["type"]
+                # result_dict[p_key][""]
+            else:
+                result_dict[p_key] = {
+                    "title": _property["title"],
+                    "type": _property["type"],
+                }
+                if result_dict[p_key]["type"] == "select":
+                    if p_key in checkbox_fields:
+                        result_dict[p_key]["multiple"] = True
+                        result_dict[p_key]["values"] = list(
+                            _property["properties"].keys()
+                        )
+                        result_dict[p_key]["ui"] = "checkbox"
+                    else:
+                        result_dict[p_key]["multiple"] = False
+                        result_dict[p_key]["values"] = _property["enum"]
+                        result_dict[p_key]["ui"] = (
+                            "dropdown" if len(_property["enum"]) >= 5 else "radio"
+                        )
+
+                if p_key in required_keys:
+                    result_dict[p_key]["required"] = True
+                if result_dict[p_key]["type"] == "integer":
+                    if "minimum" in _property:
+                        result_dict[p_key]["minimum"] = _property["minimum"]
+                    if "maximum" in _property:
+                        result_dict[p_key]["maximum"] = _property["maximum"]
+
+        return result_dict
+
+    result_dict = {}
+    with open(schema_file_name) as old_schema_file:
+        try:
+            old_schema = json.load(old_schema_file)
+        except Exception as e:
+            print(f"Not a valid JSON file: {schema_file_name}. {e}")
+            exit()
+        old_schema_name = normalize_key(pathlib.PurePath(schema_file_name).stem)
+        # Check if has the proper format by inspection
+        if not set(old_schema.keys()).intersection(
+            ("required", "title", "properties", "type")
+        ):
+            print(f"{schema_file_name} is not in the correct format, aborting..")
+            exit()
+        result_dict["properties"] = walk_object((old_schema_name, old_schema))
+        result_dict["version"] = "1.0.0"
+        result_dict["realm"] = realm
+        result_dict["title"] = old_schema["title"]
+        result_dict["schema_name"] = old_schema_name
+        result_dict["status"] = "draft"
+
+    if zone:
+        try:
+            pathlib.Path("storage").stat()
+        except Exception as e:
+            print(
+                f"Not running from the right directory, 'storage' is not available in {pathlib.Path().cwd()}"
+            )
+            exit()
+        output = f"storage/{zone}/mango/realms/{realm}/schemas/{old_schema_name}"
+
+    output_path = pathlib.Path(output)
+    try:
+        output_path.stat()
+    except Exception as e:
+        output_path.mkdir(parents=True, exist_ok=True)
+        print(
+            f"Destination directory {output_path} does not exist so I created it for you"
+        )
+    output_file_path = (
+        output_path
+        / f"{old_schema_name}-v{result_dict['version']}-{result_dict['status']}.json"
+    )
+    try:
+        output_file_path.write_text(json.dumps(result_dict, indent=3))
+        print(f"Written converted schema to {output_file_path}")
+    except Exception as e:
+        print(f"Sorry, something went wrong: {e}")
+
+
+schema.add_command(convert)
+
+if __name__ == "__main__":
+    schema()
