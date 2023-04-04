@@ -459,7 +459,7 @@ def edit_schema_metadata_for_item2():
                 )
         for _key, _value in request.values.items(multi=True):
             if _key.startswith(prefix) and _value:
-                if flat_form_dict[_key]["type"] == "textarea":
+                if _key in flat_form_dict and flat_form_dict[_key]["type"] == "textarea":
                     # the value is transformed to replace newlines as iRODS cannot handle this.
                     # Most likely this is only for schemas which can have textarea boxes
                     _value = "<br/>".join(_value.splitlines())

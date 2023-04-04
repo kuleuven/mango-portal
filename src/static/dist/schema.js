@@ -819,7 +819,7 @@ class Schema extends ComplexField {
         let form_fields = {
             current_version: this.version,
             with_status: status,
-            raw_schema: btoa(JSON.stringify(this.properties)) // stringify fields (properties)
+            raw_schema: JSON.stringify(this.properties) // stringify fields (properties)
         };
 
         // register parent if relevant
@@ -1045,11 +1045,12 @@ class SchemaForm {
         // Retrieve information from the URL and add it to the form as hidden fields
         const url = new URL(window.location.href)
         const url_params = url.searchParams;
-        for (let item of ['item_type', 'object_path', 'schema', 'realm']) {
+        let version_name = `${prefix}.__version__`
+        for (let item of ['item_type', 'object_path', 'schema', 'realm', version_name]) {
             let hidden_input = document.createElement('input')
             hidden_input.type = 'hidden';
             hidden_input.name = item;
-            hidden_input.value = url_params.get(item);
+            hidden_input.value = item == version_name ? this.version : url_params.get(item);
             form_div.appendChild(hidden_input);
         }
 
@@ -1152,7 +1153,8 @@ class SchemaForm {
         let is_checkbox = [...form.querySelectorAll(`[name="${fid}"]`)]
             .filter((x) => x.classList.contains('form-check-input'))
             .length > 0;
-        // if we indeed have multiple-value multiple-choice
+        
+            // if we indeed have multiple-value multiple-choice
         if (is_checkbox) {
             form.querySelectorAll(`[name="${fid}"]`)
                 .forEach((chk) => {
