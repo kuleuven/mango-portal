@@ -25,7 +25,7 @@ def schema():
     "--output",
     default=".",
     metavar="<dir>",
-    help="This options specifies the output directory for the converted schema file",
+    help="This options specifies the output directory for the converted schema file. If you use a '-' character, the converted content is sent to the console (useful for inspection).",
     show_default=True,
 )
 @click.option(
@@ -36,12 +36,11 @@ def schema():
     default="",
     metavar="<zone>",
     show_default=True,
-    prompt="Zone: ",
 )
 def convert(schema_file_name, realm, output, zone):
     """Converts pre 2023-04 metadata schema files to the newer version.
     Optionally, the correct final location is used by specifying a <zone>.
-    The output file will be in draft mode with version set as 1.0.0"""
+    The output file will be in draft mode with version set to 1.0.0"""
 
     def normalize_key(_key):
         return slugify(_key, separator="_")
@@ -131,6 +130,7 @@ def convert(schema_file_name, realm, output, zone):
         result_dict["status"] = "draft"
 
     if zone:
+        print(f"Specified zone {zone}, overriding output {output}")
         try:
             pathlib.Path("storage").stat()
         except Exception as e:
@@ -140,23 +140,26 @@ def convert(schema_file_name, realm, output, zone):
             exit()
         output = f"storage/{zone}/mango/realms/{realm}/schemas/{old_schema_name}"
 
-    output_path = pathlib.Path(output)
-    try:
-        output_path.stat()
-    except Exception as e:
-        output_path.mkdir(parents=True, exist_ok=True)
-        print(
-            f"Destination directory {output_path} does not exist so I created it for you"
+    if output != "-":
+        output_path = pathlib.Path(output)
+        try:
+            output_path.stat()
+        except Exception as e:
+            output_path.mkdir(parents=True, exist_ok=True)
+            print(
+                f"Destination directory {output_path} does not exist so I created it for you"
+            )
+        output_file_path = (
+            output_path
+            / f"{old_schema_name}-v{result_dict['version']}-{result_dict['status']}.json"
         )
-    output_file_path = (
-        output_path
-        / f"{old_schema_name}-v{result_dict['version']}-{result_dict['status']}.json"
-    )
-    try:
-        output_file_path.write_text(json.dumps(result_dict, indent=3))
-        print(f"Written converted schema to {output_file_path}")
-    except Exception as e:
-        print(f"Sorry, something went wrong: {e}")
+        try:
+            output_file_path.write_text(json.dumps(result_dict, indent=3))
+            print(f"Written converted schema to {output_file_path}")
+        except Exception as e:
+            print(f"Sorry, something went wrong: {e}")
+    else:
+        print(json.dumps(result_dict, indent=3))
 
 
 schema.add_command(convert)
