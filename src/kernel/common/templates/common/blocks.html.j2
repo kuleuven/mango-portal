@@ -187,6 +187,11 @@
                      id="pills-{{ schema }}"
                      role="tabpanel"
                      aria-labelledby="pills-{{ schema }}-tab">
+                    {% if grouped_metadata[schema].get("mgs."~ schema ~".__version__", False) %}
+                        <p class="text-end fst-italic">
+                            Schema version: {{ grouped_metadata[schema].get("mgs."~ schema ~".__version__").value }}
+                        </p>
+                    {% endif %}
                     <table class="table table-striped table-hover mt-2">
                         <tbody>
                             {% if schema in schema_labels %}
@@ -204,7 +209,7 @@
                                         <td class="text-left"></td>
                                         <td></td>
                                         <td>
-                                            <i class="bi bi-lock" title="locked"></i>
+                                            {# <i class="bi bi-lock" title="locked"></i> #}
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -218,7 +223,9 @@
                                             class="text-break">
                                             {{ item.value | bleach_clean(tags=['br']) | safe }}
                                         </td>
-                                        <td class="text-left">{{ item.units if item.units is not none }}</td>
+                                        <td class="text-left">
+                                            {{ item.units if item.units is not none }}
+                                        </td>
                                         {% if not read_only and (current_user_rights | intersection(own_or_write)) and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
                                             <td>
                                                 {% if not (item.units and item.units.startswith('analysis')) %}
@@ -245,7 +252,7 @@
                                             <td>
                                             </td>
                                             <td>
-                                                <i class="bi bi-lock" title="locked"></i>
+                                                {# <i class="bi bi-lock" title="locked"></i> #}
                                             </td>
                                         {% endif %}
                                     </tr>
