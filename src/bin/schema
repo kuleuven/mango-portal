@@ -29,10 +29,10 @@ def schema():
     show_default=True,
 )
 @click.option(
-    "-crp",
-    "--create-realm-path",
+    "-z",
+    "--zone-create-realm-path",
     "zone",
-    help="If you want to place the generated file into its correct location, specify the correct zone: storage/<zone>/mango/realms/<realm>/schemas/<output file>",
+    help="If you want to place the generated file into its correct location, specify the correct zone: storage/<zone>/mango/realms/<realm>/schemas/<output file>. Must be run from the application root/src",
     default="",
     metavar="<zone>",
     show_default=True,
