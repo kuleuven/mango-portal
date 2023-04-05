@@ -1,0 +1,49 @@
+{% extends "base.html.j2" %}
+{% block body %}
+    <main>
+        {% if not realm %}
+            <h2>Metadata schema manager</h2>
+            <h4>Please choose a realm from the list below</h4>
+            <div class="list-group realms">
+                {% for realm in realms %}
+                    <a href="{{ url_for('metadata_schema_editor_bp.metadata_schemas', realm=realm)}}"
+                       class="list-group-item">{{ realm }}</a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <h2>Metadata schema manager for {{ realm }}</h2>
+            <div id="metadata_template_list_container">
+                {% set blueprint = "metadata_schema_editor_bp" %}
+                {% set mdt = "meta_data_template" %}
+                <url-list new="{{ url_for('{}.save_schema'.format(blueprint)) }}" list="{{ url_for('{}.list_meta_data_schemas'.format(blueprint)) }}" delete="{{ url_for('{}.delete_meta_data_schema'.format(blueprint)) }}" archive="{{ url_for('{}.archive_meta_data_schema'.format(blueprint)) }}" realm="{{ realm }}" schema-name="{{ schema_name }}", schema-version="{{ schema_version }}"></url-list>
+                {% for file in ['doms', 'fields', 'schema', 'httprequests', 'manager'] %}
+                    <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
+                {% endfor %}
+                <link href="{{ url_for('static', filename='dist/mdschema.css') }}"
+                      rel="stylesheet"/>
+            </div>
+            <div class="modal" id="confirmation-dialog" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h6 class="modal-title">Are you sure?</h6>
+                            <button type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                        </div>
+                        <form id="confirmation-form">
+                            <div class="modal-body">
+                                <p id="confirmation-text">.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary" id="action">I'm sure</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </main>
+{% endblock body %}

@@ -11,6 +11,16 @@ from threading import Lock, Thread, Event
 import datetime, time, logging
 from lib import util
 import signals
+from flask import current_app
+
+
+mango_prefix = ""  #
+
+from app import app
+
+with app.app_context():
+    mango_prefix = current_app.config["MANGO_SCHEMA_PREFIX"] + "."
+
 
 API_URL = os.environ.get(
     "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
@@ -240,7 +250,6 @@ def get_basic_index_doc_for_item(
 ):
     """ """
     fields = {}
-    mango_prefix = "mg."
     field_mappings = {}
 
     metadata = item.metadata.items()
@@ -369,6 +378,12 @@ def generate_docs_for_children(
 
 def index_item(irods_session: iRODSSession, item_type: str, item_path: str):
     # normalize item_path
+    if not irods_session:
+        logging.warn(
+            f"Failed indexing {item_type} {item_path}: no valid indexing session"
+        )
+        return None
+
     if not item_type in ["collection", "data_object"]:
         return None
     if not item_path.startswith("/"):
@@ -395,6 +410,11 @@ def index_item(irods_session: iRODSSession, item_type: str, item_path: str):
 def index_children(
     irods_session: iRODSSession, collection_path: str, schedule_sub_collections=True
 ):
+    if not irods_session:
+        logging.warn(
+            f"Failed indexing children of {collection_path}: no valid indexing session"
+        )
+        return None
     try:
         collection = irods_session.collections.get(collection_path)
         logging.info(
@@ -507,17 +527,23 @@ def execute_index_job(zone: str, job_type: str, item_type, item_path, item_id, t
 
     irods_session_for_zone = get_zone_index_session(zone)
     if not irods_session_for_zone:
-        logging.warn(
-            f"Cannot index, no valid irods indexing session, aborting, but adding job again to the queue for node {MANGO_HOSTNAME}"
-        )
-        add_index_job(
-            zone=zone,
-            job_type=job_type,
-            item_type=item_type,
-            item_path=item_path,
-            item_id=item_id,
-        )
-        return
+        if not API_TOKEN:
+            logging.warn(
+                f"Cannot index, no valid API_TOKEN, aborting and removing job for node {MANGO_HOSTNAME}"
+            )
+        else:
+
+            logging.warn(
+                f"Cannot index, no valid irods indexing session, aborting, but adding job again to the queue for node {MANGO_HOSTNAME}"
+            )
+            add_index_job(
+                zone=zone,
+                job_type=job_type,
+                item_type=item_type,
+                item_path=item_path,
+                item_id=item_id,
+            )
+            return
     if job_type == "index_item":
         result = index_item(irods_session_for_zone, item_type, item_path)
     if job_type == "index_subtree" and item_type == "collection":
@@ -621,19 +647,70 @@ def permissions_changed_listener(sender, **parameters):
     )
 
 
+def data_object_moved_listener(sender, **parameters):
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="delete_item",
+        item_type="data_object",
+        item_path=parameters["original_path"],
+    )
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="index_item",
+        item_type="data_object",
+        item_path=parameters["new_path"],
+    )
+
+
+def collection_moved_listener(sender, **parameters):
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="delete_subtree",
+        item_type="collection",
+        item_path=parameters["original_path"],
+    )
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="index_item",
+        item_type="collection",
+        item_path=parameters["new_path"],
+    )
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="index_subtree",
+        item_type="collection",
+        item_path=parameters["new_path"],
+    )
+
+
+def data_object_copied_listener(sender, **parameters):
+    add_index_job(
+        zone=parameters["irods_session"].zone,
+        job_type="index_item",
+        item_type="data_object",
+        item_path=parameters["new_path"],
+    )
+
+
 signals.collection_added.connect(collection_modified_listener)
 signals.collection_changed.connect(collection_modified_listener)
 signals.collection_deleted.connect(collection_deleted_listener)
 signals.collection_trashed.connect(collection_deleted_listener)
-
+signals.collection_moved.connect(collection_moved_listener)
+signals.collection_renamed.connect(collection_moved_listener)
 signals.subtree_added.connect(subtree_added_listener)
 
 signals.data_object_added.connect(data_object_modified_listener)
 signals.data_object_changed.connect(data_object_modified_listener)
 signals.data_object_deleted.connect(data_object_deleted_listener)
 signals.data_object_trashed.connect(data_object_deleted_listener)
+signals.data_object_moved.connect(data_object_moved_listener)
+signals.data_object_renamed.connect(data_object_moved_listener)
+signals.data_object_copied.connect(data_object_copied_listener)
 
 signals.permissions_changed.connect(permissions_changed_listener)
+
+signals.collection_moved
 
 # Indexing thread :)
 
@@ -679,8 +756,10 @@ class IndexingThread(Thread):
                 try:
                     execute_index_job(**index_queue.pop(0))
                 except Exception as e:
-                    logging.warn("Failed indexing, adding job to the queue again")
-                    index_queue += [current_job]
+                    logging.warn(
+                        f"Failed indexing {e}, not adding job to the queue again"
+                    )
+                    # index_queue += [current_job]
 
             if self.status == "sleep":
                 logging.info(f"Indexing thread in sleep mode on {MANGO_HOSTNAME}")

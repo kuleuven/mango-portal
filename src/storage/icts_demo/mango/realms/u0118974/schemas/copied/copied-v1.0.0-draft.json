@@ -1,0 +1,1 @@
+{"schema_name": "copied", "version": "1.0.0", "status": "draft", "properties": {"chkbox": {"title": "A checkbox", "type": "select", "values": ["two", "one", "three"], "multiple": true, "ui": "checkbox"}}, "edited_by": "u0118974", "realm": "u0118974", "title": "A copy", "parent": "third-1.0.0"}

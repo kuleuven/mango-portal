@@ -1,0 +1,109 @@
+{
+    "title": "another-schema",
+    "type": "object",
+    "required": [
+        "title",
+        "coulour_checkboxes",
+        "myselect",
+        "author"
+    ],
+    "properties": {
+        "title": {
+            "type": "string",
+            "title": "Book title",
+            "format" : "text"
+        },
+        "coulour_checkboxes": {
+            "type": "object",
+            "title": "colour",
+            "properties": {
+                "red": {
+                    "type": "boolean",
+                    "title": "red"
+                },
+                "blue": {
+                    "type": "boolean",
+                    "title": "blue"
+                },
+                "green": {
+                    "type": "boolean",
+                    "title": "green"
+                },
+                "yellow": {
+                    "type": "boolean",
+                    "title": "yellow"
+                }
+            }
+        },
+        "myselect": {
+            "type": "string",
+            "enum": [
+                "East",
+                "West",
+                "North",
+                "South",
+                "Up"
+            ],
+            "title": "Direction"
+        },
+        "author": {
+            "type": "object",
+            "title": "Author",
+            "required": ["name"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name",
+                    "format" : "text"
+                },
+                "age": {
+                    "type": "integer",
+                    "title": "Age",
+                    "minimum": "12",
+                    "maximum": "99"
+                },
+                "email": {
+                    "type": "string",
+                    "format": "email",
+                    "title": "Email address"
+                }
+            }
+        },
+        "another": {
+            "type": "string",
+            "enum": [
+                "Male",
+                "Female"
+            ],
+            "title": "Sex"
+        },
+        "chemical": {
+            "type": "string",
+            "enum": [
+                "Chlorine",
+                "Iron",
+                "Sulfur",
+                "Silicon",
+                "Plutonium"
+            ],
+            "title": "Chemical"
+        },
+        "some_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+        },
+        "some_number": {
+            "type": "integer",
+            "title": "Some number",
+            "minimum": "-20",
+            "maximum": "50"
+        },
+        "range_number": {
+            "type": "float",
+            "title": "Limited",
+            "minimum": "1.3",
+            "maximum": "7.5"
+        }
+    }
+}

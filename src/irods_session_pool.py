@@ -1,6 +1,9 @@
 from irods.session import iRODSSession
-from irods.user import iRODSUser, iRODSUserGroup, UserGroup, User
-from irods.meta import iRODSMeta
+import irods
+
+# Since PRC 1.1.7
+from irods.user import iRODSGroup
+from irods.models import Group, User
 
 
 from threading import Lock, Thread, Event
@@ -26,16 +29,16 @@ class iRODSUserSession(iRODSSession):
             irods_session.username
         )
         my_groups = [
-            iRODSUserGroup(irods_session.user_groups, item)
-            for item in irods_session.query(UserGroup)
+            iRODSGroup(irods_session.user_groups, item)
+            for item in irods_session.query(Group)
             .filter(User.name == irods_session.username)
             .all()
         ]
-        self.irods_session.groups = self.groups = [
+        self.irods_session.my_groups = self.my_groups = [
             group for group in my_groups if group.name != irods_session.username
         ]
-        self.irods_session.group_ids = self.group_ids = [
-            group.id for group in self.groups
+        self.irods_session.my_group_ids = self.my_group_ids = [
+            group.id for group in self.my_groups
         ]
         if "openid_session" in session:
             self.openid_user_name = session["openid_session"]["user_info"]["name"]
