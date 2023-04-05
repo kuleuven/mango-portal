@@ -32,7 +32,7 @@ openid_providers = {
     },
     "vsc": {
         "label": "VSC",
-        "client_id": "blub",
+        "client_id": "mango.vscentrum.be",
         "secret": "blub",
         "issuer_url": "https://auth.vscentrum.be",
         "auto_pick_on_host": "mango.vscentrum.be",
@@ -150,7 +150,7 @@ def current_user_projects():
             if m['username'] == Session(session['openid_session']).username:
                 project['my_role'] = m['role']
 
-        if project["platform"] != "irods":
+        if not project["platform"].startswith("irods"):
             continue
     
         jobid = ''

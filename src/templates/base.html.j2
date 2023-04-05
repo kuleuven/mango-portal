@@ -55,8 +55,8 @@
     {% endblock header %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
-      {% if messages %}
-        <div class="toast-container top-10 start-50 translate-middle-x">
+      <div class="toast-container top-10 start-50 translate-middle-x">
+        {% if messages %}
           {% for category, message in messages %}
             <div class="toast"
                  {% if category !="success" %} data-bs-autohide="false" {% else %} data-bs-delay="2000" {% endif %}
@@ -64,7 +64,7 @@
                  aria-live="assertive"
                  aria-atomic="true">
               <div class="toast-header text-bg-{{ category }} border-0">
-                <strong class="me-auto">{{ category | capitalize }}</strong>
+                <strong class="me-auto">{{ category.replace("danger", "error") | capitalize }}</strong>
                 <small>ManGO</small>
                 <button type="button"
                         class="btn-close"
@@ -74,25 +74,27 @@
               <div class="toast-body">{{ message }}</div>
             </div>
           {% endfor %}
-        </div>
-      {% endif %}
+        {% endif %}
+      </div>
     {% endwith %}
-    <main class="container">
-      <div class="row flex-grow-sm-1 flex-grow-0">
-        {% if 'irods_session' in g %}
-          {% include "sidebar.html.j2" %}
-          <div class="col-9">
-          {% else %}
-            <div class="col">
-            {% endif %}
-            {# <div class="col-8 overflow-auto h-100"> #}
-            <div class="bg-light border rounded-3 p-3">
-              {% block body %}{# THE MEAT #}{% endblock %}
+    {% block container %}
+      <main class="container">
+        <div class="row flex-grow-sm-1 flex-grow-0">
+          {% if 'irods_session' in g %}
+            {% include "sidebar.html.j2" %}
+            <div class="col-9">
+            {% else %}
+              <div class="col">
+              {% endif %}
+              {# <div class="col-8 overflow-auto h-100"> #}
+              <div class="bg-light border rounded-3 p-3">
+                {% block body %}{# THE MEAT #}{% endblock %}
+              </div>
             </div>
           </div>
-        </div>
-        <div class="row mt-5">{% include "footer.html.j2" %}</div>
-      </main>
+          <div class="row mt-5">{% include "footer.html.j2" %}</div>
+        </main>
+      {% endblock container %}
       {% block footer %}
       {% endblock footer %}
       <script src="{{url_for('static', filename='dist/index.js')}}"></script>

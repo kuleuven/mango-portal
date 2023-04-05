@@ -5,7 +5,7 @@ properties([
 ])
 
 def allowed_branch_names = [
-  'development': 'development', 
+  'development': 'development',
   'main': 'latest'
 ]
 
@@ -26,7 +26,7 @@ if (publish) {
 buildDockerImage {
   namespace = 'foz'
   imageName = 'mango'
-  imageTag = tag 
+  imageTag = tag
   noPublish = !publish
 }
 
