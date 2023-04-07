@@ -73,6 +73,21 @@ class ComplexField {
     }
 
     /**
+     * Add new fields based on uploaded JSON file.
+     * @param {FieldInfo} data JSON representation of a field.
+     */
+    add_fields_from_json(data) {
+        Object.keys(data).forEach((field_id) => {
+            let new_field = InputField.choose_class(this.initial_name, this.data_status, [field_id, data[field_id]]);
+            new_field.create_form();
+            new_field.create_modal(this);
+            this.add_field(new_field);
+            this.new_field_idx = this.new_field_idx + 1;
+        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById(this.modal_id)).toggle();
+    }
+
+    /**
      * Compute the `data_status` property based on the status of the version.
      * @returns {String}
      */
@@ -98,11 +113,15 @@ class ComplexField {
         let this_modal = document.getElementById(this.modal_id);
         this_modal.addEventListener('show.bs.modal', () => {
             let formTemp = this_modal.querySelector('div.formContainer');
+            let from_json_load = InputField.from_json_example(this);
             if (formTemp.childNodes.length == 0) {
                 Object.values(this.initials).forEach((initial) => {
                     initial.schema_status = this.data_status;
                     formTemp.appendChild(initial.render(this));
                 });
+                formTemp.appendChild(from_json_load);
+            } else {
+                formTemp.replaceChild(from_json_load, formTemp.lastChild);
             }
         });
     }
