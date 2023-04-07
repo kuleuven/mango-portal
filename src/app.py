@@ -79,8 +79,8 @@ if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
 if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.data_platform import update_zone_info
 
-    if not app.config["MANGO_AUTH"] == "localdev":
-        update_zone_info(app.config["irods_zones"])
+    # if not app.config["MANGO_AUTH"] == "localdev":
+    update_zone_info(app.config["irods_zones"])
 
     from plugins.data_platform.user import data_platform_user_bp
     from plugins.data_platform.project import data_platform_project_bp
@@ -91,8 +91,8 @@ other_plugins = [
     for plugin in app.config["MANGO_ENABLE_CORE_PLUGINS"]
     if plugin not in ["mango_open_search", "data_platform"]
 ]
-if "group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-    from plugins.group_manager.admin import group_manager_admin_bp
+if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+    from plugins.operator_group_manager.admin import operator_group_manager_admin_bp
 if "operator" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.operator.admin import operator_admin_bp
 
@@ -151,8 +151,8 @@ with app.app_context():
 
     if "operator" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
         app.register_blueprint(operator_admin_bp)
-    if "group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-        app.register_blueprint(group_manager_admin_bp)
+    if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        app.register_blueprint(operator_group_manager_admin_bp)
 
 
 @app.context_processor

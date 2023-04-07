@@ -1,0 +1,31 @@
+{% extends "base.html.j2" %}
+{% import "dialogs.html.j2" as dialogs %}
+{% block body %}
+    <h2>Group manager</h2>
+    {% if groups and realm %}
+        <h4>Groups for realm {{ realm }}</h4>
+        <div class="list-group">
+            {% for group in groups %}
+                <a href="{{ url_for('operator_group_manager_admin_bp.view_members', realm = realm, group = group.name)}}"
+                   class="list-group-item list-group-item-action">{{ group.name }}</a>
+            {% endfor %}
+        </div>
+        {% if editable %}
+            <div class="row mt-3">
+                {{ dialogs.general_dialog("add_group", url_for("operator_group_manager_admin_bp.add_group", realm=realm),
+                title="Add group", hidden_fields = [{"name":"realm", "value": realm}], fields=[{"name": "group_name_suffix", "label": "Group name suffix "+realm+"_<suffix>","placeholder": "suffix", "value": ""}])
+                }}
+            </div>
+        {% endif %}
+    {% endif %}
+    {% if realm and not groups %}<p>No groups found for {{ realm }}</p>{% endif %}
+    {% if not realm and realms %}
+        <p>Please select a realm to continue</p>
+        <div class="list-group realms">
+            {% for p_realm in realms %}
+                <a href="{{ url_for('operator_group_manager_admin_bp.index', realm=p_realm)}}"
+                   class="list-group-item list-group-item-action">{{ p_realm }}</a>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock body %}

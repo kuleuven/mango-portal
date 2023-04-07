@@ -40,6 +40,9 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.my_group_ids = self.my_group_ids = [
             group.id for group in self.my_groups
         ]
+        self.irods_session.my_group_names = self.my_group_names = [
+            group.name for group in self.my_groups
+        ]
         if "openid_session" in session:
             self.openid_user_name = session["openid_session"]["user_info"]["name"]
             self.openid_user_email = session["openid_session"]["user_info"]["email"]

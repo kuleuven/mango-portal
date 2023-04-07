@@ -26,6 +26,7 @@ if [ -n "$OIDC_SECRET" ]; then
 fi
 
 export API_URL=https://icts-q-coz-data-platform-api.cloud.q.icts.kuleuven.be
+#export API_URL=https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be
 
 # To test with data platform api, generate a token
 # Needed for mango_open_search plugin, not for data_platform plugin

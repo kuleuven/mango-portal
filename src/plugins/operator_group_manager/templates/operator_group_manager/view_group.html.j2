@@ -1,0 +1,58 @@
+{% extends "base.html.j2" %}
+{% import "dialogs.html.j2" as dialogs %}
+{% block body %}
+    <h2>Group manager for {{ realm }}</h2>
+    <h4>Group {{ group }}</h4>
+    <div class="row">
+        <div class="col-6">
+            <h4>Current members</h4>
+            {% if editable %}
+                <form method="post"
+                      action="{{ url_for('operator_group_manager_admin_bp.remove_members', realm=realm, group=group)}}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                {% endif %}
+                <div class="list-group">
+                    {% for member in members %}
+                        <div class="list-group-item">
+                            {% if editable %}
+                                <span class="text-end">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           value="{{ member.name }}"
+                                           name="members"/>
+                                </span>
+                            {% endif %}
+                            {{ member.name }}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if editable %}
+                    <button type="submit" class="btn btn-secondary mt-3">Remove selected users</button>
+                </form>
+            {% endif %}
+        </div>
+        <div class="col-6">
+            {% if editable and non_members %}
+                <h4>Other members of {{ realm }}</h4>
+                <form method="post"
+                      action="{{ url_for('operator_group_manager_admin_bp.add_members', realm=realm, group=group)}}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="list-group">
+                        {% for member in non_members %}
+                            <div class="list-group-item">
+                                <span class="text-end">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           value="{{ member.name }}"
+                                           name="members"/>
+                                    {{ member.name }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3">Add selected users</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+{% endblock body %}

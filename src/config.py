@@ -37,5 +37,5 @@ MANGO_ENABLE_CORE_PLUGINS = [
     "mango_open_search",
     "data_platform",
     "operator",
-    "group_manager",
+    "operator_group_manager",
 ]
