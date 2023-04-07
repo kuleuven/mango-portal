@@ -13,7 +13,7 @@ div#login-form {
     <div class="container">
         <div class="row align-items-center justify-content-center">
             <div class="col-md-9 rounded-3" id="login-form">
-                <h3>Login to Mango, your iRODS Active Data Portal</h3>
+                <h3>Login to Mango, your iRODS Active Data Repository</h3>
                 <p class="mb-4">Please select the zone you want to login to</p>
                 <form action="{{ url_for('user_bp.login_zone') }}"" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
