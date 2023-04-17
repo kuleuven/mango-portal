@@ -59,3 +59,10 @@ def get_zone_operator_session(zone: str) -> iRODSSession:
     except:
         logging.warn(f"Failed getting indexing session for zone {zone}")
         return None
+
+
+def remove_zone_operator_session(zone: str):
+    if zone in zone_operator_sessions:
+        del zone_operator_sessions[zone]
+        return True
+    return False

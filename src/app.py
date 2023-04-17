@@ -347,6 +347,16 @@ def pprint_as_json(anything, indent=2):
     return json.dumps(anything, indent=indent)
 
 
+@app.template_filter("python_type")
+def python_type(anything):
+    return type(anything)
+
+
+@app.template_filter("format_datetime_iso")
+def format_datetime(datetime_object):
+    return datetime.datetime.strftime(datetime_object, "%Y-%m-%dT%H:%M:%S")
+
+
 @app.route("/")
 def index():
     return render_template(
