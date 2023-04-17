@@ -1,9 +1,8 @@
 {% extends "base.html.j2" %}
 {% import "dialogs.html.j2" as dialogs %}
 {% block body %}
-    <h2>Group manager</h2>
     {% if groups and realm %}
-        <h4>Groups for realm {{ realm }}</h4>
+        <h4>Group manager for realm {{ realm }}</h4>
         <div class="list-group">
             {% for group in groups %}
                 <a href="{{ url_for('operator_group_manager_admin_bp.view_members', realm = realm, group = group.name)}}"
@@ -20,11 +19,12 @@
     {% endif %}
     {% if realm and not groups %}<p>No groups found for {{ realm }}</p>{% endif %}
     {% if not realm and realms %}
+        <h2>Group manager</h2>
         <p>Please select a realm to continue</p>
         <div class="list-group realms">
             {% for p_realm in realms %}
                 <a href="{{ url_for('operator_group_manager_admin_bp.index', realm=p_realm)}}"
-                   class="list-group-item list-group-item-action">{{ p_realm }}</a>
+                   class="list-group-item list-group-item-action"><i class="bi bi-box fs-5"></i> {{ p_realm }}</a>
             {% endfor %}
         </div>
     {% endif %}
