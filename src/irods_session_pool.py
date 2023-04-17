@@ -37,6 +37,8 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.my_groups = self.my_groups = [
             group for group in my_groups if group.name != irods_session.username
         ]
+        self.my_groups.sort(key=lambda x: x.name)
+
         self.irods_session.my_group_ids = self.my_group_ids = [
             group.id for group in self.my_groups
         ]

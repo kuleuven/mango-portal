@@ -2,27 +2,27 @@
     <div class="container-fluid d-grid gap-3 align-items-center"
          style="grid-template-columns: 1fr 2fr">
         <div class="row">
-            <a href="{{ url_for('index')}}"
-               class="d-flex align-items-center col-3 mb-2 mb-lg-0 link-dark text-decoration-none">
-                {% if 'irods_session' in g and 'logo' in config.irods_zones[g.irods_session.zone] %}
-                    <img class="logo"
-                         alt="logo"
-                         src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
-                         width="137"
-                         style="margin: -10px"/>
-                {% else %}
-                    <img class="logo"
-                         alt="logo"
-                         src="{{ url_for('static', filename='logo.svg') }}"
-                         width="137"
-                         style="margin: -10px 10px"/>
-                    <img class="logo"
-                         alt="logo"
-                         src="{{ url_for('static', filename='mango-logo.svg') }}"
-                         width="137"
-                         style="margin: -10px 0"/>
-                {% endif %}
-            </a>
+            <div class="col">
+                <a href="{{ url_for('index')}}" class="text-decoration-none">
+                    {% if 'irods_session' in g and 'logo' in config.irods_zones[g.irods_session.zone] %}
+                        <img class="logo"
+                             alt="logo"
+                             src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
+                             width="137"
+                             style="margin: -10px"/>
+                    {% else %}
+                        <img class="logo"
+                             alt="logo"
+                             src="{{ url_for('static', filename='logo.svg') }}"
+                             width="137"/>
+                        <img class="logo"
+                             alt="logo"
+                             src="{{ url_for('static', filename='mango-logo.svg') }}"
+                             width="137"/>
+                    {% endif %}
+                    <span class="fw-bold fs-5 align-bottom">{{ g.irods_session.zone }}</span>
+                </a>
+            </div>
         </div>
         <div class="d-flex align-items-center">
             {% if config['MANGO_GLOBAL_SEARCH_ACTION'] %}
