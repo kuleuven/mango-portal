@@ -21,6 +21,7 @@ ADMIN_UI = {
 # as they are handled through the data api platform
 PROTECTED_GROUP_SUFFIXES = ["", "_manager", "_ingress", "_egress", "_responsible"]
 
+
 # @cache.memoize(1200)
 def get_realms_for_projects(irods_session: iRODSSession, base_path):
     # for now a simple listing of everything found in the home collection
@@ -54,7 +55,7 @@ def index(realm: str):
         ]
 
     if not realm:
-        if "mango_admins" in g.irods_session.my_group_names:
+        if "mango_admin" in g.irods_session.my_group_names:
             realms = get_realms_for_projects(
                 operator_session, f"/{g.irods_session.zone}/home"
             )
@@ -157,7 +158,7 @@ def add_group(realm):
 def add_members(realm, group):
     """ """
     operator_session = get_operator_session(g.irods_session.zone)
-    members = request.form.getlist("members")
+    members = request.form.getlist("members-to-add")
     try:
         for member in members:
             operator_session.groups.addmember(group, member)
@@ -172,7 +173,7 @@ def add_members(realm, group):
 def remove_members(realm, group):
     """ """
     operator_session = get_operator_session(g.irods_session.zone)
-    members = request.form.getlist("members")
+    members = request.form.getlist("members-to-remove")
     try:
         for member in members:
             operator_session.groups.removemember(group, member)

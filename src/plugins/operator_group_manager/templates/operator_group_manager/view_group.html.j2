@@ -1,11 +1,16 @@
 {% extends "base.html.j2" %}
 {% import "dialogs.html.j2" as dialogs %}
 {% block body %}
-    <h2>Group manager for {{ realm }}</h2>
-    <h4>Group {{ group }}</h4>
+    <h2>
+        Group manager for realm <a href="{{ url_for('operator_group_manager_admin_bp.index', realm=realm) }}">{{ realm }}</a>
+    </h2>
+    <h4 class="mt-3">
+        <i class="bi bi-people" title="Group"></i> {{ group }}
+        {% if not editable %}<i class="bi bi-lock" title="Read only"></i>{% endif %}
+    </h4>
     <div class="row">
         <div class="col-6">
-            <h4>Current members</h4>
+            {% if editable and non_members %}<h4>Current members</h4>{% endif %}
             {% if editable %}
                 <form method="post"
                       action="{{ url_for('operator_group_manager_admin_bp.remove_members', realm=realm, group=group)}}">
@@ -19,7 +24,7 @@
                                     <input class="form-check-input"
                                            type="checkbox"
                                            value="{{ member.name }}"
-                                           name="members"/>
+                                           name="members-to-remove"/>
                                 </span>
                             {% endif %}
                             {{ member.name }}
@@ -27,7 +32,10 @@
                     {% endfor %}
                 </div>
                 {% if editable %}
-                    <button type="submit" class="btn btn-secondary mt-3">Remove selected users</button>
+                    <button type="submit"
+                            class="btn btn-secondary mt-3"
+                            id="remove-members"
+                            disabled>Remove selected users</button>
                 </form>
             {% endif %}
         </div>
@@ -44,15 +52,41 @@
                                     <input class="form-check-input"
                                            type="checkbox"
                                            value="{{ member.name }}"
-                                           name="members"/>
+                                           name="members-to-add"/>
                                     {{ member.name }}
                                 </span>
                             </div>
                         {% endfor %}
                     </div>
-                    <button type="submit" class="btn btn-primary mt-3">Add selected users</button>
+                    <button type="submit" class="btn btn-primary mt-3" id="add-members" disabled>Add selected users</button>
                 {% endif %}
             </form>
         </div>
     </div>
+    <script>
+    remove_checkboxes = document.getElementsByName("members-to-remove");
+    add_checkboxes = document.getElementsByName("members-to-add");
+    remove_btn = document.getElementById("remove-members")
+    add_btn = document.getElementById("add-members")
+
+    for (var i = 0; i < remove_checkboxes.length; i++) {
+        remove_checkboxes[i].addEventListener("click", () => set_button_state(remove_btn, remove_checkboxes));
+    }
+
+    for (var i = 0; i < add_checkboxes.length; i++) {
+        add_checkboxes[i].addEventListener("click", () => set_button_state(add_btn, add_checkboxes));
+    }
+
+    function set_button_state(target_button, check_boxes) {
+        is_one_or_more_checked = false;
+        for (var i = 0; i < check_boxes.length; i++) {
+            if (check_boxes[i].checked) {
+                is_one_or_more_checked = true
+            }
+        }
+        target_button.disabled = !is_one_or_more_checked
+
+    }
+
+    </script>
 {% endblock body %}

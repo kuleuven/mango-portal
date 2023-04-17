@@ -7,13 +7,13 @@
         <div class="list-group">
             {% for group in groups %}
                 <a href="{{ url_for('operator_group_manager_admin_bp.view_members', realm = realm, group = group.name)}}"
-                   class="list-group-item list-group-item-action">{{ group.name }}</a>
+                   class="list-group-item list-group-item-action"><i class="bi bi-people"></i> {{ group.name }}</a>
             {% endfor %}
         </div>
         {% if editable %}
             <div class="row mt-3">
                 {{ dialogs.general_dialog("add_group", url_for("operator_group_manager_admin_bp.add_group", realm=realm),
-                title="Add group", hidden_fields = [{"name":"realm", "value": realm}], fields=[{"name": "group_name_suffix", "label": "Group name suffix "+realm+"_<suffix>","placeholder": "suffix", "value": ""}])
+                title="Add group", hidden_fields = [{"name":"realm", "value": realm}], fields=[{"name": "group_name_suffix", "label": "Group name suffix "+realm+"_[suffix]","placeholder": "suffix", "value": ""}])
                 }}
             </div>
         {% endif %}
