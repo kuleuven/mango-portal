@@ -172,7 +172,7 @@ def login_openid_select_zone():
 
     except Exception as e:
         print(e)
-        flash('Could not create iRODS session', category='danger')
+        flash(f'Could not create iRODS session: {e}', category='danger')
         return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
 
     if request.form.get('submit') == 'How to connect':
@@ -320,7 +320,7 @@ def local_client_retrieve_token_callback():
 
         req = PreparedRequest()
         req.prepare_url(redirect_uri, params)
-    
+
         return redirect(req.url)
 
     all_projects, _ = current_user_projects()
