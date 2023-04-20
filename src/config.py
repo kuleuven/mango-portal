@@ -33,4 +33,9 @@ TIKA_URL = os.environ.get("TIKA_URL", "http://localhost:9998/")
 USER_MAX_HOME_SIZE = 100 * 10**6  # 100MB
 MANGO_GLOBAL_SEARCH_ACTION = "mango_open_search_bp.zone_search"
 HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
-MANGO_ENABLE_CORE_PLUGINS = ["mango_open_search", "data_platform"]
+MANGO_ENABLE_CORE_PLUGINS = [
+    "mango_open_search",
+    "data_platform",
+    "operator",
+    "operator_group_manager",
+]

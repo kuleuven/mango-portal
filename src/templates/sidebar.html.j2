@@ -25,11 +25,11 @@
        class="nav-link px-2 text-truncate"><i class="bi bi-search fs-4"></i>
     <span class="d-none d-sm-inline">Search</span> </a>
 </li>
-{#
 <li>
-<a href="{{ url_for('user_bp.my_groups')}}" class="nav-link px-2 text-truncate"><i class="bi bi-people fs-4"></i>
-<span class="d-none d-sm-inline">Your groups</span> </a>
-</li> #}
+<a href="{{ url_for('operator_group_manager_admin_bp.index')}}"
+   class="nav-link px-2 text-truncate"><i class="bi bi-people fs-4"></i>
+<span class="d-none d-sm-inline">Groups</span> </a>
+</li>
 <li>
 <a href="{{ url_for('browse_bp.collection_browse') + '/' + g.irods_session.zone + '/trash/home/' + g.irods_session.username }}"
    class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>

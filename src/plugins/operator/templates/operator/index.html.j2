@@ -1,0 +1,38 @@
+{% extends "base.html.j2" %}
+{% import "common/dialogs.html.j2" as dialog %}
+{% block body %}
+    <h2>
+        <i class="bi bi-mortarboard"></i> Active operator sessions
+    </h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Zone</th>
+                <th>Properties</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for zone, zone_operator_session in zone_operator_sessions.items() %}
+                <tr>
+                    <th>{{ zone }}</th>
+                    <td>
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <span class="badge bg-secondary col-4 me-3 text-start">Username</span>
+                                <span class="col-8">{{ zone_operator_session.username }}</span>
+                            </div>
+                            <div class="list-group-item">
+                                <span class="badge bg-secondary col-4 me-3 text-start">Expiration</span>
+                                <span class="col-8">{{ zone_operator_session.expiration | format_datetime_iso }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        {{ dialog.confirm_delete_dialog("remove_operator_session", url_for("operator_admin_bp.remove_operator_session", zone=zone), title="Remove operator session", readonly_fields=[{"name": "zone", "value": zone}], btn_ok = "Remove") }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock body %}
