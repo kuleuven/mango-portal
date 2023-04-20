@@ -10,6 +10,7 @@
                              src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
                              width="137"
                              style="margin: -10px"/>
+                    <span class="fw-bold fs-5 align-bottom">{{ g.irods_session.zone }}</span>
                     {% else %}
                         <img class="logo"
                              alt="logo"
@@ -20,7 +21,6 @@
                              src="{{ url_for('static', filename='mango-logo.svg') }}"
                              width="137"/>
                     {% endif %}
-                    <span class="fw-bold fs-5 align-bottom">{{ g.irods_session.zone }}</span>
                 </a>
             </div>
         </div>
