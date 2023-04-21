@@ -9,6 +9,7 @@ Note: versioning follows Semver standard with 3 levels
 - import/export of JSON schema parts in schema editor (kernel)
 - group management via operator account (plugin)
 - operator (rodsadmin) zone sessions in dedicated plugin for re-use across modules
+- pluggable modular admin section with its own sidebar, base template, .. plugins can simply register an admin index in a new mango_ui.py core module
 
 ### Bug fixes
 

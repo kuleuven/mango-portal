@@ -39,3 +39,12 @@ MANGO_ENABLE_CORE_PLUGINS = [
     "operator",
     "operator_group_manager",
 ]
+
+MANGO_MODULE_ADMINS = [
+    "kernel/admin",
+    "kernel/template_overrides"
+    "plugins/mango_open_search",
+    "plugins/operator",
+    "plugins/operator_group_manager",
+]
+

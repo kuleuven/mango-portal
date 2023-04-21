@@ -40,12 +40,12 @@ from kernel.common.error import error_bp
 from kernel.common.browse import browse_bp
 from kernel.metadata.metadata import metadata_bp
 from kernel.search.basic_search import basic_search_bp
-from kernel.admin.admin import admin_bp
+from kernel.admin.admin import admin_admin_bp
 from kernel.metadata_schema.editor import metadata_schema_editor_bp
 from kernel.metadata_schema.form import metadata_schema_form_bp
 from kernel.template_overrides.admin import template_overrides_admin_bp
+from kernel.template_overrides import template_overrides_bp
 import platform
-import importlib
 import version
 
 
@@ -134,9 +134,10 @@ with app.app_context():
     app.register_blueprint(browse_bp)
     app.register_blueprint(metadata_bp)
     app.register_blueprint(basic_search_bp)
-    app.register_blueprint(admin_bp)
+    app.register_blueprint(admin_admin_bp)
     app.register_blueprint(metadata_schema_editor_bp)
     app.register_blueprint(metadata_schema_form_bp)
+    app.register_blueprint(template_overrides_bp)
     app.register_blueprint(template_overrides_admin_bp)
 
     if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
@@ -153,6 +154,20 @@ with app.app_context():
         app.register_blueprint(operator_admin_bp)
     if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
         app.register_blueprint(operator_group_manager_admin_bp)
+
+
+from mango_ui import admin_navbar_entries
+
+logging.info(admin_navbar_entries)
+
+
+@app.context_processor
+def admin_ui_navbar():
+    return {"admin_navbar_entries": admin_navbar_entries}
+
+
+for blueprint in admin_navbar_entries:
+    logging.info(f"Admin UI: added {blueprint}")
 
 
 @app.context_processor
@@ -277,6 +292,7 @@ def release_irods_session_lock(response):
 
 
 # custom filters
+
 
 # intersection of 2 iterables
 @app.template_filter("intersection")
