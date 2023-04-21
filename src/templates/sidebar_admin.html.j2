@@ -8,14 +8,15 @@
         <hr />
         <ul class="nav nav-pills flex-sm-column flex-row mb-auto justify-content-between text-truncate">
             {% for _, navbar_entry in admin_navbar_entries.items() %}
-                <li>
+                <li title="{{ navbar_entry.description }}">
                     <a href="{{ url_for(navbar_entry.blueprint ~ '.' ~ navbar_entry.index) }}"
                        class="nav-link px-2 text-truncate"><i class="bi bi-{{ navbar_entry.bootstrap_icon }} fs-4"></i> {{ navbar_entry.title }}</a>
                 </li>
             {% endfor %}
+            <hr />
+            <li>
+                <a href="{{ url_for('index') }}" class="nav-link px-2 text-truncate">Regular portal <i class="bi bi-person"></i></a>
+            </li>
         </ul>
-        <h2 class="text-end">
-            <a href="/"><i class="bi bi-box-arrow-left"></i></a>
-        </h2>
     </div>
 </div>
