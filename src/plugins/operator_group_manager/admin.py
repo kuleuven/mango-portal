@@ -6,20 +6,24 @@ from irods.column import Like
 from irods.session import iRODSSession
 from cache import cache
 import re, logging
+#from mango_ui import register_module_admin
 
 operator_group_manager_admin_bp = Blueprint(
     "operator_group_manager_admin_bp", __name__, template_folder="templates"
 )
 
-ADMIN_UI = {
-    "title": "Group administration",
-    "icon": "people",
-    "description": "Group administration using operator (rodsadmin) account",
-}
+# ADMIN_UI = {
+#     "title": "Group administration",
+#     "bootstrap_icon": "people",
+#     "description": "Group administration using operator (rodsadmin) account",
+#     "blueprint": operator_group_manager_admin_bp.name,
+# }
+
+#register_module_admin(**ADMIN_UI)
 
 # Protected groups are excluded from manipulation through the operator_group_manager functions
 # as they are handled through the data api platform
-PROTECTED_GROUP_SUFFIXES = ["", "_manager", "_ingress", "_egress", "_responsible"]
+PROTECTED_USER_GROUP_SUFFIXES = ["", "_manager", "_ingress", "_egress", "_responsible"]
 
 
 # @cache.memoize(1200)
@@ -97,7 +101,9 @@ def view_members(realm, group):
     ]
 
     editable = False
-    if group not in [f"{realm}{suffix}" for suffix in PROTECTED_GROUP_SUFFIXES] and (
+    if group not in [
+        f"{realm}{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES
+    ] and (
         {"datateam", f"{realm}_manager", "mango_admin"}.intersection(
             set(g.irods_session.my_group_names)
         )
@@ -112,7 +118,7 @@ def view_members(realm, group):
         realm_members=realm_members,
         non_members=non_members,
         editable=editable
-        if group not in [f"{realm}{suffix}" for suffix in PROTECTED_GROUP_SUFFIXES]
+        if group not in [f"{realm}{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES]
         else False,
     )
 

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, g, request, redirect, flash
 from . import zone_operator_sessions, remove_zone_operator_session
+from mango_ui import register_module_admin
 
 operator_admin_bp = Blueprint(
     "operator_admin_bp", __name__, template_folder="templates"
@@ -7,9 +8,13 @@ operator_admin_bp = Blueprint(
 
 ADMIN_UI = {
     "title": "Operator",
-    "icon": "android2",
+    "bootstrap_icon": "android2",
     "description": "Operator accounts are used for various tasks that require rodsadmin level access",
+    "index": "index",
+    "blueprint": "operator_admin_bp",
 }
+
+register_module_admin(**ADMIN_UI)
 
 
 @operator_admin_bp.route("/operator/admin", methods=["GET"])

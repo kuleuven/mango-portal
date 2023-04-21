@@ -1,8 +1,8 @@
 {% import "admin_macros.html.j2" as admin_macros %}
-<h3>Admin utils</h3>
+<h3>Node info</h3>
 {{ admin_macros.render_navigation_bar(menus=[
-{'endpoint': 'admin_bp.index','parameters': {}, 'label': 'Configuration'},
-{'endpoint': 'admin_bp.node_sessions','parameters': {}, 'label': 'Sessions (node)'},
-{'endpoint': 'admin_bp.node_logins','parameters': {}, 'label': 'Login history'},
+{'endpoint': 'admin_admin_bp.index','parameters': {}, 'label': 'Configuration'},
+{'endpoint': 'admin_admin_bp.node_sessions','parameters': {}, 'label': 'Sessions (node)'},
+{'endpoint': 'admin_admin_bp.node_logins','parameters': {}, 'label': 'Login history'},
 ], active=request.endpoint
 )}}

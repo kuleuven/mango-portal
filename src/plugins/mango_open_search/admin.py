@@ -11,7 +11,7 @@ from flask import (
     Response,
     request,
     flash,
-    json
+    json,
 )
 
 from . import (
@@ -28,10 +28,20 @@ from opensearchpy import client
 
 from irods.collection import iRODSCollection
 import logging, time
+from mango_ui import register_module_admin
 
 mango_open_search_admin_bp = Blueprint(
     "mango_open_search_admin_bp", __name__, template_folder="templates"
 )
+
+ADMIN_UI = {
+    "title": "Opensearch",
+    "bootstrap_icon": "search",
+    "description": "Opensearch tools",
+    "blueprint": mango_open_search_admin_bp.name,
+}
+
+register_module_admin(**ADMIN_UI)
 
 
 @mango_open_search_admin_bp.route("/mango-open-search/admin")

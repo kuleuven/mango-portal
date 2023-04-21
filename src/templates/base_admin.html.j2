@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" meta="">
+  <head>
+    {% block head %}
+      <meta charset="utf-8" />
+      <title>Your iRODS portal</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}"
+            rel="stylesheet"/>
+      <link rel="shortcut icon"
+            href="{{ url_for('static', filename='mango-ico.png') }}"/>
+      <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+      <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+      <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css"/>
+      <link href="{{ url_for('static', filename='dist/index.css') }}"
+            rel="stylesheet"/>
+      {#
+  <link href="{{ url_for('static', filename='css/ipack.css') }}" rel="stylesheet"> #}
+      <style>
+<!-- prevent the scrollbar to make page content jump horizonthally -->
+
+  html {
+    margin-left: calc(100vw - 100%);
+    margin-right: 0;
+  }
+
+
+  .required:after {
+    content:" *";
+    color: red;
+  }
+  .breadcrumb-item + .breadcrumb-item::before {
+  float: left;
+  padding-right: 0.5rem;
+  color: #6c757d;
+  content: var(--bs-breadcrumb-divider, "\00bb") /* rtl: var(--bs-breadcrumb-divider, "/") */;
+}
+
+.toast {
+  --bs-toast-max-width: 550px;
+}
+
+.dropdown-menu.mango-profile {
+    z-index: 1021;
+  }
+      </style>
+    {% endblock head %}
+    {% block custom_style %}
+    {% endblock custom_style %}
+  </head>
+  <body>
+    {% block header %}
+      {% include "header.html.j2" %}
+    {% endblock header %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+      <div class="toast-container top-10 start-50 translate-middle-x">
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="toast"
+                 {% if category !="success" %} data-bs-autohide="false" {% else %} data-bs-delay="2000" {% endif %}
+                 role="alert"
+                 aria-live="assertive"
+                 aria-atomic="true">
+              <div class="toast-header text-bg-{{ category }} border-0">
+                <strong class="me-auto">{{ category.replace("danger", "error") | capitalize }}</strong>
+                <small>ManGO</small>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+              </div>
+              <div class="toast-body">{{ message }}</div>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% endwith %}
+    {% block container %}
+      <main class="container">
+        <div class="row flex-grow-sm-1 flex-grow-0">
+          {% if 'irods_session' in g %}
+            {% include "sidebar_admin.html.j2" %}
+            <div class="col-9">
+            {% else %}
+              <div class="col">
+              {% endif %}
+              {# <div class="col-8 overflow-auto h-100"> #}
+              <div class="bg-light border rounded-3 p-3">
+                {% block body %}{# THE MEAT #}{% endblock %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row mt-5">{% include "footer.html.j2" %}</div>
+    </main>
+  {% endblock container %}
+  {% block footer %}
+  {% endblock footer %}
+  <script src="{{url_for('static', filename='dist/index.js')}}"></script>
+  <script src="{{url_for('static', filename='js/form-validation.js')}}"></script>
+  {% block javascript %}
+    <script>
+      // Activate toast mechanism
+      var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+      var toastList = toastElList.map(function (toastEl) {
+        // Creates an array of toasts (it only initializes them)
+        return new bootstrap.Toast(toastEl)
+      });
+      toastList.forEach(toast => toast.show());
+
+      // console.log(toastList);
+    </script>
+  {% endblock javascript %}
+</body>
+</html>

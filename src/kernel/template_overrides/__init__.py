@@ -67,6 +67,7 @@ class TemplateOverrideManager:
         # no checks needed for global overrides
         if "always" in matches and matches["always"]:
             return matches["always"]
+
         # process AND match patters aka all
         def match_item(match_key: str, match_value: str):
             match match_key:
@@ -168,7 +169,7 @@ class TemplateOverrideManager:
                     pass
 
         except Exception as e:
-            logging.info(
+            logging.debug(
                 f"No dedicated template definition found in metadata for {catalog_item.path}: {e}"
             )
             pass
@@ -209,3 +210,16 @@ def get_template_override_manager(zone: str):
 logging.info(
     f"Template override managers: found dedicated configs for zones {list(template_override_managers.keys())}"
 )
+
+from flask import Blueprint
+
+template_overrides_bp = Blueprint("template_overrides_bp", __name__)
+
+
+@template_overrides_bp.app_template_filter(name="mango_template")
+def mango_template_override_filter(
+    template: str, zone: str, catalog_item: iRODSDataObject | iRODSCollection
+) -> str:
+    return get_template_override_manager(zone).get_template_for_catalog_item(
+        catalog_item, template
+    )

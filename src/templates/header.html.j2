@@ -3,7 +3,7 @@
          style="grid-template-columns: 1fr 2fr">
         <div class="row">
             <div class="col">
-                <a href="{{ url_for('index')}}" class="text-decoration-none">
+                <a href="{{ url_for('index') }}" class="text-decoration-none">
                     {% if 'irods_session' in g and 'logo' in config.irods_zones[g.irods_session.zone] %}
                         <img class="logo"
                              alt="logo"
