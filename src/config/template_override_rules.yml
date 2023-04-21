@@ -59,7 +59,7 @@ collection_view_trash:
     all:
       subtree: '/{{zone}}/trash' #quotes needed as in principle {} are special characters
 object_view_trash:
-  source: common/object_view,html.j2
+  source: common/object_view.html.j2
   target: common/object_view_trash.html.j2
   matches:
     all:
