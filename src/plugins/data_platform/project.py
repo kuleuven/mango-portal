@@ -158,6 +158,47 @@ def modify_project():
     
     return redirect(url_for('data_platform_project_bp.project', project_name=id))
 
+@data_platform_project_bp.route("/data-platform/projects/option", methods=["POST"])
+@openid_login_required
+def set_project_options():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    id = request.form.get('project')
+
+    response = requests.get(
+        f"{API_URL}/v1/projects/{id}", headers=header
+    )
+    response.raise_for_status()
+
+    project = response.json()
+
+    options = []
+
+    if project['platform'].startswith('irods'):
+        options += ['sftp-openfile', 'enable-icommands']
+
+    for key in options:
+        value = request.form.get(key, 'false')
+
+        skip = False
+
+        for opt in project['platform_options']:
+            if opt['key'] == key and opt['value'] == value:
+                skip = True
+
+        if skip:
+            continue
+
+        response = requests.put(
+            f"{API_URL}/v1/projects/{id}/option/{key}", headers=header, json={"value": value}
+        )
+        response.raise_for_status()
+
+        flash(response.json()['message'], "success")
+    
+    return redirect(url_for('data_platform_project_bp.project', project_name=id))
+
 @data_platform_project_bp.route("/data-platform/projects/deploy", methods=["POST"])
 @openid_login_required
 def deploy_project():

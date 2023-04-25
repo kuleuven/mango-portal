@@ -23,7 +23,7 @@ export OPENID_REDIRECT_BASE=http://localhost:3000
 # See also https://ceifdoc.icts.kuleuven.be/devops/development/go-webapp-basis/#basis-setup-development
 if [ -n "$OIDC_SECRET" ]; then
   export OPENID_REDIRECT_BASE=http://oidcapp.icts.kuleuven.be:3000
-  export MANGO_AUTH=localdev
+  export MANGO_AUTH=
 fi
 
 export API_URL=https://icts-q-coz-data-platform-api.cloud.q.icts.kuleuven.be

@@ -222,11 +222,23 @@ def connection_info_modal(zone):
     header = {"Authorization": "Bearer " + token}
     jobid = current_app.config['irods_zones'][zone]["jobid"]
     response = requests.get(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection_info", headers=header
+        f"{API_URL}/v1/irods/zones/{jobid}/connection_info?audience=end-user", headers=header
     )
-    response.raise_for_status()
 
-    info = response.json()
+    info = {}
+    setup_json = {}
+
+    if response.status_code != 403:
+        response.raise_for_status()
+
+        info = response.json()
+
+        info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+
+        setup_json={
+            'linux': json.dumps(info['irods_environment'], indent=4),
+            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
+        }
 
     if "-hpc-" in jobid:
         # icts-p-hpc-irods-instance
@@ -241,16 +253,9 @@ def connection_info_modal(zone):
     if "-q-" in jobid:
         sftp_host = "rdmsftp.q.icts.kuleuven.be"
     if "-t-" in jobid:
-        sftp_host = "rdmsftp.t.icts.kuleuven.be"
+        sftp_host = "rdmsftp.t.icts.kuleuven.be"   
 
-    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
-
-    setup_json={
-        'linux': json.dumps(info['irods_environment'], indent=4),
-        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
-    }
-
-    return render_template("user/connection_info_body.html.j2", info=info, setup_json=setup_json, sftp_host=sftp_host)
+    return render_template("user/connection_info_body.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host)
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 @openid_login_required
@@ -259,11 +264,23 @@ def connection_info():
     header = {"Authorization": "Bearer " + token}
     jobid = current_zone_jobid()
     response = requests.get(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection_info", headers=header
+        f"{API_URL}/v1/irods/zones/{jobid}/connection_info?audience=end-user", headers=header
     )
-    response.raise_for_status()
 
-    info = response.json()
+    info = {}
+    setup_json = {}
+
+    if response.status_code != 403:
+        response.raise_for_status()
+
+        info = response.json()
+
+        info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+
+        setup_json={
+            'linux': json.dumps(info['irods_environment'], indent=4),
+            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
+        }
 
     if "-hpc-" in jobid:
         # icts-p-hpc-irods-instance
@@ -278,16 +295,9 @@ def connection_info():
     if "-q-" in jobid:
         sftp_host = "rdmsftp.q.icts.kuleuven.be"
     if "-t-" in jobid:
-        sftp_host = "rdmsftp.t.icts.kuleuven.be"
+        sftp_host = "rdmsftp.t.icts.kuleuven.be"    
 
-    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
-
-    setup_json={
-        'linux': json.dumps(info['irods_environment'], indent=4),
-        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
-    }
-
-    return render_template("user/connection_info.html.j2", info=info, setup_json=setup_json, sftp_host=sftp_host)
+    return render_template("user/connection_info.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host)
 
 
 @data_platform_user_bp.route('/data-platform/retrieve-token', methods=["GET", "POST"])
