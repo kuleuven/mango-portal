@@ -45,7 +45,7 @@
 cat > ~/.irods/irods_environment.json <<'EOF'
 {{ setup_json }}
 EOF
-echo {{ info['token'] }} | iinit
+echo {{ info['token'] }} | iinit >/dev/null
 </code></pre>
 
     <h5>Python Client</h5>
