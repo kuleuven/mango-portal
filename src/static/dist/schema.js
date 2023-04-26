@@ -529,6 +529,8 @@ class Schema extends ComplexField {
      * @param {SchemaContents} data JSON representation of a schema
      */
     from_json(data) {
+        this.saved_json = data;
+        
         super.from_json(data);
 
         // retrieve schema-specific information
@@ -711,13 +713,40 @@ class Schema extends ComplexField {
         let to_download = {...this.properties};
         console.log(this.name)
         let for_download = Field.quick('div', 'py-3');
-        let for_download_explanation = Field.quick('p', 'fst-italic', "Click on the checkboxes to select the fields you want and then ");
-        let download_link = Field.quick('a', 'link-dark fw-semibold', 'click here to download.');
-        download_link.setAttribute('download', `${this.name}-${this.version}-fields.json`);
-        download_link.setAttribute('style', 'cursor: pointer;');
-        download_link.addEventListener('click', (e) => e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(to_download, null, "  ")}`);
-        for_download_explanation.appendChild(download_link);
+
+        // set up text to download
+        let for_download_full = Field.quick('p', 'fst-italic');
+
+        // link to download full schema
+        let full_link = Field.quick('a', 'link-dark fw-semibold', 'Download the full schema');
+        full_link.setAttribute('download', `${this.name}-${this.version}-${this.status}.json`);
+        full_link.setAttribute('style', 'cursor: pointer;');
+        full_link.addEventListener('click', (e) => e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(this.saved_json, null, "  ")}`);
+        for_download_full.appendChild(full_link);
         
+        // intermediate text
+        let span1 = Field.quick('span', '', ' (the saved version) or click on the checkboxes to select the fields you want and ');
+        for_download_full.appendChild(span1);
+
+        let fields_link = Field.quick('a', 'link-dark fw-semibold', 'download specific fields.');
+        fields_link.setAttribute('download', `${this.name}-${this.version}-fields.json`);
+        fields_link.setAttribute('style', 'cursor: pointer;');
+        fields_link.addEventListener('click', (e) => e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(to_download, null, "  ")}`);
+        for_download_full.appendChild(fields_link);
+        
+        // create universal checkbox
+        let select_all_box = Field.quick('div', 'form-check form-check-inline');
+        let select_all_input = Field.quick('input', 'form-check-input');
+        select_all_input.type = 'checkbox';
+        select_all_input.id = 'select_all';
+        select_all_input.setAttribute('aria-label', 'select all fields');
+        select_all_input.setAttribute('checked', '');
+        let select_all_label = Field.quick('label', 'form-check-label', '(Un)select all fields');
+        select_all_label.setAttribute('for', 'select_all');
+        select_all_box.appendChild(select_all_input);
+        select_all_box.appendChild(select_all_label);
+        
+        // checkboxes to select fields
         let field_checkboxes = Field.quick('div', 'border rounded p-2 mb-1');
         this.field_ids.forEach((field) => {
             let field_div = Field.quick('div', 'form-check form-check-inline');
@@ -726,6 +755,7 @@ class Schema extends ComplexField {
             input.type = 'checkbox';
             input.id = `download-${field}`;
             input.value = field;
+            input.setAttribute('aria-label', `select-${field}`);
             input.setAttribute('checked', '');
             input.addEventListener('change', () => {
                 let selected = [...field_checkboxes.querySelectorAll('input:checked')].map((x) => x.value);
@@ -734,11 +764,20 @@ class Schema extends ComplexField {
                     if (selected.indexOf(x) == -1) { delete filtered_json[x]; }
                 });
                 to_download = {...filtered_json};
-                json_rendering.innerHTML = JSON.stringify(filtered_json, null, "  ");
-                if (Object.keys(filtered_json).length == 0) {
-                    download_link.setAttribute('style', 'pointer-events:none;');
+                json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
+                
+                // if all checkboxes are checked
+                if ([...field_checkboxes.querySelectorAll('input[type="checkbox"]')].every((el) => el.checked)) {
+                    select_all_input.setAttribute('checked', '');
                 } else {
-                    download_link.setAttribute('style', 'cursor: pointer;');
+                    select_all_input.removeAttribute('checked');
+                }
+
+                // if there are no selected filled
+                if (Object.keys(filtered_json).length == 0) {
+                    fields_link.setAttribute('style', 'pointer-events:none;');
+                } else {
+                    fields_link.setAttribute('style', 'cursor: pointer;');
                 }
             });
             
@@ -748,15 +787,33 @@ class Schema extends ComplexField {
             field_div.appendChild(label);
             field_checkboxes.appendChild(field_div);
         });
+        // one checkbox to rule them all
+        select_all_input.addEventListener('change', () => {
+            if (select_all_input.checked) {
+                field_checkboxes.querySelectorAll('input[type="checkbox"]').forEach((el) => el.checked = true);
+                fields_link.setAttribute('style', 'cursor: pointer;');
+                to_download = {...this.properties};
+                json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
+            } else {
+                field_checkboxes.querySelectorAll('input[type="checkbox"]').forEach((el) => el.checked = false);
+                fields_link.setAttribute('style', 'pointer-events:none;');
+                to_download = {};
+                json_rendering.innerHTML = JSON.stringify({}, null, "  ");
+            }
+        });
+        
+        // show json of selected fields
         let json_rendering = Field.quick('pre', 'border p-1 bg-light');
         json_rendering.setAttribute('style', 'white-space: pre-wrap;');
         json_rendering.innerHTML = JSON.stringify(this.properties, null, "  ");
 
-        for_download.appendChild(for_download_explanation);
+        
+        for_download.appendChild(for_download_full);
+        for_download.appendChild(select_all_box);
         for_download.appendChild(field_checkboxes);
         for_download.appendChild(json_rendering);
 
-        this.nav_bar.add_item('json', 'Download fields');
+        this.nav_bar.add_item('json', 'Download JSON');
         this.nav_bar.add_tab_content('json', for_download);
     }
 
