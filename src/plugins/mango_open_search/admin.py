@@ -61,7 +61,9 @@ def index():
         f"/{g.irods_session.zone}/home"
     )
 
-    available_collections = [home_collection] + home_collection.subcollections
+    available_collections = (
+        [g.irods_session.zone] + [home_collection] + home_collection.subcollections
+    )
 
     return render_template(
         "mango_open_search/admin_index.html.j2",

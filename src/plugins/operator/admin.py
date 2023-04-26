@@ -8,7 +8,7 @@ operator_admin_bp = Blueprint(
 
 ADMIN_UI = {
     "title": "Operator",
-    "bootstrap_icon": "android2",
+    "bootstrap_icon": "robot",
     "description": "Operator accounts are used for various tasks that require rodsadmin level access",
     "index": "index",
     "blueprint": "operator_admin_bp",
@@ -20,7 +20,7 @@ register_module_admin(**ADMIN_UI)
 @operator_admin_bp.route("/operator/admin", methods=["GET"])
 def index():
     return render_template(
-        "operator/index.html.j2", zone_operator_sessions=zone_operator_sessions
+        "operator/admin_index.html.j2", zone_operator_sessions=zone_operator_sessions
     )
 
 

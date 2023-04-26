@@ -47,6 +47,18 @@ metadata_schema_editor_bp = Blueprint(
 )
 
 
+from mango_ui import register_module
+
+UI = {
+    "title": "Metadata schemas",
+    "bootstrap_icon": "list-columns-reverse",
+    "description": "Basic info about the current node",
+    "blueprint": metadata_schema_editor_bp.name,
+    "index": "metadata_schemas",
+}
+
+register_module(**UI)
+
 schema_base_dir = os.path.abspath("storage")
 
 

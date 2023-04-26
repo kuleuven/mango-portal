@@ -40,11 +40,10 @@ MANGO_ENABLE_CORE_PLUGINS = [
     "operator_group_manager",
 ]
 
-MANGO_MODULE_ADMINS = [
-    "kernel/admin",
-    "kernel/template_overrides"
-    "plugins/mango_open_search",
-    "plugins/operator",
-    "plugins/operator_group_manager",
+MANGO_MODULE_ADMIN_BP = [
+    "admi_admin_bp",
+    "template_overrides_admin_bp"
+    "mango_open_search_admin_bp",
+    "mango_open_search_stats_bp"
+    "operator_admin_bp",
 ]
-
