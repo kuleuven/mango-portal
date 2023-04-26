@@ -121,6 +121,13 @@ class InputField {
         try { // see if the JSON can be parsed at all
             let new_fields = JSON.parse(data);
             if (new_fields.constructor.name == 'Object') { // if it's a JSON and has the correct type
+                if (
+                    !Object.values(new_fields).every((f) => f.constructor.name == 'Object') && // not all eelemnts are objects
+                    'properties' in new_fields // it has a properties attribute
+                    ) {
+                        new_fields = new_fields.properties;
+                    }
+
                 let errors = [], warnings = [];
                 let errors_field = '', warnings_field = '';
                 let original_fields = Object.keys(new_fields).length;
@@ -214,6 +221,7 @@ class InputField {
         reader.onload = () => { InputField.verify_json_data(json_div, reader.result, schema); };
 
         let json_div = Field.quick("div", "ex my-2");
+        let explanation = Field.quick("p", "fst-italic", "Extract fields form a JSON file with fields or with a full schema (only the fields will be uploaded!).");
         let button = Field.quick('button', 'btn btn-outline-primary', '<strong>Load from JSON</strong>');
         button.setAttribute('disabled', '');
         let label = Field.quick('label', 'form-label', 'Choose a file or drag and drop into the field below.');
@@ -229,6 +237,7 @@ class InputField {
 
         json_div.appendChild(button);
         json_div.appendChild(document.createElement('br'));
+        json_div.appendChild(explanation);
         json_div.appendChild(label);
         json_div.appendChild(input);
         json_div.appendChild(json_summary);
