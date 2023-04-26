@@ -7,7 +7,7 @@
 
 {% block body %}
 {% set can_edit = project['my_role'] == 'manager' or project['my_role'] == 'responsible' or admin %}
-{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-icommands': 'true', 'gdpr-data': 'false'} %}
+{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-icommands': 'true', 'gdpr-data': 'false', 'enforce-quota': 'false'} %}
 {% for opt in project['platform_options'] %}
 {% if opts.update({opt['key']: opt['value']}) %}{% endif %}
 {% endfor %}
@@ -183,6 +183,10 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <input type="hidden" name="project" value="{{ project['name'] }}" />
               {% if project['platform'].startswith("irods") %}
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" value="true" id="enforce-quota" name="enforce-quota" onChange="this.form.submit()" {% if opts['enforce-quota'] == "true" %}checked{% endif %} />
+                <label class="form-check-label" for="enforce-quota">Enforce quota, block writes if quota are exceeded</label>
+              </div>
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" value="true" id="sftp-openfile" name="sftp-openfile" onChange="this.form.submit()" {% if opts['sftp-openfile'] == "true" %}checked{% endif %} />
                 <label class="form-check-label" for="sftp-openfile">Enable SFTP open files for read-write</label>
