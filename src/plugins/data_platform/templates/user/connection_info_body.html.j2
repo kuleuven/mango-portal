@@ -1,7 +1,8 @@
+    {% if 'irods_environment' in info %}
     <p>
         To be able to use the irods icommands or the irods python client, you can use the information below to connect to the ManGO storage server.
     </p>
-
+    
     <ul class="nav nav-pills">
       <li class="nav-item">
         <a class="nav-link active" data-bs-toggle="pill" href="#password">Login data</a>
@@ -129,17 +130,15 @@ with iRODSSession(irods_env_file=env_file) as session:
         </p>
         <ol>
         
-        {% if info['irods_environment']['irods_user_name'].startswith('vsc') %}
+        {% if '-hpc-' in jobid %}
           <li>
             You need to run an <code>ssh-agent</code> capable of handling SSH certificates.<br />
             For Windows, <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">Pageant 0.78</a> or above can be used.
             For Linux, the standard OpenSSH agent will work.
           </li>
           <li>
-            Connect with e.g. Putty to <code>login.hpc.kuleuven.be</code> with agent forwarding enabled.
+            Connect with e.g. Putty to <code>firewall.vscentrum.be</code> with agent forwarding enabled.
             After having successfully connected, an SSH certificate should be injected in your forwarded agent.
-            Verify it in e.g. the Pageant main window or with <code>ssh-add -l</code> on your local workstation.
-            You may disconnect the ssh connection afterwards.
           </li>
         {% else %}
           <li>
@@ -181,4 +180,45 @@ with iRODSSession(irods_env_file=env_file) as session:
         </p>
       </div>
     </div>
+    {% else %}
+    <p style="margin-top: 10px">
+      You can use SFTP to connect to iRODS and use programs such as Filezilla, WinSCP or <code>lftp</code>.
+      It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
+    </p>
+    <ol>
+    
+    {% if '-hpc-' in jobid %}
+      <li>
+        You need to run an <code>ssh-agent</code> capable of handling SSH certificates.<br />
+        For Windows, <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">Pageant 0.78</a> or above can be used.
+        For Linux, the standard OpenSSH agent will work.
+      </li>
+      <li>
+        Connect with e.g. Putty to <code>firewall.vscentrum.be</code> with agent forwarding enabled.
+        After having successfully connected, an SSH certificate should be injected in your forwarded agent.
+      </li>
+    {% else %}
+      <li>
+        Install <a href="https://ceifdoc.icts.kuleuven.be/lnx/tools/sshcerts/">certagent or kmk</a> on your local machine 
+        and use it to retrieve an SSH certificate.
+      </li>
+    {% endif %}
+      <li>
+        Open FileZilla or WinSCP, and connect using the following information:
+        <dl class="mx-auto ml-20 mt-3">
+          <dt>Hostname</dt>
+          <dd>{{ sftp_host }}</dd>
+          <dt>Port</dt>
+          <dd>22</dd>
+          <dt>Username</dt>
+          <dd>{{ session.openid_session.user_info.preferred_username }}</dd>
+          <dt>Password</dt>
+          <dd>
+            Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
+          </dd>
+        </dl>
+        Or use <code>lftp -l {{ session.openid_session.user_info.preferred_username }}, sftp://{{ sftp_host }}</code>.
+      </li>
+    </ol>
+    {% endif %}
     

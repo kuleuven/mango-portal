@@ -104,6 +104,164 @@ class InputField {
     }
 
     /**
+     * Process the data from a JSON file with fields and add an event to the 'Load' button to add them to a schema.
+     * @param {HTMLDivElement} json_div Box with messages and text for loading fields from JSON.
+     * @param {String} data The result of reading the JSON file.
+     * @param {Schema} schema Schema to which the fields would be added.
+     */
+    static verify_json_data(json_div, data, schema) {
+        let json_example = json_div.querySelector('pre'); // verbatim section that shows the JSON contents
+        let json_summary = json_div.querySelector('#load-summary'); // box where success/warning/error message will show up
+        let json_summary_color = [...json_summary.classList].filter((x) => x.startsWith('text-bg-'))[0];
+        let load_button = json_div.querySelector('button'); // button to load from JSON
+        let new_button = Field.quick('button', 'btn btn-success', '<strong>Load from JSON</strong>');
+        new_button.setAttribute('disabled', '');
+        json_div.replaceChild(new_button, load_button); // reset the button in case many files are checked before loading
+
+        try { // see if the JSON can be parsed at all
+            let new_fields = JSON.parse(data);
+            if (new_fields.constructor.name == 'Object') { // if it's a JSON and has the correct type
+                let errors = [], warnings = [];
+                let errors_field = '', warnings_field = '';
+                let original_fields = Object.keys(new_fields).length;
+                
+                // go through each field in the object and validate it
+                for (let field of Object.entries(new_fields)) {
+                    const { messages: new_msg, ok: new_ok } = InputField.validate_class(field[1]);
+                    if (!new_ok) { // if the field is not valid at all
+                        delete new_fields[field[0]];
+                        errors.push(`<p class="text-danger fw-bold m-0">The field '${field[0]}' was deleted because it was not in order.</p>`);
+                        errors = [...errors, ...new_msg];
+                    } else {
+                        let field_name = field[0];
+                        while (schema.field_ids.indexOf(field_name) > -1) { field_name = field_name + '-new'; }
+                        // if the name already exists (and was therefore changed)
+                        if (field[0] != field_name) {
+                            new_fields[field_name] = {...field[1]};
+                            delete new_fields[field[0]];
+                            warnings.push(`<p class="text-warning fw-bold m-0">The field '${field[0]}' was renamed to '${field_name}' because '${field[0]}' already exists, and moved to the end.</p>`)
+                        }
+                        if (new_msg.length > 0) {
+                            warnings.push(`<p class="text-warning fw-bold m-0">The field '${field_name}' was modified.</p>`)
+                            warnings = [...warnings, ...new_msg];
+                        }
+                    }
+                }
+
+                // write up a box with error messages if there are any (=fields that were discarded)
+                if (errors.length > 0) {
+                    let errors_list = errors.map((x) => x.startsWith('<') ? x : `<p class="m-0">${x}</p>`).join('');
+                    errors_field = `<div class="border border-danger px-2 mb-2"><h4 class="text-danger">Errors</h4>${errors_list}</div>`;
+                }
+                
+                // write up a box with warnings if there are any (=fields that were only modified)
+                if (warnings.length > 0) {
+                    let warnings_list = warnings.map((x) => x.startsWith('<') ? x : `<p class="m-0">${x}</p>`).join('');
+                    warnings_field = `<div class="border border-warning px-2 mb-2"><h4 class="text-warning">Warnings</h4>${warnings_list}</div>`;
+                }
+                let final_fields = Object.keys(new_fields).length;
+                
+                // prepare the new contents for the <pre> box
+                let text_fields = {
+                    'errors': errors_field,
+                    'warnings': warnings_field,
+                    'text': JSON.stringify(new_fields, null, "  ")
+                }
+
+                if (final_fields == 0) { // if all fields were invalid
+                    json_summary.classList.replace(json_summary_color, 'text-bg-danger');
+                    json_summary.innerHTML = "<strong>ERROR</strong>: The contents of this file are not correct!";
+                    text_fields.text = JSON.stringify(JSON.parse(data), null, "  ");
+                } else {
+                    // it is possible to load something
+                    new_button.addEventListener('click', () => schema.add_fields_from_json(new_fields));
+                    new_button.removeAttribute('disabled', '');
+                    if (final_fields < original_fields) { // some fields were invalid
+                        json_summary.classList.replace(json_summary_color, 'text-bg-warning');
+                        json_summary.innerHTML = "<strong>WARNING</strong>: Some fields were removed because they were not appropriate, but the rest can be uploaded.";
+                    } else {
+                        json_summary.classList.replace(json_summary_color, 'text-bg-success');
+                        json_summary.innerHTML = "<strong>SUCCESS!</strong> This file is correct and the fields can be read!";
+                    }
+                }
+                json_example.innerHTML = Object.values(text_fields).join('');
+            } else {
+                // the JSON was valid but not an object
+                json_summary.classList.replace(json_summary_color, 'text-bg-danger');
+                json_summary.innerHTML = "<strong>ERROR</strong>: The uploaded JSON is not an object.";
+                json_example.innerHTML = JSON.stringify(new_fields, null, "  ");
+            }
+        } catch (e) {
+            // there was some error
+            json_summary.classList.replace(json_summary_color, 'text-bg-danger');
+            if (e instanceof SyntaxError) { // the problem is invalid JSON
+                json_summary.innerHTML = "<strong>ERROR</strong>: The uploaded file is not valid JSON.";
+                json_example.innerHTML = data;
+            } else { // there was something else
+                json_summary.innerHTML = "<strong>UNEXPECTED ERROR</strong>";
+                json_example.innerHTML = e;
+            }
+        }
+    }
+
+    /**
+     * Create an example with a button to load new fields from JSON.
+     * @returns {HTMLDivElement} Box with button to activate a modal and load fields from JSON.
+     */
+    static from_json_example(schema) {
+        let input_id = `choose-json-${schema.name}-${schema.data_status}`;
+        const reader = new FileReader();
+        reader.onload = () => { InputField.verify_json_data(json_div, reader.result, schema); };
+
+        let json_div = Field.quick("div", "ex my-2");
+        let button = Field.quick('button', 'btn btn-outline-primary', '<strong>Load from JSON</strong>');
+        button.setAttribute('disabled', '');
+        let label = Field.quick('label', 'form-label', 'Choose a file or drag and drop into the field below.');
+        label.setAttribute('for', input_id);
+        let input = Field.quick('input', 'form-control');
+        input.id = input_id;
+        input.type = 'file';
+        input.setAttribute('accept', '.json');
+        input.addEventListener('change', (e) => { reader.readAsText(e.target.files[0]); });
+
+        let json_summary = Field.quick('p', 'text-bg-secondary p-2 mt-2 rounded', 'No file has been uploaded yet.');
+        json_summary.id = 'load-summary';
+
+        json_div.appendChild(button);
+        json_div.appendChild(document.createElement('br'));
+        json_div.appendChild(label);
+        json_div.appendChild(input);
+        json_div.appendChild(json_summary);
+
+        // Example with drag-and-drop
+        let json_example = Field.quick('pre', 'border p-1 bg-light');
+        let example = {
+            field_id: {
+                'title': 'Informative label',
+                'type': 'select', 'ui': 'radio',
+                'values': ['one', 'two', 'three'],
+                'multiple': false
+            }
+        };
+        json_example.setAttribute('style', 'width:700px; white-space: pre-wrap;margin-top:1em;');
+        json_example.innerHTML = JSON.stringify(example, null, "  ");
+        json_example.addEventListener('dragover', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+        json_example.addEventListener('drop', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            reader.readAsText(e.dataTransfer.files[0]);
+        });
+        json_div.appendChild(json_example);
+        let from_json = InputField.example_box(json_div);
+        from_json.id = 'from_json_container';
+        return from_json;
+    }
+
+    /**
      * Generate an example of the field for illustration.
      * @returns {HTMLDivElement} An element that contains an optional description, a title and an illustration of what the field looks like in a form.
      */
@@ -325,9 +483,22 @@ class InputField {
         new_button.setAttribute("data-bs-target", '#' + modal_id);
 
         // append everything to a div
-        let new_form = Field.quick("div", "shadow border rounded p-4 mb-3");
-        new_form.appendChild(new_button);
+        let new_form = InputField.example_box(new_button);
         new_form.appendChild(this.create_example());
+
+        return new_form;
+    }
+
+    /**
+     * Create a box for the options to create new fields.
+     * 
+     * @param {HTMLElement} button Content for the box.
+     * @returns {HTMLDivElement} Element containing a button to activate a modal or example.
+     */
+    static example_box(button) {
+        // append everything to a div
+        let new_form = Field.quick("div", "shadow border rounded p-4 mb-3");
+        new_form.appendChild(button);
 
         return new_form;
     }
@@ -460,6 +631,40 @@ class InputField {
         new_field.from_json(data);
         return new_field;
     }
+
+    /**
+     * Check if the JSON is written in the correct way for a field.
+     * @param {Object} json_object Value from a JSON uploaded as field data.
+     * @returns {{'json_object':Object,'messages':String[],'ok':Boolean}} The json object (corrected if necessary), warnings/errors and whether it is ok.
+     */
+    static validate_class(json_object) {
+        let messages = [];
+        
+        if (json_object.constructor.name != "Object") {
+            messages.push("The field should be represented by an object!");
+        } else if ('title' in json_object && 'type' in json_object) {
+            if (json_object.type == 'object') { // if it's a composite field
+                return ObjectInput.validate_class(json_object);
+            } else if (json_object.type == 'select') { // if it's a multiple-value field
+                return MultipleInput.validate_class(json_object);
+            } else if (TypedInput.text_options.indexOf(json_object.type) > -1) { // if it's a simple field
+                return TypedInput.validate_class(json_object);
+            } else {
+                messages.push("The 'type' field is not valid!");
+            }
+        } else {
+            if (!('title' in json_object)) {
+                messages.push("The 'title' field is missing!");
+            }
+            if (!('type' in json_object)) {
+                messages.push("The 'type' field is missing!");
+            }
+        } 
+        return {
+            'messages': messages,
+            'ok': false
+        }
+    }
 }
 
 /**
@@ -469,6 +674,7 @@ class InputField {
  * @extends InputField
  * @property {Number} values.minimum For numeric inputs, the minimum possible value.
  * @property {Number} values.minimum For numeric inputs, the maximum possible value.
+ * @property {String[]} text_options Possible type inputs.
  */
 class TypedInput extends InputField {
     /**
@@ -486,6 +692,11 @@ class TypedInput extends InputField {
     form_type = "text"; // name of the class for DOM IDs
     button_title = "Simple field"; // user-facing name
     description = "Text options: regular text, number (integer or float), date, time, datetime, e-mail, URL or single checkbox.<br>"
+    static text_options = [
+        "text", "textarea", "email", "url",
+        "date", "time", "datetime-local",
+        "integer", "float",
+        "checkbox"];
 
     /**
      * Depending on the existence of minimum or maximum for the numeric fields,
@@ -521,7 +732,7 @@ class TypedInput extends InputField {
 
         // DIV and input fields for the default value (not always present)
         let default_div = this.form_field.form.querySelector(`#div-${this.id}-default`);
-        
+
         // add or remove default based on type
         if (format == 'textarea' || format == 'checkbox') {
             if (default_div != null) {
@@ -754,12 +965,7 @@ class TypedInput extends InputField {
         this.setup_form();
 
         // add the dropdown for the possible options
-        let text_options = [
-            "text", "textarea", "email", "url",
-            "date", "time", "datetime-local",
-            "integer", "float",
-            "checkbox"];
-        this.form_field.add_select("Input type", `${this.id}-format`, text_options, this.type);
+        this.form_field.add_select("Input type", `${this.id}-format`, TypedInput.text_options, this.type);
 
         // when selecting from the dropdown, adapt the contents of the form
         this.form_field.form.querySelector(".form-select").addEventListener('change', () => {
@@ -810,6 +1016,89 @@ class TypedInput extends InputField {
             form.querySelector(`#${this.id}-default`).type = 'text';
         }
         super.reset();
+    }
+
+    /**
+     * Check if the JSON is written in the correct way for a simple field.
+     * @param {Object} json_object Value from a JSON uploaded as field data.
+     * @returns {{'json_object':Object,'messages':String[],'ok':Boolean}} The json object (corrected if necessary), warnings/errors and whether it is ok.
+     */
+    static validate_class(json_object) {
+        let messages = [];
+
+        // check required attribute
+        if ('required' in json_object) {
+            if (json_object.type == 'checkbox') {
+                delete json_object.required;
+                messages.push("A simple field of type 'checkbox' cannot be required.");
+            } else if (json_object.required.constructor.name != 'Boolean') {
+                if (json_object.required.toLowerCase() == 'true') {
+                    json_object.required = true;
+                    messages.push("The 'required' attribute was a string, but we turned it to boolean.");
+                } else {
+                    delete json_object.required;
+                    messages.push("The 'required' attribute was not boolean: it was deleted.");
+                }
+            }
+        }
+
+        // check default attribute (if it's appropriate)
+        if ('default' in json_object) {
+            if (!('required' in json_object && json_object.required)) {
+                delete json_object.default;
+                messages.push("There is no 'required' attribute or it is false so the 'default' attribute was deleted.");
+            }
+            if (json_object.type == 'textarea') {
+                delete json_object.default;
+                messages.push("A field of type 'textarea' cannot have a default value; it was deleted.");
+            }
+        }
+
+        // check maximum and minimum as well as numeric type of default
+        for (let attr of ['minimum', 'maximum', 'default']) {
+            if (attr in json_object) {
+                if (json_object.type == 'integer' || json_object.type == 'float') {
+                    let val = json_object.type == 'integer' ? parseInt(json_object[attr]) : parseFloat(json_object[attr]);
+                    if (isNaN(val)) {
+                        delete json_object[attr];
+                        messages.push(`The ${attr} should be an ${json_object.type}: it was deleted.`);
+                    }
+                } else if (attr != 'default') {
+                    delete json_object[attr];
+                    messages.push(`Simple fields of type ${json_object.type} cannot have an attribute ${attr}: it was deleted.`);
+                }
+            }
+        }
+
+        // check repeatable attribute
+        if ('repeatable' in json_object) {
+            if (json_object.type == 'checkbox') {
+                delete json_object.repeatable;
+                messages.push("A simple field of type 'checkbox' cannot be repeated.");
+            } else if (json_object.repeatable.constructor.name != 'Boolean') {
+                if (json_object.repeatable.toLowerCase() == 'true') {
+                    json_object.repeatable = true;
+                    messages.push("The 'repeatable' attribute was a string, but we turned it to boolean.");
+                } else {
+                    delete json_object.repeatable;
+                    messages.push("The 'repeatable' attribute was not boolean: it was deleted.");
+                }
+            }
+        }
+        let acceptable_fields = ['type', 'title', 'required', 'default',
+            'minimum', 'maximum', 'repeatable'];
+        for (let attr of Object.keys(json_object)) {
+            if (acceptable_fields.indexOf(attr) == -1) {
+                delete json_object[attr];
+                messages.push(`The attribute '${attr}' was deleted because it is not appropriate for a simple field.`);
+            }
+        }
+
+        return {
+            'json_object': json_object,
+            'messages': messages,
+            'ok': true
+        }
     }
 
 }
@@ -951,6 +1240,48 @@ class ObjectInput extends InputField {
             this.editor.view_field(this.editor.fields[field_id]);
         });
     }
+
+    /**
+     * Check if the JSON is written in the correct way for a composite field.
+     * @param {Object} json_object Value from a JSON uploaded as field data.
+     * @returns {{'json_object':Object,'messages':String[],'ok':Boolean}} The json object (corrected if necessary), warnings/errors and whether it is ok.
+     */
+    static validate_class(json_object) {
+        let messages = [];
+
+        if (!('properties' in json_object)) {
+            json_object.properties = {};
+            messages.push("An empty 'properties' field was created.")
+        } else if (json_object.properties.constructor.name != 'Object') {
+            json_object.properties = {};
+            messages.push("The value of 'properties' was not appropriate so it was replaced with an empty field.");
+        } else {
+            for (let field of Object.entries(json_object.properties)) {
+                const { json_object: new_json, ok: new_ok } = InputField.validate_class(field[1]);
+                if (!new_ok) {
+                    delete json_object.properties[field[0]];
+                    messages.push(`The field '${field[0]}' was removed because its contents were not correct.`);
+                    // maybe do something with ITS messages?
+                } else {
+                    json_object.properties[field[0]] = new_json;
+                }
+            }
+        }
+
+        let acceptable_fields = ['type', 'title', 'properties'];
+        for (let attr of Object.keys(json_object)) {
+            if (acceptable_fields.indexOf(attr) == -1) {
+                delete json_object[attr];
+                messages.push(`The attribute '${attr}' was deleted because it is not appropriate for a composite field.`);
+            }
+        }
+
+        return {
+            'json_object': json_object,
+            'messages': messages,
+            'ok': true
+        }
+    }
 }
 
 /**
@@ -1013,7 +1344,7 @@ class MultipleInput extends InputField {
 
         // Add moving input fields to design the options
         this.form_field.add_moving_options("Select option", this.values.values);
-        
+
         // Finish form
         this.end_form();
     }
@@ -1031,7 +1362,7 @@ class MultipleInput extends InputField {
             if (pair[0].startsWith("mover")) { this.values.values.push(pair[1]); }
         }
     }
-    
+
     /**
      * Bring the field and its form back to the original settings.
      */
@@ -1044,6 +1375,106 @@ class MultipleInput extends InputField {
 
         // reset the form and field
         super.reset();
+    }
+
+    /**
+     * Check if the JSON is written in the correct way for a multiple-choice field.
+     * @param {Object} json_object Value from a JSON uploaded as field data.
+     * @returns {{'json_object':Object,'messages':String[],'ok':Boolean}} The json object (corrected if necessary), warnings/errors and whether it is ok.
+     */
+    static validate_class(json_object) {
+        let messages = [];
+        let ok = true;
+
+        // check multiple attribute
+        if (!('multiple' in json_object)) {
+            messages.push("The 'multiple' attribute is missing and is compulsory for multiple-choice fields.");
+            ok = false;
+        } else if (json_object.multiple.constructor.name != 'Boolean') {
+            if (json_object.multiple.toLowerCase() == 'true') {
+                json_object.multiple = true;
+                messages.push("The 'multiple' attribute was a string, but we turned it to boolean.");
+            } else if (json_object.multiple.toLowerCase() == 'false') {
+                json_object.multiple = false;
+                messages.push("The 'multiple' attribute was a string, but we turned it to boolean.");
+            } else {
+                messages.push("The 'multiple' attribute was not boolean.");
+                ok = false;
+            }
+        }
+
+        // check ui attribute
+        if (!('ui' in json_object)) {
+            messages.push("The 'ui' attribute is missing and is compulsory for multiple-choice fields.");
+            ok = false;
+        } else if (json_object.multiple && ['checkbox', 'dropdown'].indexOf(json_object.ui) == -1) {
+            messages.push("The 'ui' attribute for a multiple-value multiple-choice must be 'checkbox' or 'dropdown'.");
+            ok = false;
+        } else if (json_object.multiple === false && ['radio', 'dropdown'].indexOf(json_object.ui) == -1) {
+            messages.push("The 'ui' attribute for a single-value multiple-choice must be 'radio' or 'dropdown'.");
+            ok = false;
+        }
+
+        // check required attribute (only valid for multiple = false)
+        if ('required' in json_object) {
+            if (json_object.multiple) {
+                delete json_object.required;
+                messages.push("The 'required' attribute is not appropriate for a multiple-value multiple-choice field so it was deleted.");
+            } else if (json_object.required.constructor.name != 'Boolean') {
+                if (json_object.required.toLowerCase() == 'true') {
+                    json_object.required = true;
+                    messages.push("The 'required' attribute was a string, but we turned it to boolean.");
+                } else {
+                    delete json_object.required;
+                    messages.push("The 'required' attribute was not boolean: it was deleted.");
+                }
+            }
+        }
+
+        // check default attribute (if it's appropriate)
+        if ('default' in json_object) {
+            if (!('required' in json_object && json_object.required)) {
+                delete json_object.default;
+                messages.push("There is no 'required' attribute or it is false so the 'default' attribute was deleted.");
+            }
+        }
+
+        // check repeatable attribute
+        if ('repeatable' in json_object) {
+            if (json_object.multiple) {
+                delete json_object.repeatable;
+                messages.push("A multiple-value multiple-choice field cannot be repeated.");
+            } else if (json_object.repeatable.constructor.name != 'Boolean') {
+                if (json_object.repeatable.toLowerCase() == 'true') {
+                    json_object.repeatable = true;
+                    messages.push("The 'repeatable' attribute was a string, but we turned it to boolean.");
+                } else {
+                    delete json_object.repeatable;
+                    messages.push("The 'repeatable' attribute was not boolean: it was deleted.");
+                }
+            }
+        }
+
+        // check values
+        if (!('values' in json_object) || json_object.values.constructor.name != 'Array' || json_object.values.length < 2) {
+            messages.push("The 'values' attribute should be an array with at least two values.")
+            ok = false;
+        }
+
+        let acceptable_fields = ['type', 'title', 'required', 'default',
+            'ui', 'multiple', 'values', 'repeatable'];
+        for (let attr of Object.keys(json_object)) {
+            if (acceptable_fields.indexOf(attr) == -1) {
+                delete json_object[attr];
+                messages.push(`The attribute '${attr}' was deleted because it is not appropriate for a multiple-cohice field.`);
+            }
+        }
+
+        return {
+            'json_object': json_object,
+            'messages': messages,
+            'ok': ok
+        }
     }
 }
 
@@ -1067,7 +1498,7 @@ class SelectInput extends MultipleInput {
         this.values.multiple = false;
         this.values.ui = 'radio';
     }
-    
+
     form_type = "selection";
     button_title = "Singe-value multiple choice";
     dropdown_alt = 'radio';
@@ -1097,7 +1528,7 @@ class SelectInput extends MultipleInput {
         let col2 = Field.quick('div', 'col-6 p-2 mb-2');
         columns.appendChild(col1);
         columns.appendChild(col2);
-        
+
         // create a dummy version for illustration with three default values
         let example_input = new SelectInput('example');
         example_input.values.values = ['one', 'two', 'three'];
@@ -1108,13 +1539,13 @@ class SelectInput extends MultipleInput {
         dropdown.querySelector('option[value="one"]').setAttribute('selected', '');
         dropdown.setAttribute('readonly', '');
         col1.appendChild(dropdown);
-        
+
         // create the radio rendering of the illustrative example and append to right column
         let radio = Field.checkbox_radio(example_input);
         radio.querySelector('input[value="one"]').setAttribute('checked', '');
         radio.querySelectorAll('input').forEach((input) => input.setAttribute('readonly', ''));
         col2.appendChild(radio);
-        
+
         return columns;
     }
 }
@@ -1156,12 +1587,12 @@ class CheckboxInput extends MultipleInput {
         let col2 = Field.quick('div', 'col-6 p-2');
         columns.appendChild(col1);
         columns.appendChild(col2);
-        
+
         // create a dummy version for illustration with three default values
         let example_input = new CheckboxInput('example');
         example_input.values.values = ['one', 'two', 'three'];
         example_input.name = 'checkbox-example';
-        
+
         // create the dropdown rendering of the illustrative example and append to left column
         let dropdown = Field.dropdown(example_input);
         dropdown.querySelectorAll('option')
@@ -1170,7 +1601,7 @@ class CheckboxInput extends MultipleInput {
             });
         dropdown.setAttribute('readonly', '');
         col1.appendChild(dropdown);
-        
+
         // create the checkboxes rendering of the illustrative example and append to right column
         let checkboxes = Field.checkbox_radio(example_input);
         checkboxes.querySelectorAll('input').forEach((input) => {
@@ -1178,7 +1609,7 @@ class CheckboxInput extends MultipleInput {
             input.setAttribute('readonly', '');
         })
         col2.appendChild(checkboxes);
-        
+
         return columns;
     }
 }
