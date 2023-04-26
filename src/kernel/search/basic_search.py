@@ -49,6 +49,19 @@ basic_search_bp = Blueprint(
     "basic_search_bp", __name__, template_folder="templates/search"
 )
 
+
+from mango_ui import register_module
+
+UI = {
+    "title": "Search",
+    "bootstrap_icon": "search",
+    "description": "Catalog search",
+    "blueprint": basic_search_bp.name,
+    "index": "catalog_search",
+}
+
+register_module(**UI)
+
 irods_comparison_operator = {
     "after": ">=",
     "equal": "=",

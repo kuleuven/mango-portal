@@ -7,7 +7,13 @@
             <div class="list-group realms">
                 {% for realm in realms %}
                     <a href="{{ url_for('metadata_schema_editor_bp.metadata_schemas', realm=realm)}}"
-                       class="list-group-item">{{ realm }}</a>
+                       class="list-group-item">
+                        {% if (realm| regex_match("vsc\d{5}$|(r|u|b|x|s)\d{7}$"))%}
+                            <i class="bi bi-person"></i>&nbsp;
+                        {% else %}
+                            <i class="bi bi-box"></i>&nbsp;
+                        {% endif %}
+                    {{ realm }}</a>
                 {% endfor %}
             </div>
         {% else %}

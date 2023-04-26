@@ -26,6 +26,7 @@ import irods
 import pytz
 import bleach
 import humanize
+import re
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -75,6 +76,7 @@ if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.mango_open_search.search import mango_open_search_bp
     from plugins.mango_open_search.admin import mango_open_search_admin_bp
     from plugins.mango_open_search.api import mango_open_search_api_bp
+    from plugins.mango_open_search.stats import mango_open_search_stats_bp
 
 if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.data_platform import update_zone_info
@@ -144,6 +146,7 @@ with app.app_context():
         app.register_blueprint(mango_open_search_bp)
         app.register_blueprint(mango_open_search_admin_bp)
         app.register_blueprint(mango_open_search_api_bp)
+        app.register_blueprint(mango_open_search_stats_bp)
 
     if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
         app.register_blueprint(data_platform_user_bp)
@@ -156,14 +159,17 @@ with app.app_context():
         app.register_blueprint(operator_group_manager_admin_bp)
 
 
-from mango_ui import admin_navbar_entries
+from mango_ui import admin_navbar_entries, navbar_entries
 
 logging.info(admin_navbar_entries)
 
 
 @app.context_processor
-def admin_ui_navbar():
-    return {"admin_navbar_entries": admin_navbar_entries}
+def ui_navbars():
+    return {
+        "admin_navbar_entries": admin_navbar_entries,
+        "navbar_entries": navbar_entries,
+    }
 
 
 for blueprint in admin_navbar_entries:
@@ -371,6 +377,21 @@ def python_type(anything):
 @app.template_filter("format_datetime_iso")
 def format_datetime(datetime_object):
     return datetime.datetime.strftime(datetime_object, "%Y-%m-%dT%H:%M:%S")
+
+
+@app.template_filter("format_epoch_timestamp")
+def format_epoch_timestamp(ets):
+    return datetime.datetime.fromtimestamp(ets)
+
+
+@app.template_filter("regex_search")
+def regex_search(_string, _re):
+    return re.search(_re, _string)
+
+
+@app.template_filter("regex_match")
+def regex_match(_string, _re):
+    return re.match(_re, _string)
 
 
 @app.route("/")
