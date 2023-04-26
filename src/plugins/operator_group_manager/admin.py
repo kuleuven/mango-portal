@@ -6,20 +6,20 @@ from irods.column import Like
 from irods.session import iRODSSession
 from cache import cache
 import re, logging
-#from mango_ui import register_module_admin
+from mango_ui import register_module
 
 operator_group_manager_admin_bp = Blueprint(
     "operator_group_manager_admin_bp", __name__, template_folder="templates"
 )
 
-# ADMIN_UI = {
-#     "title": "Group administration",
-#     "bootstrap_icon": "people",
-#     "description": "Group administration using operator (rodsadmin) account",
-#     "blueprint": operator_group_manager_admin_bp.name,
-# }
+UI = {
+    "title": "Group administration",
+    "bootstrap_icon": "people",
+    "description": "Group administration using operator (rodsadmin) account",
+    "blueprint": operator_group_manager_admin_bp.name,
+}
 
-#register_module_admin(**ADMIN_UI)
+register_module(**UI)
 
 # Protected groups are excluded from manipulation through the operator_group_manager functions
 # as they are handled through the data api platform

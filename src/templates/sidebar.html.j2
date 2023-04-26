@@ -3,54 +3,26 @@
     <div class="bg-light border rounded-3 p-1 h-100 sticky-top">
         <!-- <h6 class="d-none d-sm-block text-muted">Sticky Sidebar</h6> -->
         <ul class="nav nav-pills flex-sm-column flex-row mb-auto justify-content-between text-truncate">
-            {#  <li class="nav-item">
-                        <a href="#" class="nav-link px-2 text-truncate">
-                            <i class="bi bi-house fs-4"></i>
-                            <span class="d-none d-sm-inline">Home</span>
-                        </a>
-                    </li> #}
-            {# <li>
-                <a href="/" class="nav-link px-2 text-truncate">
-                    <i class="bi bi-speedometer fs-4"></i>
-                    <span class="d-none d-sm-inline">Dashboard</span>
-                </a>
-            </li> #}
-            <li>
-            <a href="{{ url_for('browse_bp.collection_browse')}}"
-               class="nav-link px-2 text-truncate"><i class="bi bi-folder fs-4"></i>
-            <span class="d-none d-sm-inline">Collections</span> </a>
+            {% for _, navbar_entry in navbar_entries.items() %}
+                <li title="{{ navbar_entry.description }}">
+                    <a href="{{ url_for(navbar_entry.blueprint ~ '.' ~ navbar_entry.index) }}"
+                       class="nav-link px-2 text-truncate"><i class="bi bi-{{ navbar_entry.bootstrap_icon }} fs-4"></i> {{ navbar_entry.title }}</a>
+                </li>
+            {% endfor %}
+            <li title="Browse the items in your personal trash can">
+            <a href="{{ url_for('browse_bp.collection_browse') + '/' + g.irods_session.zone + '/trash/home/' + g.irods_session.username }}"
+               class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>
+            <span class="d-none d-sm-inline">Trash</span> </a>
     </li>
-    <li>
-    <a href="{{ url_for('basic_search_bp.catalog_search')}}"
-       class="nav-link px-2 text-truncate"><i class="bi bi-search fs-4"></i>
-    <span class="d-none d-sm-inline">Search</span> </a>
-</li>
-<li>
-<a href="{{ url_for('operator_group_manager_admin_bp.index')}}"
-   class="nav-link px-2 text-truncate"><i class="bi bi-people fs-4"></i>
-<span class="d-none d-sm-inline">Groups</span> </a>
-</li>
-<li>
-<a href="{{ url_for('browse_bp.collection_browse') + '/' + g.irods_session.zone + '/trash/home/' + g.irods_session.username }}"
-   class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>
-<span class="d-none d-sm-inline">Trash</span> </a>
-</li>
-<li>
-    <a href="{{ url_for('metadata_schema_editor_bp.metadata_schemas')}}"
-       class="nav-link px-2 text-truncate">
-        <i class="bi bi-list-columns-reverse fs-4"></i>
-        <span class="d-none d-sm-inline">Metadata schemas</span>
-    </a>
-</li>
-{% if g.irods_session.username in config['irods_zones'][g.irods_session.zone]['admin_users'] %}
-    <li>
-        <a href="{{ url_for('admin_admin_bp.index') }}"
-           class="nav-link px-2 text-truncate">
-            <i class="bi bi-incognito fs-4"></i>
-            <span class="d-none d-sm-inline">Admin</span>
-        </a>
-    </li>
-{% endif %}
+    {% if g.irods_session.username in config['irods_zones'][g.irods_session.zone]['admin_users'] %}
+        <hr />
+        <li>
+            <a href="{{ url_for('admin_admin_bp.index') }}"
+               class="nav-link px-2 text-truncate">
+                <span class="d-none d-sm-inline">Admin</span> <i class="bi bi-wrench-adjustable fs-4"></i>
+            </a>
+        </li>
+    {% endif %}
 </ul>
 </div>
 </div>
