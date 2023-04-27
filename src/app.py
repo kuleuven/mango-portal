@@ -157,6 +157,8 @@ with app.app_context():
         app.register_blueprint(operator_admin_bp)
     if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
         app.register_blueprint(operator_group_manager_admin_bp)
+    if "user_tantra" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        import plugins.user_tantra
 
 
 from mango_ui import admin_navbar_entries, navbar_entries
@@ -217,7 +219,7 @@ def init_and_secure_views():
         "data_platform_autocomplete_bp.autocomplete_username",
         "data_platform_user_bp.local_client_retrieve_token_callback",
         "data_platform_project_bp.project_overview",
-        "data_platform_project_bp.set_project_options"
+        "data_platform_project_bp.set_project_options",
     ]:
         return None
 

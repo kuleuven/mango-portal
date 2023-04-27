@@ -38,12 +38,13 @@ MANGO_ENABLE_CORE_PLUGINS = [
     "data_platform",
     "operator",
     "operator_group_manager",
+    "user_tantra",
 ]
 
 MANGO_MODULE_ADMIN_BP = [
     "admi_admin_bp",
-    "template_overrides_admin_bp"
-    "mango_open_search_admin_bp",
-    "mango_open_search_stats_bp"
-    "operator_admin_bp",
+    "template_overrides_admin_bp" "mango_open_search_admin_bp",
+    "mango_open_search_stats_bp" "operator_admin_bp",
 ]
+
+MANGO_ADMINS = ["u0123318", "u0118974", "u0116999", "u0137480", "u0089722"]

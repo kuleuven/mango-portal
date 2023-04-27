@@ -14,7 +14,7 @@
                class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>
             <span class="d-none d-sm-inline">Trash</span> </a>
     </li>
-    {% if g.irods_session.username in config['irods_zones'][g.irods_session.zone]['admin_users'] %}
+    {% if "mango_portal_admin" in g.irods_session.roles %}
         <hr />
         <li>
             <a href="{{ url_for('admin_admin_bp.index') }}"

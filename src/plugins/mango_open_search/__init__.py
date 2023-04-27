@@ -117,39 +117,11 @@ def add_index_job(zone: str, job_type: str, item_path: str, item_type: str, item
 
 zone_index_sessions = {}
 
+import plugins.operator as irods_operator
+
 
 def get_zone_index_session(zone: str):
-    global zone_index_sessions
-    if (
-        zone in zone_index_sessions
-        and zone_index_sessions[zone].expiration > datetime.datetime.now()
-    ):
-        return zone_index_sessions[zone]
-    # if expired but present, destroy the zone session
-    if (
-        zone in zone_index_sessions
-        and zone_index_sessions[zone].expiration < datetime.datetime.now()
-    ):
-        del zone_index_sessions[zone]
-    # use the API to get login parameters and create a session
-    session_parameters = get_index_session_params_via_api(zone)
-    logging.info(f"Requested ")
-    try:
-        irods_session = iRODSSession(
-            **session_parameters["irods_environment"],
-            password=session_parameters["token"],
-        )
-        # set the expiration time (4h) a bit lower than the real one to compensate running time and register it on the session object
-        from dateutil.parser import parse
-
-        irods_session.expiration = parse(
-            session_parameters["expiration"], ignoretz=True
-        ) - datetime.timedelta(minutes=20)
-        zone_index_sessions[zone] = irods_session
-        return zone_index_sessions[zone]
-    except:
-        logging.info(f"Failed getting indexing session for zone {zone}")
-        return None
+    return irods_operator.get_zone_operator_session(zone)
 
 
 def get_open_search_client(type="query", refresh=False):
@@ -532,7 +504,6 @@ def execute_index_job(zone: str, job_type: str, item_type, item_path, item_id, t
                 f"Cannot index, no valid API_TOKEN, aborting and removing job for node {MANGO_HOSTNAME}"
             )
         else:
-
             logging.warn(
                 f"Cannot index, no valid irods indexing session, aborting, but adding job again to the queue for node {MANGO_HOSTNAME}"
             )
@@ -710,7 +681,7 @@ signals.data_object_copied.connect(data_object_copied_listener)
 
 signals.permissions_changed.connect(permissions_changed_listener)
 
-signals.collection_moved
+# signals.collection_moved
 
 # Indexing thread :)
 
@@ -736,7 +707,6 @@ class IndexingThread(Thread):
         self.status = status
 
     def run(self):
-
         global index_queue
         while True:
             # stop doing anything if we are stopped (externally)

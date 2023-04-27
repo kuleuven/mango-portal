@@ -13,6 +13,7 @@ Note: versioning follows Semver standard with 3 levels
 - search index stats and collection stats from fast open search aggregations
 - besides admin extensions, any other plugin can now also register a sidebar menu entry. Refactored the standard modules to make use of it. Also, the sidebar menu order is determined solely by configuration
 - adopting yaml as a config format for any new featres (WIP)
+- if an openid definition for a user is found, the metadata for that user is updated if not set already: name and email (via new plugin "user_tantra")
 
 ### Bug fixes
 - fixed crash in top search bar
@@ -22,6 +23,9 @@ Note: versioning follows Semver standard with 3 levels
 - zone name is now displayed next to the logos in the top left
 - admin section has red border around sidebar menu and main content block
 - new jinja2 template filters: exposing regular expressions
+- opensearch extension now uses the common operator sessions
+- admin link in sidebar only for those in the role "mango_portal_admin"
+- new signal upon user session creation
 
 ---
 ## Release 0.9.0 Initial MVP [2023-04-05]
