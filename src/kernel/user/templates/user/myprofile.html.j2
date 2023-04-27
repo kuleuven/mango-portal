@@ -11,12 +11,12 @@
             <th>Login name</th>
             <td>{{ me.name }}</td>
           </tr>
-          {% if 'openid_session' in session %}
+          {# {% if 'openid_session' in session %}
             <tr>
               <th>Name</th>
               <td>{{ session.openid_session.user_info.name }}</td>
             </tr>
-          {% endif %}
+          {% endif %} #}
           <tr>
             <th>Zone</th>
             <td>{{ me.zone }}</td>
@@ -62,7 +62,7 @@
             {% for avu in me.metadata.items() %}
               <tr>
                 <th>
-                  <i class="bi bi-fingerprint"></i>{{ avu.name }}
+                  <i class="bi bi-fingerprint"></i> {{ avu.name }}
                 </th>
                 <td>{{ avu.value }}</td>
               </tr>
