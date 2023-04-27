@@ -29,6 +29,7 @@ from opensearchpy import client
 from irods.collection import iRODSCollection
 import logging, time
 from mango_ui import register_module_admin
+from plugins.operator import get_zone_operator_session
 
 mango_open_search_admin_bp = Blueprint(
     "mango_open_search_admin_bp", __name__, template_folder="templates"
@@ -57,12 +58,16 @@ def index():
 
     result["queue_length"] = queue_length
 
-    home_collection: iRODSCollection = g.irods_session.collections.get(
+    zone_operator_session = get_zone_operator_session(g.irods_session.zone)
+    root_collection: iRODSCollection = zone_operator_session.collections.get(
+        f"/{g.irods_session.zone}"
+    )
+    home_collection: iRODSCollection = zone_operator_session.collections.get(
         f"/{g.irods_session.zone}/home"
     )
 
     available_collections = (
-        [g.irods_session.zone] + [home_collection] + home_collection.subcollections
+        root_collection.subcollections + home_collection.subcollections
     )
 
     return render_template(
