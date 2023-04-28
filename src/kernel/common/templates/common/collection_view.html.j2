@@ -46,7 +46,7 @@
     <div class="col-12 mr-auto">
       <h3 class="mb-4">
         <i class="bi bi-folder fs-4"></i> {{ collection.name }}
-        {% if (current_user_rights | intersection(own_or_write)) and ((collection.path.count("/")) > 3) %}
+        {% if ("own" in current_user_rights) and ((collection.path.count("/")) > 3) %}
           <a href="#" data-bs-toggle="modal" data-bs-target="#rename">
             <i class="bi bi-pencil"></i></a>
         {% endif %}
@@ -56,7 +56,7 @@
       hidden_fields=[{"name": "item_path", "value": collection.path}]) }}
     </div>
   </div>
-  {% if (('own' in current_user_rights) or ('modify object' in current_user_rights)) %}
+  {% if (current_user_rights | intersection(own_or_write)) %}
     <div class="d-flex justify-content-end">
       <div class="col-3 mr-auto">
         <button type="button"
@@ -723,18 +723,32 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h6 class="modal-title">Are you sure?</h6>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h6 class="modal-title">
+            Are you sure?
+          </h6>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
         </div>
-        <form id="confirmation-form" method="POST" action="{{ url_for('browse_bp.bulk_operation_items') }}">
+        <form id="confirmation-form"
+              method="POST"
+              action="{{ url_for('browse_bp.bulk_operation_items') }}">
           <div class="modal-body">
             <input type="hidden" id="action" name="action"/>
             <input type="hidden" id="destination" name="destination"/>
-            <p id="confirmation-text">.</p>
+            <p id="confirmation-text">
+              .
+            </p>
           </div>
           <div class="modal-footer">
-              <button type="submit" class="btn btn-primary">I'm sure</button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              I'm sure
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
           </div>
         </form>
       </div>
