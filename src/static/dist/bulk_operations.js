@@ -171,13 +171,24 @@ class OffCanvas {
         .forEach((input) => input.addEventListener('change', () => {
             this.offcanvas.querySelectorAll('i.bi-folder-symlink-fill')
                 .forEach((i) => i.remove());
-            // parent_folders == 0 if the destination folder is not the direct parent of a selected folder
-            let parent_folders = this.selected_items.filter((c) => c.startsWith('col-' + input.value)).length;
-            // child_folders == 0 if the destination folder is not a child of a selected folder
+            // parent_folders == 0 if the destination folder is not the direct parent of a selected collection
+            let parent_folders = this.selected_items.filter((c) => {
+                let regex_match = c.match('^(?<prefix>col-)(?<parent>.+)/(?<name>[^/]+)/?$');
+                return regex_match != null && regex_match.groups.parent == input.value;
+            }).length;
+            
+            // parent_of_dobj == 0 if the destination folder is not the direct parent of a selected data object
+            let parent_of_dobj = this.selected_items.filter((d) => {
+                let regex_match = d.match('^(?<prefix>dobj-)(?<parent>.+)/(?<name>[^/]+)$');
+                return regex_match != null && regex_match.groups.parent == input.value
+            }).length;
+
+            // child_folders == 0 if the destination folder is not a child of a selected collection
             let child_folders = this.selected_items.filter((c) => {
                 return c.startsWith('col-') && input.value.startsWith(c.match('(?<prefix>col-)(?<path>.+)').groups.path)
             }).length;
-            if (parent_folders + child_folders == 0) {
+
+            if (parent_folders + child_folders == 0 && (this.selected_option == 'copy' || parent_of_dobj == 0)) {
                 const icon = document.createElement('i');
                 icon.className = 'bi bi-folder-symlink-fill ms-2';
                 icon.setAttribute('style', 'font-size:1.2rem;');
