@@ -24,3 +24,5 @@ metadata_changed = mango_signals.signal('metadata_changed')
 metadata_deleted = mango_signals.signal('metadata_deleted')
 
 permissions_changed = mango_signals.signal('permissions_changed')
+
+session_pool_user_session_created = mango_signals.signal('user_session_created')

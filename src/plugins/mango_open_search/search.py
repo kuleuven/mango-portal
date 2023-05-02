@@ -38,10 +38,16 @@ def index_collection():
         zone = collection_path.split("/")[1]
 
     add_index_job(
-        zone=zone, job_type="index_item", item_path=collection_path, item_type="collection"
+        zone=zone,
+        job_type="index_item",
+        item_path=collection_path,
+        item_type="collection",
     )
     add_index_job(
-        zone=zone, job_type="index_subtree", item_path=collection_path, item_type="collection"
+        zone=zone,
+        job_type="index_subtree",
+        item_path=collection_path,
+        item_type="collection",
     )
 
     if "redirect_route" in request.values:
@@ -97,7 +103,7 @@ def zone_search():
                                                             "acl_read_groups": group_id
                                                         }
                                                     }
-                                                    for group_id in g.irods_session.group_ids
+                                                    for group_id in g.irods_session.my_group_ids
                                                 ]
                                             }
                                         },

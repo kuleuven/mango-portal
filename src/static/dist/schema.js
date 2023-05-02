@@ -73,6 +73,21 @@ class ComplexField {
     }
 
     /**
+     * Add new fields based on uploaded JSON file.
+     * @param {FieldInfo} data JSON representation of a field.
+     */
+    add_fields_from_json(data) {
+        Object.keys(data).forEach((field_id) => {
+            let new_field = InputField.choose_class(this.initial_name, this.data_status, [field_id, data[field_id]]);
+            new_field.create_form();
+            new_field.create_modal(this);
+            this.add_field(new_field);
+            this.new_field_idx = this.new_field_idx + 1;
+        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById(this.modal_id)).toggle();
+    }
+
+    /**
      * Compute the `data_status` property based on the status of the version.
      * @returns {String}
      */
@@ -98,11 +113,15 @@ class ComplexField {
         let this_modal = document.getElementById(this.modal_id);
         this_modal.addEventListener('show.bs.modal', () => {
             let formTemp = this_modal.querySelector('div.formContainer');
+            let from_json_load = InputField.from_json_example(this);
             if (formTemp.childNodes.length == 0) {
                 Object.values(this.initials).forEach((initial) => {
                     initial.schema_status = this.data_status;
                     formTemp.appendChild(initial.render(this));
                 });
+                formTemp.appendChild(from_json_load);
+            } else {
+                formTemp.replaceChild(from_json_load, formTemp.lastChild);
             }
         });
     }
@@ -510,6 +529,8 @@ class Schema extends ComplexField {
      * @param {SchemaContents} data JSON representation of a schema
      */
     from_json(data) {
+        this.saved_json = data;
+        
         super.from_json(data);
 
         // retrieve schema-specific information
@@ -684,6 +705,118 @@ class Schema extends ComplexField {
         this.child.from_parent(this);
     }
 
+    prepare_json_download() {
+        if (this.field_ids.length == 0) {
+            return;
+        }
+        this.fields_to_json();
+        let to_download = {...this.properties};
+        console.log(this.name)
+        let for_download = Field.quick('div', 'py-3');
+
+        // set up text to download
+        let for_download_full = Field.quick('p', 'fst-italic');
+
+        // link to download full schema
+        let full_link = Field.quick('a', 'link-dark fw-semibold', 'Download the full schema');
+        full_link.setAttribute('download', `${this.name}-${this.version}-${this.status}.json`);
+        full_link.setAttribute('style', 'cursor: pointer;');
+        full_link.addEventListener('click', (e) => e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(this.saved_json, null, "  ")}`);
+        for_download_full.appendChild(full_link);
+        
+        // intermediate text
+        let span1 = Field.quick('span', '', ' (the saved version) or click on the checkboxes to select the fields you want and ');
+        for_download_full.appendChild(span1);
+
+        let fields_link = Field.quick('a', 'link-dark fw-semibold', 'download specific fields.');
+        fields_link.setAttribute('download', `${this.name}-${this.version}-fields.json`);
+        fields_link.setAttribute('style', 'cursor: pointer;');
+        fields_link.addEventListener('click', (e) => e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(to_download, null, "  ")}`);
+        for_download_full.appendChild(fields_link);
+        
+        // create universal checkbox
+        let select_all_box = Field.quick('div', 'form-check form-check-inline');
+        let select_all_input = Field.quick('input', 'form-check-input');
+        select_all_input.type = 'checkbox';
+        select_all_input.id = 'select_all';
+        select_all_input.setAttribute('aria-label', 'select all fields');
+        select_all_input.setAttribute('checked', '');
+        let select_all_label = Field.quick('label', 'form-check-label', '(Un)select all fields');
+        select_all_label.setAttribute('for', 'select_all');
+        select_all_box.appendChild(select_all_input);
+        select_all_box.appendChild(select_all_label);
+        
+        // checkboxes to select fields
+        let field_checkboxes = Field.quick('div', 'border rounded p-2 mb-1');
+        this.field_ids.forEach((field) => {
+            let field_div = Field.quick('div', 'form-check form-check-inline');
+            
+            let input = Field.quick('input', 'form-check-input');
+            input.type = 'checkbox';
+            input.id = `download-${field}`;
+            input.value = field;
+            input.setAttribute('aria-label', `select-${field}`);
+            input.setAttribute('checked', '');
+            input.addEventListener('change', () => {
+                let selected = [...field_checkboxes.querySelectorAll('input:checked')].map((x) => x.value);
+                let filtered_json = {...this.properties};
+                Object.keys(filtered_json).forEach((x) => {
+                    if (selected.indexOf(x) == -1) { delete filtered_json[x]; }
+                });
+                to_download = {...filtered_json};
+                json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
+                
+                // if all checkboxes are checked
+                if ([...field_checkboxes.querySelectorAll('input[type="checkbox"]')].every((el) => el.checked)) {
+                    select_all_input.setAttribute('checked', '');
+                } else {
+                    select_all_input.removeAttribute('checked');
+                }
+
+                // if there are no selected filled
+                if (Object.keys(filtered_json).length == 0) {
+                    fields_link.setAttribute('style', 'pointer-events:none;');
+                } else {
+                    fields_link.setAttribute('style', 'cursor: pointer;');
+                }
+            });
+            
+            let label = Field.quick('label', 'form-check-label font-monospace', field);
+            label.setAttribute('for', `download-${field}`);
+            field_div.appendChild(input);
+            field_div.appendChild(label);
+            field_checkboxes.appendChild(field_div);
+        });
+        // one checkbox to rule them all
+        select_all_input.addEventListener('change', () => {
+            if (select_all_input.checked) {
+                field_checkboxes.querySelectorAll('input[type="checkbox"]').forEach((el) => el.checked = true);
+                fields_link.setAttribute('style', 'cursor: pointer;');
+                to_download = {...this.properties};
+                json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
+            } else {
+                field_checkboxes.querySelectorAll('input[type="checkbox"]').forEach((el) => el.checked = false);
+                fields_link.setAttribute('style', 'pointer-events:none;');
+                to_download = {};
+                json_rendering.innerHTML = JSON.stringify({}, null, "  ");
+            }
+        });
+        
+        // show json of selected fields
+        let json_rendering = Field.quick('pre', 'border p-1 bg-light');
+        json_rendering.setAttribute('style', 'white-space: pre-wrap;');
+        json_rendering.innerHTML = JSON.stringify(this.properties, null, "  ");
+
+        
+        for_download.appendChild(for_download_full);
+        for_download.appendChild(select_all_box);
+        for_download.appendChild(field_checkboxes);
+        for_download.appendChild(json_rendering);
+
+        this.nav_bar.add_item('json', 'Download JSON');
+        this.nav_bar.add_tab_content('json', for_download);
+    }
+
     /**
      * Design the navigation bar and tab contents for this version of the schema.
      * For a published version, this includes the 'view', 'new draft' (if relevant) and 'copy to new schema',
@@ -715,6 +848,9 @@ class Schema extends ComplexField {
             // add the new form to the 'edit' tab
             this.nav_bar.add_tab_content('edit', this.form.form);
 
+            // add a json view
+            this.prepare_json_download();
+
             // add and define 'discard' button
             this.nav_bar.add_action_button('Discard', 'danger', () => {
                 // fill the confirmation modal with the hidden form to delete this schema
@@ -734,7 +870,10 @@ class Schema extends ComplexField {
             this.nav_bar.add_item('child', 'Copy to new schema'); // add to tabs
             this.child.create_editor(); // create form
             this.nav_bar.add_tab_content('child', this.child.form.form); // add form to tab
-
+            
+            // add a json view
+            this.prepare_json_download();
+            
             // add and define the 'archive' button
             this.nav_bar.add_action_button('Archive', 'danger', () => {
                 // Fill the confirmation modal with the hidden fields to archive this schema version

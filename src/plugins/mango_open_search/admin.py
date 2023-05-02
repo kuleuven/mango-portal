@@ -11,7 +11,7 @@ from flask import (
     Response,
     request,
     flash,
-    json
+    json,
 )
 
 from . import (
@@ -28,10 +28,21 @@ from opensearchpy import client
 
 from irods.collection import iRODSCollection
 import logging, time
+from mango_ui import register_module_admin
+from plugins.operator import get_zone_operator_session
 
 mango_open_search_admin_bp = Blueprint(
     "mango_open_search_admin_bp", __name__, template_folder="templates"
 )
+
+ADMIN_UI = {
+    "title": "Opensearch",
+    "bootstrap_icon": "search",
+    "description": "Opensearch tools",
+    "blueprint": mango_open_search_admin_bp.name,
+}
+
+register_module_admin(**ADMIN_UI)
 
 
 @mango_open_search_admin_bp.route("/mango-open-search/admin")
@@ -47,11 +58,17 @@ def index():
 
     result["queue_length"] = queue_length
 
-    home_collection: iRODSCollection = g.irods_session.collections.get(
+    zone_operator_session = get_zone_operator_session(g.irods_session.zone)
+    root_collection: iRODSCollection = zone_operator_session.collections.get(
+        f"/{g.irods_session.zone}"
+    )
+    home_collection: iRODSCollection = zone_operator_session.collections.get(
         f"/{g.irods_session.zone}/home"
     )
 
-    available_collections = [home_collection] + home_collection.subcollections
+    available_collections = (
+        root_collection.subcollections + home_collection.subcollections
+    )
 
     return render_template(
         "mango_open_search/admin_index.html.j2",

@@ -26,6 +26,7 @@ import irods
 import pytz
 import bleach
 import humanize
+import re
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -40,10 +41,11 @@ from kernel.common.error import error_bp
 from kernel.common.browse import browse_bp
 from kernel.metadata.metadata import metadata_bp
 from kernel.search.basic_search import basic_search_bp
-from kernel.admin.admin import admin_bp
+from kernel.admin.admin import admin_admin_bp
 from kernel.metadata_schema.editor import metadata_schema_editor_bp
 from kernel.metadata_schema.form import metadata_schema_form_bp
 from kernel.template_overrides.admin import template_overrides_admin_bp
+from kernel.template_overrides import template_overrides_bp
 import platform
 import version
 
@@ -74,16 +76,27 @@ if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.mango_open_search.search import mango_open_search_bp
     from plugins.mango_open_search.admin import mango_open_search_admin_bp
     from plugins.mango_open_search.api import mango_open_search_api_bp
+    from plugins.mango_open_search.stats import mango_open_search_stats_bp
 
 if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.data_platform import update_zone_info
 
-    if not app.config["MANGO_AUTH"] == "localdev":
-        update_zone_info(app.config["irods_zones"])
+    # if not app.config["MANGO_AUTH"] == "localdev":
+    update_zone_info(app.config["irods_zones"])
 
     from plugins.data_platform.user import data_platform_user_bp
     from plugins.data_platform.project import data_platform_project_bp
     from plugins.data_platform.autocomplete import data_platform_autocomplete_bp
+
+other_plugins = [
+    plugin
+    for plugin in app.config["MANGO_ENABLE_CORE_PLUGINS"]
+    if plugin not in ["mango_open_search", "data_platform"]
+]
+if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+    from plugins.operator_group_manager.admin import operator_group_manager_admin_bp
+if "operator" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+    from plugins.operator.admin import operator_admin_bp
 
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 irods_sessions = {}
@@ -123,20 +136,46 @@ with app.app_context():
     app.register_blueprint(browse_bp)
     app.register_blueprint(metadata_bp)
     app.register_blueprint(basic_search_bp)
-    app.register_blueprint(admin_bp)
+    app.register_blueprint(admin_admin_bp)
     app.register_blueprint(metadata_schema_editor_bp)
     app.register_blueprint(metadata_schema_form_bp)
+    app.register_blueprint(template_overrides_bp)
     app.register_blueprint(template_overrides_admin_bp)
 
     if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
         app.register_blueprint(mango_open_search_bp)
         app.register_blueprint(mango_open_search_admin_bp)
         app.register_blueprint(mango_open_search_api_bp)
+        app.register_blueprint(mango_open_search_stats_bp)
 
     if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
         app.register_blueprint(data_platform_user_bp)
         app.register_blueprint(data_platform_project_bp)
         app.register_blueprint(data_platform_autocomplete_bp)
+
+    if "operator" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        app.register_blueprint(operator_admin_bp)
+    if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        app.register_blueprint(operator_group_manager_admin_bp)
+    if "user_tantra" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        import plugins.user_tantra
+
+
+from mango_ui import admin_navbar_entries, navbar_entries
+
+logging.info(admin_navbar_entries)
+
+
+@app.context_processor
+def ui_navbars():
+    return {
+        "admin_navbar_entries": admin_navbar_entries,
+        "navbar_entries": navbar_entries,
+    }
+
+
+for blueprint in admin_navbar_entries:
+    logging.info(f"Admin UI: added {blueprint}")
 
 
 @app.context_processor
@@ -180,6 +219,7 @@ def init_and_secure_views():
         "data_platform_autocomplete_bp.autocomplete_username",
         "data_platform_user_bp.local_client_retrieve_token_callback",
         "data_platform_project_bp.project_overview",
+        "data_platform_project_bp.set_project_options",
     ]:
         return None
 
@@ -262,6 +302,7 @@ def release_irods_session_lock(response):
 
 # custom filters
 
+
 # intersection of 2 iterables
 @app.template_filter("intersection")
 def intersection(set1, set2):
@@ -329,6 +370,31 @@ def format_intword(size):
 @app.template_filter("pprint_as_json")
 def pprint_as_json(anything, indent=2):
     return json.dumps(anything, indent=indent)
+
+
+@app.template_filter("python_type")
+def python_type(anything):
+    return type(anything)
+
+
+@app.template_filter("format_datetime_iso")
+def format_datetime(datetime_object):
+    return datetime.datetime.strftime(datetime_object, "%Y-%m-%dT%H:%M:%S")
+
+
+@app.template_filter("format_epoch_timestamp")
+def format_epoch_timestamp(ets):
+    return datetime.datetime.fromtimestamp(ets)
+
+
+@app.template_filter("regex_search")
+def regex_search(_string, _re):
+    return re.search(_re, _string)
+
+
+@app.template_filter("regex_match")
+def regex_match(_string, _re):
+    return re.match(_re, _string)
 
 
 @app.route("/")

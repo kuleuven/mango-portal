@@ -9,8 +9,8 @@ from irods.models import Group, User
 from threading import Lock, Thread, Event
 import datetime, time
 import logging
-
-from flask import session
+import signals
+from flask import session, current_app
 
 # global pool of irods session as a dict of wrapped iRODSUSerSession objects
 irods_user_sessions = {}
@@ -37,12 +37,21 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.my_groups = self.my_groups = [
             group for group in my_groups if group.name != irods_session.username
         ]
+        self.my_groups.sort(key=lambda x: x.name)
+
         self.irods_session.my_group_ids = self.my_group_ids = [
             group.id for group in self.my_groups
         ]
+        self.irods_session.my_group_names = self.my_group_names = [
+            group.name for group in self.my_groups
+        ]
         if "openid_session" in session:
-            self.openid_user_name = session["openid_session"]["user_info"]["name"]
-            self.openid_user_email = session["openid_session"]["user_info"]["email"]
+            self.irods_session.openid_user_name = self.openid_user_name = session[
+                "openid_session"
+            ]["user_info"]["name"]
+            self.irods_session.openid_user_email = self.openid_user_email = session[
+                "openid_session"
+            ]["user_info"]["email"]
 
     def __del__(self):
         # release connections upon object destruction
@@ -65,7 +74,6 @@ class SessionCleanupThread(Thread):
         return self._stop.isSet()
 
     def run(self):
-
         global irods_user_sessions
         while True:
             if self.stopped():
@@ -98,16 +106,27 @@ def add_irods_session(session_id, irods_session: iRODSSession):
     global irods_user_sessions
     irods_user_sessions[session_id] = iRODSUserSession(irods_session)
     irods_user_sessions[session_id].lock.acquire()
+    signals.session_pool_user_session_created.send(
+        current_app._get_current_object(),
+        zone=irods_session.zone,
+        username=irods_session.username,
+    )
 
 
 def get_irods_session(session_id):
     global irods_user_sessions
     if session_id in irods_user_sessions:
-        irods_user_sessions[session_id].lock.acquire()
-        irods_user_sessions[session_id].last_accessed = datetime.datetime.now()
+        if not irods_user_sessions[session_id].lock.locked():
+            irods_user_sessions[session_id].lock.acquire()
+            irods_user_sessions[session_id].last_accessed = datetime.datetime.now()
         return irods_user_sessions[session_id].irods_session
     else:
         return None
+
+
+def has_irods_session(session_id):
+    global irods_user_sessions
+    return session_id in irods_user_sessions
 
 
 def unlock_irods_session(session_id):

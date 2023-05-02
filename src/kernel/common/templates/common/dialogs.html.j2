@@ -198,6 +198,7 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
                                    id="{{ dialog_id + field['name'] }}"
                                    name="{{ field['name'] }}"
                                    value="{{ field['value'] }}"
+                                   placeholder="{{ field['placeholder'] }}"
                                    {% if field['readonly'] %}readonly{% endif %}
                                    {% if field['required'] %}required{% endif %}/>
                         {% endfor %}

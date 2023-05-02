@@ -41,7 +41,7 @@ def my_groups():
 def my_profile():
     """ """
 
-    me = g.irods_session.users.get(g.irods_session.username)
+    me = g.irods_session.user
     my_groups = g.irods_session.my_groups
 
     # logged in since info

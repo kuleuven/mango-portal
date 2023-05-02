@@ -58,6 +58,17 @@ from kernel.template_overrides import get_template_override_manager
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
+from mango_ui import register_module
+
+UI = {
+    "title": "Collections",
+    "bootstrap_icon": "folder",
+    "description": "Browse your collections",
+    "blueprint": browse_bp.name,
+    "index": "collection_browse",
+}
+
+register_module(**UI)
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
 
@@ -406,13 +417,7 @@ def view_object(data_object_path):
     permissions = g.irods_session.permissions.get(
         data_object, report_raw_acls=True, acl_users=acl_users
     )
-    # print(f"Older permissions")
-    # pprint.pprint(permissions)
-
-    # permissions2 = g.irods_session.acls.get(data_object)
-    # print(f"New acls")
-    # pprint.pprint(permissions2)
-
+    
     # Workaround for a bug with report_raw_acls for data objects where every ACL is listed twice
     PermissionTuple = namedtuple(
         "PermissionTuple", ["user_name", "access_name", "user_zone"]
@@ -771,7 +776,6 @@ def ask_tika(data_object_path):
         with open(tika_file_path, mode="r") as tika_file:
             result = json.load(tika_file)
     else:
-
         try:
             # ping_tika = requests.get(tika_host)
             destination = f"/tmp/irods-{data_object.id}.download"
@@ -850,7 +854,6 @@ def object_preview(data_object_path):
     if data_object.size > current_app.config["DATA_OBJECT_MAX_SIZE_PREVIEW"]:
         return send_file("static/too-large.jpg", "image/jpeg")
     else:
-
         if not os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
             local_path = f"/tmp/irods-download-{data_object.name}"
             with open(local_path, "wb") as local_file, data_object.open() as irods_file:
