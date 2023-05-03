@@ -1,6 +1,16 @@
 # Changelog
 
 Note: versioning follows Semver standard with 3 levels
+## Release 0.11.0 [unreleased]
+
+### New features
+
+### Bug fixes
+
+### Smaller improvements and bug fixes
+
+- moved core admin module to plugins (where it belongs semantically), as well as remaining admin from template_overrides
+- all admin routes are now protected with decorator that checks the proper user role
 
 ## Release 0.10.0 [2023-05-02]
 

@@ -34,11 +34,13 @@ USER_MAX_HOME_SIZE = 100 * 10**6  # 100MB
 MANGO_GLOBAL_SEARCH_ACTION = "mango_open_search_bp.zone_search"
 HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
 MANGO_ENABLE_CORE_PLUGINS = [
+    "admin",
     "mango_open_search",
     "data_platform",
     "operator",
     "operator_group_manager",
     "user_tantra",
+    "template_overrides"
 ]
 
 MANGO_MODULE_ADMIN_BP = [

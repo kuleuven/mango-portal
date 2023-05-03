@@ -18,7 +18,6 @@ irods_node_logins = []
 
 SESSION_TTL = 60 * 30  # 30 minutes
 
-
 class iRODSUserSession(iRODSSession):
     def __init__(self, irods_session: iRODSSession):
         self.irods_session = irods_session

@@ -30,6 +30,7 @@ from irods.collection import iRODSCollection
 import logging, time
 from mango_ui import register_module_admin
 from plugins.operator import get_zone_operator_session
+from plugins.admin import require_mango_portal_admin
 
 mango_open_search_admin_bp = Blueprint(
     "mango_open_search_admin_bp", __name__, template_folder="templates"
@@ -46,6 +47,7 @@ register_module_admin(**ADMIN_UI)
 
 
 @mango_open_search_admin_bp.route("/mango-open-search/admin")
+@require_mango_portal_admin
 def index():
     result = {}
     global index_queue
@@ -83,6 +85,7 @@ def index():
 @mango_open_search_admin_bp.route(
     "/mango-open-search/admin/change-index-status", methods=["POST"]
 )
+@require_mango_portal_admin
 def change_index_thread_status():
     if "status" in request.form and (status := request.form["status"]):
         indexing_thread.set_status(status)
@@ -99,6 +102,7 @@ def change_index_thread_status():
 @mango_open_search_admin_bp.route(
     "/mango-open-search/admin/refresh-clients", methods=["POST"]
 )
+@require_mango_portal_admin
 def refresh_clients():
     get_open_search_client(refresh=True)
 
@@ -114,6 +118,7 @@ def refresh_clients():
 @mango_open_search_admin_bp.route(
     "/mango-open-search/admin/restart-indexing-thread", methods=["POST"]
 )
+@require_mango_portal_admin
 def refresh_indexing_thread():
     global indexing_thread
     indexing_thread.stop()
