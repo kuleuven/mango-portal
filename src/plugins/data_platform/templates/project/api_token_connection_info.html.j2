@@ -57,16 +57,13 @@ echo {{ info['token'] }} | iinit
 """
 password = "{{ info['token']}}"
 
-import os, os.path
+import json
 from irods.session import iRODSSession
 
-env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
+parameters = json.loads(config)
+user = parameters['irods_user_name']
 
-os.makedirs(os.path.dirname(env_file), exist_ok=True)
-with open(env_file, "w") as f:
-    f.write(config)
-
-with iRODSSession(irods_env_file=env_file, password=password) as session:
+with iRODSSession(user=user, password=password, **parameters) as session:
     # Do something
     coll = session.collections.get("/{{ info['irods_environment']['irods_zone_name'] }}")
     print(coll.id)</code></pre>
