@@ -1184,7 +1184,7 @@ class SchemaForm {
         // Retrieve information from the URL and add it to the form as hidden fields
         const url = new URL(window.location.href)
         const url_params = url.searchParams;
-        let version_name = `${prefix}.__version__`
+        let version_name = `${prefix}.__version__`;
         for (let item of ['item_type', 'object_path', 'schema', 'realm', version_name]) {
             let hidden_input = document.createElement('input')
             hidden_input.type = 'hidden';
@@ -1230,7 +1230,7 @@ class SchemaForm {
         this.form.appendChild(hidden_input);
 
         // exclude non-metadata keys, e.g. 'redirect_route'
-        let keys = Object.keys(annotated_data).filter((x) => x.startsWith(this.prefix));
+        let keys = Object.keys(annotated_data).filter((x) => x.startsWith(this.prefix) && !x.endsWith('__version__'));
 
         // extract fields that are not in composite fields and register them
         let non_objects = keys.filter((fid) => fid.split('.').length == 3);
