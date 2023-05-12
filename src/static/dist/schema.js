@@ -722,7 +722,6 @@ class Schema extends ComplexField {
         }
         this.fields_to_json();
         let to_download = { ...this.properties };
-        console.log(this.name);
         let for_download = Field.quick('div', 'py-3');
 
         // set up text to download

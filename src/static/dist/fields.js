@@ -583,7 +583,7 @@ class InputField {
             clone.required = this.required;
             clone.repeatable = this.repeatable;
             clone.default = this.default;
-            clone.values = this.values;
+            clone.values = { ...this.values };
             clone.id = this.id; // temporarily, to recover data
 
             if (this.constructor.name == 'ObjectInput') {
@@ -599,6 +599,8 @@ class InputField {
 
             // bring the current form, editor and contents to their original values
             this.reset();
+            console.log(this.values);
+            console.log(clone.values);
 
             // set the mode of the new field, create form and modal that hosts the form
             clone.mode = 'mod';
@@ -1469,6 +1471,7 @@ class MultipleInput extends InputField {
 
         // reset the form and field
         super.reset();
+        this.values.values = [];
     }
 
     /**
@@ -1652,6 +1655,14 @@ class SelectInput extends MultipleInput {
 
         return columns;
     }
+
+    /**
+     * Bring the field and its form back to the original settings.
+     */
+    reset() {
+        super.reset();
+        this.values.ui = 'radio';
+    }
 }
 
 /**
@@ -1714,5 +1725,13 @@ class CheckboxInput extends MultipleInput {
         col2.appendChild(checkboxes);
 
         return columns;
+    }
+
+    /**
+     * Bring the field and its form back to the original settings.
+     */
+    reset() {
+        super.reset();
+        this.values.ui = 'checkbox';
     }
 }

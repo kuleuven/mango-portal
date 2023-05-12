@@ -932,6 +932,13 @@ class BasicForm {
         for (let checkbox of checkboxes) {
             checkbox.removeAttribute('checked');
         }
+        let dropdowns = this.form.querySelectorAll('select');
+        if (dropdowns.length > 0) {
+            let default_dropdown = [...dropdowns].filter((x) => x.id.endsWith('default'))[0];
+            if (default_dropdown != undefined) {
+                default_dropdown.querySelectorAll('option').forEach((x) => x.remove());
+            }
+        }
         this.form.classList.remove('was-validated');
     }
 }
