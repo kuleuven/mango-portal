@@ -27,6 +27,8 @@ import pytz
 import bleach
 import humanize
 import re
+import base64
+import binascii
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -398,6 +400,13 @@ def regex_search(_string, _re):
 def regex_match(_string, _re):
     return re.match(_re, _string)
 
+
+@app.template_filter("irods_to_sha256_checksum")
+def irods_to_sha256_checksum(irods_checksum):
+    if irods_checksum is None or not irods_checksum.startswith("sha2:"):
+        return None
+
+    return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode('utf-8')
 
 @app.route("/")
 def index():
