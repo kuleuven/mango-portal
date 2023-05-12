@@ -32,7 +32,7 @@ class ComplexField {
             typed: new TypedInput(name, this.data_status),
             select: new SelectInput(name, this.data_status),
             checkbox: new CheckboxInput(name, this.data_status),
-            object: new ObjectInput(name, this.data_status)
+            object: new ObjectInput(name, this.data_status),
         };
 
         // initial state before adding any fields
@@ -65,7 +65,10 @@ class ComplexField {
         this.data_status = this.set_data_status();
 
         this.field_ids.forEach((field_id) => {
-            let new_field = InputField.choose_class(this.initial_name, this.data_status, [field_id, data.properties[field_id]]);
+            let new_field = InputField.choose_class(this.initial_name, this.data_status, [
+                field_id,
+                data.properties[field_id],
+            ]);
             new_field.create_form();
             new_field.create_modal(this);
             this.fields[field_id] = new_field;
@@ -102,11 +105,11 @@ class ComplexField {
         this.data_status = this.set_data_status(); // to make sure it's correct (but maybe this is redundant)
 
         // create a div to fill in with the different field examples
-        let formTemp = Field.quick("div", "formContainer");
+        let formTemp = Field.quick('div', 'formContainer');
         formTemp.id = this.data_status + '-templates';
 
         // create the modal and add the div
-        let form_choice_modal = new Modal(this.modal_id, "What form element would you like to add?");
+        let form_choice_modal = new Modal(this.modal_id, 'What form element would you like to add?');
         form_choice_modal.create_modal([formTemp], 'lg');
 
         // when the modal is first shown, render all the initial fields
@@ -257,9 +260,10 @@ class ComplexField {
         const has_duplicates = Object.values(this.fields).some((field) => field.is_duplicate);
 
         // Buttons to update:
-        const buttons = this.constructor.name == 'Schema'
-            ? ['publish', 'draft'].map((btn) => form.querySelector('button#' + btn)) // publish and draft for schemas
-            : [form.querySelector('button#add')]; // "add/update" for a composite field
+        const buttons =
+            this.constructor.name == 'Schema'
+                ? ['publish', 'draft'].map((btn) => form.querySelector('button#' + btn)) // publish and draft for schemas
+                : [form.querySelector('button#add')]; // "add/update" for a composite field
         if (has_duplicates) {
             buttons.forEach((btn) => btn.setAttribute('disabled', ''));
         } else {
@@ -275,17 +279,17 @@ class ComplexField {
     create_button() {
         // create a div and its button
         let div = Field.quick('div', 'd-grid gap-2 adder mt-2');
-        let button = Field.quick("button", "btn btn-primary btn-sm", "Add element");
-        button.type = "button";
+        let button = Field.quick('button', 'btn btn-primary btn-sm', 'Add element');
+        button.type = 'button';
         // attach button to modal
-        button.setAttribute("data-bs-toggle", "modal");
-        button.setAttribute("data-bs-target", `#${this.modal_id}`);
+        button.setAttribute('data-bs-toggle', 'modal');
+        button.setAttribute('data-bs-target', `#${this.modal_id}`);
 
         // on click, the modal will also update `new_field_idx` based on the index of the field on top of it
         button.addEventListener('click', () => {
-            this.new_field_idx = div.previousSibling.classList.contains('viewer') ?
-                this.field_ids.indexOf(div.previousSibling.id) + 1 :
-                0;
+            this.new_field_idx = div.previousSibling.classList.contains('viewer')
+                ? this.field_ids.indexOf(div.previousSibling.id) + 1
+                : 0;
         });
 
         div.appendChild(button);
@@ -303,9 +307,10 @@ class ComplexField {
         // if relevant, reset the name
         // if this is the initial schema and a new draft has been created
         if (this.constructor.name == 'Schema' && this.status == 'draft') {
-            this.name = 'schema-editor' // then the name should be 'schema-editor'
-        } else if (this.parent) { // if this is the clone of another schema
-            this.name = this.parent.match(/(.+)-\d\.\d\.\d/)[1] // get the name of the parent (no versions)
+            this.name = 'schema-editor'; // then the name should be 'schema-editor'
+        } else if (this.parent) {
+            // if this is the clone of another schema
+            this.name = this.parent.match(/(.+)-\d\.\d\.\d/)[1]; // get the name of the parent (no versions)
         }
     }
 
@@ -320,9 +325,10 @@ class ComplexField {
     static create_viewer(schema, active = false) {
         // create a form or div depending on whether it's for annotation or not
         // active can be true for a composite field during annotation, but we should not create a form for it
-        let div = schema.constructor.name == 'SchemaForm'
-            ? Field.quick('form', 'mt-3 needs-validation')
-            : Field.quick('div', 'input-view');
+        let div =
+            schema.constructor.name == 'SchemaForm'
+                ? Field.quick('form', 'mt-3 needs-validation')
+                : Field.quick('div', 'input-view');
 
         // go through each of the fields
         // QUESTION should the code inside the forEach be defined in the InputField classes?
@@ -339,7 +345,7 @@ class ComplexField {
                 label = Field.quick('h5', 'border-bottom border-secondary');
                 label.innerHTML = subfield.required ? subfield.title + '*' : subfield.title;
                 label.id = `viewer-${subfield.id}`;
-                small_div.className = small_div.className + ' border border-1 border-secondary rounded p-3 my-1'
+                small_div.className = small_div.className + ' border border-1 border-secondary rounded p-3 my-1';
             } else {
                 label = Field.labeller(
                     subfield.required ? subfield.title + '*' : subfield.title,
@@ -370,7 +376,7 @@ class ComplexField {
                         } else {
                             small_div.parentElement.insertBefore(clone, small_div.nextSibling);
                         }
-                    })
+                    });
                     button.appendChild(icon);
                     label.appendChild(button);
                 } else {
@@ -379,7 +385,7 @@ class ComplexField {
             }
 
             // create the contents of the viewer based on the specific kind of field
-            let input = subfield.viewer_input(active = active);
+            let input = subfield.viewer_input((active = active));
             small_div.appendChild(label);
             small_div.appendChild(input);
             div.appendChild(small_div);
@@ -397,7 +403,7 @@ class ComplexField {
  */
 class DummyObject extends ComplexField {
     schema_name = 'example';
-    
+
     /**
      * Initialize the DummyObject.
      * @class
@@ -412,23 +418,23 @@ class DummyObject extends ComplexField {
         // Create a simple field of type 'text' for illustration
         let name = new TypedInput(schema_name);
         name.id = 'text';
-        name.title = "Full name";
-        name.value = "Jane Doe";
+        name.title = 'Full name';
+        name.value = 'Jane Doe';
         this.fields.text = name;
 
         // Create a simple field of type 'date' for illustration
         let bday = new TypedInput(schema_name);
         bday.type = 'date';
-        bday.title = "Birth date";
-        bday.value = "1970-05-03";
+        bday.title = 'Birth date';
+        bday.value = '1970-05-03';
         this.fields.date = bday;
 
         // Create a single-value multiple-choice field for illustration
         let hair = new SelectInput(schema_name);
-        hair.name = 'hair'
+        hair.name = 'hair';
         hair.values.values = ['brown', 'red', 'blond', 'dark', 'pink'];
         hair.value = 'red';
-        hair.title = "Hair color";
+        hair.title = 'Hair color';
         this.fields.hair = hair;
     }
 }
@@ -507,7 +513,7 @@ class Schema extends ComplexField {
      * @param {String} [version=1.0.0] Version number of this version of the schema.
      * @param {String} [data_status=draft] Derived status used for IDs of DOM elements.
      */
-    constructor(card_id, container_id, urls, version = "1.0.0", data_status = 'draft') {
+    constructor(card_id, container_id, urls, version = '1.0.0', data_status = 'draft') {
         super(card_id, data_status);
         this.card_id = card_id;
         this.name = card_id.match(/^(.*)-\d\d\d$/)[1];
@@ -530,7 +536,7 @@ class Schema extends ComplexField {
      */
     from_json(data) {
         this.saved_json = data;
-        
+
         super.from_json(data);
 
         // retrieve schema-specific information
@@ -590,20 +596,21 @@ class Schema extends ComplexField {
         let is_new = this.data_status == 'copy' || this.card_id.startsWith('schema-editor');
 
         // create and add an input field for the ID (or 'name')
-        form.add_input("Schema ID", this.card_id + '-name', {
-            placeholder: "schema-name",
-            validation_message: "This field is compulsory, please only use lower case letters or numbers, '_' and '-'. Existing IDs cannot be reused.",
+        form.add_input('Schema ID', this.card_id + '-name', {
+            placeholder: 'schema-name',
+            validation_message:
+                "This field is compulsory, please only use lower case letters or numbers, '_' and '-'. Existing IDs cannot be reused.",
             pattern: schema_pattern,
-            description: is_new ? "This cannot be changed after the draft is saved." : false
+            description: is_new ? 'This cannot be changed after the draft is saved.' : false,
         });
         const name_input = form.form.querySelector(`#${this.card_id}-name`);
         name_input.name = 'schema_name';
 
         // create and add an input field for the user-facing label/title
-        form.add_input("Schema label", this.card_id + '-label', {
-            placeholder: "Some informative label",
-            validation_message: "This field is compulsory.",
-            description: is_new ? "This cannot be changed once a version has been published." : false
+        form.add_input('Schema label', this.card_id + '-label', {
+            placeholder: 'Some informative label',
+            validation_message: 'This field is compulsory.',
+            description: is_new ? 'This cannot be changed once a version has been published.' : false,
         });
         const title_input = form.form.querySelector(`#${this.card_id}-label`);
         title_input.name = 'title';
@@ -613,7 +620,7 @@ class Schema extends ComplexField {
         form.form.insertBefore(button, form.divider);
 
         // create and add a submission button that saves the draft without publishing
-        form.add_action_button("Save draft", 'draft');
+        form.add_action_button('Save draft', 'draft');
         form.add_submit_action('draft', (e) => {
             // BS5 validity check
             if (!form.form.checkValidity()) {
@@ -627,7 +634,7 @@ class Schema extends ComplexField {
         });
 
         // create and add a submission button that publishes the draft
-        form.add_action_button("Publish", 'publish', 'warning');
+        form.add_action_button('Publish', 'publish', 'warning');
         form.add_submit_action('publish', (e) => {
             e.preventDefault();
             // BS5 validity check
@@ -636,9 +643,10 @@ class Schema extends ComplexField {
                 form.form.classList.add('was-validated');
             } else {
                 // trigger confirmation message, which also has its hidden fields
-                let second_sentence = this.data_status != 'copy' && schemas[this.name] && schemas[this.name].published.length > 0 ?
-                    ` Version ${schemas[this.name].published[0]} will be archived.` :
-                    '';
+                let second_sentence =
+                    this.data_status != 'copy' && schemas[this.name] && schemas[this.name].published.length > 0
+                        ? ` Version ${schemas[this.name].published[0]} will be archived.`
+                        : '';
                 let starting_data = {
                     schema_name: this.name,
                     title: this.title,
@@ -646,14 +654,17 @@ class Schema extends ComplexField {
                     with_status: this.status,
                     realm: realm,
                     raw_schema: '',
-                    parent: ''
-                }
+                    parent: '',
+                };
                 // fill the confirmation modal with the right hidden fields
                 // if accepted, go through the 'save_draft' part and submit
                 Modal.submit_confirmation(
-                    "Published schemas cannot be edited." + second_sentence,
-                    this.urls.new, starting_data,
-                    () => { this.save_draft('publish'); }
+                    'Published schemas cannot be edited.' + second_sentence,
+                    this.urls.new,
+                    starting_data,
+                    () => {
+                        this.save_draft('publish');
+                    }
                 );
                 form.form.classList.remove('was-validated');
             }
@@ -698,10 +709,10 @@ class Schema extends ComplexField {
      */
     setup_copy() {
         // get the object-version of the current fields
-        this.fields_to_json()
+        this.fields_to_json();
 
         // initialize a new schema and transfer the contents
-        this.child = new Schema(this.card_id, this.container, this.urls, "1.0.0", "copy");
+        this.child = new Schema(this.card_id, this.container, this.urls, '1.0.0', 'copy');
         this.child.from_parent(this);
     }
 
@@ -710,8 +721,8 @@ class Schema extends ComplexField {
             return;
         }
         this.fields_to_json();
-        let to_download = {...this.properties};
-        console.log(this.name)
+        let to_download = { ...this.properties };
+        console.log(this.name);
         let for_download = Field.quick('div', 'py-3');
 
         // set up text to download
@@ -721,19 +732,29 @@ class Schema extends ComplexField {
         let full_link = Field.quick('a', 'link-dark fw-semibold', 'Download the full schema');
         full_link.setAttribute('download', `${this.name}-${this.version}-${this.status}.json`);
         full_link.setAttribute('style', 'cursor: pointer;');
-        full_link.addEventListener('click', (e) => e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(this.saved_json, null, "  ")}`);
+        full_link.addEventListener(
+            'click',
+            (e) => (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(this.saved_json, null, '  ')}`)
+        );
         for_download_full.appendChild(full_link);
-        
+
         // intermediate text
-        let span1 = Field.quick('span', '', ' (the saved version) or click on the checkboxes to select the fields you want and ');
+        let span1 = Field.quick(
+            'span',
+            '',
+            ' (the saved version) or click on the checkboxes to select the fields you want and '
+        );
         for_download_full.appendChild(span1);
 
         let fields_link = Field.quick('a', 'link-dark fw-semibold', 'download specific fields.');
         fields_link.setAttribute('download', `${this.name}-${this.version}-fields.json`);
         fields_link.setAttribute('style', 'cursor: pointer;');
-        fields_link.addEventListener('click', (e) => e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(to_download, null, "  ")}`);
+        fields_link.addEventListener(
+            'click',
+            (e) => (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(to_download, null, '  ')}`)
+        );
         for_download_full.appendChild(fields_link);
-        
+
         // create universal checkbox
         let select_all_box = Field.quick('div', 'form-check form-check-inline');
         let select_all_input = Field.quick('input', 'form-check-input');
@@ -745,12 +766,12 @@ class Schema extends ComplexField {
         select_all_label.setAttribute('for', 'select_all');
         select_all_box.appendChild(select_all_input);
         select_all_box.appendChild(select_all_label);
-        
+
         // checkboxes to select fields
         let field_checkboxes = Field.quick('div', 'border rounded p-2 mb-1');
         this.field_ids.forEach((field) => {
             let field_div = Field.quick('div', 'form-check form-check-inline');
-            
+
             let input = Field.quick('input', 'form-check-input');
             input.type = 'checkbox';
             input.id = `download-${field}`;
@@ -759,13 +780,15 @@ class Schema extends ComplexField {
             input.setAttribute('checked', '');
             input.addEventListener('change', () => {
                 let selected = [...field_checkboxes.querySelectorAll('input:checked')].map((x) => x.value);
-                let filtered_json = {...this.properties};
+                let filtered_json = { ...this.properties };
                 Object.keys(filtered_json).forEach((x) => {
-                    if (selected.indexOf(x) == -1) { delete filtered_json[x]; }
+                    if (selected.indexOf(x) == -1) {
+                        delete filtered_json[x];
+                    }
                 });
-                to_download = {...filtered_json};
-                json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
-                
+                to_download = { ...filtered_json };
+                json_rendering.innerHTML = JSON.stringify(to_download, null, '  ');
+
                 // if all checkboxes are checked
                 if ([...field_checkboxes.querySelectorAll('input[type="checkbox"]')].every((el) => el.checked)) {
                     select_all_input.setAttribute('checked', '');
@@ -780,7 +803,7 @@ class Schema extends ComplexField {
                     fields_link.setAttribute('style', 'cursor: pointer;');
                 }
             });
-            
+
             let label = Field.quick('label', 'form-check-label font-monospace', field);
             label.setAttribute('for', `download-${field}`);
             field_div.appendChild(input);
@@ -790,24 +813,23 @@ class Schema extends ComplexField {
         // one checkbox to rule them all
         select_all_input.addEventListener('change', () => {
             if (select_all_input.checked) {
-                field_checkboxes.querySelectorAll('input[type="checkbox"]').forEach((el) => el.checked = true);
+                field_checkboxes.querySelectorAll('input[type="checkbox"]').forEach((el) => (el.checked = true));
                 fields_link.setAttribute('style', 'cursor: pointer;');
-                to_download = {...this.properties};
-                json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
+                to_download = { ...this.properties };
+                json_rendering.innerHTML = JSON.stringify(to_download, null, '  ');
             } else {
-                field_checkboxes.querySelectorAll('input[type="checkbox"]').forEach((el) => el.checked = false);
+                field_checkboxes.querySelectorAll('input[type="checkbox"]').forEach((el) => (el.checked = false));
                 fields_link.setAttribute('style', 'pointer-events:none;');
                 to_download = {};
-                json_rendering.innerHTML = JSON.stringify({}, null, "  ");
+                json_rendering.innerHTML = JSON.stringify({}, null, '  ');
             }
         });
-        
+
         // show json of selected fields
         let json_rendering = Field.quick('pre', 'border p-1 bg-light');
         json_rendering.setAttribute('style', 'white-space: pre-wrap;');
-        json_rendering.innerHTML = JSON.stringify(this.properties, null, "  ");
+        json_rendering.innerHTML = JSON.stringify(this.properties, null, '  ');
 
-        
         for_download.appendChild(for_download_full);
         for_download.appendChild(select_all_box);
         for_download.appendChild(field_checkboxes);
@@ -854,11 +876,11 @@ class Schema extends ComplexField {
             // add and define 'discard' button
             this.nav_bar.add_action_button('Discard', 'danger', () => {
                 // fill the confirmation modal with the hidden form to delete this schema
-                Modal.submit_confirmation(
-                    'A deleted draft cannot be recovered.',
-                    this.urls.delete,
-                    { 'realm': realm, 'schema_name': this.name, 'with_status': 'draft' }
-                );
+                Modal.submit_confirmation('A deleted draft cannot be recovered.', this.urls.delete, {
+                    realm: realm,
+                    schema_name: this.name,
+                    with_status: 'draft',
+                });
             });
         } else if (this.status == 'published') {
             // create modal and form for a new draft
@@ -870,17 +892,18 @@ class Schema extends ComplexField {
             this.nav_bar.add_item('child', 'Copy to new schema'); // add to tabs
             this.child.create_editor(); // create form
             this.nav_bar.add_tab_content('child', this.child.form.form); // add form to tab
-            
+
             // add a json view
             this.prepare_json_download();
-            
+
             // add and define the 'archive' button
             this.nav_bar.add_action_button('Archive', 'danger', () => {
                 // Fill the confirmation modal with the hidden fields to archive this schema version
-                Modal.submit_confirmation(
-                    'Archived schemas cannot be implemented.',
-                    this.urls.archive,
-                    { 'realm': realm, 'schema_name': this.name, 'with_status': 'published' });
+                Modal.submit_confirmation('Archived schemas cannot be implemented.', this.urls.archive, {
+                    realm: realm,
+                    schema_name: this.name,
+                    with_status: 'published',
+                });
             });
         }
     }
@@ -910,7 +933,7 @@ class Schema extends ComplexField {
         this.create_navbar(); // create navigation bar and tabs
 
         // create a div, append the navigation bar and tabs, and append it to the container
-        this.card = document.createElement('div')
+        this.card = document.createElement('div');
         this.card.id = this.card_id;
         this.card.appendChild(this.nav_bar.nav_bar);
         this.card.appendChild(this.nav_bar.tab_content);
@@ -918,8 +941,11 @@ class Schema extends ComplexField {
 
         // show a message if there are no fields
         if (this.field_ids.length == 0) {
-            let msg = Field.quick('div', 'viewer',
-                'This schema does not have any fields yet. Go to "edit" mode to add one.');
+            let msg = Field.quick(
+                'div',
+                'viewer',
+                'This schema does not have any fields yet. Go to "edit" mode to add one.'
+            );
             this.nav_bar.tab_content.querySelector('.input-view').appendChild(msg);
         }
 
@@ -941,7 +967,7 @@ class Schema extends ComplexField {
     save_draft(action) {
         // update the status
         let status = action == 'publish' ? 'published' : 'draft';
-        console.log(status)
+        console.log(status);
 
         // if this is a new version from an existing published one, increment the versio number
         if (this.data_status == 'new') {
@@ -950,7 +976,7 @@ class Schema extends ComplexField {
         }
         this.name = this.form.form.querySelector('[name="schema_name"]').value;
         this.title = this.form.form.querySelector('[name="title"]').value;
-        
+
         // retrieve Object-version of the fields as this.properties
         this.fields_to_json();
 
@@ -958,16 +984,20 @@ class Schema extends ComplexField {
         let form_fields = {
             current_version: this.version,
             with_status: status,
-            raw_schema: JSON.stringify(this.properties) // stringify fields (properties)
+            raw_schema: JSON.stringify(this.properties), // stringify fields (properties)
         };
 
         // register parent if relevant
-        if (this.parent) { form_fields.parent = this.parent; }
+        if (this.parent) {
+            form_fields.parent = this.parent;
+        }
 
         // update the form right before submission
-        if (status == 'draft') { // original form for drafts
+        if (status == 'draft') {
+            // original form for drafts
             Object.entries(form_fields).forEach((item) => this.form.update_field(item[0], item[1]));
-        } else { // confirmation form (which does not include name and title yet) for published
+        } else {
+            // confirmation form (which does not include name and title yet) for published
             form_fields.schema_name = this.name;
             form_fields.title = this.title;
             Modal.fill_confirmation_form(form_fields);
@@ -998,10 +1028,10 @@ class SchemaGroup {
      * @static
      */
     static status_colors = {
-        'published': 'success',
-        'draft': 'orange',
-        'archived': 'inactive'
-    }
+        published: 'success',
+        draft: 'orange',
+        archived: 'inactive',
+    };
 
     /**
      * Create and fill an accordion item and the tabs for the versions of a schema.
@@ -1025,9 +1055,7 @@ class SchemaGroup {
         // obtain the list of versions existing for each status
         this.summary = {};
         Object.keys(SchemaGroup.status_colors).forEach((st) => {
-            this.summary[st] = this.versions
-                .filter((v) => v.status == st)
-                .map((v) => v.version);
+            this.summary[st] = this.versions.filter((v) => v.status == st).map((v) => v.version);
         });
         schemas[name] = this.summary; // add this to the global variable
 
@@ -1053,14 +1081,15 @@ class SchemaGroup {
     load_version(version, nav_bar) {
         // create the version and status badge for this version
         let badges = SchemaGroup.create_badges(version.version, version.status);
-        
+
         // if there is a published version and it's this one, focus on it, otherwise focus on the draft
-        let active = this.statuses.indexOf('published') > -1 ? version.status == 'published' : version.status == 'draft';
+        let active =
+            this.statuses.indexOf('published') > -1 ? version.status == 'published' : version.status == 'draft';
         // this does not account for a case with only archived versions and a draft
 
         // remove dots from the versio number so it can be used in DOM ids
-        let version_number = version.version.replaceAll('\.', '');
-        
+        let version_number = version.version.replaceAll('.', '');
+
         // add a tab and content for this specific version
         nav_bar.add_item(`v${version_number}`, badges, active);
 
@@ -1083,7 +1112,8 @@ class SchemaGroup {
                 }
             } else {
                 // if the tab is not the first one, activate it and do the same
-                nav_bar.nav_bar.querySelector(`button#v${version_number}-tab-${this.name}`)
+                nav_bar.nav_bar
+                    .querySelector(`button#v${version_number}-tab-${this.name}`)
                     .addEventListener('show.bs.tab', () => {
                         if (!schema.loaded) {
                             reader.retrieve();
@@ -1111,7 +1141,7 @@ class SchemaGroup {
         status_badge.setAttribute('alt', 'status ' + status);
         status_badge.setAttribute('name', status);
         status_badge.setAttribute('src', `${SchemaGroup.badge_url}-${status}-${SchemaGroup.status_colors[status]}`);
-        return [version_badge, status_badge]
+        return [version_badge, status_badge];
     }
 }
 
@@ -1126,7 +1156,7 @@ class SchemaGroup {
  * @property {String} parent Name of the schema this schema was cloned from, if relevant. (Not implemented)
  * @property {Object<String,InputField>} fields Collection of fields that constitute this schema.
  * @property {String[]} field_ids Ordered list of IDs of the fields.
- * @property {HTMLFormElement} form Form used to implement the metadata annotation. 
+ * @property {HTMLFormElement} form Form used to implement the metadata annotation.
  */
 class SchemaForm {
     /**
@@ -1145,11 +1175,11 @@ class SchemaForm {
 
         this.container = container_id;
         this.prefix = prefix;
-       
+
         // Initialized empty set of fields
         this.fields = {};
         this.field_ids = Object.keys(json.properties);
-        
+
         // create the form and add the fields
         this.from_json(json.properties);
     }
@@ -1182,11 +1212,11 @@ class SchemaForm {
         document.getElementById(this.container).appendChild(title);
 
         // Retrieve information from the URL and add it to the form as hidden fields
-        const url = new URL(window.location.href)
+        const url = new URL(window.location.href);
         const url_params = url.searchParams;
         let version_name = `${prefix}.__version__`;
         for (let item of ['item_type', 'object_path', 'schema', 'realm', version_name]) {
-            let hidden_input = document.createElement('input')
+            let hidden_input = document.createElement('input');
             hidden_input.type = 'hidden';
             hidden_input.name = item;
             hidden_input.value = item == version_name ? this.version : url_params.get(item);
@@ -1194,7 +1224,7 @@ class SchemaForm {
         }
 
         // Create a row for the submission button
-        let submitting_row = Field.quick('div', 'row border-top pt-2')
+        let submitting_row = Field.quick('div', 'row border-top pt-2');
         let submitter = Field.quick('button', 'btn btn-primary', 'Save metadata');
         submitter.type = 'submit';
         submitting_row.appendChild(submitter);
@@ -1235,7 +1265,7 @@ class SchemaForm {
         // extract fields that are not in composite fields and register them
         let non_objects = keys.filter((fid) => fid.split('.').length == 3);
         non_objects.forEach((fid) => this.register_non_object(fid, annotated_data));
-        
+
         // extract fields that are in composite fields
         let in_objects = keys.filter((fid) => fid.split('.').length > 3);
         // identify the unique composite fields
@@ -1263,11 +1293,11 @@ class SchemaForm {
         let viewer = this.form.querySelector(`h5#viewer-${obj}`).parentElement;
 
         // Extract the fields that are not inside nested composite fields and register them
-        let not_nested = fields.filter((fid) => fid.split('.').length == (prefix.split('.').length + 2));
+        let not_nested = fields.filter((fid) => fid.split('.').length == prefix.split('.').length + 2);
         not_nested.forEach((fid) => this.register_non_object(fid, annotated_data, viewer));
 
         // Extract the fields that are inside nested composite fields
-        let nested = fields.filter((fid) => fid.split('.').length > (prefix.split('.').length + 2));
+        let nested = fields.filter((fid) => fid.split('.').length > prefix.split('.').length + 2);
         // Identify the unique nested composite fields
         let sub_objs = [...new Set(nested.map((x) => x.match(`${prefix}.${obj}.(?<field>[^\.]+).*`).groups.field))];
         // Go through each nested composite field and register its subfields, with an accumulated prefix
@@ -1289,26 +1319,27 @@ class SchemaForm {
 
         // Identify checkboxes as cases where there are multiple input fields with the same name in the form
         // (this is only for multiple-value multiple-choice fields)
-        let is_checkbox = [...form.querySelectorAll(`[name="${fid}"]`)]
-            .filter((x) => x.classList.contains('form-check-input'))
-            .length > 0;
-        
-            // if we indeed have multiple-value multiple-choice
+        let is_checkbox =
+            [...form.querySelectorAll(`[name="${fid}"]`)].filter((x) => x.classList.contains('form-check-input'))
+                .length > 0;
+
+        // if we indeed have multiple-value multiple-choice
         if (is_checkbox) {
-            form.querySelectorAll(`[name="${fid}"]`)
-                .forEach((chk) => {
-                    if (existing_values.indexOf(chk.value) > -1) chk.setAttribute('checked', '');
-                });
-        } else if (existing_values.length == 1) { // if there is only one value for this field
+            form.querySelectorAll(`[name="${fid}"]`).forEach((chk) => {
+                if (existing_values.indexOf(chk.value) > -1) chk.setAttribute('checked', '');
+            });
+        } else if (existing_values.length == 1) {
+            // if there is only one value for this field
             form.querySelector(`[name="${fid}"]`).value = existing_values[0];
-        } else { // if the field has been duplicated
+        } else {
+            // if the field has been duplicated
             // go through each of the values and repeat the input field with its corresponding value
             for (let i = 0; i < existing_values.length; i++) {
                 let input = form.querySelectorAll(`[name="${fid}"]`)[i];
                 let viewer = input.parentElement.parentElement;
                 let sibling = viewer.nextSibling;
                 let value = existing_values[i];
-                console.log(value)
+                console.log(value);
                 input.value = value; // use the existing field if this is the first item
                 if (i < existing_values.length - 1) {
                     // clone the input field and fill it if it's not the first item
