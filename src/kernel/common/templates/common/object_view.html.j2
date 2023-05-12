@@ -132,6 +132,10 @@
           <th>Status</th>
           <td>{{ data_object.status }}</td>
         </tr>
+        <tr>
+          <th>SHA256 Checksum</th>
+          <td><code>{{ data_object.checksum | irods_to_sha256_checksum }}</code></td>
+        </tr>
         {# <tr>
           <th>Replica number</th>
           <td>{{ data_object.replica_number }}</td>
