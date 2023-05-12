@@ -14,10 +14,23 @@
   </nav>
   <h4 class="mb-3">API token {{ type }}</h4>
     <p>
-      For unattended scripts that send data to the data platform, or retrieve data from it, you can request a long-living token to save safely together with the script. The long-living token is tied to a separate username, so that permissions can be set to what is strictly necessary. Be aware that resetting the token is possible at any time, but will invalidate the previous value and scripts will stop working.
+      For unattended scripts that send data to the data platform, or retrieve data from it, you can request a long-living token to use in the script. The long-living token is tied to a separate username, so that permissions can be set to what is strictly necessary. Be aware that resetting the token is possible at any time, but will invalidate the previous value and scripts will stop working.
     </p>
-  
+
     <p class="text-danger">Please copy the password below safely now, because you will not be able to retrieve it again.</p>
+
+    <p>
+      By policy, the long-lived token should only be used for automated ingestion or extraction of data (or both). Interactions by end users, directly or indirectly, should happen using their own accounts.
+      {% if 'ingress' in info['irods_environment']['irods_user_name'] %}
+      This means in particular that the subcollection in which data is written using the long-lived token, needs to have appropriate ACL permissions set and the inherit bit enabled, otherwise the uploaded data will be accessible only by the username that is tied to the token.
+      For convenience, or as an example, the collection <code>{{ info['irods_environment']['irods_cwd'] }}</code> was created and can be used to upload data with the token. Data will then be owned - and in particular be readable - by the project managers. In case more people should be granted read access, add the corresponding ACL rules first, before actually uploading data.
+      {% else %}
+      This means in particular that the data that the long-lived token should be able to read, must have write permissions for the accounts of people providing it, and read permissions for the username tied to the token. 
+      For convenience, or as an example, the collection <code>{{ info['irods_environment']['irods_cwd'] }}</code> was created and can be used to put data into, that later can be read using the token. 
+      At this moment it is owned by the project manager groups. In case more people should be granted write access, add the corresponding ACL rules first, before copying any data into it.
+      {% endif %}
+    </p>
+
     <dl class="mx-auto ml-20">
       <dt>Hostname</dt>
       <dd>{{ info['irods_environment']['irods_host'] }}</dd>
