@@ -387,6 +387,11 @@ def project_overview():
     if not year:
         year = datetime.now().year
 
+    response = requests.get(f"{API_URL}/v1/irods/zones", headers=header)
+    response.raise_for_status()
+
+    zones = response.json()
+
     response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
 
     response.raise_for_status()
@@ -398,6 +403,26 @@ def project_overview():
         projects = []
 
     projects = sorted(projects, key=lambda p: p["project"]["name"])
+
+    response = requests.get(f"{API_URL}/v1/projects", headers=header)
+
+    response.raise_for_status()
+
+    projects_all = response.json()
+
+    projects_zone = []
+    for project in projects_all:
+        if project["platform"] == "irods":
+            for opt in project["platform_options"]:
+                if opt["key"] == "zone-jobid":
+                    for z in zones:
+                        if z["jobid"] == opt["value"]:
+                            projects_zone.append((z["zone"], project["name"]))
+
+    for zone in projects_zone:
+        for project in projects:
+            if zone[1] == project["project"]["name"]:
+                project["zone_name"] = zone[0]
 
     return render_template(
         "project/projects_overview.html.j2",

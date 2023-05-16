@@ -50,6 +50,7 @@
     <thead>
     <tr>
       <th>Project</th>
+      <th>Platform</th>
       <th>Reference</th>
       <th>Responsible</th>
       <th>Usage Jan</th>
@@ -73,6 +74,12 @@
     <tr>
       <td class="align-middle">
         <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
+      </td>
+      <td class="align-middle">
+        {% if project['platform'].startswith('irods') %} {{ 'irods/' }} {{ project['zone_name'] }}
+        <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">{{ item['zone_name'] }}</a>
+        {% else %} {{ project['platform'] }}
+        {% endif %}
       </td>
       <td class="align-middle">
         {% if project['sap_ref'] %}SAP {{ project['sap_ref'] }}{% endif %}
