@@ -7,10 +7,14 @@ Note: versioning follows Semver standard with 3 levels
 
 ### Bug fixes
 
+- fixed: display of user metadata (name and email from plugin handler) in profile was not working for users without home collection
+- fixed operator plugin: delete dialogs have now a different id per zone
+
 ### Smaller improvements and bug fixes
 
 - moved core admin module to plugins (where it belongs semantically), as well as remaining admin from template_overrides
 - all admin routes are now protected with decorator that checks the proper user role
+- checksums are displayed for data objects (via Peter)
 
 ## Release 0.10.0 [2023-05-02]
 
