@@ -22,7 +22,9 @@
                              src="{{ url_for('static', filename='mango-logo.svg') }}"
                              width="137"
                              style="margin: -10px auto" />
+                             {% if 'irods_session' in g %}
                              <span class="fw-bold fs-5 align-bottom"><i class="bi bi-boxes"></i> {{ g.irods_session.zone }}</span>
+                             {% endif %}
                     {% endif %}
                 </a>
             </div>
