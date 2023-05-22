@@ -5,9 +5,14 @@ Note: versioning follows Semver standard with 3 levels
 
 ### New features
 
+- new description field for the managed schemas, saved as a "help" property in the json files
+
 ### Bug fixes
 
+- schema manager: fix issue with dropdowns and radios in same session
+- schema manager: fix issues with default values in single-value multiple choice
 - fixed: display of user metadata (name and email from plugin handler) in profile was not working for users without home collection
+- fix bug with wrong version number being annotated when editing metadata from a schema
 - fixed operator plugin: delete dialogs have now a different id per zone
 - fixed schema manager: strip (leading/trailing) whitespace from option values
 - fixed user/manual metadata editing: strip (leading/trailing) whitespace of form edited metadata values
