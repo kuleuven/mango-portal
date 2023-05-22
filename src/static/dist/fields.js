@@ -53,6 +53,7 @@ class InputField {
     this.required = false;
     this.repeatable = false;
     this.values = {};
+    this.help = "";
 
     // Schema information
     this.schema_name = schema_name;
@@ -81,6 +82,7 @@ class InputField {
       if (this.default) json.default = this.default;
     }
     if (this.repeatable) json.repeatable = this.repeatable;
+    if (this.help) json.help = this.help;
 
     return json;
   }
@@ -100,6 +102,9 @@ class InputField {
     }
     if (data.repeatable) {
       this.repeatable = data.repeatable;
+    }
+    if (data.help) {
+      this.help = data.help;
     }
   }
 
@@ -354,6 +359,28 @@ class InputField {
   }
 
   /**
+   * Create a field to set up a description / help text for the field.
+   */
+  add_help_field() {
+    this.form_field.add_input("Description", `${this.id}-help`, {
+      description:
+        "Text to show as a description / help text for a field, like this text.",
+      required: false,
+      as_textarea: true,
+      value: this.help,
+      placeholder: "Helpful description",
+    });
+    let help = this.form_field.form.querySelector(`textarea#${this.id}-help`);
+    help.addEventListener("change", () => {
+      this.update_help();
+    });
+  }
+
+  update_help() {
+    this.help = "";
+  }
+
+  /**
    * Add a field to provide a default value, if relevant.
    * @abstract
    */
@@ -407,6 +434,9 @@ class InputField {
    */
   end_form() {
     let this_class = this.constructor.name;
+
+    // Add a field to provide a helpful description
+    this.add_help_field();
 
     // Add a field to provide a default value, if relevant
     this.add_default_field();
@@ -635,23 +665,29 @@ class InputField {
     // retrieve data from the form
     let data = new FormData(this.form_field.form);
     let old_id = this.id;
-    let new_id = data.get(`${this.id}-id`);
+    let new_id = data.get(`${this.id}-id`).trim();
     // capture the 'default' value if relevant
     if (this.required) {
-      this.default = data.get(`${this.id}-default`);
+      this.default = data.get(`${this.id}-default`).trim();
     }
 
     // if we are updating an existing field without changing the ID
     if (old_id == new_id) {
-      this.title = data.get(`${this.id}-label`);
+      this.title = data.get(`${this.id}-label`).trim();
       this.recover_fields(this.id, data); // update the field
+      console.log(this.help);
       schema.update_field(this); // update the schema
       return this;
     } else {
       // if we are changing IDs or creating a new field altogether
       // create a new field with the same type
 
-      let clone = this.clone(schema, new_id, data.get(`${this.id}-label`));
+      let clone = this.clone(
+        schema,
+        new_id,
+        data.get(`${this.id}-label`).trim()
+      );
+      clone.help = data.get(`${this.id}-help`).trim();
       clone.recover_fields(this.id, data);
 
       if (this.constructor.name == "ObjectInput") {
@@ -682,7 +718,7 @@ class InputField {
       } else {
         schema.add_field(clone);
       }
-
+      console.log(clone.help);
       return clone;
     }
   }
@@ -732,6 +768,7 @@ class InputField {
     this.repeatable = false;
     this.default = undefined;
     this.form_field.reset();
+    this.update_help();
   }
 
   /**
@@ -826,6 +863,11 @@ class TypedInput extends InputField {
     super(schema_name, data_status);
     this.type = "text";
     this.values = {};
+    this.temp_values = {
+      type: "text",
+      min: null,
+      max: null,
+    };
   }
 
   form_type = "text"; // name of the class for DOM IDs
@@ -851,15 +893,19 @@ class TypedInput extends InputField {
    * @returns {String} Text describing the range of a numeric field.
    */
   print_range() {
+    let min =
+      this.temp_values.min == null ? this.values.minimum : this.temp_values.min;
+    let max =
+      this.temp_values.max == null ? this.values.maximum : this.temp_values.max;
     // if we have both values
-    if (this.values.minimum && this.values.maximum) {
-      return `between ${this.values.minimum} and ${this.values.maximum}`;
-    } else if (this.values.minimum) {
+    if (min && max) {
+      return `between ${min} and ${max}`;
+    } else if (min) {
       // if we have the minimum only
-      return `larger than ${this.values.minimum}`;
-    } else if (this.values.maximum) {
+      return `larger than ${min}`;
+    } else if (max) {
       // if we have the maximum only
-      return `smaller than ${this.values.maximum}`;
+      return `smaller than ${max}`;
     } else {
       // if we don't have any
       return "";
@@ -870,9 +916,8 @@ class TypedInput extends InputField {
    * Handle the input fields and values dependent on specific types of simple fields.
    * If a field editor is generated for the first time, include the appropriate fields.
    * If a different type is chosen while editing the field, add/remove the appropriate fields.
-   * @param {String} format Selected type of the input field.
    */
-  manage_format(format) {
+  manage_format() {
     // Have a minimum or maximum values been defined?
     let has_range =
       this.values.minimum != undefined || this.values.maximum != undefined;
@@ -887,12 +932,15 @@ class TypedInput extends InputField {
     );
 
     // add or remove default based on type
-    if (format == "textarea" || format == "checkbox") {
+    if (
+      this.temp_values.type == "textarea" ||
+      this.temp_values.type == "checkbox"
+    ) {
       if (default_div != null) {
         this.form_field.form.removeChild(default_div);
       }
       this.default = undefined;
-      if (format == "checkbox") {
+      if (this.temp_values.type == "checkbox") {
         this.required = false;
         this.repeatable = false;
       }
@@ -908,7 +956,7 @@ class TypedInput extends InputField {
     let switches_div = this.form_field.form.querySelector("div#switches-div");
     if (switches_div != undefined) {
       let switches = switches_div.querySelectorAll('input[role="switch"]');
-      if (format == "checkbox") {
+      if (this.temp_values.type == "checkbox") {
         switches.forEach((sw) => {
           sw.setAttribute("disabled", "");
         });
@@ -918,7 +966,10 @@ class TypedInput extends InputField {
     }
 
     // add or remove range inputs based on type
-    if ((format == "integer") | (format == "float")) {
+    if (
+      (this.temp_values.type == "integer") |
+      (this.temp_values.type == "float")
+    ) {
       // adapt the type of the default input field
       if (default_input !== null) {
         default_input.type = "number";
@@ -951,7 +1002,7 @@ class TypedInput extends InputField {
       max_button.type = "number";
 
       // allow decimals for float input
-      if (format == "float") {
+      if (this.temp_values.type == "float") {
         min_button.setAttribute("step", "any");
         max_button.setAttribute("step", "any");
         if (default_input !== null) {
@@ -965,16 +1016,21 @@ class TypedInput extends InputField {
         if (default_input != null) {
           default_input.min = min_button.value;
         }
+        this.temp_values.min = min_button.value;
+        this.update_help();
       });
 
       // adapt maxima of minimum and default fields when a new maximum is provided
       max_button.addEventListener("change", () => {
         min_button.max = max_button.value;
         default_input.max = max_button.value;
+        this.temp_values.max = max_button.value;
+        this.update_help();
       });
     } else {
       // if the field is not numeric (anymore)
       // remove the min and max input fields
+
       if (
         this.form_field.form.querySelectorAll('.form-container [type="number"]')
           .length > 0
@@ -995,7 +1051,7 @@ class TypedInput extends InputField {
 
       // adapt the type of the default input
       if (default_input !== null) {
-        default_input.type = format;
+        default_input.type = this.temp_values.type;
       }
     }
 
@@ -1003,10 +1059,11 @@ class TypedInput extends InputField {
     if (default_input !== null) {
       let num_validator =
         default_input.input == "number" ? this.print_range() : "";
-      let validator = `This field must be of type ${format}${num_validator}.`;
+      let validator = `This field must be of type ${this.temp_values.type}${num_validator}.`;
       default_input.parentElement.querySelector(".invalid-feedback").innerHTML =
         validator;
     }
+    this.update_help();
   }
 
   /**
@@ -1016,13 +1073,26 @@ class TypedInput extends InputField {
    */
   from_json(data) {
     super.from_json(data);
-    let par_text = this.type;
     if ((this.type == "integer") | (this.type == "float")) {
       this.values = { minimum: data.minimum, maximum: data.maximum };
-      let range_text = this.print_range();
-      par_text = `${this.type} ${range_text}`;
+      this.temp_values = { ...this.values };
     }
-    this.viewer_subtitle = `Input type: ${par_text}`;
+    this.temp_values.type = this.type;
+    this.update_help();
+  }
+
+  update_help() {
+    let par_text =
+      (this.temp_values.type == "integer") | (this.temp_values.type == "float")
+        ? `${this.temp_values.type} ${this.print_range()}`
+        : this.temp_values.type;
+    this.help = `Input type: ${par_text}`;
+    if (this.form_field) {
+      let help_field = this.form_field.form.querySelector(`#${this.id}-help`);
+      if (help_field != undefined) {
+        help_field.value = this.help;
+      }
+    }
   }
 
   /**
@@ -1066,9 +1136,7 @@ class TypedInput extends InputField {
     let div = document.createElement("div");
 
     // set up input field description as subtitle or as input-description
-    let subtitle = active
-      ? Field.quick("div", "form-text", this.viewer_subtitle)
-      : Field.quick("p", "card-subtitle", this.viewer_subtitle);
+    let subtitle = Field.quick("div", "form-text mt-0 mb-1", this.help);
     subtitle.id = "help-" + this.id;
 
     // define input shape
@@ -1103,6 +1171,8 @@ class TypedInput extends InputField {
         input.value = this.default;
       }
     }
+    div.appendChild(subtitle);
+    div.appendChild(input);
 
     // define value
     if (!active) {
@@ -1111,12 +1181,9 @@ class TypedInput extends InputField {
         input.querySelector("input").setAttribute("readonly", "");
       } else {
         input.setAttribute("readonly", "");
-        div.appendChild(subtitle);
       }
-      div.appendChild(input);
     } else {
       // when implementing form
-      div.appendChild(input);
       let value = Field.include_value(this);
 
       if (this.type == "checkbox") {
@@ -1138,7 +1205,6 @@ class TypedInput extends InputField {
         if (this.values.maximum != undefined) {
           input.max = this.values.maximum;
         }
-        div.appendChild(subtitle);
       }
     }
     return div;
@@ -1164,12 +1230,13 @@ class TypedInput extends InputField {
     this.form_field.form
       .querySelector(".form-select")
       .addEventListener("change", () => {
-        let selected = this.form_field.form.elements[`${this.id}-format`].value;
-        this.manage_format(selected);
+        this.temp_values.type =
+          this.form_field.form.elements[`${this.id}-format`].value;
+        this.manage_format();
       });
 
     // add any other relevant input field
-    this.manage_format(this.type);
+    this.manage_format();
 
     // finish form
     this.end_form();
@@ -1181,20 +1248,16 @@ class TypedInput extends InputField {
    */
   recover_fields(id, data) {
     // capture type
-    this.type = data.get(`${id}-format`);
-    let par_text = this.type;
+    this.type = data.get(`${id}-format`).trim();
 
     // capture minimum and maximum values if relevant
     if ((this.type === "integer") | (this.type == "float")) {
-      this.values.minimum = data.get(`${id}-min`);
-      this.values.maximum = data.get(`${id}-max`);
-      // this.type = "number";
-      let range_text = this.print_range();
-      par_text = `${this.type} ${range_text}`;
+      this.values.minimum = data.get(`${id}-min`).trim();
+      this.values.maximum = data.get(`${id}-max`).trim();
     }
 
     // define the description of the field for the viewer and editor
-    this.viewer_subtitle = `Input type: ${par_text}`;
+    this.update_help();
   }
 
   /**
@@ -1380,6 +1443,8 @@ class ObjectInput extends InputField {
 
     if (this.required) json.required = this.required;
     if (this.repeatable) json.repeatable = this.repeatable; // temporarily not implemented
+    if (this.help) json.help = this.help;
+
     return json;
   }
 
@@ -1573,10 +1638,27 @@ class MultipleInput extends InputField {
    * @returns {HTMLDivElement}
    */
   viewer_input(active = false) {
-    let div =
+    let div = document.createElement("div");
+    let form_shape =
       this.values.ui == "dropdown" // If UI is 'dropdown'
         ? Field.dropdown(this, active) // create a dropdown
         : Field.checkbox_radio(this, active); // otherwise a checkbox or radio
+    if (this.help) {
+      let subtitle = Field.quick("div", "form-text mt-0 mb-1", this.help);
+      subtitle.id = "help-" + this.id;
+      div.appendChild(subtitle);
+      if (this.values.ui == "dropdown") {
+        form_shape.setAttribute("aria-describedby", subtitle.id);
+      } else {
+        form_shape.querySelectorAll("div.form-check").forEach((subdiv) => {
+          subdiv
+            .querySelector(".form-check-input")
+            .setAttribute("aria-describedby", subtitle.id);
+        });
+      }
+    }
+    div.appendChild(form_shape);
+
     return div;
   }
 
@@ -1606,13 +1688,13 @@ class MultipleInput extends InputField {
     for (let pair of data.entries()) {
       // add the value of moving input fields only
       if (pair[0].startsWith("mover")) {
-        this.values.values.push(pair[1]);
+        this.values.values.push(pair[1].trim());
       }
     }
     let default_field = this.form_field.form.querySelector(`#${id}-default`);
     if (default_field !== null) {
       let selected = default_field.querySelector("option[selected]");
-      let selected_value = selected == null ? null : selected.value;
+      let selected_value = selected == null ? null : selected.value.trim();
       default_field.querySelectorAll("option").forEach((x) => x.remove());
       for (let i of this.values.values) {
         let new_option = document.createElement("option");

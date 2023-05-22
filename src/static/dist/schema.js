@@ -244,6 +244,24 @@ class ComplexField {
     let form_field = viewer.querySelector(".card-body");
     let new_input = form_object.viewer_input();
     form_field.replaceChild(new_input, form_field.firstChild);
+    if (form_object.constructor.name == "ObjectInput") {
+      let help_div = form_field.querySelector(".form-text#help-composite");
+      if (help_div) {
+        if (form_object.help) {
+          help_div.innerHTML = form_object.help;
+        } else {
+          help_div.remove();
+        }
+      } else if (form_object.help) {
+        let description = Field.quick(
+          "p",
+          "form-text mt-0 mb-1",
+          form_object.help
+        );
+        description.id = "help-composite";
+        form_field.insertBefore(description, new_input);
+      }
+    }
   }
 
   /**
@@ -366,7 +384,9 @@ class ComplexField {
 
       // special box and label if the field is a composite field
       if (subfield.constructor.name == "ObjectInput") {
-        label = Field.quick("h5", "border-bottom border-secondary");
+        label = subfield.help
+          ? document.createElement("h5")
+          : Field.quick("h5", "border-bottom border-secondary");
         label.innerHTML = subfield.required
           ? subfield.title + "*"
           : subfield.title;
@@ -418,8 +438,16 @@ class ComplexField {
       }
 
       // create the contents of the viewer based on the specific kind of field
-      let input = subfield.viewer_input((active = active));
+      let input = subfield.viewer_input(active);
       small_div.appendChild(label);
+      if (subfield.constructor.name == "ObjectInput" && subfield.help) {
+        let help_text = Field.quick(
+          "p",
+          "form-text mt-0 mb-1 border-bottom border-secondary",
+          subfield.help
+        );
+        small_div.appendChild(help_text);
+      }
       small_div.appendChild(input);
       div.appendChild(small_div);
     });
