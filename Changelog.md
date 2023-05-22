@@ -9,6 +9,9 @@ Note: versioning follows Semver standard with 3 levels
 
 - fixed: display of user metadata (name and email from plugin handler) in profile was not working for users without home collection
 - fixed operator plugin: delete dialogs have now a different id per zone
+- fixed schema manager: strip (leading/trailing) whitespace from option values
+- fixed user/manual metadata editing: strip (leading/trailing) whitespace of form edited metadata values
+- fixed bug where always the published version of a schema was used to render metadata labels, now the correct (archived/published) version is used instead
 
 ### Smaller improvements and bug fixes
 
