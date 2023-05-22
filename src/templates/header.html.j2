@@ -9,17 +9,22 @@
                              alt="logo"
                              src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
                              width="137"
-                             style="margin: -10px"/>
-                    <span class="fw-bold fs-5 align-bottom">{{ g.irods_session.zone }}</span>
+                             style="margin: -10px auto" />
+                        <span class="fw-bold fs-5 align-bottom"><i class="bi bi-boxes"></i> {{ g.irods_session.zone }}</span>
                     {% else %}
                         <img class="logo"
                              alt="logo"
                              src="{{ url_for('static', filename='logo.svg') }}"
-                             width="137"/>
+                             width="137"
+                             style="margin: -10px auto" />
                         <img class="logo"
                              alt="logo"
                              src="{{ url_for('static', filename='mango-logo.svg') }}"
-                             width="137"/>
+                             width="137"
+                             style="margin: -10px auto" />
+                             {% if 'irods_session' in g %}
+                             <span class="fw-bold fs-5 align-bottom"><i class="bi bi-boxes"></i> {{ g.irods_session.zone }}</span>
+                             {% endif %}
                     {% endif %}
                 </a>
             </div>
@@ -60,7 +65,7 @@
                             </li>
                         {% endif %}
                         <li>
-                            <hr class="dropdown-divider">
+                            <hr class="dropdown-divider" />
                         </li>
                         {% if 'openid_session' in session %}
                             <li>

@@ -27,6 +27,8 @@ import pytz
 import bleach
 import humanize
 import re
+import base64
+import binascii
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -41,10 +43,8 @@ from kernel.common.error import error_bp
 from kernel.common.browse import browse_bp
 from kernel.metadata.metadata import metadata_bp
 from kernel.search.basic_search import basic_search_bp
-from kernel.admin.admin import admin_admin_bp
 from kernel.metadata_schema.editor import metadata_schema_editor_bp
 from kernel.metadata_schema.form import metadata_schema_form_bp
-from kernel.template_overrides.admin import template_overrides_admin_bp
 from kernel.template_overrides import template_overrides_bp
 import platform
 import version
@@ -97,6 +97,10 @@ if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.operator_group_manager.admin import operator_group_manager_admin_bp
 if "operator" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.operator.admin import operator_admin_bp
+if "admin" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+    from plugins.admin.admin import admin_admin_bp
+if "template_overrides" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+    from plugins.template_overrides.admin import template_overrides_admin_bp
 
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 irods_sessions = {}
@@ -157,6 +161,8 @@ with app.app_context():
         app.register_blueprint(operator_admin_bp)
     if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
         app.register_blueprint(operator_group_manager_admin_bp)
+    if "user_tantra" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
+        import plugins.user_tantra
 
 
 from mango_ui import admin_navbar_entries, navbar_entries
@@ -217,7 +223,7 @@ def init_and_secure_views():
         "data_platform_autocomplete_bp.autocomplete_username",
         "data_platform_user_bp.local_client_retrieve_token_callback",
         "data_platform_project_bp.project_overview",
-        "data_platform_project_bp.set_project_options"
+        "data_platform_project_bp.set_project_options",
     ]:
         return None
 
@@ -394,6 +400,13 @@ def regex_search(_string, _re):
 def regex_match(_string, _re):
     return re.match(_re, _string)
 
+
+@app.template_filter("irods_to_sha256_checksum")
+def irods_to_sha256_checksum(irods_checksum):
+    if irods_checksum is None or not irods_checksum.startswith("sha2:"):
+        return None
+
+    return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode('utf-8')
 
 @app.route("/")
 def index():

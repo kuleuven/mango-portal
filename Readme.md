@@ -52,23 +52,6 @@ This will start waitress as used in the production deployments, but adds a liste
 
 Point your browser to `http://localhost:3000`
 
-### Starting the development server (built in, deprecated)
-
-Make sure you activated the virtual environment
-
-Launch the flask development server from the src directory:
-```sh
-$ cd src
-$ ./run_dev.sh
-```
-or
-
-```sh
-$ src/run_dev.sh
-```
-
-Point your browser to `http://localhost:5000`
-
 ### Updating
 
 Check for new required python modules and or versions
@@ -77,7 +60,7 @@ Check for new required python modules and or versions
 $ pip3 install -r requirements.txt
 ```
 
-If you encounter javascript related errors, the Vue javascript based code may need an update:
+If you encounter javascript related errors, the used js files may need an update:
 
 ```sh
 $ cd src
@@ -94,18 +77,19 @@ $ pip list --outdated --format=freeze | grep -v '^\-e' | \
  cut -d = -f 1  | xargs -n1 pip install -U
 ```
 
-### Installation using the docker image
-
-[TBD}]
-
-### Installation ICTS cloud
-
-[TBD]
-
 ### Technical:
+
 - backend framework: Flask
-- frontend framework: Vue.js (but not too much)
 - code organisation: Flask blueprints for making things modular
 - leverage the irods-Python client
-- if available and desirable, talk directly to Elastic search to speed up some queries and to leverage all the Lucene search goodies
-- uses its own (MySQL) database to store sessions and possibly non irods data
+- optional OpenSearch integration
+
+## Development guidelines
+
+### Python
+
+The preferred formatter is _black_ with its default options, it also has an integration with IDE's such as VSCode
+
+### Javascript
+
+The preferred formatter is _prettier_ with indenting to 4 spaces, no TAB's and single quotes for strings

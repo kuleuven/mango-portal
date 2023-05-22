@@ -417,13 +417,7 @@ def view_object(data_object_path):
     permissions = g.irods_session.permissions.get(
         data_object, report_raw_acls=True, acl_users=acl_users
     )
-    # print(f"Older permissions")
-    # pprint.pprint(permissions)
-
-    # permissions2 = g.irods_session.acls.get(data_object)
-    # print(f"New acls")
-    # pprint.pprint(permissions2)
-
+    
     # Workaround for a bug with report_raw_acls for data objects where every ACL is listed twice
     PermissionTuple = namedtuple(
         "PermissionTuple", ["user_name", "access_name", "user_zone"]

@@ -8,13 +8,15 @@ from flask import (
     request,
 )
 
-from . import (
+from kernel.template_overrides import (
     template_override_managers,
     TemplateOverrideManager,
     get_template_override_manager,
 )
 
 from mango_ui import register_module_admin
+
+from plugins.admin import require_mango_portal_admin
 
 template_overrides_admin_bp = Blueprint(
     "template_overrides_admin_bp", __name__, template_folder="templates"
@@ -33,6 +35,7 @@ register_module_admin(**ADMIN_UI)
 
 
 @template_overrides_admin_bp.route("/template_overrides/admin")
+@require_mango_portal_admin
 def index():
     template_override_manager = get_template_override_manager(g.irods_session.zone)
     source = request.values.get("source", "")
