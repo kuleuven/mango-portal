@@ -419,7 +419,6 @@ def view_object(data_object_path):
                         schema_dict = json.loads(
                             schema_manager.load_schema(schema, status="published")
                         )
-                    schema_dict = json.loads(schema_manager.load_schema(schema))
 
                     if schema_dict:
                         schema_labels[schema] = flatten_schema(
