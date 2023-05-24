@@ -54,6 +54,7 @@ class InputField {
     this.repeatable = false;
     this.values = {};
     this.help = "";
+    this.help_is_custom = false;
 
     // Schema information
     this.schema_name = schema_name;
@@ -82,7 +83,9 @@ class InputField {
       if (this.default) json.default = this.default;
     }
     if (this.repeatable) json.repeatable = this.repeatable;
-    if (this.help) json.help = this.help;
+    if (this.help) {
+      json.help = this.help;
+    }
 
     return json;
   }
@@ -105,6 +108,7 @@ class InputField {
     }
     if (data.help) {
       this.help = data.help;
+      this.help_is_custom = true;
     }
   }
 
@@ -372,6 +376,8 @@ class InputField {
     });
     let help = this.form_field.form.querySelector(`textarea#${this.id}-help`);
     help.addEventListener("change", () => {
+      this.help_is_custom = true;
+      console.log("updating help");
       this.update_help();
     });
   }
@@ -440,9 +446,6 @@ class InputField {
 
     // Add a field to provide a default value, if relevant
     this.add_default_field();
-
-    // Add a space before switches and buttons
-    this.form_field.form.appendChild(document.createElement("br"));
 
     // define whether there should be a dropdown option
     let dropdownable =
@@ -669,9 +672,14 @@ class InputField {
     // capture the 'default' value if relevant
     if (this.required) {
       let default_value = data.get(`${this.id}-default`);
-      console.log(default_value);
       if (default_value) {
         this.default = default_value.trim();
+      }
+    }
+    if (this.help_is_custom) {
+      let help = data.get(`${this.id}-help`);
+      if (help) {
+        this.help = help.trim();
       }
     }
 
@@ -690,7 +698,6 @@ class InputField {
         new_id,
         data.get(`${this.id}-label`).trim()
       );
-      clone.help = data.get(`${this.id}-help`).trim();
       clone.recover_fields(this.id, data);
 
       if (this.constructor.name == "ObjectInput") {
@@ -725,6 +732,13 @@ class InputField {
     }
   }
 
+  /**
+   *
+   * @param {Schema} schema (Mini-)schema that the field belongs to.
+   * @param {String} new_id ID for the clone.
+   * @param {String} title User-facing label of the clone, retrieved from the form
+   * @returns {InputField} A new field with data from the form, to be added to the schema.
+   */
   clone(schema, new_id, title) {
     let clone = new this.constructor(schema.initial_name, this.schema_status);
     // id as it will show in the "ID" field of the form
@@ -739,6 +753,8 @@ class InputField {
     clone.required = this.required;
     clone.repeatable = this.repeatable;
     clone.default = this.default;
+    clone.help = this.help;
+    clone.help_is_custom = this.help_is_custom;
     clone.values = { ...this.values };
     clone.mode = "mod";
     return clone;
@@ -769,7 +785,9 @@ class InputField {
     this.required = false;
     this.repeatable = false;
     this.default = undefined;
+    this.help_is_custom = false;
     this.form_field.reset();
+    console.log("updating help");
     this.update_help();
   }
 
@@ -870,6 +888,7 @@ class TypedInput extends InputField {
       min: null,
       max: null,
     };
+    this.values.placeholder = "";
   }
 
   form_type = "text"; // name of the class for DOM IDs
@@ -887,6 +906,14 @@ class TypedInput extends InputField {
     "integer",
     "float",
     "checkbox",
+  ];
+  static types_with_placeholder = [
+    "text",
+    "textarea",
+    "email",
+    "url",
+    "integer",
+    "float",
   ];
 
   /**
@@ -929,9 +956,23 @@ class TypedInput extends InputField {
     let max_id = `${this.id}-max`;
 
     // DIV and input fields for the default value (not always present)
+    let placeholder_div = this.form_field.form.querySelector(
+      `#div-${this.id}-placeholder`
+    );
+
+    // DIV and input fields for the default value (not always present)
     let default_div = this.form_field.form.querySelector(
       `#div-${this.id}-default`
     );
+
+    // add or remove placeholder
+    if (TypedInput.types_with_placeholder.indexOf(this.temp_values.type) > -1) {
+      this.add_placeholder_field();
+    } else {
+      if (placeholder_div != null) {
+        this.form_field.form.removeChild(placeholder_div);
+      }
+    }
 
     // add or remove default based on type
     if (
@@ -950,6 +991,9 @@ class TypedInput extends InputField {
       this.add_default_field();
     }
 
+    let placeholder_input = this.form_field.form.querySelector(
+      `#${this.id}-placeholder`
+    );
     let default_input = this.form_field.form.querySelector(
       `#${this.id}-default`
     );
@@ -972,6 +1016,10 @@ class TypedInput extends InputField {
       (this.temp_values.type == "integer") |
       (this.temp_values.type == "float")
     ) {
+      // adapt the type of the placeholder input field
+      if (placeholder_input !== null) {
+        placeholder_input.type = "number";
+      }
       // adapt the type of the default input field
       if (default_input !== null) {
         default_input.type = "number";
@@ -1007,6 +1055,9 @@ class TypedInput extends InputField {
       if (this.temp_values.type == "float") {
         min_button.setAttribute("step", "any");
         max_button.setAttribute("step", "any");
+        if (placeholder_input !== null) {
+          placeholder_input.setAttribute("step", "any");
+        }
         if (default_input !== null) {
           default_input.setAttribute("step", "any");
         }
@@ -1015,6 +1066,9 @@ class TypedInput extends InputField {
       // adapt minima of maximum and default fields when a new minimum is provided
       min_button.addEventListener("change", () => {
         max_button.min = min_button.value;
+        if (placeholder_input != null) {
+          placeholder_input.min = min_button.value;
+        }
         if (default_input != null) {
           default_input.min = min_button.value;
         }
@@ -1025,7 +1079,12 @@ class TypedInput extends InputField {
       // adapt maxima of minimum and default fields when a new maximum is provided
       max_button.addEventListener("change", () => {
         min_button.max = max_button.value;
-        default_input.max = max_button.value;
+        if (placeholder_input != null) {
+          placeholder_input.max = max_button.value;
+        }
+        if (default_input != null) {
+          default_input.max = max_button.value;
+        }
         this.temp_values.max = max_button.value;
         this.update_help();
       });
@@ -1050,11 +1109,26 @@ class TypedInput extends InputField {
         delete this.values.minimum;
         delete this.values.maximum;
       }
+      // adapt the type of the default input
+      if (placeholder_input !== null) {
+        placeholder_input.type =
+          this.temp_values.type == "textarea" ? "text" : this.temp_values.type;
+      }
 
       // adapt the type of the default input
       if (default_input !== null) {
         default_input.type = this.temp_values.type;
       }
+    }
+
+    // adapt the description of the default input field based on the type
+    if (placeholder_input !== null) {
+      let num_validator =
+        placeholder_input.input == "number" ? this.print_range() : "";
+      let validator = `This field must be of type ${this.temp_values.type}${num_validator}.`;
+      placeholder_input.parentElement.querySelector(
+        ".invalid-feedback"
+      ).innerHTML = validator;
     }
 
     // adapt the description of the default input field based on the type
@@ -1065,6 +1139,8 @@ class TypedInput extends InputField {
       default_input.parentElement.querySelector(".invalid-feedback").innerHTML =
         validator;
     }
+    console.log("updating help");
+
     this.update_help();
   }
 
@@ -1080,11 +1156,16 @@ class TypedInput extends InputField {
       this.temp_values = { ...this.values };
     }
     this.temp_values.type = this.type;
+    if ("placeholder" in data) {
+      this.values.placeholder = data.placeholder;
+    }
+    console.log("updating help");
+
     this.update_help();
   }
 
   update_help() {
-    if (!this.help) {
+    if (!this.help_is_custom) {
       let par_text =
         (this.temp_values.type == "integer") |
         (this.temp_values.type == "float")
@@ -1098,6 +1179,7 @@ class TypedInput extends InputField {
         }
       }
     }
+    console.log(this.help);
   }
 
   /**
@@ -1112,6 +1194,29 @@ class TypedInput extends InputField {
     return inner_input;
   }
 
+  /**
+   * If relevant, create and add an input field for the placeholder value.
+   */
+  add_placeholder_field() {
+    // if the field does not exist yet (it may have been removed for textarea and checkbox)
+    if (
+      this.form_field.form.querySelector(`#div-${this.id}-placeholder`) ==
+      undefined
+    ) {
+      this.form_field.add_input("Placeholder", `${this.id}-placeholder`, {
+        description: "Example of a value for this field.",
+        value: this.values.placeholder,
+        required: false,
+      });
+      let placeholder_div = this.form_field.form.querySelector(
+        `div#div-${this.id}-placeholder`
+      );
+      let divider = this.form_field.form.querySelector(`hr#${this.id}-divider`);
+      if (divider.nextSibling != placeholder_div) {
+        this.form_field.form.insertBefore(placeholder_div, divider.nextSibling);
+      }
+    }
+  }
   /**
    * If relevant, create and add an input field for the default value.
    */
@@ -1148,6 +1253,9 @@ class TypedInput extends InputField {
     let input;
     if (this.type == "textarea") {
       input = Field.quick("textarea", "form-control input-view");
+      if (this.values.placeholder) {
+        input.placeholder = this.values.placeholder;
+      }
     } else if (this.type == "checkbox") {
       // single checkbox with no text and only "true" as possible value
       input = Field.quick("div", "form-check");
@@ -1174,6 +1282,9 @@ class TypedInput extends InputField {
       // only these types can be required and have a default value
       if (this.required && this.default !== undefined) {
         input.value = this.default;
+      }
+      if (this.values.placeholder) {
+        input.placeholder = this.values.placeholder;
       }
     }
     div.appendChild(subtitle);
@@ -1240,11 +1351,31 @@ class TypedInput extends InputField {
         this.manage_format();
       });
 
+    let divider = document.createElement("hr");
+    divider.id = this.id + "-divider";
+    let last_element = this.form_field.switches
+      ? this.form_field.switches
+      : this.form_field.divider;
+    this.form_field.form.insertBefore(divider, last_element);
+
     // add any other relevant input field
     this.manage_format();
 
     // finish form
     this.end_form();
+  }
+
+  /**
+   *
+   * @param {Schema} schema (Mini-)schema that the field belongs to.
+   * @param {String} new_id ID for the clone.
+   * @param {String} title User-facing label of the clone, retrieved from the form
+   * @returns {InputField} A new field with data from the form, to be added to the schema.
+   */
+  clone(schema, new_id, title) {
+    let clone = super.clone(schema, new_id, title);
+    clone.temp_values = { ...this.temp_values };
+    return clone;
   }
 
   /**
@@ -1257,12 +1388,18 @@ class TypedInput extends InputField {
 
     // capture minimum and maximum values if relevant
     if ((this.type === "integer") | (this.type == "float")) {
-      this.values.minimum = data.get(`${id}-min`).trim();
-      this.values.maximum = data.get(`${id}-max`).trim();
+      let minimum = data.get(`${id}-min`);
+      let maximum = data.get(`${id}-max`);
+      if (minimum) this.values.minimum = minimum.trim();
+      if (maximum) this.values.maximum = maximum.trim();
     }
 
-    // define the description of the field for the viewer and editor
-    this.update_help();
+    if (TypedInput.types_with_placeholder.indexOf(this.type) > -1) {
+      let placeholder = data.get(`${id}-placeholder`);
+      if (placeholder) this.values.placeholder = placeholder.trim();
+    } else {
+      this.values.placeholder = "";
+    }
   }
 
   /**
@@ -1275,9 +1412,19 @@ class TypedInput extends InputField {
       form.removeChild(document.getElementById(`div-${this.id}-min`));
       form.removeChild(document.getElementById(`div-${this.id}-max`));
     }
+    if (form.querySelector(`#div-${this.id}-placeholder`) != undefined) {
+      form.querySelector(`#${this.id}-placeholder`).type = "text";
+    }
     if (form.querySelector(`#div-${this.id}-default`) != undefined) {
       form.querySelector(`#${this.id}-default`).type = "text";
     }
+    this.values = {};
+    this.values.placeholder = "";
+    this.temp_values = {
+      type: "text",
+      min: null,
+      max: null,
+    };
     super.reset();
   }
 

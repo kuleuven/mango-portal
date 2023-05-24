@@ -41,7 +41,6 @@ class Field {
     }
     // if there are values, use them, otherwise go for the basic examples
     values = values ? values : Field.example_values;
-    console.log(field.default);
 
     // if this will be used for annotation
     if (!field.default) {
@@ -771,7 +770,6 @@ class BasicForm {
     select.ariaLabel = "Select typing input type";
     select.id = select_id;
     select.name = select_id;
-    // by default, the first option is "selected"
 
     if (!selected) {
       let empty_option = document.createElement("option");
