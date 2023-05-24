@@ -1320,6 +1320,9 @@ class TypedInput extends InputField {
         (this.type == "float") | (this.type == "integer")
           ? "number"
           : this.type;
+      if (this.type == "float") {
+        input.setAttribute("step", "any");
+      }
       input.setAttribute("aria-describedby", subtitle.id);
       // only these types can be required and have a default value
       if (this.required && this.default !== undefined) {
@@ -1564,6 +1567,29 @@ class TypedInput extends InputField {
         }
       }
     }
+
+    // check placeholder attribute
+    if (
+      "placeholder" in json_object &&
+      TypedInput.types_with_placeholder.indexOf(json_object.type) == -1
+    ) {
+      delete json_object.placeholder;
+      messages.push(
+        `The 'placeholder' attribute is not compatible with a field of type ${json_object.type}: it was deleted.`
+      );
+    }
+
+    // check pattern attribute
+    if (
+      "pattern" in json_object &&
+      TypedInput.types_with_regex.indexOf(json_object.type) == -1
+    ) {
+      delete json_object.pattern;
+      messages.push(
+        `The 'pattern' attribute is not compatible with a field of type ${json_object.type}: it was deleted.`
+      );
+    }
+
     let acceptable_fields = [
       "type",
       "title",
@@ -1573,6 +1599,8 @@ class TypedInput extends InputField {
       "maximum",
       "repeatable",
       "help",
+      "placeholder",
+      "pattern",
     ];
     for (let attr of Object.keys(json_object)) {
       if (acceptable_fields.indexOf(attr) == -1) {
