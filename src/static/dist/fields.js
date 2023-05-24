@@ -668,14 +668,17 @@ class InputField {
     let new_id = data.get(`${this.id}-id`).trim();
     // capture the 'default' value if relevant
     if (this.required) {
-      this.default = data.get(`${this.id}-default`).trim();
+      let default_value = data.get(`${this.id}-default`);
+      console.log(default_value);
+      if (default_value) {
+        this.default = default_value.trim();
+      }
     }
 
     // if we are updating an existing field without changing the ID
     if (old_id == new_id) {
       this.title = data.get(`${this.id}-label`).trim();
       this.recover_fields(this.id, data); // update the field
-      console.log(this.help);
       schema.update_field(this); // update the schema
       return this;
     } else {
@@ -718,7 +721,6 @@ class InputField {
       } else {
         schema.add_field(clone);
       }
-      console.log(clone.help);
       return clone;
     }
   }
@@ -1082,15 +1084,18 @@ class TypedInput extends InputField {
   }
 
   update_help() {
-    let par_text =
-      (this.temp_values.type == "integer") | (this.temp_values.type == "float")
-        ? `${this.temp_values.type} ${this.print_range()}`
-        : this.temp_values.type;
-    this.help = `Input type: ${par_text}`;
-    if (this.form_field) {
-      let help_field = this.form_field.form.querySelector(`#${this.id}-help`);
-      if (help_field != undefined) {
-        help_field.value = this.help;
+    if (!this.help) {
+      let par_text =
+        (this.temp_values.type == "integer") |
+        (this.temp_values.type == "float")
+          ? `${this.temp_values.type} ${this.print_range()}`
+          : this.temp_values.type;
+      this.help = `Input type: ${par_text}`;
+      if (this.form_field) {
+        let help_field = this.form_field.form.querySelector(`#${this.id}-help`);
+        if (help_field != undefined) {
+          help_field.value = this.help;
+        }
       }
     }
   }

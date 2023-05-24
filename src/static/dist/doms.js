@@ -41,10 +41,13 @@ class Field {
     }
     // if there are values, use them, otherwise go for the basic examples
     values = values ? values : Field.example_values;
+    console.log(field.default);
 
     // if this will be used for annotation
-    if (active && !field.required) {
+    if (!field.default) {
       let empty_option = document.createElement("option");
+      empty_option.innerHTML = "Select option below";
+      empty_option.value = "";
       inner_input.appendChild(empty_option);
     }
 
@@ -769,8 +772,12 @@ class BasicForm {
     select.id = select_id;
     select.name = select_id;
     // by default, the first option is "selected"
+
     if (!selected) {
-      selected = options[0];
+      let empty_option = document.createElement("option");
+      empty_option.innerHTML = "Select option below";
+      empty_option.value = "";
+      select.appendChild(empty_option);
     }
 
     // fill in the options
@@ -778,7 +785,7 @@ class BasicForm {
       let new_option = document.createElement("option");
       new_option.value = option;
       new_option.innerHTML = option;
-      if (option == selected) {
+      if (selected && option == selected) {
         new_option.setAttribute("selected", "");
       }
       select.appendChild(new_option);
