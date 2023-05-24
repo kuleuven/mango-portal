@@ -1370,6 +1370,7 @@ class TypedInput extends InputField {
       "minimum",
       "maximum",
       "repeatable",
+      "help",
     ];
     for (let attr of Object.keys(json_object)) {
       if (acceptable_fields.indexOf(attr) == -1) {
@@ -1576,7 +1577,7 @@ class ObjectInput extends InputField {
       }
     }
 
-    let acceptable_fields = ["type", "title", "properties"];
+    let acceptable_fields = ["type", "title", "properties", "help"];
     for (let attr of Object.keys(json_object)) {
       if (acceptable_fields.indexOf(attr) == -1) {
         delete json_object[attr];
@@ -1854,6 +1855,7 @@ class MultipleInput extends InputField {
       "multiple",
       "values",
       "repeatable",
+      "help",
     ];
     for (let attr of Object.keys(json_object)) {
       if (acceptable_fields.indexOf(attr) == -1) {
