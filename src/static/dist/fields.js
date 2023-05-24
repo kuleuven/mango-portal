@@ -882,13 +882,12 @@ class TypedInput extends InputField {
   constructor(schema_name, data_status = "draft") {
     super(schema_name, data_status);
     this.type = "text";
-    this.values = {};
+    this.values = { placeholder: "", pattern: "" };
     this.temp_values = {
       type: "text",
       min: null,
       max: null,
     };
-    this.values.placeholder = "";
   }
 
   form_type = "text"; // name of the class for DOM IDs
@@ -915,6 +914,7 @@ class TypedInput extends InputField {
     "integer",
     "float",
   ];
+  static types_with_regex = ["text", "email", "url"];
 
   /**
    * Depending on the existence of minimum or maximum for the numeric fields,
@@ -955,10 +955,13 @@ class TypedInput extends InputField {
     let min_id = `${this.id}-min`;
     let max_id = `${this.id}-max`;
 
-    // DIV and input fields for the default value (not always present)
+    // DIV and input fields for the placeholder (not always present)
     let placeholder_div = this.form_field.form.querySelector(
       `#div-${this.id}-placeholder`
     );
+
+    // DIV and input fields for the regex pattern (not always present)
+    let regex_div = this.form_field.form.querySelector(`#div-${this.id}-regex`);
 
     // DIV and input fields for the default value (not always present)
     let default_div = this.form_field.form.querySelector(
@@ -971,6 +974,15 @@ class TypedInput extends InputField {
     } else {
       if (placeholder_div != null) {
         this.form_field.form.removeChild(placeholder_div);
+      }
+    }
+
+    // add or remove regex pattern
+    if (TypedInput.types_with_regex.indexOf(this.temp_values.type) > -1) {
+      this.add_regex_field();
+    } else {
+      if (regex_div != null) {
+        this.form_field.form.removeChild(regex_div);
       }
     }
 
@@ -1159,8 +1171,9 @@ class TypedInput extends InputField {
     if ("placeholder" in data) {
       this.values.placeholder = data.placeholder;
     }
-    console.log("updating help");
-
+    if ("pattern" in data) {
+      this.values.pattern = data.pattern;
+    }
     this.update_help();
   }
 
@@ -1217,6 +1230,35 @@ class TypedInput extends InputField {
       }
     }
   }
+
+  /**
+   * If relevant, create and add an input field for the regex pattern.
+   */
+  add_regex_field() {
+    // if the field does not exist yet (it may have been removed for textarea and checkbox)
+    if (
+      this.form_field.form.querySelector(`#div-${this.id}-regex`) == undefined
+    ) {
+      this.form_field.add_input("Regex pattern", `${this.id}-regex`, {
+        description: "A regular expression to use in validation.",
+        value: this.values.pattern,
+        required: false,
+      });
+      let regex_div = this.form_field.form.querySelector(
+        `div#div-${this.id}-regex`
+      );
+      let placeholder_div = this.form_field.form.querySelector(
+        `div#div-${this.id}-placeholder`
+      );
+      if (placeholder_div.nextSibling != regex_div) {
+        this.form_field.form.insertBefore(
+          regex_div,
+          placeholder_div.nextSibling
+        );
+      }
+    }
+  }
+
   /**
    * If relevant, create and add an input field for the default value.
    */
@@ -1285,6 +1327,9 @@ class TypedInput extends InputField {
       }
       if (this.values.placeholder) {
         input.placeholder = this.values.placeholder;
+      }
+      if (this.values.pattern) {
+        input.pattern = this.values.pattern;
       }
     }
     div.appendChild(subtitle);
@@ -1400,6 +1445,12 @@ class TypedInput extends InputField {
     } else {
       this.values.placeholder = "";
     }
+    if (TypedInput.types_with_regex.indexOf(this.type) > -1) {
+      let pattern = data.get(`${id}-regex`);
+      if (pattern) this.values.pattern = pattern.trim();
+    } else {
+      this.values.pattern = "";
+    }
   }
 
   /**
@@ -1418,8 +1469,7 @@ class TypedInput extends InputField {
     if (form.querySelector(`#div-${this.id}-default`) != undefined) {
       form.querySelector(`#${this.id}-default`).type = "text";
     }
-    this.values = {};
-    this.values.placeholder = "";
+    this.values = { placeholder: "", pattern: "" };
     this.temp_values = {
       type: "text",
       min: null,
