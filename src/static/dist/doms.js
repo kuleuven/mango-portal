@@ -357,7 +357,6 @@ class MovingViewer extends MovingField {
       let description = Field.quick("p", "form-text mt-0 mb-1", this.help_text);
       description.id = "help-composite";
       body.insertBefore(description, this.body);
-      console.log(description);
     }
 
     this.div.appendChild(header);

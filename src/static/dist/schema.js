@@ -379,7 +379,7 @@ class ComplexField {
 
       // create a div for the input field
       let small_div = Field.quick("div", "mini-viewer");
-      small_div.name = `viewer-${field_id}`;
+      small_div.setAttribute("data-field-name", field_id);
       let label;
 
       // special box and label if the field is a composite field
@@ -390,51 +390,23 @@ class ComplexField {
         label.innerHTML = subfield.required
           ? subfield.title + "*"
           : subfield.title;
-        label.id = `viewer-${subfield.id}`;
+        label.id = `viewer-label-${subfield.id}`;
         small_div.className =
           small_div.className +
           " border border-1 border-secondary rounded p-3 my-1";
       } else {
         label = Field.labeller(
           subfield.required ? subfield.title + "*" : subfield.title,
-          `viewer-${subfield.id}`
+          `viewer-label-${subfield.id}`
         );
       }
 
       // define options if the field is repeatable
       if (subfield.repeatable) {
-        let icon = Field.quick("i", "bi bi-front px-2");
-        if (active) {
-          // for annotation, create a button
-          let button = Field.quick("button", "btn btn-outline-dark p-0 mx-2");
-          button.type = "button";
-
-          // behavior when the 'repeat' button is clicked
-          button.addEventListener("click", () => {
-            // clone the div of the field, but instead of the 'repeat' button make a 'remove' button
-            let clone = small_div.cloneNode(true);
-            let clone_button = clone.querySelector("button i");
-            clone_button.classList.remove("bi-front");
-            clone_button.classList.add("bi-trash");
-            clone_button.parentElement.addEventListener("click", () =>
-              clone.remove()
-            );
-
-            // add the cloned div right after the div it came from
-            if (small_div.nextSibling == undefined) {
-              small_div.parentElement.appendChild(clone);
-            } else {
-              small_div.parentElement.insertBefore(
-                clone,
-                small_div.nextSibling
-              );
-            }
-          });
-          button.appendChild(icon);
-          label.appendChild(button);
-        } else {
-          label.appendChild(icon);
-        }
+        let icon = active
+          ? SchemaForm.field_replicator(subfield, small_div)
+          : Field.quick("i", "bi bi-front px-2");
+        label.appendChild(icon);
       }
 
       // create the contents of the viewer based on the specific kind of field
@@ -1433,6 +1405,7 @@ class SchemaForm {
    * @param {Object<String,String[]>} annotated_data Key-value pairs with the existing metadata.
    */
   add_annotation(annotated_data) {
+    console.log(annotated_data);
     // add a hidden field withthe value of 'redirect_route
     let hidden_input = document.createElement("input");
     hidden_input.type = "hidden";
@@ -1446,69 +1419,77 @@ class SchemaForm {
     );
 
     // extract fields that are not in composite fields and register them
-    let non_objects = keys.filter((fid) => fid.split(".").length == 3);
+    let non_objects = keys.filter(
+      (fid) => typeof annotated_data[fid][0] != "object"
+    );
     non_objects.forEach((fid) => this.register_non_object(fid, annotated_data));
 
     // extract fields that are in composite fields
-    let in_objects = keys.filter((fid) => fid.split(".").length > 3);
+    let objs = keys.filter((fid) => typeof annotated_data[fid][0] == "object");
     // identify the unique composite fields
-    let objs = [
-      ...new Set(
-        in_objects.map(
-          (x) => x.match(`${this.prefix}.(?<field>[^\.]+).*`).groups.field
-        )
-      ),
-    ];
     // go through each composite field and register its subfields
-    objs.forEach((fid) =>
-      this.register_object(fid, annotated_data, in_objects)
-    );
+    objs.forEach((fid) => this.register_object(fid, annotated_data));
+
+    SchemaForm.prepare_objects(this, annotated_data, this.form, this.prefix);
   }
 
   /**
    * Retrieve the annotated data corresponding to fields inside a given composite field.
    * @param {String} obj Flattened ID of the composite field.
    * @param {Object<String,String[]>} annotated_data Key-value pairs with the existing metadata.
-   * @param {String[]} object_fields Flattened IDs of fields inside composite fields.
    * @param {String} prefix Prefix common to all these fields.
+   * @param {HTMLFormElement|HTMLDivElement} form Form or div element inside which we can find the input field to fill in.
    */
-  register_object(obj, annotated_data, object_fields, prefix = null) {
+  register_object(obj, annotated_data, prefix = null, form = null) {
     // Start with the original prefix, but accumulate when we have nested composite fields
     prefix = prefix || this.prefix;
+    form = form || this.form;
 
     // Identify the fields that belong to this particular composite fields
-    let fields = object_fields.filter((fid) =>
-      fid.startsWith(`${prefix}.${obj}.`)
-    );
-    // THIS CODE DOES NOT DEAL WITH DUPLICATED OBJECTS (TEMPORARILY DISABLED)
+    let existing_values = annotated_data[obj];
+    let raw_name = obj.match(`${prefix}.(?<field>[^\.]+)`).groups.field;
+    let first_unit = String(existing_values[0].__unit__[0]);
+    let first_viewer = [...form.childNodes].filter(
+      (child) =>
+        child.classList.contains("mini-viewer") &&
+        child.getAttribute("data-field-name") == raw_name
+    )[0];
+    first_viewer.setAttribute("data-composite-unit", first_unit);
+    first_viewer
+      .querySelectorAll("[name]")
+      .forEach(
+        (subfield) => (subfield.name = `${subfield.name}__${first_unit}`)
+      );
+    if (existing_values.length > 1) {
+      for (let i = 0; i < existing_values.length - 1; i++) {
+        first_viewer.querySelector("h5 button").click();
+      }
+    }
+    existing_values.forEach((object) => {
+      let unit = object.__unit__[0];
+      let viewer = [...form.childNodes].filter(
+        (child) =>
+          child.classList.contains("mini-viewer") &&
+          child.getAttribute("data-field-name") == raw_name &&
+          child.getAttribute("data-composite-unit") == String(unit)
+      )[0];
 
-    // Identify the div inside the form that hosts the fields for this composite field
-    let viewer = this.form.querySelector(`h5#viewer-${obj}`).parentElement;
+      // Extract the fields that are not inside nested composite fields and register them
+      let not_nested = Object.keys(object).filter(
+        (fid) => typeof object[fid][0] != "object" && fid != "__unit__"
+      );
+      not_nested.forEach((fid) => {
+        this.register_non_object(fid, object, viewer);
+      });
 
-    // Extract the fields that are not inside nested composite fields and register them
-    let not_nested = fields.filter(
-      (fid) => fid.split(".").length == prefix.split(".").length + 2
-    );
-    not_nested.forEach((fid) =>
-      this.register_non_object(fid, annotated_data, viewer)
-    );
+      // Extract the fields that are inside nested composite fields
+      let nested = Object.keys(object).filter(
+        (fid) => typeof object[fid][0] == "object"
+      );
 
-    // Extract the fields that are inside nested composite fields
-    let nested = fields.filter(
-      (fid) => fid.split(".").length > prefix.split(".").length + 2
-    );
-    // Identify the unique nested composite fields
-    let sub_objs = [
-      ...new Set(
-        nested.map(
-          (x) => x.match(`${prefix}.${obj}.(?<field>[^\.]+).*`).groups.field
-        )
-      ),
-    ];
-    // Go through each nested composite field and register its subfields, with an accumulated prefix
-    sub_objs.forEach((fid) =>
-      this.register_object(fid, annotated_data, nested, `${prefix}.${obj}`)
-    );
+      // Go through each nested composite field and register its subfields, with an accumulated prefix
+      nested.forEach((fid) => this.register_object(fid, object, obj, viewer));
+    });
   }
 
   /**
@@ -1523,48 +1504,157 @@ class SchemaForm {
 
     // Extract the data linked to this field
     let existing_values = annotated_data[fid];
+    let input_name =
+      "__unit__" in annotated_data ? `${fid}__${annotated_data.__unit__}` : fid;
 
     // Identify checkboxes as cases where there are multiple input fields with the same name in the form
     // (this is only for multiple-value multiple-choice fields)
     let is_checkbox =
-      [...form.querySelectorAll(`[name="${fid}"]`)].filter((x) =>
+      [...form.querySelectorAll(`[name="${input_name}"]`)].filter((x) =>
         x.classList.contains("form-check-input")
       ).length > 0;
 
     // if we indeed have multiple-value multiple-choice
     if (is_checkbox) {
-      form.querySelectorAll(`[name="${fid}"]`).forEach((chk) => {
+      form.querySelectorAll(`[name="${input_name}"]`).forEach((chk) => {
         if (existing_values.indexOf(chk.value) > -1)
           chk.setAttribute("checked", "");
       });
     } else if (existing_values.length == 1) {
       // if there is only one value for this field
-      form.querySelector(`[name="${fid}"]`).value = existing_values[0];
+      form.querySelector(`[name="${input_name}"]`).value = existing_values[0];
     } else {
       // if the field has been duplicated
       // go through each of the values and repeat the input field with its corresponding value
-      for (let i = 0; i < existing_values.length; i++) {
-        let input = form.querySelectorAll(`[name="${fid}"]`)[i];
-        let viewer = input.parentElement.parentElement;
-        let sibling = viewer.nextSibling;
-        let value = existing_values[i];
-        console.log(value);
-        input.value = value; // use the existing field if this is the first item
-        if (i < existing_values.length - 1) {
-          // clone the input field and fill it if it's not the first item
-          let clone = viewer.cloneNode(true);
-          let clone_button = clone.querySelector("button i");
-          clone_button.classList.remove("bi-front");
-          clone_button.classList.add("bi-trash");
-          clone_button.parentElement.addEventListener("click", () =>
-            clone.remove()
-          );
-          sibling == undefined
-            ? form.appendChild(clone)
-            : form.insertBefore(clone, sibling);
-        }
+      let first_input = form.querySelector(
+        `[data-field-name="${fid.split(".").pop()}"]`
+      );
+      for (let i = 0; i < existing_values.length - 1; i++) {
+        first_input.querySelector("label button").click();
       }
+      form.querySelectorAll(`[name="${input_name}"]`).forEach((input, i) => {
+        input.value = existing_values[i];
+      });
     }
+  }
+
+  static prepare_objects(
+    object_editor,
+    annotated_data,
+    form,
+    prefix,
+    unit = 1
+  ) {
+    let empty_composite_fields = object_editor.field_ids.filter((fid) => {
+      let is_object = object_editor.fields[fid].type == "object";
+      let is_not_annotated =
+        Object.keys(annotated_data).indexOf(`${prefix}.${fid}`) == -1;
+      return is_object && is_not_annotated;
+    });
+    empty_composite_fields.forEach((fid) => {
+      let viewer = form.querySelector(
+        `div.mini-viewer[data-field-name="${fid}"]`
+      );
+      viewer.setAttribute("data-composite-unit", String(unit));
+      let sub_schema = object_editor.fields[fid].editor;
+      let simple_subfields = sub_schema.field_ids.filter(
+        (subfid) => sub_schema.fields[subfid].type != "object"
+      );
+      simple_subfields.forEach((subfid) => {
+        let flattened_name = `${prefix}.${fid}.${subfid}`;
+        viewer.querySelector(
+          `[name="${flattened_name}"]`
+        ).name = `${flattened_name}__${unit}`;
+      });
+      SchemaForm.prepare_objects(
+        sub_schema,
+        annotated_data,
+        viewer,
+        `${prefix}.${fid}`,
+        `${unit}.1`
+      );
+    });
+  }
+
+  static field_replicator(field, small_div) {
+    let icon = Field.quick("i", "bi bi-front px-2");
+    // for annotation, create a button
+    let button = Field.quick("button", "btn btn-outline-dark p-0 mx-2");
+    button.type = "button";
+
+    // behavior when the 'repeat' button is clicked
+    button.addEventListener("click", () => {
+      // clone the div of the field, but instead of the 'repeat' button make a 'remove' button
+      let clone = small_div.cloneNode(true);
+      let clone_button = clone.querySelector("button i");
+      clone_button.classList.remove("bi-front");
+      clone_button.classList.add("bi-trash");
+      clone_button.parentElement.addEventListener("click", () =>
+        clone.remove()
+      );
+      let existing_siblings = [...small_div.parentElement.childNodes].filter(
+        (child) =>
+          child.getAttribute("data-field-name") ==
+          small_div.getAttribute("data-field-name")
+      );
+
+      if (field.type == "object") {
+        let current_unit = small_div.getAttribute("data-composite-unit");
+        let split_unit = current_unit.split(".");
+        let existing_unit_suffixes = existing_siblings
+          .map((child) =>
+            parseInt(child.getAttribute("data-composite-unit").split(".").pop())
+          )
+          .sort();
+        let largest_suffix = existing_unit_suffixes.pop();
+        split_unit.pop();
+        split_unit.push(String(largest_suffix + 1));
+        let new_unit = split_unit.join(".");
+        clone.setAttribute("data-composite-unit", new_unit);
+        clone
+          .querySelectorAll("[name]")
+          .forEach(
+            (subfield) =>
+              (subfield.name = subfield.name.replace(
+                `__${current_unit}`,
+                `__${new_unit}`
+              ))
+          );
+        clone.querySelectorAll("[data-composite-unit]").forEach((subfield) => {
+          let current_subunit = subfield.getAttribute("data-composite-unit");
+          let new_subunit = current_subunit.replace(
+            new RegExp(`^${current_unit}`),
+            new_unit
+          );
+          subfield.setAttribute("data-composite-unit", new_subunit);
+        });
+        let inner_repeatables = [...clone.childNodes]
+          .filter((subfield) => subfield.classList.contains("mini-viewer"))
+          .filter((subfield) => subfield.querySelector("button i.bi-front"));
+        // NOTE this is not good at dealing with nested composite fields yet!
+        inner_repeatables.forEach((subfield) => {
+          let subfield_data =
+            field.editor.fields[subfield.getAttribute("data-field-name")];
+          let old_button =
+            subfield.querySelector("button i.bi-front").parentElement;
+          let new_button = SchemaForm.field_replicator(subfield_data, subfield);
+          subfield.querySelector("label").replaceChild(new_button, old_button);
+        });
+      }
+
+      // add the cloned div after the last one of its kind
+      let last_sibling = existing_siblings[existing_siblings.length - 1];
+      if (last_sibling.nextSibling == undefined) {
+        last_sibling.parentElement.appendChild(clone);
+      } else {
+        last_sibling.parentElement.insertBefore(
+          clone,
+          last_sibling.nextSibling
+        );
+      }
+    });
+    button.appendChild(icon);
+    return button;
   }
 
   /**

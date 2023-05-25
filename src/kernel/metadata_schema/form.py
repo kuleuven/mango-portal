@@ -110,7 +110,6 @@ def josse_process_property(property_tuple, required=False, prefix=""):
             validators=_validators,
         )
     if _property["type"] == "checkboxes":
-
         #### new try
         choices = [*_property["properties"]]
         return SelectMultipleField(
@@ -281,13 +280,11 @@ def edit_schema_metadata_for_item():
 
     for meta_data_item in catalog_item.metadata.items():
         if meta_data_item.name.startswith(prefix):
-
             form_values.add(
                 meta_data_item.name, meta_data_item.value.replace("<br/>", "\n")
             )
 
     if request.method == "GET":
-
         schema_form_class = josse_walk_schema_object((prefix, form_dict), prefix=prefix)
         setattr(schema_form_class, "id", HiddenField())
         setattr(schema_form_class, "schema", HiddenField())
@@ -311,12 +308,10 @@ def edit_schema_metadata_for_item():
         avu_operation_list = []
         for meta_data_item in catalog_item.metadata.items():
             if meta_data_item.name.startswith(prefix):
-
                 avu_operation_list.append(
                     AVUOperation(operation="remove", avu=meta_data_item)
                 )
         for _key, _value in _parameters.items():
-
             if _key.startswith(prefix) and _value:
                 if flat_form_dict[_key]["type"] == "checkboxes":
                     _value = json.dumps(_value)
@@ -363,6 +358,39 @@ def edit_schema_metadata_for_item():
         if "redirect_hash" in request.values:
             return redirect(referral.split("#")[0] + request.values["redirect_hash"])
         return redirect(request.referrer)
+
+
+def add_to_dict(metadata_items, multidict, unit_level=1):
+    name_length = 2 + unit_level
+    simple_fields = [
+        meta_data_item
+        for meta_data_item in metadata_items
+        if len(meta_data_item.name.split(".")) == name_length
+    ]
+    composite_fields = set(
+        (
+            ".".join(meta_data_item.name.split(".")[:name_length]),
+            ".".join(meta_data_item.units.split(".")[:unit_level]),
+        )
+        for meta_data_item in metadata_items
+        if len(meta_data_item.name.split(".")) > name_length
+    )
+    composite_fields = sorted(
+        list(composite_fields), key=lambda x: int(x[1].split(".")[unit_level - 1])
+    )
+    for meta_data_item in simple_fields:
+        multidict.add(meta_data_item.name, meta_data_item.value)
+    for composite_name, composite_unit in composite_fields:
+        subdict = MultiDict()
+        subdict.add("__unit__", composite_unit)
+        composite_items = [
+            meta_data_item
+            for meta_data_item in metadata_items
+            if meta_data_item.name.startswith(composite_name)
+            and meta_data_item.units.startswith(composite_unit)
+        ]
+        add_to_dict(composite_items, subdict, unit_level + 1)
+        multidict.add(composite_name, subdict.to_dict(flat=False))
 
 
 @metadata_schema_form_bp.route("/metadata-schema/edit2", methods=["POST", "GET"])
@@ -417,17 +445,16 @@ def edit_schema_metadata_for_item2():
 
     #     form_values.add(_key, _value)
     form_values.add("redirect_route", request.referrer + "#metadata")
-    for meta_data_item in catalog_item.metadata.items():
-        if meta_data_item.name.startswith(prefix):
-
-            form_values.add(
-                meta_data_item.name, meta_data_item.value.replace("<br/>", "\n")
-            )
+    add_to_dict(catalog_item.metadata.items(), form_values)
+    # for meta_data_item in catalog_item.metadata.items():
+    #     if meta_data_item.name.startswith(prefix):
+    #         form_values.add(
+    #             meta_data_item.name, meta_data_item.value.replace("<br/>", "\n")
+    #         )
 
     values_json = json.dumps(form_values.to_dict(flat=False))
 
     if request.method == "GET":
-
         # schema_form_class = josse_walk_schema_object((prefix, form_dict), prefix=prefix)
         # setattr(schema_form_class, "id", HiddenField())
         # setattr(schema_form_class, "schema", HiddenField())
@@ -453,23 +480,35 @@ def edit_schema_metadata_for_item2():
         avu_operation_list = []
         for meta_data_item in catalog_item.metadata.items():
             if meta_data_item.name.startswith(prefix):
-
                 avu_operation_list.append(
                     AVUOperation(operation="remove", avu=meta_data_item)
                 )
         for _key, _value in request.values.items(multi=True):
             if _key.startswith(prefix) and _value:
-                if _key in flat_form_dict and flat_form_dict[_key]["type"] == "textarea":
+                if (
+                    _key in flat_form_dict
+                    and flat_form_dict[_key]["type"] == "textarea"
+                ):
                     # the value is transformed to replace newlines as iRODS cannot handle this.
                     # Most likely this is only for schemas which can have textarea boxes
                     _value = "<br/>".join(_value.splitlines())
 
                 if isinstance(_value, str):
-                    _value=_value.strip()
+                    _value = _value.strip()
 
-                avu_operation_list.append(
-                    AVUOperation(operation="add", avu=iRODSMeta(_key, _value))
-                )
+                if "__" in _key and not _key.endswith("__"):
+                    pprint(_key)
+                    pprint(_key.split("__"))
+                    _key, _unit = _key.split("__")
+                    avu_operation_list.append(
+                        AVUOperation(
+                            operation="add", avu=iRODSMeta(_key, _value, _unit)
+                        )
+                    )
+                else:
+                    avu_operation_list.append(
+                        AVUOperation(operation="add", avu=iRODSMeta(_key, _value))
+                    )
 
         # catalog_item.metadata.apply_atomic_operations(*avu_operation_list)
         # workaround for a bug in 4.2.11: only 'own' can execute atomic operations
