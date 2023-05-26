@@ -59,15 +59,15 @@
                 {{ home_total_size | filesizeformat }}
               </td>
             </tr>
-            {% for avu in me.metadata.items() %}
-              <tr>
-                <th>
-                  <i class="bi bi-fingerprint fs-4"></i> {{ avu.name }}
-                </th>
-                <td>{{ avu.value }}</td>
-              </tr>
-            {% endfor %}
           {% endif %}
+          {% for avu in me.metadata.items() %}
+            <tr>
+              <th>
+                <i class="bi bi-fingerprint fs-4"></i> {{ avu.name }}
+              </th>
+              <td>{{ avu.value }}</td>
+            </tr>
+          {% endfor %}
         </table>
       </div>
     </div>

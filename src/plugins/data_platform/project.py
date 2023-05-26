@@ -176,7 +176,7 @@ def set_project_options():
     options = ['gdpr-data']
 
     if project['platform'].startswith('irods'):
-        options += ['sftp-openfile', 'enable-icommands', 'enforce-quota']
+        options += ['sftp-openfile', 'enable-icommands', 'enforce-quota', 'inherit-permissions', 'strict-permissions']
 
     for key in options:
         value = request.form.get(key, 'false')

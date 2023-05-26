@@ -130,7 +130,19 @@
         </tr>
         <tr>
           <th>Status</th>
-          <td>{{ data_object.status }}</td>
+          <td>
+            {% if data_object.replicas[-1] and ((data_object.replicas[-1].status | int)  == 1) %}
+              <i class="bi bi-check-circle text-success"></i>
+            {% else %}
+              <i class="bi bi-radioactive text-danger"></i>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>SHA256 Checksum</th>
+          <td>
+            <code>{{ data_object.checksum | irods_to_sha256_checksum }}</code>
+          </td>
         </tr>
         {# <tr>
           <th>Replica number</th>

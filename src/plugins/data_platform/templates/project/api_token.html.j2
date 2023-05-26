@@ -14,7 +14,10 @@
   </nav>
   <h4 class="mb-3">API token {{ type }}</h4>
     <p>
-      For unattended scripts that send data to the data platform, or retrieve data from it, you can request a long-living token to save safely together with the script. The long-living token is tied to a separate username, so that permissions can be set to what is strictly necessary. Be aware that resetting the token is possible at any time, but will invalidate the previous value and scripts will stop working.
+      For unattended scripts that send data to the data platform, or retrieve data from it, you can request a long-living token to use in the script. The long-living token is tied to a separate username, so that permissions can be set to what is strictly necessary. Be aware that resetting the token is possible at any time, but will invalidate the previous value and scripts will stop working.
+    </p>
+    <p>
+      Note that by policy, this token is only available for unattended data streams such as lab equipment uploading data. It should not be used in scripts that are started manually by an end user, either directly (command line) or indirectly (e.g. through a custom web portal). In case of doubt, please contact the data team.
     </p>
 
     {% for token in current_machine_tokens %}

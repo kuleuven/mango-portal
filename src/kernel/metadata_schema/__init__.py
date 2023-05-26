@@ -178,7 +178,7 @@ class FileSystemSchemaManager:
         if version:
             schema_paths = list(
                 self._get_schema_path(schema_name).glob(
-                    f"*{schema_name}*{version}*{status}.json"
+                    f"*{schema_name}*v{version}*.json"
                 )
             )
         if len(schema_paths) >= 1:

@@ -11,9 +11,9 @@ from plugins.operator import get_zone_operator_session
 
 
 def enrich_irods_session_listener(sender, **parameters):
-    logging.info(f"Starting enrichment listener procedure, did nothing yet")
+    # logging.info(f"Starting enrichment listener procedure, did nothing yet")
     if irods_session_pool.has_irods_session(parameters["username"]):
-        logging.info(f"Starting enrichment listener procedure if is true")
+        # logging.info(f"Starting enrichment listener procedure if is true")
         mango_irods_session = irods_session_pool.get_irods_session(
             parameters["username"]
         )
