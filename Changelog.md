@@ -1,11 +1,14 @@
 # Changelog
 
 Note: versioning follows Semver standard with 3 levels
-## Release 0.11.0 [unreleased]
+## Release 0.11 [2023-05-26]
 
 ### New features
 
-- new description field for the managed schemas, saved as a "help" property in the json files
+The most visible new features in this release are in the metadata schema management functions
+
+- new description field for all fields in managed schemas, saved as a "help" property in the json files
+- placeholder option and validation through regular expressions for text-style fields
 
 ### Bug fixes
 
@@ -25,7 +28,7 @@ Note: versioning follows Semver standard with 3 levels
 - checksums are displayed for data objects (via Peter)
 - status field for data objects now checks the replica status (previously the native status was checked, but it is always None)
 
-## Release 0.10.0 [2023-05-02]
+## Release 0.10 [2023-05-02]
 
 ### New Features
 
@@ -51,7 +54,7 @@ Note: versioning follows Semver standard with 3 levels
 - new signal upon user session creation
 
 ---
-## Release 0.9.0 Initial MVP [2023-04-05]
+## Release 0.9 Initial MVP [2023-04-05]
 
 ### Features
 
