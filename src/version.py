@@ -1,2 +1,2 @@
-__version__ = "0.11.0-dev"
-__comment__ = "Mostly refactoring for publishing in public"
+__version__ = "0.11.1"
+__comment__ = "Many bug fixes and new schema features: description, pattern and placeholder options for fields"
