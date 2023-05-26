@@ -487,7 +487,12 @@ class ObjectEditor extends ComplexField {
    * @param {ObjectInput} parent Composite field this mini-schema is linked to.
    */
   constructor(parent) {
-    super(parent.id, `object-${parent.schema_status}`);
+    super(
+      parent.id,
+      parent.schema_status.startsWith("object")
+        ? parent.schema_status
+        : `object-${parent.schema_status}`
+    );
     this.parent_status = parent.schema_status;
     if (parent.form_field) {
       this.form_id = parent.form_field.form.id;
@@ -1089,7 +1094,6 @@ class Schema extends ComplexField {
   save_draft(action) {
     // update the status
     let status = action == "publish" ? "published" : "draft";
-    console.log(status);
 
     // if this is a new version from an existing published one, increment the versio number
     if (this.data_status == "new") {
@@ -1405,7 +1409,6 @@ class SchemaForm {
    * @param {Object<String,String[]>} annotated_data Key-value pairs with the existing metadata.
    */
   add_annotation(annotated_data) {
-    console.log(annotated_data);
     // add a hidden field withthe value of 'redirect_route
     let hidden_input = document.createElement("input");
     hidden_input.type = "hidden";

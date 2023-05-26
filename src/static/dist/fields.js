@@ -615,7 +615,7 @@ class InputField {
    * @returns {HTMLDivElement} Element that contains an illustration example and a button to activate an editor modal.
    */
   render(schema) {
-    this.id = `${this.form_type}-${schema.initial_name}`;
+    this.id = `${this.form_type}-temp`;
 
     // create the form to design the field and the modal that will host it
     this.create_form();
@@ -1915,7 +1915,7 @@ class MultipleInput extends InputField {
     this.setup_form();
 
     // Add moving input fields to design the options
-    this.form_field.add_moving_options("Select option", this.values.values);
+    this.form_field.add_moving_options("Select option", this);
 
     // Finish form
     this.end_form();
@@ -1950,6 +1950,10 @@ class MultipleInput extends InputField {
         default_field.appendChild(new_option);
       }
     }
+  }
+
+  update_default_field() {
+    return;
   }
 
   /**
@@ -2131,6 +2135,38 @@ class SelectInput extends MultipleInput {
       this.values.values,
       this.default
     );
+  }
+
+  update_default_field() {
+    console.log(this.form_field);
+    let moving_fields =
+      this.form_field.form.querySelectorAll("div.blocked input");
+    let default_field = this.form_field.form.querySelector(
+      `select#${this.id}-default`
+    );
+    let selected = default_field.value;
+    default_field
+      .querySelectorAll("option:not([value=''])")
+      .forEach((option) => option.remove());
+    let new_fields = [...moving_fields].map((option) => option.value);
+
+    if (selected && new_fields.indexOf(selected) == -1) {
+      selected = "";
+      let empty_option = document.createElement("option");
+      empty_option.innerHTML = "Select option below";
+      empty_option.value = "";
+      default_field.appendChild(empty_option);
+    }
+
+    new_fields.forEach((option) => {
+      if (option) {
+        let option_field = document.createElement("option");
+        option_field.innerHTML = option;
+        option_field.value = option;
+        if (option == selected) option_field.setAttribute("selected", "");
+        default_field.appendChild(option_field);
+      }
+    });
   }
 
   /**

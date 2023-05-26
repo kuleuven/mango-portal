@@ -823,8 +823,8 @@ class BasicForm {
    * @param {String} label_text Text for the label of the input fields (e.g. "Select option").
    * @param {Array<String|Number>} [starting_values] Initial values for the moving fields.
    */
-  add_moving_options(label_text, starting_values = []) {
-    let options = starting_values;
+  add_moving_options(label_text, input_field) {
+    let options = input_field.values.values;
     let has_values = options.length > 0;
     // if no options are provided, start with two
     if (!has_values) {
@@ -839,6 +839,16 @@ class BasicForm {
         i,
         has_values ? options[i] : false
       );
+      input
+        .querySelector("input.mover")
+        .addEventListener("change", () => input_field.update_default_field());
+      input
+        .querySelectorAll("button.mover")
+        .forEach((btn) =>
+          btn.addEventListener("click", () =>
+            input_field.update_default_field()
+          )
+        );
 
       // re-enable removing if there are more than two options
       if (options.length > 2) {
@@ -871,7 +881,16 @@ class BasicForm {
 
       // add a new mover with a higher index
       let new_input = this.add_mover(label_text, current_max + 1);
-
+      new_input
+        .querySelector("input.mover")
+        .addEventListener("change", () => input_field.update_default_field());
+      new_input
+        .querySelectorAll("button.mover")
+        .forEach((btn) =>
+          btn.addEventListener("click", () =>
+            input_field.update_default_field()
+          )
+        );
       // disable its 'down' button
       new_input.querySelector(".down").setAttribute("disabled", "");
 
