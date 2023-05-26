@@ -1,11 +1,14 @@
 # Changelog
 
 Note: versioning follows Semver standard with 3 levels
-## Release 0.11.0 [unreleased]
+## Release 0.11.0 [2023-05-26]
 
 ### New features
 
-- new description field for the managed schemas, saved as a "help" property in the json files
+The most visible new features in this release are in the metadata schema management functions
+
+- new description field for all fields in managed schemas, saved as a "help" property in the json files
+- placeholder option and validation through regular expressions for text-style fields
 
 ### Bug fixes
 
