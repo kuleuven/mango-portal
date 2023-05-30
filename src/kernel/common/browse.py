@@ -223,7 +223,23 @@ def collection_browse(collection):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"] and schema_manager:
                 try:
-                    schema_dict = json.loads(schema_manager.load_schema(schema))
+                    if version := grouped_metadata[schema].get(
+                        f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}.__version__",
+                        "",
+                    ):
+                        logging.info(
+                            f"Found version {version} for schema {schema} in metadata"
+                        )
+                        schema_dict = json.loads(
+                            schema_manager.load_schema(
+                                schema, status="", version=version.value
+                            )
+                        )
+                    else:
+                        schema_dict = json.loads(
+                            schema_manager.load_schema(schema, status="published")
+                        )
+
                     if schema_dict:
                         schema_labels[schema] = flatten_schema(
                             ("", schema_dict),
@@ -234,7 +250,12 @@ def collection_browse(collection):
                         logging.info(
                             f"Flattened schema {schema}: {schema_labels[schema]}"
                         )
-                except:
+                    else:
+                        logging.info(f"No labels found for {schema}")
+                except Exception as e:
+                    logging.info(
+                        f"Encountered error loading schema {schema} for fetching labels {e}"
+                    )
                     pass
 
         # now re-order the grouped entries according to the order from the flattened file
@@ -385,13 +406,27 @@ def view_object(data_object_path):
         for schema in grouped_metadata:  # schema_labels[schema][item.name]:
             if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
                 try:
-                    schema_dict = json.loads(schema_manager.load_schema(schema))
-                    schema_labels[schema] = flatten_schema(
-                        ("", schema_dict),
-                        level=0,
-                        prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
-                        result_dict={},
-                    )
+                    if version := grouped_metadata[schema].get(
+                        f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}.__version__",
+                        "",
+                    ):
+                        schema_dict = json.loads(
+                            schema_manager.load_schema(
+                                schema, status="", version=version.value
+                            )
+                        )
+                    else:
+                        schema_dict = json.loads(
+                            schema_manager.load_schema(schema, status="published")
+                        )
+
+                    if schema_dict:
+                        schema_labels[schema] = flatten_schema(
+                            ("", schema_dict),
+                            level=0,
+                            prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
+                            result_dict={},
+                        )
                     logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
                 except:
                     pass
@@ -417,7 +452,7 @@ def view_object(data_object_path):
     permissions = g.irods_session.permissions.get(
         data_object, report_raw_acls=True, acl_users=acl_users
     )
-    
+
     # Workaround for a bug with report_raw_acls for data objects where every ACL is listed twice
     PermissionTuple = namedtuple(
         "PermissionTuple", ["user_name", "access_name", "user_zone"]

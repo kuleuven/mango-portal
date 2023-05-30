@@ -464,6 +464,9 @@ def edit_schema_metadata_for_item2():
                     # Most likely this is only for schemas which can have textarea boxes
                     _value = "<br/>".join(_value.splitlines())
 
+                if isinstance(_value, str):
+                    _value=_value.strip()
+
                 avu_operation_list.append(
                     AVUOperation(operation="add", avu=iRODSMeta(_key, _value))
                 )

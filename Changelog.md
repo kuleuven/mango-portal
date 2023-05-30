@@ -1,18 +1,34 @@
 # Changelog
 
 Note: versioning follows Semver standard with 3 levels
-## Release 0.11.0 [unreleased]
+## Release 0.11 [2023-05-26]
 
 ### New features
 
+The most visible new features in this release are in the metadata schema management functions
+
+- new description field for all fields in managed schemas, saved as a "help" property in the json files
+- placeholder option and validation through regular expressions for text-style fields
+
 ### Bug fixes
+
+- schema manager: fix issue with dropdowns and radios in same session
+- schema manager: fix issues with default values in single-value multiple choice
+- fixed: display of user metadata (name and email from plugin handler) in profile was not working for users without home collection
+- fix bug with wrong version number being annotated when editing metadata from a schema
+- fixed operator plugin: delete dialogs have now a different id per zone
+- fixed schema manager: strip (leading/trailing) whitespace from option values
+- fixed user/manual metadata editing: strip (leading/trailing) whitespace of form edited metadata values
+- fixed bug where always the published version of a schema was used to render metadata labels, now the correct (archived/published) version is used instead
 
 ### Smaller improvements and bug fixes
 
 - moved core admin module to plugins (where it belongs semantically), as well as remaining admin from template_overrides
 - all admin routes are now protected with decorator that checks the proper user role
+- checksums are displayed for data objects (via Peter)
+- status field for data objects now checks the replica status (previously the native status was checked, but it is always None)
 
-## Release 0.10.0 [2023-05-02]
+## Release 0.10 [2023-05-02]
 
 ### New Features
 
@@ -38,7 +54,7 @@ Note: versioning follows Semver standard with 3 levels
 - new signal upon user session creation
 
 ---
-## Release 0.9.0 Initial MVP [2023-04-05]
+## Release 0.9 Initial MVP [2023-04-05]
 
 ### Features
 
