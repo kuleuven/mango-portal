@@ -76,10 +76,13 @@
         <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
       </td>
       <td class="align-middle">
-        {% if project['platform'].startswith('irods') %} {{ 'irods/' }} {{ project['zone_name'] }}
-        <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">{{ item['zone_name'] }}</a>
+        {% for z in zones %}
+        {% if z['jobid'] == item['project']['platform_options'][0]['value'] %}
+        {% if project['platform'].startswith('irods') %} {{ 'irods/' }}
+        <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">{{ z['jobid'] }}</a>        
         {% else %} {{ project['platform'] }}
-        {% endif %}
+        {% endif %}{% endif %}
+        {% endfor %}
       </td>
       <td class="align-middle">
         {% if project['sap_ref'] %}SAP {{ project['sap_ref'] }}{% endif %}

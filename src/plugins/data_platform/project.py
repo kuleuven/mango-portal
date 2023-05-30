@@ -382,15 +382,15 @@ def project_overview():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
 
-    year = request.args.get("year")
-
-    if not year:
-        year = datetime.now().year
-
     response = requests.get(f"{API_URL}/v1/irods/zones", headers=header)
     response.raise_for_status()
 
     zones = response.json()
+
+    year = request.args.get("year")
+
+    if not year:
+        year = datetime.now().year
 
     response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
 
@@ -404,28 +404,9 @@ def project_overview():
 
     projects = sorted(projects, key=lambda p: p["project"]["name"])
 
-    response = requests.get(f"{API_URL}/v1/projects", headers=header)
-
-    response.raise_for_status()
-
-    projects_all = response.json()
-
-    projects_zone = []
-    for project in projects_all:
-        if project["platform"] == "irods":
-            for opt in project["platform_options"]:
-                if opt["key"] == "zone-jobid":
-                    for z in zones:
-                        if z["jobid"] == opt["value"]:
-                            projects_zone.append((z["zone"], project["name"]))
-
-    for zone in projects_zone:
-        for project in projects:
-            if zone[1] == project["project"]["name"]:
-                project["zone_name"] = zone[0]
-
     return render_template(
         "project/projects_overview.html.j2",
         projects=projects,
         year=year,
+        zones=zones,
     )
