@@ -139,8 +139,6 @@ class ComplexField {
     });
     if (this.constructor.name == "ObjectEditor") {
       this_modal.addEventListener("hidden.bs.modal", () => {
-        console.log(this.modal_id);
-        console.log(this.card_id);
         bootstrap.Modal.getOrCreateInstance(
           document.getElementById(this.card_id)
         ).show();
@@ -377,56 +375,62 @@ class ComplexField {
     // go through each of the fields
     // QUESTION should the code inside the forEach be defined in the InputField classes?
     schema.field_ids.forEach((field_id) => {
-      let subfield = schema.fields[field_id];
-
-      // create a div for the input field
-      let small_div = Field.quick("div", "mini-viewer");
-      small_div.setAttribute("data-field-name", field_id);
-      let label;
-
-      // special box and label if the field is a composite field
-      if (subfield.constructor.name == "ObjectInput") {
-        label = subfield.help
-          ? document.createElement("h5")
-          : Field.quick("h5", "border-bottom border-secondary");
-        label.innerHTML = subfield.required
-          ? subfield.title + "*"
-          : subfield.title;
-        label.id = `viewer-label-${subfield.id}`;
-        small_div.className =
-          small_div.className +
-          " border border-1 border-secondary rounded p-3 my-1";
-      } else {
-        label = Field.labeller(
-          subfield.required ? subfield.title + "*" : subfield.title,
-          `viewer-label-${subfield.id}`
-        );
-      }
-
-      // define options if the field is repeatable
-      if (subfield.repeatable) {
-        let icon = active
-          ? SchemaForm.field_replicator(subfield, small_div)
-          : Field.quick("i", "bi bi-front px-2");
-        label.appendChild(icon);
-      }
-
-      // create the contents of the viewer based on the specific kind of field
-      let input = subfield.viewer_input(active);
-      small_div.appendChild(label);
-      if (subfield.constructor.name == "ObjectInput" && subfield.help) {
-        let help_text = Field.quick(
-          "p",
-          "form-text mt-0 mb-1 border-bottom border-secondary",
-          subfield.help
-        );
-        small_div.appendChild(help_text);
-      }
-      small_div.appendChild(input);
-      div.appendChild(small_div);
+      let subfield = ComplexField.add_field_viewer(
+        schema.fields[field_id],
+        active
+      );
+      div.appendChild(subfield);
     });
 
     return div;
+  }
+
+  static add_field_viewer(subfield, active = false) {
+    // create a div for the input field
+    let small_div = Field.quick("div", "mini-viewer");
+    small_div.setAttribute("data-field-name", subfield.id);
+    let label;
+
+    // special box and label if the field is a composite field
+    if (subfield.constructor.name == "ObjectInput") {
+      label = subfield.help
+        ? document.createElement("h5")
+        : Field.quick("h5", "border-bottom border-secondary");
+      label.innerHTML = subfield.required
+        ? subfield.title + "*"
+        : subfield.title;
+      label.id = `viewer-label-${subfield.id}`;
+      small_div.className =
+        small_div.className +
+        " border border-1 border-secondary rounded p-3 my-1";
+    } else {
+      label = Field.labeller(
+        subfield.required ? subfield.title + "*" : subfield.title,
+        `viewer-label-${subfield.id}`
+      );
+    }
+
+    // define options if the field is repeatable
+    if (subfield.repeatable) {
+      let icon = active
+        ? SchemaForm.field_replicator(subfield, small_div, active)
+        : Field.quick("i", "bi bi-front px-2");
+      label.appendChild(icon);
+    }
+
+    // create the contents of the viewer based on the specific kind of field
+    let input = subfield.viewer_input(active);
+    small_div.appendChild(label);
+    if (subfield.constructor.name == "ObjectInput" && subfield.help) {
+      let help_text = Field.quick(
+        "p",
+        "form-text mt-0 mb-1 border-bottom border-secondary",
+        subfield.help
+      );
+      small_div.appendChild(help_text);
+    }
+    small_div.appendChild(input);
+    return small_div;
   }
 }
 
@@ -1581,7 +1585,7 @@ class SchemaForm {
     });
   }
 
-  static field_replicator(field, small_div) {
+  static field_replicator(field, small_div, active) {
     let icon = Field.quick("i", "bi bi-front px-2");
     // for annotation, create a button
     let button = Field.quick("button", "btn btn-outline-dark p-0 mx-2");
@@ -1590,13 +1594,17 @@ class SchemaForm {
     // behavior when the 'repeat' button is clicked
     button.addEventListener("click", () => {
       // clone the div of the field, but instead of the 'repeat' button make a 'remove' button
-      let clone = small_div.cloneNode(true);
-      let clone_button = clone.querySelector("button i");
-      clone_button.classList.remove("bi-front");
-      clone_button.classList.add("bi-trash");
-      clone_button.parentElement.addEventListener("click", () =>
-        clone.remove()
-      );
+      let clone = ComplexField.add_field_viewer(field, active);
+      let clone_button = clone.querySelector("button i.bi-front").parentElement;
+      let new_button = Field.quick("button", "btn btn-outline-dark p-0 mx-2");
+      new_button.type = "button";
+      let new_icon = Field.quick("i", "bi bi-trash px-2");
+      new_button.appendChild(new_icon);
+      new_button.addEventListener("click", () => {
+        clone.remove();
+      });
+      clone_button.parentElement.replaceChild(new_button, clone_button);
+
       let existing_siblings = [...small_div.parentElement.childNodes].filter(
         (child) =>
           child.getAttribute("data-field-name") ==
@@ -1619,11 +1627,7 @@ class SchemaForm {
         clone
           .querySelectorAll("[name]")
           .forEach(
-            (subfield) =>
-              (subfield.name = subfield.name.replace(
-                `__${current_unit}`,
-                `__${new_unit}`
-              ))
+            (subfield) => (subfield.name = `${subfield.name}__${new_unit}`)
           );
         clone.querySelectorAll("[data-composite-unit]").forEach((subfield) => {
           let current_subunit = subfield.getAttribute("data-composite-unit");
@@ -1645,6 +1649,9 @@ class SchemaForm {
           let new_button = SchemaForm.field_replicator(subfield_data, subfield);
           subfield.querySelector("label").replaceChild(new_button, old_button);
         });
+      } else {
+        let old_name = small_div.querySelector("[name]").name;
+        clone.querySelector("[name]").name = old_name;
       }
 
       // add the cloned div after the last one of its kind
