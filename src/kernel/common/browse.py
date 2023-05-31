@@ -103,9 +103,21 @@ def group_prefix_metadata_items(
         if avu.name.startswith(mango_prefix) and avu.name.count(".") >= 2:
             (mango_schema_prefix, schema, avu_name) = avu.name.split(".", 2)
             # item.name = meta_name
-            if schema not in grouped_metadata:
-                grouped_metadata[schema] = MultiDict()
-            grouped_metadata[schema].add(avu.name, avu)
+            if not avu.unit:
+                if schema not in grouped_metadata:
+                    grouped_metadata[schema] = MultiDict()
+                grouped_metadata[schema].add(avu.name, avu)
+            else:
+                # creating a dict with the ordinal string from avu.unit as key
+                # chop off the last part to get the composite identifier
+                composite_id = ".".join(avu.name.split(".")[:-1])
+                if schema not in grouped_metadata:
+                    grouped_metadata[schema] = MultiDict()
+                    grouped_metadata[schema][composite_id] = {avu.unit: MultiDict()}
+                elif composite_id not in grouped_metadata[schema]:
+                    grouped_metadata[schema][composite_id] = {avu.unit: MultiDict()}
+                grouped_metadata[schema][composite_id][avu.unit].add(avu.name, avu)
+
         elif group_analysis_unit and avu.units and avu.units.startswith("analysis"):
             grouped_metadata["analysis"].add(avu.name, avu)
         else:
