@@ -2138,7 +2138,6 @@ class SelectInput extends MultipleInput {
   }
 
   update_default_field() {
-    console.log(this.form_field);
     let moving_fields =
       this.form_field.form.querySelectorAll("div.blocked input");
     let default_field = this.form_field.form.querySelector(

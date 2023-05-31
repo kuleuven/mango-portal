@@ -102,9 +102,9 @@
         {% set instances = schema_metadata.values() | selectattr('units') | map(attribute='units') | unique %}
         {% for unit_value in instances %}
             <hr>
-            {% for sub_name, sub_info in schema_info %}
-                {% if sub_info['level'] == level + 1 and sub_name.startswith(name) %}
-                    {{ show_schema_metadata(sub_name, sub_info, schema_info, schema_metadata, level + 1, unit_value) }}
+            {% for sub_name in info['properties'] %}
+                {% if schema_info[sub_name]['level'] == level + 1 %}
+                    {{ show_schema_metadata(sub_name, schema_info[sub_name], schema_info, schema_metadata, level + 1, unit_value) }}
                 {% endif %}
             {% endfor %}
         {% endfor %}
@@ -222,7 +222,7 @@
                         </p>
                         {% for name, info in schema_labels[schema].items() %}
                             {% if info['level'] == 0 %}
-                                {{ show_schema_metadata(name, info, schema_labels[schema].items(), grouped_metadata[schema]) }}
+                                {{ show_schema_metadata(name, info, schema_labels[schema], grouped_metadata[schema]) }}
                             {% endif %}
                         {% endfor %}
                     {% else %}

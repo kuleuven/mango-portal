@@ -370,25 +370,33 @@ def add_to_dict(metadata_items, multidict, unit_level=1):
     composite_fields = set(
         (
             ".".join(meta_data_item.name.split(".")[:name_length]),
-            ".".join(meta_data_item.units.split(".")[:unit_level]),
+            ".".join(meta_data_item.units.split(".")[:unit_level])
+            if meta_data_item.units
+            else None,
         )
         for meta_data_item in metadata_items
         if len(meta_data_item.name.split(".")) > name_length
     )
-    composite_fields = sorted(
-        list(composite_fields), key=lambda x: int(x[1].split(".")[unit_level - 1])
-    )
+    if len(composite_fields) > 1:
+        composite_fields = sorted(
+            list(composite_fields), key=lambda x: int(x[1].split(".")[unit_level - 1])
+        )
     for meta_data_item in simple_fields:
         multidict.add(meta_data_item.name, meta_data_item.value)
     for composite_name, composite_unit in composite_fields:
         subdict = MultiDict()
-        subdict.add("__unit__", composite_unit)
         composite_items = [
             meta_data_item
             for meta_data_item in metadata_items
             if meta_data_item.name.startswith(composite_name)
-            and meta_data_item.units.startswith(composite_unit)
         ]
+        if composite_unit:
+            subdict.add("__unit__", composite_unit)
+            composite_items = [
+                meta_data_item
+                for meta_data_item in composite_items
+                if meta_data_item.units.startswith(composite_unit)
+            ]
         add_to_dict(composite_items, subdict, unit_level + 1)
         multidict.add(composite_name, subdict.to_dict(flat=False))
 

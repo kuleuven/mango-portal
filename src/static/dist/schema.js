@@ -139,6 +139,8 @@ class ComplexField {
     });
     if (this.constructor.name == "ObjectEditor") {
       this_modal.addEventListener("hidden.bs.modal", () => {
+        console.log(this.modal_id);
+        console.log(this.card_id);
         bootstrap.Modal.getOrCreateInstance(
           document.getElementById(this.card_id)
         ).show();
@@ -487,12 +489,7 @@ class ObjectEditor extends ComplexField {
    * @param {ObjectInput} parent Composite field this mini-schema is linked to.
    */
   constructor(parent) {
-    super(
-      parent.id,
-      parent.schema_status.startsWith("object")
-        ? parent.schema_status
-        : `object-${parent.schema_status}`
-    );
+    super(parent.id, `object-${parent.schema_status}`);
     this.parent_status = parent.schema_status;
     if (parent.form_field) {
       this.form_id = parent.form_field.form.id;
@@ -1451,7 +1448,10 @@ class SchemaForm {
     // Identify the fields that belong to this particular composite fields
     let existing_values = annotated_data[obj];
     let raw_name = obj.match(`${prefix}.(?<field>[^\.]+)`).groups.field;
-    let first_unit = String(existing_values[0].__unit__[0]);
+    let first_unit =
+      "__unit__" in existing_values[0]
+        ? String(existing_values[0].__unit__[0])
+        : "1";
     let first_viewer = [...form.childNodes].filter(
       (child) =>
         child.classList.contains("mini-viewer") &&
@@ -1467,6 +1467,8 @@ class SchemaForm {
       for (let i = 0; i < existing_values.length - 1; i++) {
         first_viewer.querySelector("h5 button").click();
       }
+    } else if (!("__unit__" in existing_values[0])) {
+      existing_values[0]["__unit__"] = ["1"];
     }
     existing_values.forEach((object) => {
       let unit = object.__unit__[0];
