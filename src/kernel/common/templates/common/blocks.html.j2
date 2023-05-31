@@ -99,15 +99,21 @@
     {% if info['type'] == 'object' %}
         <div class="border border-1 border-secondary rounded p-3 my-1">
         <h4 title="{{ name }}"> {{ info['label'] }} </h4>
-        {% set instances = schema_metadata.values() | selectattr('units') | map(attribute='units') | unique %}
-        {% for unit_value in instances %}
+        {% set subfields = schema_metadata[name] %}
+        {% if subfields|length == 0 %}
             <hr>
-            {% for sub_name in info['properties'] %}
-                {% if schema_info[sub_name]['level'] == level + 1 %}
-                    {{ show_schema_metadata(sub_name, schema_info[sub_name], schema_info, schema_metadata, level + 1, unit_value) }}
-                {% endif %}
+            <p class="fw-light">(Empty)</p>
+        {% else %}
+            {% set instances = subfields.keys() %}
+            {% for unit_value in instances %}
+                <hr>
+                {% for sub_name in info['properties'] %}
+                    {% if schema_info[sub_name]['level'] == level + 1 %}
+                        {{ show_schema_metadata(sub_name, schema_info[sub_name], schema_info, subfields[unit_value], level + 1, unit_value) }}
+                    {% endif %}
+                {% endfor %}
             {% endfor %}
-        {% endfor %}
+        {% endif %}
         </div>
     {% else %}
         {% set items=schema_metadata.getall(name, []) %}
@@ -115,12 +121,9 @@
         {% if items|length == 0 %}
             <p class="fw-light">(Empty)</p>
         {% elif items|length == 1 %}
-            {% if unit is not defined or items[0].units == unit %}
-                <p> {{items[0].value | bleach_clean(tags=['br']) | safe}} </p>
-            {% endif %}
+           <p> {{items[0].value | bleach_clean(tags=['br']) | safe}} </p>
         {% else %}
-            {% set right_items = items | selectattr('units', 'equalto', unit) %}
-            <p> {{ right_items | map(attribute='value') | join(', ') | safe}}</p>
+            <p> {{ items | map(attribute='value') | join(', ') | safe}}</p>
         {% endif %}
     {% endif %}
 {% endmacro%}
