@@ -377,7 +377,6 @@ class InputField {
     let help = this.form_field.form.querySelector(`textarea#${this.id}-help`);
     help.addEventListener("change", () => {
       this.help_is_custom = true;
-      console.log("updating help");
       this.update_help();
     });
   }
@@ -452,8 +451,6 @@ class InputField {
       (this_class == "SelectInput") | (this_class == "CheckboxInput");
 
     // define whether the field may be repeated
-    // ObjectInput included as in_object to TEMPORARILY disable repeatable objects
-    let is_object = this_class == "ObjectInput";
 
     // define whether the field may be required
     let requirable = !(
@@ -469,10 +466,8 @@ class InputField {
     if (dropdownable) {
       switchnames.push("dropdown");
       switches.dropdown = this.values.ui == "dropdown";
-    } else if (!is_object) {
-      // only if it is NOT dropdownable and also not a composite field
-      // this could be limited to simple fields, but this way we can make the composite fields repeatable easily
-      // which is the way it was for a while
+    } else {
+      // only if it is NOT dropdownable
       switchnames.push("repeatable");
       switches.repeatable = this.repeatable;
     }
@@ -506,7 +501,7 @@ class InputField {
           ? dd_input.setAttribute("checked", "")
           : dd_input.removeAttribute("checked");
       });
-    } else if (!is_object) {
+    } else {
       // define the behavior of the 'repeatable' switch
       let rep_input = this.form_field.form.querySelector(
         `#${this.id}-repeatable`
@@ -620,7 +615,7 @@ class InputField {
    * @returns {HTMLDivElement} Element that contains an illustration example and a button to activate an editor modal.
    */
   render(schema) {
-    this.id = `${this.form_type}-${schema.initial_name}`;
+    this.id = `${this.form_type}-temp`;
 
     // create the form to design the field and the modal that will host it
     this.create_form();
@@ -787,7 +782,6 @@ class InputField {
     this.default = undefined;
     this.help_is_custom = false;
     this.form_field.reset();
-    console.log("updating help");
     this.update_help();
   }
 
@@ -1151,8 +1145,6 @@ class TypedInput extends InputField {
       default_input.parentElement.querySelector(".invalid-feedback").innerHTML =
         validator;
     }
-    console.log("updating help");
-
     this.update_help();
   }
 
@@ -1192,7 +1184,6 @@ class TypedInput extends InputField {
         }
       }
     }
-    console.log(this.help);
   }
 
   /**
@@ -1673,7 +1664,7 @@ class ObjectInput extends InputField {
     };
 
     if (this.required) json.required = this.required;
-    if (this.repeatable) json.repeatable = this.repeatable; // temporarily not implemented
+    if (this.repeatable) json.repeatable = this.repeatable;
     if (this.help) json.help = this.help;
 
     return json;
@@ -1739,7 +1730,6 @@ class ObjectInput extends InputField {
     this.end_form();
 
     // insert the 'add element' button before the switches
-    // (although while the composite field is not repeatable, there are no switches)
     const switches = this.form_field.form.querySelector("#switches-div");
     this.form_field.form.insertBefore(this.editor.button, switches);
   }
@@ -1806,8 +1796,31 @@ class ObjectInput extends InputField {
         }
       }
     }
+    // check repeatable attribute
+    if (
+      "repeatable" in json_object &&
+      json_object.repeatable.constructor.name != "Boolean"
+    ) {
+      if (json_object.repeatable.toLowerCase() == "true") {
+        json_object.repeatable = true;
+        messages.push(
+          "The 'repeatable' attribute was a string, but we turned it to boolean."
+        );
+      } else {
+        delete json_object.repeatable;
+        messages.push(
+          "The 'repeatable' attribute was not boolean: it was deleted."
+        );
+      }
+    }
 
-    let acceptable_fields = ["type", "title", "properties", "help"];
+    let acceptable_fields = [
+      "type",
+      "title",
+      "properties",
+      "repeatable",
+      "help",
+    ];
     for (let attr of Object.keys(json_object)) {
       if (acceptable_fields.indexOf(attr) == -1) {
         delete json_object[attr];
@@ -1902,7 +1915,7 @@ class MultipleInput extends InputField {
     this.setup_form();
 
     // Add moving input fields to design the options
-    this.form_field.add_moving_options("Select option", this.values.values);
+    this.form_field.add_moving_options("Select option", this);
 
     // Finish form
     this.end_form();
@@ -1937,6 +1950,10 @@ class MultipleInput extends InputField {
         default_field.appendChild(new_option);
       }
     }
+  }
+
+  update_default_field() {
+    return;
   }
 
   /**
@@ -2042,28 +2059,6 @@ class MultipleInput extends InputField {
       }
     }
 
-    // check repeatable attribute
-    if ("repeatable" in json_object) {
-      if (json_object.multiple) {
-        delete json_object.repeatable;
-        messages.push(
-          "A multiple-value multiple-choice field cannot be repeated."
-        );
-      } else if (json_object.repeatable.constructor.name != "Boolean") {
-        if (json_object.repeatable.toLowerCase() == "true") {
-          json_object.repeatable = true;
-          messages.push(
-            "The 'repeatable' attribute was a string, but we turned it to boolean."
-          );
-        } else {
-          delete json_object.repeatable;
-          messages.push(
-            "The 'repeatable' attribute was not boolean: it was deleted."
-          );
-        }
-      }
-    }
-
     // check values
     if (
       !("values" in json_object) ||
@@ -2084,14 +2079,13 @@ class MultipleInput extends InputField {
       "ui",
       "multiple",
       "values",
-      "repeatable",
       "help",
     ];
     for (let attr of Object.keys(json_object)) {
       if (acceptable_fields.indexOf(attr) == -1) {
         delete json_object[attr];
         messages.push(
-          `The attribute '${attr}' was deleted because it is not appropriate for a multiple-cohice field.`
+          `The attribute '${attr}' was deleted because it is not appropriate for a multiple-choice field.`
         );
       }
     }
@@ -2141,6 +2135,37 @@ class SelectInput extends MultipleInput {
       this.values.values,
       this.default
     );
+  }
+
+  update_default_field() {
+    let moving_fields =
+      this.form_field.form.querySelectorAll("div.blocked input");
+    let default_field = this.form_field.form.querySelector(
+      `select#${this.id}-default`
+    );
+    let selected = default_field.value;
+    default_field
+      .querySelectorAll("option:not([value=''])")
+      .forEach((option) => option.remove());
+    let new_fields = [...moving_fields].map((option) => option.value);
+
+    if (selected && new_fields.indexOf(selected) == -1) {
+      selected = "";
+      let empty_option = document.createElement("option");
+      empty_option.innerHTML = "Select option below";
+      empty_option.value = "";
+      default_field.appendChild(empty_option);
+    }
+
+    new_fields.forEach((option) => {
+      if (option) {
+        let option_field = document.createElement("option");
+        option_field.innerHTML = option;
+        option_field.value = option;
+        if (option == selected) option_field.setAttribute("selected", "");
+        default_field.appendChild(option_field);
+      }
+    });
   }
 
   /**
