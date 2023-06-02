@@ -498,6 +498,7 @@ class ObjectEditor extends ComplexField {
     if (parent.form_field) {
       this.form_id = parent.form_field.form.id;
     }
+    delete this.initials.object; // disable nested composite fields
   }
 
   /**
