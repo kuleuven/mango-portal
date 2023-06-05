@@ -462,7 +462,9 @@ class MovingViewer extends MovingField {
 
         // remove the field from the schema
         this.schema.field_ids.splice(form_index, 1);
+        this.schema.fields[this.idx].delete_modal();
         delete this.schema.fields[this.idx];
+        this.schema.update_field_id_regex();
 
         // update the schema editor
         this.schema.toggle_saving();

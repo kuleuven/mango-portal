@@ -26,19 +26,32 @@ class ComplexField {
     this.modal_id = `choice-${name}-${data_status}`;
     this.initial_name = name;
     this.data_status = data_status;
+    this.field_id_regex = schema_pattern;
 
     // empty fields to start with
     this.initials = {
-      typed: new TypedInput(name, this.data_status),
-      select: new SelectInput(name, this.data_status),
-      checkbox: new CheckboxInput(name, this.data_status),
-      object: new ObjectInput(name, this.data_status),
+      typed: new TypedInput(name, this.field_id_regex, this.data_status),
+      select: new SelectInput(name, this.field_id_regex, this.data_status),
+      checkbox: new CheckboxInput(name, this.field_id_regex, this.data_status),
+      object: new ObjectInput(name, this.field_id_regex, this.data_status),
     };
 
     // initial state before adding any fields
     this.field_ids = [];
     this.fields = {};
     this.new_field_idx = 0;
+  }
+
+  update_field_id_regex() {
+    this.field_id_regex = `^((?!^${this.field_ids.join("$|^")}$)[a-z0-9_-]+)+$`;
+    this.field_ids.forEach((field_id) => {
+      if (field_id in this.fields) {
+        this.fields[field_id].update_id_regex(this.field_id_regex);
+      }
+    });
+    Object.keys(this.initials).forEach((key) => {
+      this.initials[key].update_id_regex(this.field_id_regex);
+    });
   }
 
   /**
@@ -63,10 +76,12 @@ class ComplexField {
     this.field_ids = Object.keys(data.properties);
     this.status = data.status; // only relevant for Schema class
     this.data_status = this.set_data_status();
+    this.update_field_id_regex();
 
     this.field_ids.forEach((field_id) => {
       let new_field = InputField.choose_class(
         this.initial_name,
+        this.field_id_regex,
         this.data_status,
         [field_id, data.properties[field_id]]
       );
@@ -84,6 +99,7 @@ class ComplexField {
     Object.keys(data).forEach((field_id) => {
       let new_field = InputField.choose_class(
         this.initial_name,
+        this.field_id_regex,
         this.data_status,
         [field_id, data[field_id]]
       );
@@ -209,6 +225,7 @@ class ComplexField {
 
     // Add the field to the object with fields
     this.fields[form_object.id] = form_object;
+    this.update_field_id_regex();
 
     // Enable or disable 'saving' the schema based on whether this field has been created by duplicating.
     this.toggle_saving();
@@ -762,10 +779,12 @@ class Schema extends ComplexField {
       ids: [...parent.field_ids],
       json: { ...parent.properties },
     };
+    this.field_id_regex = parent.field_id_regex;
     // go through each existing field and clone it
     Object.entries(parent.properties).forEach((entry) => {
       let new_field = InputField.choose_class(
         this.initial_name,
+        this.field_id_regex,
         "child",
         entry
       );
@@ -1344,7 +1363,7 @@ class SchemaForm {
     // Go through each field in the JSON file and create its InputField
     for (let entry of Object.entries(schema_json)) {
       // the 'data_status' argument is not relevant here
-      let new_field = InputField.choose_class(this.name, "", entry);
+      let new_field = InputField.choose_class(this.name, "", "", entry);
       if (new_field.constructor.name == "ObjectInput") {
         new_field.editor = new ObjectEditor(new_field);
         new_field.editor.from_json(new_field.json_source);
