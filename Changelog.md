@@ -2,7 +2,7 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.12.0 [2023-06-xx]
+## Release 0.12.0 [2023-06-07]
 
 ### New features
 
