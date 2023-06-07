@@ -95,6 +95,38 @@
         </form>
     {% endif %}
 {% endmacro %}
+{% macro show_schema_metadata(name, info, schema_info, schema_metadata, level = 0, unit = None) %}
+    {% if info['type'] == 'object' %}
+        <div class="border border-1 border-secondary rounded p-3 my-1">
+            <h4 title="{{ name }}">{{ info['label'] }}</h4>
+            {% set subfields = schema_metadata[name] %}
+            {% if subfields|length == 0 %}
+                <hr/>
+                <p class="fw-light">(Empty)</p>
+            {% else %}
+                {% set instances = subfields.keys() %}
+                {% for unit_value in instances %}
+                    <hr/>
+                    {% for sub_name in info['properties'] %}
+                        {% if schema_info[sub_name]['level'] == level + 1 %}
+                            {{ show_schema_metadata(sub_name, schema_info[sub_name], schema_info, subfields[unit_value], level + 1, unit_value) }}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            {% endif %}
+        </div>
+    {% else %}
+        {% set items=schema_metadata.getall(name, []) %}
+        <h5 title="{{ name }}">{{ info['label'] }}</h5>
+        {% if items|length == 0 %}
+            <p class="fw-light">(Empty)</p>
+        {% elif items|length == 1 %}
+            <p>{{ items[0].value | bleach_clean(tags=['br']) | safe }}</p>
+        {% else %}
+            <p>{{ items | map(attribute='value') | join(', ') | safe }}</p>
+        {% endif %}
+    {% endif %}
+{% endmacro %}
 {% macro metadata_block(object_id, object_path, grouped_metadata, schemas, schema_labels, readonly_prefixes=(""), item_type="collection", read_only=False, current_user_rights=[], realm="", flattened_schemas={}) %}
     {% if grouped_metadata|length == 1 and config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata %}
         <table class="table table-striped table-hover mt-2">
@@ -187,33 +219,18 @@
                      id="pills-{{ schema }}"
                      role="tabpanel"
                      aria-labelledby="pills-{{ schema }}-tab">
-                    {% if grouped_metadata[schema].get("mgs."~ schema ~".__version__", False) %}
+                    {% if schema in schema_labels and grouped_metadata[schema].get("mgs."~ schema ~".__version__", False) %}
                         <p class="text-end fst-italic">
                             Schema version: {{ grouped_metadata[schema].get("mgs."~ schema ~".__version__").value }}
                         </p>
-                    {% endif %}
-                    <table class="table table-striped table-hover mt-2">
-                        <tbody>
-                            {% if schema in schema_labels %}
-                                {% for name, info in schema_labels[schema].items() %}
-                                    {% set items=grouped_metadata[schema].getall(name, []) %}
-                                    <tr>
-                                        <th {% if info['level'] > 0 %}class="text-start ps-{{ 1+(info['level']*2) }} border-start border-bottom-0 border-{{ info['level']*4 }} border-dark" {% endif %}>
-                                            <span title="{{ name }}">{{ info['label'] }}
-                                                {% if info['type'] == 'object' %}&ddarr;{% endif %}
-                                            </span>
-                                        </th>
-                                        <td class="text-break">
-                                            {% for item in items %}<p>{{ item.value | bleach_clean(tags=['br']) | safe }}</p>{% endfor %}
-                                        </td>
-                                        <td class="text-left"></td>
-                                        <td></td>
-                                        <td>
-                                            {# <i class="bi bi-lock" title="locked"></i> #}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            {% else %}
+                        {% for name, info in schema_labels[schema].items() %}
+                            {% if info['level'] == 0 %}
+                                {{ show_schema_metadata(name, info, schema_labels[schema], grouped_metadata[schema]) }}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <table class="table table-striped table-hover mt-2">
+                            <tbody>
                                 {% for _key, item in grouped_metadata[schema].items() %}
                                     <tr>
                                         <th class="text-start">
@@ -257,9 +274,9 @@
                                         {% endif %}
                                     </tr>
                                 {% endfor %}
-                            {% endif %}
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    {% endif %}
                     {% if schema == config['MANGO_NOSCHEMA_LABEL'] and not read_only and (current_user_rights | intersection(own_or_write)) %}
                         <button type="button"
                                 class="btn btn-primary"

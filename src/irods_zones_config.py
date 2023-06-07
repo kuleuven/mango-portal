@@ -42,6 +42,28 @@ irods_zones = {
         "logo": "vsc-combi.webp",  # path in static folder
         "splash_image": "portal2.jpg",
     },
+    "vsc": {
+        "jobid": "icts-p-hpc-irods-vsc",
+        "parameters": {
+            "host": "vsc.hpc.kuleuven.be",
+            "zone": "vsc",
+        },
+        "ssl_settings": {},
+        "admin_users": ["vsc33436", "x0116999", "vsc31987"],
+        "logo": "vsc-combi.webp",  # path in static folder
+        "splash_image": "portal2.jpg",
+    },
+    "vsc-climate": {
+        "jobid": "icts-p-hpc-irods-vsc-climate",
+        "parameters": {
+            "host": "vsc-climate.hpc.kuleuven.be",
+            "zone": "vsc-climate",
+        },
+        "ssl_settings": {},
+        "admin_users": ["vsc33436", "x0116999", "vsc31987"],
+        "logo": "vsc-combi.webp",  # path in static folder
+        "splash_image": "portal2.jpg",
+    },
     "set": {
         "jobid": "icts-p-lnx-irods-set",
         "parameters": {
