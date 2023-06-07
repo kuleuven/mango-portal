@@ -2,6 +2,12 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.12.1 [2023-06-07]
+
+### Bug fixes
+
+- Fixed bug (robustness): when a schema is missing, a fatal error shows for composite fields because the data was structered differently. Now an existence check is performed with a fallback to the older behaviour.
+
 ## Release 0.12.0 [2023-06-07]
 
 ### New features
