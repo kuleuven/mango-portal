@@ -7,7 +7,7 @@
       <i class="bi bi-house-door-fill"> </i>&nbsp;
       {% for element in breadcrumbs[:-1] %}
         <li class="breadcrumb-item">
-          <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
+          <a href="{{ url_for('browse_bp.collection_browse', collection=element['url']) }}">{{ element['label'] }}</a>
         </li>
       {% endfor %}
       <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li>
@@ -27,7 +27,7 @@
                 data-bs-field-bo="hoho">
           <i class="bi bi-trash"></i> Empty Trash
         </button>
-        {{ dialogs.confirm_delete_dialog('empty_trash',url_for('browse_bp.empty_user_trash'),  mode='custom',  title='Permanently remove collections and files', btn_ok='Empty Trash' )}}
+        {{ dialogs.confirm_delete_dialog('empty_trash',url_for('browse_bp.empty_user_trash') ,  mode='custom',  title='Permanently remove collections and files', btn_ok='Empty Trash' ) }}
       </div>
     </div>
   </div>
@@ -41,9 +41,7 @@
          type="button"
          role="tab"
          aria-controls="home"
-         aria-selected="true">
-        System properties
-      </a>
+         aria-selected="true">System properties</a>
     </li>
     <li class="nav-item" role="presentation">
       <a class="nav-link"
@@ -54,9 +52,7 @@
          type="button"
          role="tab"
          aria-controls="meta-data"
-         aria-selected="false">
-        Metadata
-      </a>
+         aria-selected="false">Metadata</a>
     </li>
     <li class="nav-item" role="presentation">
       <a class="nav-link"
@@ -67,9 +63,7 @@
          type="button"
          role="tab"
          aria-controls="collection-permissions"
-         aria-selected="false">
-        Permissions
-      </a>
+         aria-selected="false">Permissions</a>
     </li>
     <li class="nav-item" role="presentation">
       <a class="nav-link"
@@ -80,9 +74,7 @@
          type="button"
          role="tab"
          aria-controls="preview"
-         aria-selected="false">
-        Preview
-      </a>
+         aria-selected="false">Preview</a>
     </li>
     <li class="nav-item" role="presentation">
       <a class="nav-link"
@@ -93,9 +85,7 @@
          type="button"
          role="tab"
          aria-controls="analysis"
-         aria-selected="false">
-        Analysis
-      </a>
+         aria-selected="false">Analysis</a>
     </li>
   </ul>
   <div class="tab-content" id="myTabContent">
@@ -138,21 +128,19 @@
           <button type="button"
                   class="btn btn-danger float-end"
                   data-bs-toggle="modal"
-                  data-bs-target="#delete_object">
-            Delete Data Object
-          </button>
+                  data-bs-target="#delete_object">Delete Data Object</button>
         </div>
       </div>
-      {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object'), title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-lg" )}}
+      {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object') , title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-lg" ) }}
     </div>
     <div class="tab-pane fade"
          id="meta-data"
          role="tabpanel"
          aria-labelledby="meta-data-tab">
-      {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/"), grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=config["METADATA_NOEDIT_PREFIX"]), item_type="data_object", read_only = true)}}
+      {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/") , grouped_metadata, metadata_schema_filenames, schema_labels, readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="data_object", read_only = true) }}
     </div>
     <div class="tab-pane" id="item-permissions">
-      {{ block_macros.permission_block(data_object.path.lstrip("/"), permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights, read_only = true )}}
+      {{ block_macros.permission_block(data_object.path.lstrip("/") , permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights, read_only = true ) }}
     </div>
     <div class="tab-pane fade"
          id="preview"
@@ -161,10 +149,10 @@
       {# to be moved to its own server side handler + template to include #}
       {% if data_object.name.endswith(('jpg','jpeg','png', 'pdf', 'tif', 'tiff', 'gif')) %}
         <div class="row">
-          <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path)}}"
+          <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path) }}"
                class="w-50"
                style="object-fit: contain"
-               alt="preview image"/>
+               alt="preview image" />
         </div>
       {% else %}
         <p>Preview not possible for this type</p>
@@ -172,10 +160,9 @@
     </div>
     <div class="tab-pane" id="item-analysis">
       {% if tika_result %}
-        {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata'), data_object_path=data_object.path, read_only=true) }}
+        {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata') , data_object_path=data_object.path, read_only=true) }}
       {% endif %}
-      <div class="row">
-      </div>
+      <div class="row"></div>
     </div>
   </div>
 {% endblock body %}

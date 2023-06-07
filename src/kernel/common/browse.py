@@ -197,7 +197,7 @@ def collection_browse(collection):
     data_objects = current_collection.data_objects
 
     ######################### new schema handling
-    schemas = []
+    schemas = {}
     schema_manager = False
     realm = ""
     if realm := get_realm(current_collection):
@@ -383,7 +383,7 @@ def view_object(data_object_path):
                     "warning",
                 )
     ######################### new schema handling
-    schemas = []
+    schemas = {}
     schema_manager = False
     realm = ""
     if realm := get_realm(data_object):

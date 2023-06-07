@@ -2,6 +2,12 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.12.2 [2023-06-07]
+
+### Bug fixes
+
+- Fixed bug: viewing individual data objects in the trash throw a fatal error
+- Consistency in initialising variables
 ## Release 0.12.1 [2023-06-07]
 
 ### Bug fixes
