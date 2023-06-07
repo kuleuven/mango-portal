@@ -1,7 +1,23 @@
 # Changelog
 
 Note: versioning follows Semver standard with 3 levels
-## Release 0.11 [2023-05-26]
+
+## Release 0.12.0 [2023-06-xx]
+
+### New features
+
+- Multiple option for composite metadata, disabling nesting of composite fields
+
+### Bug fixes
+
+- Fixed validation bug in schema ids (from partial match to full match)
+
+### Smaller improvements and bug fixes
+
+- Updated iRODS PRC to 1.1.8
+- Updated all outdated dependencies (python modules)
+
+## Release 0.11.0 (t,q) and 0.11.1 (p) [2023-05-26]
 
 ### New features
 
