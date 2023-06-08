@@ -94,6 +94,7 @@ def group_prefix_metadata_items(
     mango_prefix,
     no_schema_label="other",
     group_analysis_unit=False,
+    schemas=[],
 ):
     """ """
     grouped_metadata = {no_schema_label: MultiDict()}
@@ -105,7 +106,7 @@ def group_prefix_metadata_items(
             # item.name = meta_name
             if schema not in grouped_metadata:
                 grouped_metadata[schema] = MultiDict()
-            if not avu.units:
+            if (not avu.units) or (schema not in schemas):
                 grouped_metadata[schema].add(avu.name, avu)
             else:
                 # creating a dict with the ordinal string from avu.unit as key
@@ -196,7 +197,7 @@ def collection_browse(collection):
     data_objects = current_collection.data_objects
 
     ######################### new schema handling
-    schemas = []
+    schemas = {}
     schema_manager = False
     realm = ""
     if realm := get_realm(current_collection):
@@ -220,6 +221,7 @@ def collection_browse(collection):
     grouped_metadata = group_prefix_metadata_items(
         current_collection.metadata(timestamps=True).items(),
         current_app.config["MANGO_SCHEMA_PREFIX"],
+        schemas=list(schemas.keys()),
     )
 
     schema_labels = {}
@@ -381,7 +383,7 @@ def view_object(data_object_path):
                     "warning",
                 )
     ######################### new schema handling
-    schemas = []
+    schemas = {}
     schema_manager = False
     realm = ""
     if realm := get_realm(data_object):
@@ -397,6 +399,7 @@ def view_object(data_object_path):
         current_app.config["MANGO_SCHEMA_PREFIX"],
         no_schema_label=current_app.config["MANGO_NOSCHEMA_LABEL"],
         group_analysis_unit=group_analysis_unit,
+        schemas=list(schemas.keys()),
     )
     schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
     # template_files = glob.glob("static/metadata-templates/*.json")
