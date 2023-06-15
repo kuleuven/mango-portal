@@ -824,6 +824,12 @@ def ask_tika(data_object_path):
     ):
         with open(tika_file_path, mode="r") as tika_file:
             result = json.load(tika_file)
+    # temporary limit: @todo create an async handler
+    elif data_object.size > 200000000:
+        flash(
+            f"File {data_object.name} is too large to perform ad hoc analysis",
+            "warning",
+        )
     else:
         try:
             # ping_tika = requests.get(tika_host)
