@@ -2,17 +2,28 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.12.3 [2023-06-15]
+
+### Bug fixes
+
+- Fixed fatal error when sanitizing user generated metadata
+
+### Smaller improvements and bug fixes
+
+- Limit size for Tika analysis to 200MB awaiting async implementation
+- More statistics from OpenSearch aggregations
+
 ## Release 0.12.2 [2023-06-07]
 
 ### Bug fixes
 
-- Fixed bug: viewing individual data objects in the trash throw a fatal error
-- Consistency in initialising variables
+- Fixed bug: viewing individual data objects in the trash throws a fatal error
+- Consistency in initializing variables
 ## Release 0.12.1 [2023-06-07]
 
 ### Bug fixes
 
-- Fixed bug (robustness): when a schema is missing, a fatal error shows for composite fields because the data was structered differently. Now an existence check is performed with a fallback to the older behaviour.
+- Fixed bug (robustness): when a schema is missing, a fatal error shows for composite fields because the data was structured differently. Now an existence check is performed with a fallback to the older behavior.
 
 ## Release 0.12.0 [2023-06-07]
 
@@ -66,7 +77,7 @@ The most visible new features in this release are in the metadata schema managem
 - plugin friendly modular admin section with its own sidebar, base template, .. plugins can simply register an admin index in a new mango_ui.py core module
 - search index stats and collection stats from fast open search aggregations
 - besides admin extensions, any other plugin can now also register a sidebar menu entry. Refactored the standard modules to make use of it. Also, the sidebar menu order is determined solely by configuration
-- adopting yaml as a config format for any new featres (WIP)
+- adopting yaml as a config format for any new features (WIP)
 - if an openid definition for a user is found, the metadata for that user is updated if not set already: name and email (via new plugin "user_tantra")
 
 ### Bug fixes
@@ -77,7 +88,7 @@ The most visible new features in this release are in the metadata schema managem
 - zone name is now displayed next to the logos in the top left
 - admin section has red border around sidebar menu and main content block
 - new jinja2 template filters: exposing regular expressions
-- opensearch extension now uses the common operator sessions
+- OpenSearch extension now uses the common operator sessions
 - admin link in sidebar only for those in the role "mango_portal_admin"
 - new signal upon user session creation
 
