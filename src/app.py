@@ -316,7 +316,10 @@ def intersection(set1, set2):
 # html and js escape dangerous content
 @app.template_filter("bleach_clean")
 def bleach_clean(suspect, **kwargs):
-    return bleach.clean(suspect, **kwargs)
+    if type(suspect) == str:
+        return bleach.clean(suspect, **kwargs)
+    else:
+        return suspect
 
 
 # return date into local time zone

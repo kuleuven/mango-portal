@@ -93,6 +93,28 @@ def index():
                     "filter": {"term": {"irods_item_type_simple": "d"}},
                     "aggs": {"data_object_stats_size": {"stats": {"field": "size"}}},
                 },
+                "children_d_distribution": {
+                    "filter": {"term": {"irods_item_type_simple": "d"}},
+                    "aggs": {
+                        "data_objects_distribution": {
+                            "range": {
+                                "field": "size",
+                                "ranges": [
+                                    {"to": 10**4},
+                                    {"from": 10**4, "to": 10**5},
+                                    {"from": 10**5, "to": 10**6},
+                                    {"from": 10**6, "to": 10**7},
+                                    {"from": 10**7, "to": 10**8},
+                                    {"from": 10**8, "to": 10**9},
+                                    {"from": 10**9, "to": 10**10},
+                                    {"from": 10**10, "to": 10**11},
+                                    {"from": 10**11, "to": 10**12},
+                                    {"from": 10**12},
+                                ],
+                            }
+                        }
+                    },
+                },
                 "children_c": {
                     "filter": {"term": {"irods_item_type_simple": "c"}},
                     "aggs": {
@@ -111,6 +133,13 @@ def index():
             "total_size": int(
                 result["aggregations"]["children_d"]["data_object_stats_size"]["sum"]
             ),
+            "data_object_max_size": result["aggregations"]["children_d"][
+                "data_object_stats_size"
+            ]["max"],
+            "data_objects_stats": result["aggregations"]["children_d"][
+                "data_object_stats_size"
+            ],
+            "data_objects_dist": result["aggregations"]["children_d_distribution"],
             "num_collections": int(result["aggregations"]["children_c"]["doc_count"]),
         }
 

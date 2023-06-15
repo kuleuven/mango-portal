@@ -4,9 +4,9 @@
         <i class="bi bi-bar-chart-line"></i> Overall OpenSearch and zone stats
     </h2>
     <form method="post"
-          action="{{ url_for('mango_open_search_stats_bp.index')}}"
+          action="{{ url_for("mango_open_search_stats_bp.index") }}"
           id="collection_stats">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <select name="collection_path" class="form-select">
             {% for available_collection_path in available_collection_paths %}
                 <option value="{{ available_collection_path }}"
@@ -20,24 +20,68 @@
                name="show_sub_collections"
                type="checkbox"
                value="true"
-               class="mt-3 mb-3"/>
+               class="mt-3 mb-3" />
     </form>
     <button type="submit" form="collection_stats" class="btn btn-success mt-3">Show collection stats</button>
     {% if collection_stats %}
         <table class="table">
             <thead>
-                <th>Collection</th>
-                <th>Size</th>
-                <th># data objects</th>
-                <th># collections</th>
+                <th class="w-30">Collection</th>
+                <th>sub collections</th>
+                <th>data objects stats</th>
+                <th>size distribution</th>
             </thead>
             <tbody>
                 {% for collection_path in collection_stats %}
                     <tr>
-                        <td>{{ collection_path }}</td>
-                        <td>{{ collection_stats[collection_path]["total_size"] | filesizeformat }}</td>
-                        <td>{{ collection_stats[collection_path]["num_data_objects"] }}</td>
-                        <td>{{ collection_stats[collection_path]["num_collections"] }}</td>
+                        <th class="text-break">{{ collection_path }}</th>
+                        <td>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between pt-1 pb-1">
+                                    count  <span class="badge bg-primary rounded-pill">{{ collection_stats[collection_path]["num_collections"] }}</span>
+                                </li>
+                            </ul>
+                        </td>
+                        {# <td>{{ collection_stats[collection_path]["num_data_objects"] }}</td> #}
+                        <td>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between pt-1 pb-1">
+                                    count  <span class="badge bg-primary rounded-pill">{{ collection_stats[collection_path]["data_objects_stats"]["count"] }}</span>
+                                </li>
+                                {% if collection_stats[collection_path]["data_objects_stats"]["sum"] is not none %}
+                                    <li class="list-group-item d-flex justify-content-between pt-1 pb-1">
+                                        total size <span class="badge bg-primary rounded-pill">{{ collection_stats[collection_path]["data_objects_stats"]["sum"] | filesizeformat }}</span>
+                                    </li>
+                                {% endif %}
+                                {% if collection_stats[collection_path]["data_objects_stats"]["max"] is not none %}
+                                    <li class="list-group-item d-flex justify-content-between pt-1 pb-1">
+                                        max size  <span class="badge bg-primary rounded-pill">{{ collection_stats[collection_path]["data_objects_stats"]["max"] | filesizeformat }}</span>
+                                    </li>
+                                {% endif %}
+                                {% if collection_stats[collection_path]["data_objects_stats"]["min"] is not none %}
+                                    <li class="list-group-item d-flex justify-content-between pt-1 pb-1">
+                                        min size <span class="badge bg-primary rounded-pill">{{ collection_stats[collection_path]["data_objects_stats"]["min"] | filesizeformat }}</span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="list-group list-group-flush">
+                                {% for bucket in collection_stats[collection_path]["data_objects_dist"]["data_objects_distribution"]["buckets"][:-1] %}
+                                    {% if bucket["doc_count"] > 0 %}
+                                        <li class="list-group-item d-flex justify-content-between pb-1 pt-1">
+                                            {{ bucket.get('from', 0) | int | filesizeformat }} - {{ bucket.get('to', 666) | int | filesizeformat }}<span class="badge bg-primary rounded-pill">{{ bucket["doc_count"] }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                {% set bucket = collection_stats[collection_path]["data_objects_dist"]["data_objects_distribution"]["buckets"][-1] %}
+                                {% if bucket["doc_count"] > 0 %}
+                                    <li class="list-group-item d-flex justify-content-between pt-1 pb-1">
+                                        {{ bucket.get('from', 0) | int | filesizeformat }} - &infin; <span class="badge bg-primary rounded-pill">{{ bucket["doc_count"] }}</span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -47,7 +91,7 @@
         <div class="card mt-5 w-50">
             <div class="card-body">
                 <h4>Search index stats (across all zones)</h4>
-                <table class="table">
+                <table class="table table-striped">
                     <thead>
                         <tr>
                             <th>Property</th>
