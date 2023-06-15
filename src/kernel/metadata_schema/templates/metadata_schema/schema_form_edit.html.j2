@@ -7,8 +7,11 @@
     <p>Type: {{ item.item_type }}</p>
     {{ render_messages() }}
     <p>Realm: {{ realm }}</p>
-    <div id="metadata_form" schema-url="{{ url_for('metadata_schema_editor_bp.get_schema', schema=schema, realm=realm, status='published') }}" schema-values="{{ schema_values }}" prefix="{{ prefix }}" post-url="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item2") }}">
-    </div>
+    <div id="metadata_form"
+         schema-url="{{ url_for('metadata_schema_editor_bp.get_schema', schema=schema, realm=realm, status='published') }}"
+         schema-values="{{ schema_values }}"
+         prefix="{{ prefix }}"
+         post-url="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}"></div>
     {% for file in ['doms', 'fields', 'schema', 'httprequests', 'annotator'] %}
         <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
     {% endfor %}
