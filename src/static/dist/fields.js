@@ -424,7 +424,7 @@ class InputField {
     let id_regex_template =
       "^(?<start>.+)(?<before>!|\\|)(?<match>\\^__FIELDID__\\$)(?<after>\\||\\))(?<end>.+$)";
     let regex_match = regex.match(
-      new RegExp(id_regex_template.replace("__FIELDID__", this.id))
+      new RegExp(id_regex_template.replace("__FIELDID__", this.id), "u")
     );
     if (regex_match == undefined) {
       return regex;
@@ -1270,6 +1270,10 @@ class TypedInput extends InputField {
       if (divider.nextSibling != placeholder_div) {
         this.form_field.form.insertBefore(placeholder_div, divider.nextSibling);
       }
+    } else {
+      this.form_field.form.querySelector(
+        `#div-${this.id}-placeholder input`
+      ).value = "";
     }
   }
 

@@ -127,7 +127,7 @@ def list_meta_data_schemas(realm):
                     "metadata_schema_editor_bp.get_schema",
                     realm=realm,
                     schema=schema,
-                    status="status",
+                    version="version",
                 ),
                 "schema_info": schema_info,
             }
@@ -137,11 +137,11 @@ def list_meta_data_schemas(realm):
 
 
 @metadata_schema_editor_bp.route(
-    "/metadata-schema/get/<realm>/<schema>/<status>", methods=["GET"]
+    "/metadata-schema/get/<realm>/<schema>/<version>", methods=["GET"]
 )
-def get_schema(realm: str, schema: str, status="published"):
+def get_schema(realm: str, schema: str, version="1.0.0"):
     schema_manager = get_schema_manager(g.irods_session.zone, realm)
-    schema_content = schema_manager.load_schema(schema_name=schema, status=status)
+    schema_content = schema_manager.load_schema(schema_name=schema, version=version)
     if schema_content:
         return Response(schema_content, status=200, mimetype="application/json")
     else:

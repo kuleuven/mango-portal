@@ -51,6 +51,13 @@ class MangoRequest extends XMLHttpRequest {
     this.url = url;
   }
 
+  parse_response() {
+    this.addEventListener("load", () => {
+      console.log("loading");
+      let json = this.json;
+      console.log(json);
+    });
+  }
   /**
    * Get the contents of the response.
    * @returns {object} The parsed contents of the response.
@@ -111,11 +118,28 @@ class TemplatesRequest extends MangoRequest {
 
         // create a list of objects with the information of each version
         let versions = [];
+        let not_archived = [];
         if (this_template.published_count > 0) {
-          versions.push(this_template.published_name.match(re).groups);
+          let published = this_template.published_name.match(re).groups;
+          versions.push(published);
+          not_archived.push(published.version);
         }
         if (this_template.draft_count > 0) {
-          versions.push(this_template.draft_name.match(re).groups);
+          let draft = this_template.draft_name.match(re).groups;
+          versions.push(draft);
+          not_archived.push(draft.version);
+        }
+        if (
+          this_template.total_count >
+          this_template.published_count + this_template.draft_count
+        ) {
+          versions.push({
+            name: schema_name,
+            version: this_template.versions_sorted.filter(
+              (x) => not_archived.indexOf(x) == -1
+            ),
+            status: "archived",
+          });
         }
         let title = this_template.title;
 
@@ -228,6 +252,33 @@ class AnnotationRequest extends MangoRequest {
       let schema = new SchemaForm(json, container_id, prefix);
       // fill the form with existing metadata
       schema.add_annotation(annotated_data);
+    });
+  }
+}
+
+/**
+ * Class representing a request for a schema for annotation.
+ * @extends MangoRequest
+ */
+class HistoryRequest extends MangoRequest {
+  constructor(schema_urls, archived_schemas) {
+    let last_url = schema_urls.pop();
+    super(last_url);
+    this.parse_response(schema_urls, archived_schemas);
+  }
+
+  parse_response(schema_urls, archived_schemas) {
+    this.addEventListener("load", () => {
+      let json = this.json;
+      let schema = new ArchivedSchema(json.schema_name, json.version);
+      schema.from_json(this.json);
+      archived_schemas.add_schema(schema);
+      if (schema_urls.length > 0) {
+        let req = new HistoryRequest(schema_urls, archived_schemas);
+        req.retrieve();
+      } else {
+        archived_schemas.render();
+      }
     });
   }
 }
