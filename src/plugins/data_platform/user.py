@@ -244,7 +244,7 @@ def connection_info_modal(zone):
         # icts-p-hpc-irods-instance
         parts = jobid.split('-', 5)
 
-        info['hpc-irods-setup-zone'] = parts[4]
+        info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
 
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
