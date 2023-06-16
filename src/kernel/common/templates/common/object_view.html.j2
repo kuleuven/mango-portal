@@ -1,16 +1,16 @@
 {% extends "base.html.j2" %}
 {% import "dialogs.html.j2" as dialogs %}
 {% import "blocks.html.j2" as block_macros %}
-{% set own_or_write = ['own', 'modify', 'modify object', 'modify_object', 'write'] %}
+{% set own_or_write = ["own", "modify", "modify object", "modify_object", "write"] %}
 {% block body %}
-  {% set own_or_write = ['own', 'modify', 'modify object', 'modify_object', 'write'] %}
+  {% set own_or_write = ["own", "modify", "modify object", "modify_object", "write"] %}
   <nav aria-label="breadcrumb"
        class="navbar-light bg-light sticky-top pb-2 pt-1">
     <ol class="breadcrumb">
       <i class="bi bi-house-door-fill"> </i>&nbsp;
       {% for element in breadcrumbs[:-1] %}
         <li class="breadcrumb-item">
-          <a href="{{ url_for('browse_bp.collection_browse', collection=element['url'])}}">{{ element['label'] }}</a>
+          <a href="{{ url_for('browse_bp.collection_browse', collection=element['url']) }}">{{ element['label'] }}</a>
         </li>
       {% endfor %}
       {# <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li> #}
@@ -25,13 +25,13 @@
             <i class="bi bi-pencil"></i></a>
         {% endif %}
       </h3>
-      {{ dialogs.general_dialog("rename", url_for("browse_bp.rename_item"), title="Rename this data object", mode="custom",
+      {{ dialogs.general_dialog("rename", url_for("browse_bp.rename_item") , title="Rename this data object", mode="custom",
       fields=[{"name": "new_name", "label": "Name", "value": data_object.name, "required": true}],
       hidden_fields=[{"name": "item_path", "value": data_object.path}]) }}
     </div>
     <div class="col-1 display-6">
       {% if data_object.size < config["DATA_OBJECT_MAX_SIZE_DOWNLOAD"] %}
-        <a href="{{ url_for('browse_bp.download_object', data_object_path = data_object.path.lstrip('/'))}}"><i class="bi bi-download"></i></a>
+        <a href="{{ url_for('browse_bp.download_object', data_object_path = data_object.path.lstrip('/') ) }}"><i class="bi bi-download"></i></a>
       {% endif %}
     </div>
   </div>
@@ -45,9 +45,7 @@
          type="button"
          role="tab"
          aria-controls="home"
-         aria-selected="true">
-        System properties
-      </a>
+         aria-selected="true">System properties</a>
     </li>
     <li class="nav-item" role="presentation">
       <a class="nav-link"
@@ -58,9 +56,7 @@
          type="button"
          role="tab"
          aria-controls="meta-data"
-         aria-selected="false">
-        Metadata
-      </a>
+         aria-selected="false">Metadata</a>
     </li>
     <li class="nav-item" role="presentation">
       <a class="nav-link"
@@ -71,9 +67,7 @@
          type="button"
          role="tab"
          aria-controls="collection-permissions"
-         aria-selected="false">
-        Permissions
-      </a>
+         aria-selected="false">Permissions</a>
     </li>
     <li class="nav-item" role="presentation">
       <a class="nav-link"
@@ -84,9 +78,7 @@
          type="button"
          role="tab"
          aria-controls="preview"
-         aria-selected="false">
-        Preview
-      </a>
+         aria-selected="false">Preview</a>
     </li>
     <li class="nav-item" role="presentation">
       <a class="nav-link"
@@ -97,9 +89,7 @@
          type="button"
          role="tab"
          aria-controls="analysis"
-         aria-selected="false">
-        Metadata inspection and extraction
-      </a>
+         aria-selected="false">Metadata inspection and extraction</a>
     </li>
   </ul>
   <div class="tab-content" id="myTabContent">
@@ -155,23 +145,21 @@
             <button type="button"
                     class="btn btn-danger float-end"
                     data-bs-toggle="modal"
-                    data-bs-target="#delete_object">
-              Delete Data Object
-            </button>
+                    data-bs-target="#delete_object">Delete Data Object</button>
           </div>
         </div>
-        {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object'), title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-xl" )}}
+        {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object') , title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-xl" ) }}
       {% endif %}
     </div>
     <div class="tab-pane fade"
          id="meta-data"
          role="tabpanel"
          aria-labelledby="meta-data-tab">
-      {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/"), grouped_metadata, schemas, schema_labels,
+      {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/") , grouped_metadata, schemas, schema_labels,
       readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="data_object", current_user_rights=current_user_rights, realm=realm)}}
     </div>
     <div class="tab-pane" id="item-permissions">
-      {{ block_macros.permission_block(data_object.path.lstrip("/"), permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights)}}
+      {{ block_macros.permission_block(data_object.path.lstrip("/") , permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights) }}
     </div>
     <div class="tab-pane fade"
          id="preview"
@@ -180,10 +168,10 @@
       {# to be moved to its own server side handler + template to include #}
       {% if data_object.name.lower().endswith(config["DATA_OBJECT_PREVIEW_ALLOWED_SUFFIXES"]) %}
         <div class="row">
-          <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path)}}"
+          <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path) }}"
                class="w-50"
                style="object-fit: contain"
-               alt="preview image"/>
+               alt="preview image" />
         </div>
       {% else %}
         <p>Preview not possible for this type</p>
@@ -191,42 +179,47 @@
     </div>
     <div class="tab-pane" id="item-analysis">
       {% if tika_result %}
-        {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata'), data_object_path=data_object.path, read_only = not(current_user_rights | intersection(own_or_write))) }}
+        {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata') , data_object_path=data_object.path, read_only = not(current_user_rights | intersection(own_or_write))) }}
       {% endif %}
       <div class="row">
-        <form class="row row-cols-lg-auto g-3 align-items-center mt-3 mb-3 text-end"
-              method="get"
-              action="{{ url_for('browse_bp.ask_tika', data_object_path=data_object.path)}}">
-          {% if data_object.name.endswith(('.jpg','.jpeg','.png', '.tif', '.tiff', '.gif')) %}
+        {% if data_object.size < 200000000 %}
+          <form class="row row-cols-lg-auto g-3 align-items-center mt-3 mb-3 text-end"
+                method="get"
+                action="{{ url_for('browse_bp.ask_tika', data_object_path=data_object.path) }}">
+            {% if data_object.name.endswith(('.jpg','.jpeg','.png', '.tif', '.tiff', '.gif')) %}
+              <div class="col-12">
+                <input class="form-check-input text-end"
+                       type="checkbox"
+                       value="true"
+                       id="tika-ocr"
+                       name="do-tika-ocr" />
+                <label class="form-check-label" for="tika-ocr">Perform OCR on the image to extract text</label>
+              </div>
+            {% endif %}
+            {% if tika_result %}
+              <div class="col-12">
+                <input class="form-check-input"
+                       type="hidden"
+                       value="true"
+                       id="tika-skip-cache"
+                       name="skip-tika-cache" />
+              </div>
+            {% endif %}
             <div class="col-12">
-              <input class="form-check-input text-end"
-                     type="checkbox"
-                     value="true"
-                     id="tika-ocr"
-                     name="do-tika-ocr"/>
-              <label class="form-check-label" for="tika-ocr">Perform OCR on the image to extract text</label>
+              <input type="hidden" name="redirect_hash" value="#analysis" />
+              <button type="submit" class="btn btn-primary text-end">
+                {% if tika_result %}
+                  Refresh inspection with Tika
+                {% else %}
+                  Inspect with Tika
+                {% endif %}
+              </button>
             </div>
-          {% endif %}
-          {% if tika_result %}
-            <div class="col-12">
-              <input class="form-check-input"
-                     type="hidden"
-                     value="true"
-                     id="tika-skip-cache"
-                     name="skip-tika-cache"/>
-            </div>
-          {% endif %}
-          <div class="col-12">
-            <input type="hidden" name="redirect_hash" value="#analysis"/>
-            <button type="submit" class="btn btn-primary text-end">
-              {% if tika_result %}
-                Refresh inspection with Tika
-              {% else %}
-                Inspect with Tika
-              {% endif %}
-            </button>
-          </div>
-        </form>
+          </form>
+        {% else %}
+          {# file is really too large #}
+          <p>Sorry, this file is too large to perform an ad hoc analysis</p>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -243,80 +236,65 @@
           <button type="button"
                   class="btn-close"
                   data-bs-dismiss="modal"
-                  aria-label="Close">
-          </button>
+                  aria-label="Close"></button>
         </div>
-        <form action="{{ url_for('metadata_bp.edit_meta_data')}}"
+        <form action="{{ url_for("metadata_bp.edit_meta_data") }}"
               method="post"
               enctype="multipart/form-data"
               class="row g-3 needs-validation"
               novalidation>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <input type="hidden" name="redirect_hash" value="#metadata"/>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="redirect_hash" value="#metadata" />
           <div class="modal-body">
             <div class="mb-3">
-              <label for="meta-data-name" class="col-form-label">
-                Name
-              </label>
+              <label for="meta-data-name" class="col-form-label">Name</label>
               <input type="text"
                      class="form-control"
                      id="meta-data-name"
                      name="meta-data-name"
-                     required/>
-              <div class="invalid-feedback">
-                Metadata field name is required
-              </div>
+                     required />
+              <div class="invalid-feedback">Metadata field name is required</div>
             </div>
             <div class="mb-3">
-              <label for="meta-data-value" class="col-form-label">
-                Value
-              </label>
+              <label for="meta-data-value" class="col-form-label">Value</label>
               <input type="text"
                      class="form-control"
                      id="meta-data-value"
                      name="meta-data-value"
-                     required/>
-              <div class="invalid-feedback">
-                Metadata field value is required
-              </div>
+                     required />
+              <div class="invalid-feedback">Metadata field value is required</div>
             </div>
             <div class="mb-3">
-              <label for="meta-data-units" class="col-form-label">
-                Unit
-              </label>
+              <label for="meta-data-units" class="col-form-label">Unit</label>
               <input type="text"
                      class="form-control"
                      id="meta-data-units"
-                     name="meta-data-units"/>
+                     name="meta-data-units" />
             </div>
             <input type="hidden"
                    id="object-path-edit"
                    name="object-path"
-                   value="{{ data_object.path }}"/>
+                   value="{{ data_object.path }}" />
             <input type="hidden"
                    id="target-type-edit"
                    name="target-type"
-                   value="data_object"/>
+                   value="data_object" />
             <input type="hidden"
                    id="orig-meta-data-name"
                    name="orig-meta-data-name"
-                   value=""/>
+                   value="" />
             <input type="hidden"
                    id="orig-meta-data-value"
                    name="orig-meta-data-value"
-                   value=""/>
+                   value="" />
             <input type="hidden"
                    id="orig-meta-data-units"
                    name="orig-meta-data-units"
-                   value=""/>
+                   value="" />
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Cancel
-            </button>
-            <button class="btn btn-primary" type="submit">
-              Update
-            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary" type="submit">Update</button>
           </div>
         </form>
       </div>
@@ -331,75 +309,56 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="addMetaDataLabel">
-            Add metadata
-          </h5>
+          <h5 class="modal-title" id="addMetaDataLabel">Add metadata</h5>
           <button type="button"
                   class="btn-close"
                   data-bs-dismiss="modal"
-                  aria-label="Close">
-          </button>
+                  aria-label="Close"></button>
         </div>
-        <form action="{{ url_for('metadata_bp.add_meta_data')}}"
+        <form action="{{ url_for("metadata_bp.add_meta_data") }}"
               method="post"
               enctype="multipart/form-data"
               class="row g-3 needs-validation"
               novalidate>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <input type="hidden" name="redirect_hash" value="#metadata"/>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="redirect_hash" value="#metadata" />
           <div class="modal-body">
             <div class="mb-3">
-              <label for="meta-data-name-add" class="col-form-label">
-                Name
-              </label>
+              <label for="meta-data-name-add" class="col-form-label">Name</label>
               <input type="text"
                      class="form-control"
                      id="meta-data-name-add"
                      name="meta-data-name"
-                     required/>
-              <div class="invalid-feedback">
-                Name is required for metadata items
-              </div>
+                     required />
+              <div class="invalid-feedback">Name is required for metadata items</div>
             </div>
             <div class="mb-3">
-              <label for="meta-data-value-add" class="col-form-label">
-                Value
-              </label>
+              <label for="meta-data-value-add" class="col-form-label">Value</label>
               <input type="text"
                      class="form-control"
                      id="meta-data-value-add"
                      name="meta-data-value"
-                     required/>
+                     required />
             </input>
-            <div class="invalid-feedback">
-              A value is required for metadata items
-            </div>
+            <div class="invalid-feedback">A value is required for metadata items</div>
           </div>
           <div class="mb-3">
-            <label for="meta-data-units-add" class="col-form-label">
-              Unit
-            </label>
+            <label for="meta-data-units-add" class="col-form-label">Unit</label>
             <input type="text"
                    class="form-control"
                    id="meta-data-units-add"
-                   name="meta-data-units"/>
+                   name="meta-data-units" />
           </input>
-          <div class="valid-feedback">
-            A unit is not required for metadata
-          </div>
+          <div class="valid-feedback">A unit is not required for metadata</div>
         </div>
         <input type="hidden"
                id="object-path-add"
                name="object-path"
-               value="{{ data_object.path }}"/>
+               value="{{ data_object.path }}" />
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Cancel
-        </button>
-        <button class="btn btn-primary" type="submit">
-          Add
-        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" type="submit">Add</button>
       </div>
     </form>
   </div>
@@ -414,71 +373,54 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="deleteMetaDataLabel">
-          Delete metadata
-        </h5>
+        <h5 class="modal-title" id="deleteMetaDataLabel">Delete metadata</h5>
         <button type="button"
                 class="btn-close"
                 data-bs-dismiss="modal"
-                aria-label="Close">
-        </button>
+                aria-label="Close"></button>
       </div>
-      <form action="{{ url_for('metadata_bp.delete_meta_data')}}"
+      <form action="{{ url_for("metadata_bp.delete_meta_data") }}"
             method="post"
             enctype="multipart/form-data"
             class="row g-3 needs-validation"
             novalidation>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <input type="hidden" name="redirect_hash" value="#metadata"/>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="redirect_hash" value="#metadata" />
         <div class="modal-body">
           <div class="mb-3">
-            <label for="meta-data-name-delete" class="col-form-label">
-              Name
-            </label>
+            <label for="meta-data-name-delete" class="col-form-label">Name</label>
             <input type="text"
                    class="form-control"
                    id="meta-data-name-delete"
                    name="meta-data-name"
-                   readonly/>
-            <div class="invalid-feedback">
-              Metadata field name is required
-            </div>
+                   readonly />
+            <div class="invalid-feedback">Metadata field name is required</div>
           </div>
           <div class="mb-3">
-            <label for="meta-data-value-delete" class="col-form-label">
-              Value
-            </label>
+            <label for="meta-data-value-delete" class="col-form-label">Value</label>
             <input type="text"
                    class="form-control"
                    id="meta-data-value-delete"
                    name="meta-data-value"
-                   readonly/>
-            <div class="invalid-feedback">
-              Metadata field value is required
-            </div>
+                   readonly />
+            <div class="invalid-feedback">Metadata field value is required</div>
           </div>
           <div class="mb-3">
-            <label for="meta-data-units" class="col-form-label">
-              Unit
-            </label>
+            <label for="meta-data-units" class="col-form-label">Unit</label>
             <input type="text"
                    class="form-control"
                    id="meta-data-units-delete"
                    name="meta-data-units"
-                   readonly/>
+                   readonly />
           </div>
           <input type="hidden"
                  id="object-path-delete"
                  name="object-path"
-                 value="{{ data_object.path }}"/>
+                 value="{{ data_object.path }}" />
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            Cancel
-          </button>
-          <button class="btn btn-danger" type="submit">
-            Delete
-          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-danger" type="submit">Delete</button>
         </div>
       </form>
     </div>

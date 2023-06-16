@@ -1,6 +1,6 @@
 {% import "dialogs.html.j2" as dialogs %}
-{% set own_or_write = ['own', 'modify', 'modify object', 'modify_object', 'write'] %}
-{% macro permission_block(item_path, permissions, acl_users_dict, acl_counts, my_groups=[], group_filter_exclude=[], current_user_rights = [], recursive=false, read_only = false )%}
+{% set own_or_write = ["own", "modify", "modify object", "modify_object", "write"] %}
+{% macro permission_block(item_path, permissions, acl_users_dict, acl_counts, my_groups=[], group_filter_exclude=[], current_user_rights = [], recursive=false, read_only = false ) %}
     <table class="table table-striped table-hover mt-2" id="permssions-table">
         <thead>
             <tr>
@@ -34,7 +34,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                                     <input type="hidden" name="groups" value="{{ permission.user_name }}" />
                                     <input type="hidden" name="permission_type" value="null" />
-                                    <input type="hidden" name="redirect_hash" value="#permissions"/>
+                                    <input type="hidden" name="redirect_hash" value="#permissions" />
                                     <button type="submit" class="btn">
                                         <i class="bi bi-trash text-danger"></i>
                                     </button>
@@ -50,7 +50,7 @@
         <form method="post"
               action="{{ url_for('browse_bp.set_permissions', item_path=item_path) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <input type="hidden" name="redirect_hash" value="#permissions"/>
+            <input type="hidden" name="redirect_hash" value="#permissions" />
             <div class="row">
                 <div class="col">
                     <label for="permission_groups">Groups</label>
@@ -58,11 +58,7 @@
                             aria-label="Groups"
                             name="groups"
                             id="permission_groups">
-                        {% for group in my_groups %}
-                            <option value="{{ group.name }}">
-                                {{ group.name }}
-                            </option>
-                        {% endfor %}
+                        {% for group in my_groups %}<option value="{{ group.name }}">{{ group.name }}</option>{% endfor %}
                     </select>
                 </div>
                 <div class="col">
@@ -71,20 +67,14 @@
                             aria-label="Groups"
                             name="permission_type"
                             id="permission_type">
-                        <option value="own">
-                            Own
-                        </option>
-                        <option value="write">
-                            Modify
-                        </option>
-                        <option value="read">
-                            Read
-                        </option>
+                        <option value="own">Own</option>
+                        <option value="write">Modify</option>
+                        <option value="read">Read</option>
                     </select>
                 </div>
                 {% if recursive %}
                     <div class="col">
-                        <input type="checkbox" name="recursive" id="set_recursive" value="True"/>
+                        <input type="checkbox" name="recursive" id="set_recursive" value="True" />
                         <label for="set_recursive">Recursive</label>
                     </div>
                 {% endif %}
@@ -101,12 +91,12 @@
             <h4 title="{{ name }}">{{ info['label'] }}</h4>
             {% set subfields = schema_metadata[name] %}
             {% if subfields|length == 0 %}
-                <hr/>
+                <hr />
                 <p class="fw-light">(Empty)</p>
             {% else %}
                 {% set instances = subfields.keys() %}
                 {% for unit_value in instances %}
-                    <hr/>
+                    <hr />
                     {% for sub_name in info['properties'] %}
                         {% if schema_info[sub_name]['level'] == level + 1 %}
                             {{ show_schema_metadata(sub_name, schema_info[sub_name], schema_info, subfields[unit_value], level + 1, unit_value) }}
@@ -116,7 +106,7 @@
             {% endif %}
         </div>
     {% else %}
-        {% set items=schema_metadata.getall(name, []) %}
+        {% set items = schema_metadata.getall(name, []) %}
         <h5 title="{{ name }}">{{ info['label'] }}</h5>
         {% if items|length == 0 %}
             <p class="fw-light">(Empty)</p>
@@ -172,24 +162,18 @@
             <button type="button"
                     class="btn btn-primary"
                     data-bs-toggle="modal"
-                    data-bs-target="#addMetaData">
-                Add metadata
-            </button>
+                    data-bs-target="#addMetaData">Add metadata</button>
             <div class="h4 pt-4 mt-4 mb-2 border-top border-success">Edit/add metadata via schema</div>
             <form class="row g-3 col-md-6 mt-4"
                   method="get"
-                  action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item2')}}">
+                  action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
                 <input type="hidden" name="item_type" value="{{ item_type }}" />
                 <input type="hidden" name="id" value="{{ object_id }}" />
                 <input type="hidden" name="object_path" value="{{ object_path }}" />
-                <input type="hidden" name="realm" value="{{ realm }}"/>
-                <input type="hidden" name="status" value="published"/>
+                <input type="hidden" name="realm" value="{{ realm }}" />
+                <input type="hidden" name="status" value="published" />
                 <select name="schema" class="form-select">
-                    {% for schema in schemas %}
-                        <option value="{{ schema }}">
-                            {{ schemas[schema]["title"] }}
-                        </option>
-                    {% endfor %}
+                    {% for schema in schemas %}<option value="{{ schema }}">{{ schemas[schema]["title"] }}</option>{% endfor %}
                 </select>
                 <button type="submit" class="btn btn-primary">Edit</button>
             </form>
@@ -221,7 +205,7 @@
                      aria-labelledby="pills-{{ schema }}-tab">
                     {% if schema in schema_labels and grouped_metadata[schema].get("mgs."~ schema ~".__version__", False) %}
                         <p class="text-end fst-italic">
-                            Schema version: {{ grouped_metadata[schema].get("mgs."~ schema ~".__version__").value }}
+                            Schema version: {{ grouped_metadata[schema].get("mgs."~ schema ~".__version__") .value }}
                         </p>
                         {% for name, info in schema_labels[schema].items() %}
                             {% if info['level'] == 0 %}
@@ -237,12 +221,8 @@
                                             <span title="{{ item.name }}">{{ schema_labels[schema][item.name]['label'] if (schema_labels[schema] and schema_labels[schema][item.name]) else item.name }}</span>
                                         </th>
                                         <td title="Created: {{ item.create_time }} | Modified: {{ item.modify_time }}"
-                                            class="text-break">
-                                            {{ item.value | bleach_clean(tags=['br']) | safe }}
-                                        </td>
-                                        <td class="text-left">
-                                            {{ item.units if item.units is not none }}
-                                        </td>
+                                            class="text-break">{{ item.value | bleach_clean(tags=['br']) | safe }}</td>
+                                        <td class="text-left">{{ item.units if item.units is not none }}</td>
                                         {% if not read_only and (current_user_rights | intersection(own_or_write)) and not item.name.startswith(readonly_prefixes) and schema in [config['MANGO_NOSCHEMA_LABEL'], 'analysis'] %}
                                             <td>
                                                 {% if not (item.units and item.units.startswith('analysis')) %}
@@ -266,8 +246,7 @@
                                                    data-bs-object-path="{{ object_path }}"><i class="bi bi-trash"></i></a>
                                             </td>
                                         {% else %}
-                                            <td>
-                                            </td>
+                                            <td></td>
                                             <td>
                                                 {# <i class="bi bi-lock" title="locked"></i> #}
                                             </td>
@@ -281,46 +260,34 @@
                         <button type="button"
                                 class="btn btn-primary"
                                 data-bs-toggle="modal"
-                                data-bs-target="#addMetaData">
-                            Add metadata
-                        </button>
-                        <div class="h4 pt-4 mt-4 mb-2 border-top border-success">
-                            Edit/add metadata via schema
-                        </div>
+                                data-bs-target="#addMetaData">Add metadata</button>
+                        <div class="h4 pt-4 mt-4 mb-2 border-top border-success">Edit/add metadata via schema</div>
                         <form class="row g-3 col-md-6 mt-4"
                               method="get"
-                              action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item2')}}">
+                              action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
                             <input type="hidden" name="item_type" value="{{ item_type }}" />
                             <input type="hidden" name="id" value="{{ object_id }}" />
-                            <input type="hidden" name="object_path" value="{{ object_path }}"/>
-                            <input type="hidden" name="realm" value="{{ realm }}"/>
-                            <input type="hidden" name="status" value="published"/>
+                            <input type="hidden" name="object_path" value="{{ object_path }}" />
+                            <input type="hidden" name="realm" value="{{ realm }}" />
+                            <input type="hidden" name="status" value="published" />
                             <select name="schema" class="form-select">
-                                {% for schema in schemas %}
-                                    <option value="{{ schema }}">
-                                        {{ schemas[schema]["title"] }}
-                                    </option>
-                                {% endfor %}
+                                {% for schema in schemas %}<option value="{{ schema }}">{{ schemas[schema]["title"] }}</option>{% endfor %}
                             </select>
-                            <button type="submit" class="btn btn-primary">
-                                Edit
-                            </button>
+                            <button type="submit" class="btn btn-primary">Edit</button>
                         </form>
                     {% elif schema != 'analysis' and not read_only and (current_user_rights | intersection(own_or_write)) %}
                         <div class="row mt-4">
                             {% if schema in schemas %}
                                 <form class="col"
                                       method="get"
-                                      action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item2')}}">
+                                      action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
                                     <input type="hidden" name="item_type" value="{{ item_type }}" />
                                     <input type="hidden" name="id" value="{{ object_id }}" />
                                     <input type="hidden" name="object_path" value="{{ object_path }}" />
                                     <input name="schema" type="hidden" value="{{ schema }}" />
-                                    <input type="hidden" name="realm" value="{{ realm }}"/>
-                                    <input type="hidden" name="status" value="published"/>
-                                    <button type="submit" class="btn btn-primary">
-                                        Edit
-                                    </button>
+                                    <input type="hidden" name="realm" value="{{ realm }}" />
+                                    <input type="hidden" name="status" value="published" />
+                                    <button type="submit" class="btn btn-primary">Edit</button>
                                 </form>
                             {% endif %}
                             <div class="col">
@@ -330,7 +297,7 @@
                                         data-bs-target="#delete_schema_data_{{ schema }}">
                                     Delete metadata for schema "{{ schemas[schema]['title'] if schemas[schema] else schema }}"
                                 </button>
-                                {{ dialogs.confirm_delete_dialog('delete_schema_data_' ~ schema, url_for('metadata_schema_form_bp.delete_schema_metadata_for_item'), title='Are you sure you want to delete all metadata', mode="custom", readonly_fields = [{'name' : 'item_path', 'value': object_path,  'label': 'Item'}, {'name' : 'schema_identifier', 'value': schema, 'label': 'Schema'}], hidden_fields=[{'name':'redirect_hash', 'value': '#metadata'}, {'name': 'item_type', 'value': item_type}], modal_class='modal-lg') }}
+                                {{ dialogs.confirm_delete_dialog('delete_schema_data_' ~ schema, url_for('metadata_schema_form_bp.delete_schema_metadata_for_item') , title='Are you sure you want to delete all metadata', mode="custom", readonly_fields = [{'name' : 'item_path', 'value': object_path,  'label': 'Item'}, {'name' : 'schema_identifier', 'value': schema, 'label': 'Schema'}], hidden_fields=[{'name':'redirect_hash', 'value': '#metadata'}, {'name': 'item_type', 'value': item_type}], modal_class='modal-lg') }}
                             </div>
                         </div>
                     {% endif %}
@@ -341,39 +308,29 @@
 {% endmacro %}
 {% macro analysis_tika_block(result, consolidate=false, consolidated=[], consolidate_url='{{ url_for }}
     ', data_object_path = '', read_only = false) %}
-    <h2>
-        Inspect with Tika metadata extractor
-    </h2>
+    <h2>Inspect with Tika metadata extractor</h2>
     {% if result['X-ANALYSIS-timestamp'] %}
-        <p class="text-end">
-            Analysis executed on {{ result['X-ANALYSIS-timestamp'] }}
-        </p>
+        <p class="text-end">Analysis executed on {{ result['X-ANALYSIS-timestamp'] }}</p>
     {% endif %}
-    <h4>
-        Metadata fields
-    </h4>
+    <h4>Metadata fields</h4>
     {% if consolidate %}
         <form action="{{ consolidate_url }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <input type="hidden" name="redirect_hash" value="#analysis"/>
-            <input type="hidden" name="data_object_path" value="{{ data_object_path }}"/>
+            <input type="hidden" name="redirect_hash" value="#analysis" />
+            <input type="hidden" name="data_object_path" value="{{ data_object_path }}" />
         {% endif %}
         <table class="table">
             {% for key, item in result.items() %}
                 {% if key not in ['X-TIKA:content','X-TIKA:Parsed-By-Full-Set', 'X-TIKA:Parsed-By', 'X-ANALYSIS-timestamp'] %}
                     <tr>
-                        <th>
-                            {{ key }}
-                        </th>
-                        <td class="text-break">
-                            {{ item }}
-                        </td>
+                        <th>{{ key }}</th>
+                        <td class="text-break">{{ item }}</td>
                         {% if consolidate %}
                             <td>
                                 {% if key in consolidated %}
                                     <i class="bi bi-check2-square text-primary"></i>
                                 {% elif not read_only %}
-                                    <input type="checkbox" name="consolidate" value='{{ {key:item} | tojson }}'/>
+                                    <input type="checkbox" name="consolidate" value='{{ {key:item} | tojson }}' />
                                     {# note the single quotes required #}
                                 {% endif %}
                             </td>
@@ -385,33 +342,21 @@
         {% if consolidate and not read_only %}
             <div class="row mt-5">
                 <div class="col">
-                    <button class="btn btn-primary float-end">
-                        Add selected metadata items as regular metadata
-                    </button>
+                    <button class="btn btn-primary float-end">Add selected metadata items as regular metadata</button>
                 </div>
             </div>
         </form>
     {% endif %}
-    <h4>
-        Textual content extracted (for information only)
-    </h4>
+    <h4>Textual content extracted (for information only)</h4>
     <pre>
     {{result['X-TIKA:content']}}
     </pre>
-    <h4>
-        Analysis steps
-    </h4>
+    <h4>Analysis steps</h4>
     <ul class="list-group">
         {% if result['X-TIKA:Parsed-By-Full-Set'] is not string %}
-            {% for step in result['X-TIKA:Parsed-By-Full-Set'] %}
-                <li class="list-group-item">
-                    {{ step }}
-                </li>
-            {% endfor %}
+            {% for step in result['X-TIKA:Parsed-By-Full-Set'] %}<li class="list-group-item">{{ step }}</li>{% endfor %}
         {% else %}
-            <li class="list-group-item">
-                {{ result['X-TIKA:Parsed-By-Full-Set'] }}
-            </li>
+            <li class="list-group-item">{{ result['X-TIKA:Parsed-By-Full-Set'] }}</li>
         {% endif %}
     </ul>
 {% endmacro %}

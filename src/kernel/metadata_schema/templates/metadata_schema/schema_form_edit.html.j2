@@ -2,24 +2,20 @@
 {% from 'bootstrap5/form.html' import render_form, render_field, render_form_row, render_hidden_errors, render_messages %}
 {% from 'bootstrap5/utils.html' import render_messages %}
 {% block body %}
+    {# Variables obtained by getting the schema info #}
     <h2>{{ item.name }}</h2>
     <p>Type: {{ item.item_type }}</p>
-    <p>
-        Metadata schema: <b>{{ title }}</b>
-    </p>
     {{ render_messages() }}
-    <div class="row">
-        {{ render_form(schema_form,
-        action=url_for('metadata_schema_form_bp.edit_schema_metadata_for_item'),
-        method='post',
-        form_type='horizontal',
-        horizontal_columns=('lg', 2,9)) }} {# form_type='horizontal', horizontal_columns=('md', 2,6) )--#}
-        {{ render_hidden_errors(schema_form) }}
-    </div>
-    <form>
-        <input type="button"
-               class="btn btn-secondary"
-               value="Cancel"
-               onclick="history.back()"/>
-    </form>
+    <p>Realm: {{ realm }}</p>
+    <div id="metadata_form"
+         schema-url="{{ url_for('metadata_schema_editor_bp.get_schema', schema=schema, realm=realm, status='published') }}"
+         schema-values="{{ schema_values }}"
+         prefix="{{ prefix }}"
+         post-url="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}"></div>
+    {% for file in ['doms', 'fields', 'schema', 'httprequests', 'annotator'] %}
+        <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
+    {% endfor %}
+    <link href="{{ url_for('static', filename='dist/mdschema.css') }}"
+          rel="stylesheet">
+    {# Retrieve code to post values from original jinja #}
 {% endblock body %}
