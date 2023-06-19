@@ -114,9 +114,11 @@ def group_prefix_metadata_items(
                 grouped_metadata[schema] = MultiDict()
             if schema not in schemas:
                 grouped_metadata[schema].add(avu.name, avu)
+                continue
             # Allow units only for first level fields, eg if set through non mango schema processing
             if avu.units and avu.name.count(".") == 2:
                 grouped_metadata[schema].add(avu.name, avu)
+                continue
             if avu.units and avu.name.count(".") > 2 and is_valid_composite_units(avu.units):
                 # creating a dict with the ordinal string from avu.unit as key
                 # chop off the last part to get the composite identifier
