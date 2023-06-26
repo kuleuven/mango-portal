@@ -19,7 +19,7 @@ irods_node_logins = []
 SESSION_TTL = 60 * 30  # 30 minutes
 
 class iRODSUserSession(iRODSSession):
-    def __init__(self, irods_session: iRODSSession):
+    def __init__(self, irods_session: iRODSSession, openid_user_name = None, openid_user_email = None):
         self.irods_session = irods_session
         self.lock = Lock()
         self.created = datetime.datetime.now()
@@ -44,13 +44,11 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.my_group_names = self.my_group_names = [
             group.name for group in self.my_groups
         ]
-        if "openid_session" in session:
-            self.irods_session.openid_user_name = self.openid_user_name = session[
-                "openid_session"
-            ]["user_info"]["name"]
-            self.irods_session.openid_user_email = self.openid_user_email = session[
-                "openid_session"
-            ]["user_info"]["email"]
+
+        if openid_user_name:
+            self.irods_session.openid_user_name = self.openid_user_name = openid_user_name
+        if openid_user_email:
+            self.irods_session.openid_user_email = self.openid_user_email = openid_user_email
 
     def __del__(self):
         # release connections upon object destruction
@@ -101,9 +99,9 @@ class SessionCleanupThread(Thread):
                 logging.info(f"User session cleanup heartbeat")
 
 
-def add_irods_session(session_id, irods_session: iRODSSession):
+def add_irods_session(session_id, irods_session: iRODSSession, openid_user_name = None, openid_user_email = None):
     global irods_user_sessions
-    irods_user_sessions[session_id] = iRODSUserSession(irods_session)
+    irods_user_sessions[session_id] = iRODSUserSession(irods_session, openid_user_name, openid_user_email)
     irods_user_sessions[session_id].lock.acquire()
     signals.session_pool_user_session_created.send(
         current_app._get_current_object(),
