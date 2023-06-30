@@ -97,6 +97,12 @@ def group_prefix_metadata_items(
     schemas=[],
 ):
     """ """
+    def is_valid_composite_units(units):
+        try:
+            int(units)
+            return True
+        except Exception as e:
+            return False
     grouped_metadata = {no_schema_label: MultiDict()}
     if group_analysis_unit:
         grouped_metadata["analysis"] = MultiDict()
@@ -106,9 +112,14 @@ def group_prefix_metadata_items(
             # item.name = meta_name
             if schema not in grouped_metadata:
                 grouped_metadata[schema] = MultiDict()
-            if (not avu.units) or (schema not in schemas):
+            if schema not in schemas:
                 grouped_metadata[schema].add(avu.name, avu)
-            else:
+                continue
+            # Allow units only for first level fields, eg if set through non mango schema processing
+            if avu.units and avu.name.count(".") == 2:
+                grouped_metadata[schema].add(avu.name, avu)
+                continue
+            if avu.units and avu.name.count(".") > 2 and is_valid_composite_units(avu.units):
                 # creating a dict with the ordinal string from avu.unit as key
                 # chop off the last part to get the composite identifier
                 composite_id = ".".join(avu.name.split(".")[:-1])
@@ -117,6 +128,8 @@ def group_prefix_metadata_items(
                 if avu.units not in grouped_metadata[schema][composite_id]:
                     grouped_metadata[schema][composite_id][avu.units] = MultiDict()
                 grouped_metadata[schema][composite_id][avu.units].add(avu.name, avu)
+            else:
+                grouped_metadata[schema].add(avu.name, avu)
 
         elif group_analysis_unit and avu.units and avu.units.startswith("analysis"):
             grouped_metadata["analysis"].add(avu.name, avu)

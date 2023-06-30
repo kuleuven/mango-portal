@@ -162,7 +162,7 @@ def login_openid_select_zone():
             **connection_info['ssl_settings']
         )
 
-        irods_session_pool.add_irods_session(user_name, irods_session)
+        irods_session_pool.add_irods_session(user_name, irods_session, Session(session['openid_session']).name, Session(session['openid_session']).email)
         session['userid'] = user_name
         session['password'] = password
         session['zone'] = irods_session.zone
@@ -244,7 +244,7 @@ def connection_info_modal(zone):
         # icts-p-hpc-irods-instance
         parts = jobid.split('-', 5)
 
-        info['hpc-irods-setup-zone'] = parts[4]
+        info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
 
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]

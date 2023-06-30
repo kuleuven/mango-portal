@@ -1,6 +1,17 @@
 # Changelog
 
 Note: versioning follows Semver standard with 3 levels
+## Release 0.12.5 [2023-06-19]
+
+### Bug fixes
+
+- Avoid showing doubles in case metadata units are set
+
+## Release 0.12.4 [2023-06-16]
+
+### Bug fixes
+
+- Made medata schema rendering more robust, coping with units set on metadata by scripts or icommands while also being schema managed
 
 ## Release 0.12.3 [2023-06-15]
 
