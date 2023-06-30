@@ -1154,90 +1154,6 @@ class Schema extends ComplexField {
   }
 }
 
-class ArchivedSchema extends ComplexField {
-  constructor(name, version) {
-    super(name, "archived");
-    this.version = version;
-  }
-}
-
-class Archive {
-  constructor(name, tab_id) {
-    this.name = name;
-    this.versions = [];
-    this.schemas = {};
-    this.loaded = false;
-    this.tab_id = tab_id;
-
-    this.carousel = Field.quick("div", "carousel carousel-dark slide");
-    this.carousel.id = `archive-${this.name}`;
-    // this.carousel.setAttribute("data-bs-ride", "carousel");
-    // this.indicators = Field.quick("div", "carousel-indicators");
-    // this.carousel.appendChild(this.indicators);
-    this.slides = Field.quick("div", "carousel-inner");
-    this.carousel.appendChild(this.slides);
-    this.add_button("prev", "Previous");
-    this.add_button("next", "Next");
-  }
-
-  add_button(text, hidden_text) {
-    let button = Field.quick("button", `carousel-control-${text}`);
-    button.type = "button";
-    button.setAttribute("data-bs-target", `#archive-${this.name}`);
-    button.setAttribute("data-bs-slide", text);
-    let icon = Field.quick("span", `carousel-control-${text}-icon`);
-    icon.setAttribute("aria-hidden", "true");
-    button.appendChild(icon);
-    let span_text = Field.quick("span", "visually-hidden", hidden_text);
-    button.appendChild(span_text);
-    this.carousel.appendChild(button);
-  }
-
-  add_schema(schema) {
-    this.versions.push(schema.version);
-    this.schemas[schema.version] = schema;
-
-    // let indicator = document.createElement("button");
-    // indicator.type = "button";
-    // indicator.setAttribute("data-bs-target", `#archive-${this.name}`);
-    // indicator.setAttribute(
-    //   "data-bs-slide",
-    //   String(this.versions.indexOf(schema.version))
-    // );
-    // if (this.versions.indexOf(schema.version) == 0) {
-    //   indicator.className = "active";
-    //   indicator.setAttribute("aria-current", "true");
-    // }
-    // indicator.setAttribute("aria-label", `archived version ${schema.version}`);
-    // this.indicators.appendChild(indicator);
-
-    let slide = Field.quick(
-      "div",
-      this.versions.indexOf(schema.version) == 0
-        ? "carousel-item active"
-        : "carousel-item"
-    );
-    let inside_slide = Field.quick("div", "px-5 m-3");
-    let badges = SchemaGroup.create_badges(schema.version, "archived");
-    let heading = document.createElement("h5");
-    heading.appendChild(badges[0]);
-    heading.appendChild(badges[1]);
-    inside_slide.appendChild(heading);
-    let form = ComplexField.create_viewer(schema);
-    inside_slide.appendChild(form);
-    slide.appendChild(inside_slide);
-    this.slides.appendChild(slide);
-  }
-
-  render() {
-    for (let version of this.versions) {
-      console.log(this.schemas[version]);
-    }
-
-    document.getElementById(this.tab_id).appendChild(this.carousel);
-  }
-}
-
 /**
  * Class for a schema with all its versions, to render on the page.
  * @property {String} name Name of the schema (shared by all versions).
@@ -1305,57 +1221,7 @@ class SchemaGroup {
     document.getElementById(container_id).appendChild(acc_item.div);
 
     // go through each existing version and add its tab + badge
-    this.versions.forEach((version) => {
-      version.status == "archived"
-        ? this.load_history(version, nav_bar)
-        : this.load_version(version, nav_bar);
-    });
-  }
-
-  load_history(version, nav_bar) {
-    // add a tab and content for this specific version
-    let label = Field.quick(
-      "span",
-      "fw-bold text-secondary position-relative px-2",
-      "History"
-    );
-    let badge = Field.quick(
-      "span",
-      "badge rounded-pill text-bg-secondary position-absolute top-0 start-100 translate-middle",
-      version.version.length
-    );
-    label.appendChild(badge);
-    nav_bar.add_item("history", [label]);
-
-    let tab_id = `history-pane-${this.name}`;
-    let archived_schemas = new Archive(this.name, tab_id);
-    let schema_urls = version.version.map((av) =>
-      this.urls.get.replace("version", av)
-    );
-    let req = new HistoryRequest(schema_urls, archived_schemas);
-
-    const accordion = nav_bar.tab_content.parentElement.parentElement;
-    // once the accordion is opened
-    accordion.addEventListener("show.bs.collapse", () => {
-      const tab = accordion.querySelector("#" + tab_id);
-      if (tab.classList.contains("show")) {
-        // when the tab of this version is shown, if the schema has not been loaded it yet, load it
-        if (!archived_schemas.loaded) {
-          req.retrieve();
-          archived_schemas.loaded = true;
-        }
-      } else {
-        // if the tab is not the first one, activate it and do the same
-        nav_bar.nav_bar
-          .querySelector(`button#history-tab-${this.name}`)
-          .addEventListener("show.bs.tab", () => {
-            if (!archived_schemas.loaded) {
-              req.retrieve();
-              archived_schemas.loaded = true;
-            }
-          });
-      }
-    });
+    this.versions.forEach((version) => this.load_version(version, nav_bar));
   }
 
   /**
@@ -1395,7 +1261,7 @@ class SchemaGroup {
     schema.loaded = false;
     // create an HTTP request for this schema
     let reader = new TemplateReader(
-      this.urls.get.replace("version", version.version),
+      this.urls.get.replace("status", version.status),
       schema
     ); // url to get this template
 
@@ -1430,16 +1296,13 @@ class SchemaGroup {
    * @param {String} status Status of a schema version.
    * @returns {HTMLImageElement[]} Version and status badges.
    */
-  static create_badges(version, status, for_archive = false) {
+  static create_badges(version, status) {
     let version_badge = document.createElement("img");
-    version_badge.setAttribute(
-      "alt",
-      for_archive ? "number" + version : "version " + version
-    );
+    version_badge.setAttribute("alt", "version " + version);
     version_badge.setAttribute("name", version);
     version_badge.setAttribute(
       "src",
-      `${SchemaGroup.badge_url}${for_archive ? "N" : "version"}-${version}-blue`
+      `${SchemaGroup.badge_url}version-${version}-blue`
     );
 
     let status_badge = Field.quick("img", "mx-2");
