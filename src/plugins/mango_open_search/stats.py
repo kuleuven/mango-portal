@@ -60,7 +60,7 @@ def index():
     index_stats = get_index_stats(MANGO_OPEN_SEARCH_INDEX_NAME)
     collection_stats = None
 
-    @cache.cache.memoize(120)
+    @cache.cache.memoize(30)
     def get_available_collection_paths(irods_session):
         zone_collection: iRODSCollection = irods_session.collections.get(
             f"/{irods_session.zone}"
@@ -75,7 +75,7 @@ def index():
             + [c.path for c in home_collection.subcollections]
         )
 
-    @cache.cache.memoize(300)
+    @cache.cache.memoize(60)
     def get_stats_for_c_path(c_path: str, c_id: int):
         zone = c_path.split("/")[1]
         query_body = {
@@ -91,7 +91,15 @@ def index():
             "aggs": {
                 "children_d": {
                     "filter": {"term": {"irods_item_type_simple": "d"}},
-                    "aggs": {"data_object_stats_size": {"stats": {"field": "size"}}},
+                    "aggs": {
+                        "data_object_stats_size": {"stats": {"field": "size"}},
+                        "data_object_stats_metadata_schema": {
+                            "stats": {"field": "irods_metadata_count_schema"}
+                        },
+                        "data_object_stats_metadata_other": {
+                            "stats": {"field": "irods_metadata_count_other"}
+                        },
+                    },
                 },
                 "children_d_distribution": {
                     "filter": {"term": {"irods_item_type_simple": "d"}},
@@ -118,7 +126,13 @@ def index():
                 "children_c": {
                     "filter": {"term": {"irods_item_type_simple": "c"}},
                     "aggs": {
-                        "collection_stats": {"value_count": {"field": "irods_id"}}
+                        "collection_stats": {"value_count": {"field": "irods_id"}},
+                        "collection_stats_metadata_schema": {
+                            "stats": {"field": "irods_metadata_count_schema"}
+                        },
+                        "collection_stats_metadata_other": {
+                            "stats": {"field": "irods_metadata_count_other"}
+                        },
                     },
                 },
             },
@@ -140,6 +154,8 @@ def index():
                 "data_object_stats_size"
             ],
             "data_objects_dist": result["aggregations"]["children_d_distribution"],
+            "collections": result["aggregations"]["children_c"],
+            "data_objects": result["aggregations"]["children_d"],
             "num_collections": int(result["aggregations"]["children_c"]["doc_count"]),
         }
 

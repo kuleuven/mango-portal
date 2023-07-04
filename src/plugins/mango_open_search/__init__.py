@@ -12,7 +12,7 @@ import datetime, time, logging
 from lib import util
 import signals
 from flask import current_app
-
+import multidict
 
 mango_prefix = ""  #
 
@@ -221,20 +221,47 @@ def get_basic_index_doc_for_item(
     irods_session: iRODSSession, item: iRODSCollection | iRODSDataObject, **options
 ):
     """ """
+    def get_no_schema_name(name):
+        return(slugify(avu.name, separator="__"))
+    
     fields = {}
-    field_mappings = {}
 
+    # avu fields can be multivalued
+    md_fields = multidict.MultiDict()
+    # field_mappings = {}
+    metadata_counts = {"schema": 0, "mango": 0  , "other": 0}
     metadata = item.metadata.items()
     for avu in metadata:
-        if avu.name.startswith(mango_prefix):
-            fields[avu.name] = avu.value
-            field_mappings[avu.name] = avu.name
+        if avu.name.startswith((mango_prefix, 'mg.')):
+            md_fields.add(avu.name, avu.value)
+            # field_mappings[avu.name] = avu.name
+            if avu.name.startswith('mg.'):
+                metadata_counts["mango"] += 1
+            else:    
+                metadata_counts["schema"] += 1
         else:
-            os_field_name = slugify(avu.name, separator="__")
-            fields[os_field_name] = avu.value
-            field_mappings[os_field_name] = avu.name
+            normalised_field_name = get_no_schema_name(avu.name)
+            md_fields.add(normalised_field_name, avu.value)
+            # field_mappings[os_field_name] = avu.name
             if avu.units:
-                fields[f"{slugify(avu.name, separator='__')}_units"] = avu.units
+                md_fields.add(f"{normalised_field_name}_units", avu.units)
+            metadata_counts["other"] += 1
+    for key in set(md_fields.keys()):
+        values = md_fields.getall(key)
+        if (length := len(values)) > 1:
+            fields[key] = values
+        elif length == 1:
+            fields[key] = values[0]
+
+    if metadata_counts["schema"]:
+        fields["irods_metadata_count_schema"] = metadata_counts["schema"]
+    if metadata_counts["mango"]:
+        fields["irods_metadata_count_mango"] = metadata_counts["mango"]
+    if metadata_counts["other"]:
+        fields["irods_metadata_count_other"] = metadata_counts["other"]
+
+
+
     fields["irods_zone_name"] = irods_session.zone
     fields["irods_item_type"] = item.__class__.__name__.lower()
     fields["irods_item_type_simple"] = "c" if isinstance(item, iRODSCollection) else "d"
@@ -254,9 +281,9 @@ def get_basic_index_doc_for_item(
         if acl_user.type in ["rodsgroup"]:
             acl_read_groups += [acl_user.id]
     if acl_read_users:
-        fields["acl_read_users"] = acl_read_users
+        fields["irods_acl_read_users"] = acl_read_users
     if acl_read_groups:
-        fields["acl_read_groups"] = acl_read_groups
+        fields["irods_acl_read_groups"] = acl_read_groups
     fields["irods_path"] = item.path
     fields["irods_name"] = item.name
     fields["irods_created"] = item.create_time
@@ -296,17 +323,20 @@ def get_basic_index_doc_for_item(
         item_type=fields["irods_item_type_simple"],
         item_id=fields["irods_id"],
     )
-
+    #print(fields)
     return fields
 
 
 def aggregate_fields(fields: dict):
     match_text_partials = ["name", "title", "description", "comment", "summary"]
-    match_all = ""
+    match_all = []
     for field_name in fields:
         for partial in match_text_partials:
             if partial in field_name.lower():
-                match_all = " ".join([match_all, fields[field_name]])
+                if type(fields[field_name]) is list:
+                    match_all.extend(fields[field_name])
+                else:
+                    match_all.append(fields[field_name])
     fields["match_all"] = match_all
     return fields
 
@@ -327,7 +357,7 @@ def generate_docs_for_children(
             docs.append(fields)
         except Exception as e:
             logging.warn(
-                f"Failed getting doc for collection {sub_collection.path}, skipping this one"
+                f"Failed getting doc for collection {sub_collection.path}, skipping this one: {e}"
             )
 
     # logging.info(f"Done generating docs for collections, requesting data objects now")
@@ -342,7 +372,7 @@ def generate_docs_for_children(
             docs.append(fields)
         except Exception as e:
             logging.warn(
-                f"Failed getting doc fields for {data_object.path}, skipping this one"
+                f"Failed getting doc fields for {data_object.path}, skipping this one: {e}"
             )
             pass
     return docs
@@ -491,6 +521,18 @@ def delete_subtree_by_path(zone: str, item_path):
     )
     return response
 
+def delete_all():
+    query_body = {
+        "query": {
+            "match_all":{}
+        }
+    }
+
+    response = get_open_search_client(type="ingest").delete_by_query(
+        index=MANGO_OPEN_SEARCH_INDEX_NAME, body=query_body
+    )
+    print(response)
+    return response
 
 def execute_index_job(zone: str, job_type: str, item_type, item_path, item_id, time):
     if not job_type in ALLOWED_JOB_TYPES:
