@@ -2,7 +2,7 @@
     <p>
         To be able to use the irods icommands or the irods python client, you can use the information below to connect to the ManGO storage server.
     </p>
-    
+
     <ul class="nav nav-pills">
       <li class="nav-item">
         <a class="nav-link active" data-bs-toggle="pill" href="#password">Login data</a>
@@ -59,8 +59,8 @@
           <code>| bash</code> to troubleshoot.
         </p>
         <p>
-          Alternatively, you can copy paste the snippet below on any Linux client
-          on which the irods icommands (version >= 4.3.0) are installed.
+          Alternatively, you can copy paste the snippet below to configure an irods client under Linux.
+          The irods session itself will last for a week."
         </p>
       {% else %}
         <p class="mt-3">
@@ -81,7 +81,7 @@ echo '{{ info['token'] }}' | iinit --ttl 168 >/dev/null && echo You are now auth
           Start a python interactive shell, and paste the snippet below to setup
           the necessary files to authenticate against irods. The script assumes
           that you installed the <code>python-irodsclient</code>. It will write
-          the irods environment file and a password file. The written password 
+          the irods environment file and a password file. The written password
           file will grant access for 60 hours.
         </p>
 <pre><code>config = """
@@ -104,11 +104,11 @@ def iinit(config, password):
         put(iRODSSession.get_irods_password_file(), encode(session.pam_pw_negotiated[0], uid=1000))
         print("You have successfully authenticated. Use iRODSSession(irods_env_file=" + repr(env_file) +") to start interacting with iRODS.")
 
-iinit(config, password)    
+iinit(config, password)
 </code></pre>
       <!--
       <p>See below how to get started with the python client.</p>
-    
+
       <h6>Get started with python</h6>
       <p class="mt-3">
         Inside any python environment, such as anaconda or jupyter notebook, on
@@ -129,7 +129,7 @@ with iRODSSession(irods_env_file=env_file) as session:
           It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
         </p>
         <ol>
-        
+
         {% if '-hpc-' in jobid %}
           <li>
             You need to run an <code>ssh-agent</code> capable of handling SSH certificates.<br />
@@ -142,7 +142,7 @@ with iRODSSession(irods_env_file=env_file) as session:
           </li>
         {% else %}
           <li>
-            Install <a href="https://ceifdoc.icts.kuleuven.be/lnx/tools/sshcerts/">certagent or kmk</a> on your local machine 
+            Install <a href="https://ceifdoc.icts.kuleuven.be/lnx/tools/sshcerts/">certagent or kmk</a> on your local machine
             and use it to retrieve an SSH certificate.
           </li>
         {% endif %}
@@ -166,7 +166,7 @@ with iRODSSession(irods_env_file=env_file) as session:
       </div>
       <div class="tab-pane container fade p-1" id="davrods">
         <p style="margin-top: 10px">Access via WebDAV to iRODS is enabled but not supported.
-          For programs that support it, use SFTP. 
+          For programs that support it, use SFTP.
           If WebDAV access is used in Windows drive mapping, it is known to give regular timeouts.
         </p>
         <p>
@@ -186,7 +186,7 @@ with iRODSSession(irods_env_file=env_file) as session:
       It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
     </p>
     <ol>
-    
+
     {% if '-hpc-' in jobid %}
       <li>
         You need to run an <code>ssh-agent</code> capable of handling SSH certificates.<br />
@@ -199,7 +199,7 @@ with iRODSSession(irods_env_file=env_file) as session:
       </li>
     {% else %}
       <li>
-        Install <a href="https://ceifdoc.icts.kuleuven.be/lnx/tools/sshcerts/">certagent or kmk</a> on your local machine 
+        Install <a href="https://ceifdoc.icts.kuleuven.be/lnx/tools/sshcerts/">certagent or kmk</a> on your local machine
         and use it to retrieve an SSH certificate.
       </li>
     {% endif %}
@@ -221,4 +221,3 @@ with iRODSSession(irods_env_file=env_file) as session:
       </li>
     </ol>
     {% endif %}
-    
