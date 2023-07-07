@@ -1,6 +1,10 @@
 import requests
 import json
 import math
+import pandas as pd
+import plotly
+import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime
 from flask import (
     Blueprint,
@@ -419,7 +423,7 @@ def convert_bytes_to_GB(size_bytes, conversion_to="GB"):
 
 @data_platform_project_bp.route("/data-platform/statistics", methods=["GET"])
 @openid_login_required
-def project_statistics():
+def projects_statistics():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
 
@@ -466,4 +470,90 @@ def project_statistics():
         "project/projects_statistics.html.j2",
         year=year,
         projects_list=json.dumps(projects_list),
+    )
+
+
+@data_platform_project_bp.route("/data-platform/statistics/usage", methods=["GET"])
+@openid_login_required
+def projects_usage():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    year = request.args.get("year")
+
+    if not year:
+        year = datetime.now().year
+
+    response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
+
+    response.raise_for_status()
+
+    projects = response.json()
+
+    if not projects:
+        flash(f"No project information found in {year}.")
+        projects = []
+
+    projects_dic = {}
+    projects_dic["date"] = []
+    projects_dic["zone"] = []
+    projects_dic["project_name"] = []
+    projects_dic["usage"] = []
+    projects_dic["quota"] = []
+    for project in projects:
+        if project["project"]["platform"] == "irods":
+            for usage in project["usage"]:
+                projects_dic["date"].append(usage["date"])
+                zone_name = "-".join(
+                    project["project"]["platform_options"][0]["value"].split("-")[4:]
+                )
+                projects_dic["zone"].append(zone_name)
+                projects_dic["project_name"].append(project["project"]["name"])
+                projects_dic["usage"].append(convert_bytes_to_GB(usage["used_size"]))
+                projects_dic["quota"].append(convert_bytes_to_GB(usage["quota_size"]))
+
+    df_raw = pd.DataFrame(projects_dic)
+    df = (
+        df_raw.groupby(["date", "zone", "quota", "project_name"])["usage"]
+        .sum()
+        .reset_index(name="used_size")
+    )
+
+    fig_usage = px.histogram(
+        df, x="date", y=df["used_size"], color="zone", barmode="stack", text_auto=True
+    )
+    fig_usage.update_layout(
+        title="Usage Per Zone",
+        title_x=0.5,
+        autosize=True,
+        margin=dict(
+            autoexpand=True,
+            l=100,
+            r=20,
+            t=110,
+        ),
+        plot_bgcolor="white",
+    )
+
+    fig_quota = px.histogram(
+        df, x="date", y=df["quota"], color="zone", barmode="stack", text_auto=True
+    )
+    fig_quota.update_layout(
+        title="Quota Per Zone",
+        title_x=0.5,
+        autosize=True,
+        margin=dict(
+            autoexpand=True,
+            l=100,
+            r=20,
+            t=110,
+        ),
+        plot_bgcolor="white",
+    )
+
+    return render_template(
+        "project/projects_usage.html.j2",
+        year=year,
+        usage_graphJSON=json.dumps(fig_usage, cls=plotly.utils.PlotlyJSONEncoder),
+        quota_graphJSON=json.dumps(fig_quota, cls=plotly.utils.PlotlyJSONEncoder),
     )

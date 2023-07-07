@@ -220,11 +220,12 @@ def init_and_secure_views():
         "data_platform_project_bp.add_irods_project",
         "data_platform_project_bp.add_generic_project",
         "data_platform_project_bp.modify_project",
-        "data_platform_project_bp.project_statistics",
         "data_platform_autocomplete_bp.autocomplete_username",
         "data_platform_user_bp.local_client_retrieve_token_callback",
         "data_platform_project_bp.project_overview",
         "data_platform_project_bp.set_project_options",
+        "data_platform_project_bp.projects_statistics",
+        "data_platform_project_bp.projects_usage",
     ]:
         return None
 
