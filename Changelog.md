@@ -1,6 +1,19 @@
 # Changelog
 
 Note: versioning follows Semver standard with 3 levels
+
+## Release 0.x.x
+
+### New features
+
+- Added 
+
+## Release 0.12.6 [2023-06-26]
+
+### Bug fixes
+
+- Made data platform / irods sessions more robust against missing name/email openid attributes (via Peter)
+
 ## Release 0.12.5 [2023-06-19]
 
 ### Bug fixes

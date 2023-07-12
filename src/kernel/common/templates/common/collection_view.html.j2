@@ -886,8 +886,8 @@ Dropzone.options.mangoDropzone = {
 
     autoProcessQueue: false,
     addRemoveLinks: true,
-    maxFilesize: 1024,
-    dictDefaultMessage: "Click or drag files (max 1GB each) to upload here. When your selection is ready, click the buttton below to start the upload.",
+    maxFilesize: 5120,
+    dictDefaultMessage: "Click or drag files (max 5GiB each) to upload here. When your selection is ready, click the buttton below to start the upload.",
     init: function () {
       var submitButton = document.querySelector("#submit-all")
       ourDropzone =  this;
