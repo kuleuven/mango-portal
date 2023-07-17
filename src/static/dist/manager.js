@@ -49,7 +49,7 @@ const schemas = {};
  * REGEX Pattern to control possible schema names. This pattern is then filled with existing names.
  * @type {String}
  */
-let schema_pattern = "[a-z0-9_-]+";
+let schema_pattern = "[a-z][a-z0-9_\\-]*";
 
 /**
  * Empty schema to start with.

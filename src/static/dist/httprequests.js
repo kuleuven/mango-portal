@@ -131,7 +131,7 @@ class TemplatesRequest extends MangoRequest {
       if (grouped_templates.length > 0) {
         let existing_names = grouped_templates.map((x) => x.name).join("$|^");
 
-        schema_pattern = `^((?!^${existing_names}$)${schema_pattern})+$`;
+        schema_pattern = `^((?!^${existing_names}$)${schema_pattern})$`;
         document
           .querySelectorAll('input[name="schema_name"]')
           .forEach((input) => input.setAttribute("pattern", schema_pattern));
