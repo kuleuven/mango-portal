@@ -244,7 +244,7 @@ class TreeElement {
             this.children = children;
         }
         this.path = path;
-        this.id = path.replaceAll('/', '-');
+        this.id = path.replaceAll('/', '-').replaceAll(" ", "__");
         this.value = path;
         this.name = name;
         this.input = this.create_input();
