@@ -50,6 +50,7 @@
     <thead>
     <tr>
       <th>Project</th>
+      <th>Platform/Zone</th>
       <th>Reference</th>
       <th>Responsible</th>
       <th>Usage Jan</th>
@@ -73,6 +74,13 @@
     <tr>
       <td class="align-middle">
         <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
+      </td>
+      <td class="align-middle">
+        {% set opts = {} %}
+        {% for opt in project['platform_options'] %}
+        {% if opts.update({opt['key']: opt['value']}) %}{% endif %}
+        {% endfor %}
+        {{ opts['zone-jobid'] }}
       </td>
       <td class="align-middle">
         {% if project['sap_ref'] %}SAP {{ project['sap_ref'] }}{% endif %}
