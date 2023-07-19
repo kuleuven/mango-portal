@@ -1,6 +1,6 @@
 // This script is used by the collection_view.html.j2 template
 
-// == CONSTANTS: DOM elements in the collection view template. ==================================
+//#region Constants
 /** Body of the table with the contents of the collection. */
 const tbody = document.querySelector('#browseTable tbody');
 /** Selection of all the checkboxes inside the body of the table (which excludes the header!). */
@@ -13,9 +13,9 @@ const go_button = document.querySelector('#collection-content button');
 const select_all = document.querySelector('#browseTable input#select_all');
 /** Custom DOM element that contains the url to call the top tree. */
 const urls = document.querySelector('bulk-links');
+//#endregion
 
-
-// == LISTENERS ==================================================================================
+//#region Listeners
 /** Behavior of the checkbox that rules all other checkboxes. */
 select_all.addEventListener('change', () => {
     if (select_all.checked) {
@@ -62,7 +62,9 @@ tbody_checkboxes.forEach((checkbox) => {
     })
 });
 
-// == MAIN FUNCTION ==============================================================================
+//#endregion
+
+//#region Mani function
 /** Function called when clicking on the 'apply' button to trigger an action (copy/move/delete). */
 function apply_bulk_operation() {
     /** Option chosen in the dropdown. */
@@ -172,8 +174,9 @@ function apply_bulk_operation() {
         modal.show() // show confirmation modal
     }
 }
+//#endregion
 
-// == CLASS DEFINITIONS ==========================================================================
+//#region Class definitions
 /**
  * Class representing the offcanvas with the list of collections to copy/move items to.
  * @property {HTMLDivElement} offcanvas OffCanvas used to select the destination collection.
@@ -529,6 +532,7 @@ class TreeElement {
         return button_group;
     }
 }
+//#endregion
 
 // Create offcanvas and generate tree ============================================================
 
