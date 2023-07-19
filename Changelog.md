@@ -2,7 +2,13 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.13.0 [2023-07-19]
+## Release 0.13.1 (t,q) [2023-07-19]
+
+### Smaller improvements and bug fixes
+
+- changed temp upload directory to use the nfs storage given the larger upload limits could crash the container
+
+## Release 0.13.0 (t,q) [2023-07-19]
 
 ### New features
 
