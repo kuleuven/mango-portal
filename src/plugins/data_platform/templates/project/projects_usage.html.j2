@@ -1,0 +1,57 @@
+{% extends "base_openid.html.j2" %}
+
+{% block custom_style %}
+<style type="text/css">
+div.dataTables_wrapper {
+  width: 1200px; /* table with, original was 800* for scrollX */
+  margin: 0 auto;
+  white-space: nowrap; /* this is for the long lines, if normal multiple lines*/
+}
+</style>
+{% endblock %}
+
+{% block container %}
+   <div class="m-2">
+   <nav aria-label="breadcrumb m-2">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('data_platform_project_bp.projects_statistics')}}">Statistics</a>
+      </li>
+    </ol>
+  </nav>
+  </div>
+
+  <form method="get" class="m-2">
+    <div class="row">
+      <div class="col-auto p-0">
+        <input type="number" name="year" value="{{ year }}" class="form-control form-control-sm" />
+      </div>
+      <div class="col-auto">
+        <input type="submit" value="Select" class="btn btn-secondary btn-sm" />
+      </div>
+    </div>
+  </form>
+
+{# js plotly to plot json string#}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+
+<div class="chart" id="bargraph_usage">
+  <script>
+    let graphs_usage = {{usage_graphJSON | safe}};
+    Plotly.plot('bargraph_usage', graphs_usage, {});
+</script>
+</div>
+
+<div class="chart" id="bargraph_quota">
+  <script>
+    let graphs_quota = {{quota_graphJSON | safe}};
+    Plotly.plot('bargraph_quota', graphs_quota, {});
+  </script>
+</div>
+  
+{% endblock container %}

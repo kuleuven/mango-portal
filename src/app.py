@@ -224,6 +224,8 @@ def init_and_secure_views():
         "data_platform_user_bp.local_client_retrieve_token_callback",
         "data_platform_project_bp.project_overview",
         "data_platform_project_bp.set_project_options",
+        "data_platform_project_bp.projects_statistics",
+        "data_platform_project_bp.projects_usage",
     ]:
         return None
 
@@ -409,7 +411,8 @@ def irods_to_sha256_checksum(irods_checksum):
     if irods_checksum is None or not irods_checksum.startswith("sha2:"):
         return None
 
-    return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode('utf-8')
+    return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode("utf-8")
+
 
 @app.route("/")
 def index():
