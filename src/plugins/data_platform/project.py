@@ -499,25 +499,25 @@ def projects_usage():
         flash(f"No project information found in {year}.")
         projects = []
 
-    projects_dic = {}
-    projects_dic["date"] = []
-    projects_dic["zone"] = []
-    projects_dic["project_name"] = []
-    projects_dic["usage"] = []
-    projects_dic["quota"] = []
+    projects_dict = {}
+    projects_dict["date"] = []
+    projects_dict["zone"] = []
+    projects_dict["project_name"] = []
+    projects_dict["usage"] = []
+    projects_dict["quota"] = []
     for project in projects:
         if project["project"]["platform"] == "irods":
             for usage in project["usage"]:
-                projects_dic["date"].append(usage["date"])
+                projects_dict["date"].append(usage["date"])
                 zone_name = "-".join(
                     project["project"]["platform_options"][0]["value"].split("-")[4:]
                 )
-                projects_dic["zone"].append(zone_name)
-                projects_dic["project_name"].append(project["project"]["name"])
-                projects_dic["usage"].append(convert_bytes_to_GB(usage["used_size"]))
-                projects_dic["quota"].append(convert_bytes_to_GB(usage["quota_size"]))
+                projects_dict["zone"].append(zone_name)
+                projects_dict["project_name"].append(project["project"]["name"])
+                projects_dict["usage"].append(convert_bytes_to_GB(usage["used_size"]))
+                projects_dict["quota"].append(convert_bytes_to_GB(usage["quota_size"]))
 
-    df_raw = pd.DataFrame(projects_dic)
+    df_raw = pd.DataFrame(projects_dict)
     df = (
         df_raw.groupby(["date", "zone", "quota", "project_name"])["usage"]
         .sum()
