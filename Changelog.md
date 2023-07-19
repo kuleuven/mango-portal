@@ -2,11 +2,21 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.x.x
+## Release 0.13.0 [2023-07-19]
 
 ### New features
 
-- Added 
+- Added initial statistics to projects (Via Mustafa)
+
+### Bug fixes
+
+- Fixed bug in bulk operations: make sure a HTML id does not contain spaces (via Mariana)
+
+### Smaller improvements and bug fixes
+
+- Increased download (50GiB) and upload limits (5GiB per file)
+- Corrections to connection info pages (via Filip)
+
 
 ## Release 0.12.6 [2023-06-26]
 

@@ -1,2 +1,2 @@
-__version__ = "0.12.5"
-__comment__ = "Bugfix: avoid showing doubles in case metadata units are set"
+__version__ = "0.13.0"
+__comment__ = "Bugfixes, increased file stransfer limits and initial project statistics"
