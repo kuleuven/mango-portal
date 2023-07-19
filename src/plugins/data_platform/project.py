@@ -387,6 +387,11 @@ def project_overview():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
 
+    response = requests.get(f"{API_URL}/v1/irods/zones", headers=header)
+    response.raise_for_status()
+
+    zones = response.json()
+
     year = request.args.get("year")
 
     if not year:
@@ -556,4 +561,5 @@ def projects_usage():
         year=year,
         usage_graphJSON=json.dumps(fig_usage, cls=plotly.utils.PlotlyJSONEncoder),
         quota_graphJSON=json.dumps(fig_quota, cls=plotly.utils.PlotlyJSONEncoder),
+        zones=zones,
     )
