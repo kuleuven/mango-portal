@@ -180,14 +180,14 @@ def get_current_user_rights(current_user_name, item):
     return access
 
 
-def rm_pathlib_tree(directory: Path):
-    if directory.is_dir():
-        for child in directory.iterdir():
+def rm_pathlib_tree(directory_path: Path):
+    if directory_path.is_dir():
+        for child in directory_path.iterdir():
             if child.is_file():
                 child.unlink()
             else:
                 rm_pathlib_tree(child)
-        directory.rmdir()
+        directory_path.rmdir()
 
 
 def read_file_in_chunks(file_posix_path: str, delete_after=False):
