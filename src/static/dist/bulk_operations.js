@@ -102,7 +102,13 @@ function apply_bulk_operation() {
     /** Text to return in the confirmation dialog */
     const confirmation_text = confirmation_form.querySelector('p#confirmation-text')
 
-    confirmation_form.addEventListener("submit", ()=> { modal.toggle()})
+    confirmation_form.addEventListener("submit", ()=> { 
+        modal.hide();
+        tbody_checkboxes.forEach((el) => el.checked = false); // uncheck all checkboxes
+        go_button.setAttribute('disabled', ''); // the button to trigger the action is disabled
+        select_all.parentElement.removeChild(badge_counter); // the counter badge is removed altogether
+        select_all.checked = false; // uncheck also the global select/unselect all
+    })
 
 
     /** Final list of items to act upon: exclude collections if the action is 'copy'. */
