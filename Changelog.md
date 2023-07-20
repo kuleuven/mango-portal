@@ -2,6 +2,14 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.13.2 (t,q) [2023-07-20]
+
+### Smaller improvements and bug fixes
+
+- Synchronous bulk download is available for data objects
+- Allow copy/download bulk operations for non-owners
+
+
 ## Release 0.13.1 (t,q) [2023-07-19]
 
 ### Smaller improvements and bug fixes
