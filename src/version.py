@@ -1,2 +1,2 @@
-__version__ = "0.13.0"
-__comment__ = "Bugfixes, increased file stransfer limits and initial project statistics"
+__version__ = "0.13.1"
+__comment__ = "Bugfixes, changed temp upload dir"

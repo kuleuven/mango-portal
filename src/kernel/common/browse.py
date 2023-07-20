@@ -51,7 +51,7 @@ import logging
 import irods_session_pool
 from multidict import MultiDict
 from operator import itemgetter
-from pathlib import PurePath
+from pathlib import PurePath, Path
 
 from kernel.metadata_schema import get_schema_manager
 from kernel.template_overrides import get_template_override_manager
@@ -735,18 +735,26 @@ def delete_data_object():
 @browse_bp.route("/collection/upload/file", methods=["POST"])
 def collection_upload_file():
     """ """
-
+    MANGO_STORAGE_BASE_PATH = Path("storage")
+    TEMP_PATH=MANGO_STORAGE_BASE_PATH / "tmp"
+    if not TEMP_PATH.exists():
+        TEMP_PATH.mkdir(parents=True, exist_ok=True)
+    
     collection = request.form["collection"]
     print(f"Requested upload file for collection {collection}")
     f = request.files["file"]
-    filename = "/tmp/" + f.filename
-    f.save(filename)
-
+    filename = f.filename
+    temp_file_name = tempfile.mktemp(dir=TEMP_PATH)
+    print(f"Temporary file for upload: {temp_file_name}")
+    f.save(temp_file_name)
+    
     # current_collection = irods_session.collections.get(collection)
-    g.irods_session.data_objects.put(filename, collection + "/" + f.filename)
+    g.irods_session.data_objects.put(temp_file_name, collection + "/" + f.filename)
     data_object: iRODSDataObject = g.irods_session.data_objects.get(
         f"{collection}/{f.filename}"
     )
+
+    os.unlink(temp_file_name)
 
     signals.data_object_added.send(
         current_app._get_current_object(),
@@ -754,7 +762,7 @@ def collection_upload_file():
         data_object_path=data_object.path,
     )
 
-    os.unlink(filename)
+    
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
