@@ -1122,9 +1122,6 @@ def bulk_operation_items():
 
     action = request.form["action"]
 
-    # for now capture the delete action and turn it into download for testing
-    # action = "download" if action == "delete" else action
-
     if action == "delete":
         force_delete = (
             True
