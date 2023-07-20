@@ -136,6 +136,7 @@
                 id="action_select"
                 aria-describedby="selection_help">
           <option value="copy">Copy</option>
+          <option value="download">Download</option>
           {% if ('own' in current_user_rights) %}
             <option value="move">Move</option>
             <option value="delete">Delete</option>
@@ -146,7 +147,7 @@
                 onclick="apply_bulk_operation()"
                 disabled>Apply</button>
       </div>
-      <div id="selection_help" class="form-text">Copying is only available for data objects.</div>
+      <div id="selection_help" class="form-text">Copying/Download is only available for data objects.</div>
       <bulk-links tree="{{ url_for("browse_bp.get_sub_collections") }}" />
       <table class="table table-striped table-hover mt-2" id="browseTable">
         <thead>

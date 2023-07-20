@@ -64,19 +64,19 @@ tbody_checkboxes.forEach((checkbox) => {
 
 //#endregion
 
-//#region Mani function
-/** Function called when clicking on the 'apply' button to trigger an action (copy/move/delete). */
+//#region Main function
+/** Function called when clicking on the 'apply' button to trigger an action (copy/move/delete/download). */
 function apply_bulk_operation() {
     /** Option chosen in the dropdown. */
     const selected_option = document.querySelector('#collection-content select');
-    
+
     /** Array of paths to apply the action upon. */
     const selected_items = [...tbody_checkboxes].filter((c) => c.checked).map((c) => c.value);
     /** Number of collections selected. */
     const n_collections = selected_items.filter((c) => c.startsWith('col-')).length;
     /** Number of data objects selected. */
     const n_dobjects = selected_items.filter((c) => c.startsWith('dobj-')).length;
-    
+
     /** Message to print indicating the number of collections. */
     const n_collections_printed = `${n_collections} collection${n_collections > 1 ? "s" : ""}`;
     /** Message to print indicating the number of data objects. */
@@ -101,12 +101,15 @@ function apply_bulk_operation() {
     confirmation_form.querySelector('input#action').value = selected_option.value;
     /** Text to return in the confirmation dialog */
     const confirmation_text = confirmation_form.querySelector('p#confirmation-text')
-    
+
+    confirmation_form.addEventListener("submit", ()=> { modal.toggle()})
+
+
     /** Final list of items to act upon: exclude collections if the action is 'copy'. */
     const items_to_send = selected_option.value == 'copy'
         ? selected_items.filter((c) => c.startsWith('dobj-'))
         : selected_items;
-    
+
     // Update form with the list of items
     // First remove any items from previous attempts if they exist
     const existing_items = confirmation_form.querySelectorAll('input[name="items"]');
@@ -133,7 +136,7 @@ function apply_bulk_operation() {
         if (del_checkbox != undefined) {
             del_checkbox.remove();
         }
-        
+
         /** Text of the chosen action for the dialog message. */
         const action = selected_option.value == 'copy' ? 'copied' : 'moved';
         /** Message to provide in the confirmation dialog. */
@@ -147,17 +150,26 @@ function apply_bulk_operation() {
         // update the offcanvas
         offcanvas.update();
 
+    } else if (selected_option.value == 'download') {
+        // delete the force-delete checkbox from the confirmation dialog if it exists
+        if (del_checkbox != undefined) {
+            del_checkbox.remove();
+        }
+        confirmation_form.querySelector('input#destination').value = "";
+        confirmation_modal.querySelector('p#confirmation-text').innerHTML = `${n_dobjects_printed} will be downloaded.`;
+        modal.show() // show confirmation modal
+
     } else {
         // if the items will be deleted
         if (del_checkbox == undefined) {
             // if there is no force-delete checkbox
             confirmation_form.querySelector('input#destination').value = ""; // don't send a destination value
             confirmation_modal.querySelector('p#confirmation-text').innerHTML = `${n_items} will be deleted.`; // update message
-            
+
             // create force-delete checkbox and add it to the form
             const del_checkbox = Field.quick('div', 'form-check');
             del_checkbox.id = 'force-checkbox';
-            
+
             const checkbox_input = Field.quick('input', 'form-check-input');
             checkbox_input.type = 'checkbox';
             checkbox_input.name = 'force_delete';
@@ -271,52 +283,52 @@ class OffCanvas {
     update_radios() {
         // apply to all radio inputs in the offcanvas
         this.offcanvas.querySelectorAll('input[type="radio"]')
-        .forEach((input) => input.addEventListener('change', () => {
-            // INPUT represents a radio input and thus a candidate destination folder
-            // remove all existing folder icons (we only show it for INPUT, iff it's an acceptable destination)
-            this.offcanvas.querySelectorAll('i.bi-folder-symlink-fill')
-                .forEach((i) => i.remove());
+            .forEach((input) => input.addEventListener('change', () => {
+                // INPUT represents a radio input and thus a candidate destination folder
+                // remove all existing folder icons (we only show it for INPUT, iff it's an acceptable destination)
+                this.offcanvas.querySelectorAll('i.bi-folder-symlink-fill')
+                    .forEach((i) => i.remove());
 
-            // check which collections can be destinations
-            // parent_folders == 0 if the INPUT is not the direct parent of a selected collection
-            let parent_folders = this.selected_items.filter((c) => {
-                let regex_match = c.match('^(?<prefix>col-)(?<parent>.+)/(?<name>[^/]+)/?$');
-                return regex_match != null && regex_match.groups.parent == input.value;
-            }).length;
-            
-            // parent_of_dobj == 0 if the INPUT is not the direct parent of a selected data object
-            let parent_of_dobj = this.selected_items.filter((d) => {
-                let regex_match = d.match('^(?<prefix>dobj-)(?<parent>.+)/(?<name>[^/]+)$');
-                return regex_match != null && regex_match.groups.parent == input.value
-            }).length;
+                // check which collections can be destinations
+                // parent_folders == 0 if the INPUT is not the direct parent of a selected collection
+                let parent_folders = this.selected_items.filter((c) => {
+                    let regex_match = c.match('^(?<prefix>col-)(?<parent>.+)/(?<name>[^/]+)/?$');
+                    return regex_match != null && regex_match.groups.parent == input.value;
+                }).length;
 
-            // child_folders == 0 if the INPUT is not a child of a selected collection
-            let child_folders = this.selected_items.filter((c) => {
-                return c.startsWith('col-') && input.value.startsWith(c.match('(?<prefix>col-)(?<path>.+)').groups.path)
-            }).length;
+                // parent_of_dobj == 0 if the INPUT is not the direct parent of a selected data object
+                let parent_of_dobj = this.selected_items.filter((d) => {
+                    let regex_match = d.match('^(?<prefix>dobj-)(?<parent>.+)/(?<name>[^/]+)$');
+                    return regex_match != null && regex_match.groups.parent == input.value
+                }).length;
 
-            if (parent_folders + child_folders == 0 && (this.selected_option == 'copy' || parent_of_dobj == 0)) {
-                // if INPUT is not a parent or child of a selected collection AND either we are copying or it's not a parent of a selected data object
-                
-                /** Icon to select INPUT as destination. */
-                const icon = document.createElement('i');
-                icon.className = 'bi bi-folder-symlink-fill ms-2';
-                icon.setAttribute('style', 'font-size:1.2rem;');
-                input.nextSibling.appendChild(icon);
-                icon.addEventListener('click', (e) => {
-                    // when the icon is clicked
-                    e.preventDefault();
-                    const destination = input.value;
-                    // update the confirmation message with the chosen destination
-                    this.confirmation_text.innerHTML = this.message.replace('DESTINATION', destination);
-                    // update the form to post with the chosen destination
-                    this.confirmation_form.querySelector('input#destination').value = destination;
-                    // show the confirmation dialog
-                    this.modal.show();
-                });
-            }
+                // child_folders == 0 if the INPUT is not a child of a selected collection
+                let child_folders = this.selected_items.filter((c) => {
+                    return c.startsWith('col-') && input.value.startsWith(c.match('(?<prefix>col-)(?<path>.+)').groups.path)
+                }).length;
 
-        }));
+                if (parent_folders + child_folders == 0 && (this.selected_option == 'copy' || parent_of_dobj == 0)) {
+                    // if INPUT is not a parent or child of a selected collection AND either we are copying or it's not a parent of a selected data object
+
+                    /** Icon to select INPUT as destination. */
+                    const icon = document.createElement('i');
+                    icon.className = 'bi bi-folder-symlink-fill ms-2';
+                    icon.setAttribute('style', 'font-size:1.2rem;');
+                    input.nextSibling.appendChild(icon);
+                    icon.addEventListener('click', (e) => {
+                        // when the icon is clicked
+                        e.preventDefault();
+                        const destination = input.value;
+                        // update the confirmation message with the chosen destination
+                        this.confirmation_text.innerHTML = this.message.replace('DESTINATION', destination);
+                        // update the form to post with the chosen destination
+                        this.confirmation_form.querySelector('input#destination').value = destination;
+                        // show the confirmation dialog
+                        this.modal.show();
+                    });
+                }
+
+            }));
     }
 
     /** Update the behavior of the offcanvas when it is open. */
@@ -466,11 +478,11 @@ class TreeElement {
         /** Collapsible div */
         const collapse = Field.quick('div', 'collapse ps-3 w-100');
         collapse.id = this.id + '-collapse';
-        
+
         /** Caret icon of the label (indicating whether the selection of children is collapsed or not) */
         const icon = this.label.querySelector('i.bi');
 
-        /** New button group for the children of this collection */ 
+        /** New button group for the children of this collection */
         const sub_button_group = TreeElement.create_button_group();
         collapse.appendChild(sub_button_group);
 
