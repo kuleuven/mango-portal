@@ -11,6 +11,12 @@
                              width="137"
                              style="margin: -10px auto" />
                         <span class="fw-bold fs-5 align-bottom"><i class="bi bi-boxes"></i> {{ g.irods_session.zone }}</span>
+                    {% elif request.headers["Host"] and "vscentrum" in request.headers["Host"] %}
+                        <img class="logo"
+                             alt="logo"
+                             src="{{ url_for('static', filename='vsc-combi.webp') }}"
+                             width="137"
+                             style="margin: -10px auto" />
                     {% else %}
                         <img class="logo"
                              alt="logo"
