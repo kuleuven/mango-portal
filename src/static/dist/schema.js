@@ -1496,7 +1496,9 @@ class SchemaForm {
     first_viewer
       .querySelectorAll("[name]")
       .forEach(
-        (subfield) => (subfield.name = `${subfield.name}__${first_unit}`)
+        (subfield) => {
+          subfield.name = `${subfield.name.split('__')[0]}__${first_unit}`;
+        }
       );
     if (existing_values.length > 1) {
       for (let i = 0; i < existing_values.length - 1; i++) {
@@ -1512,7 +1514,7 @@ class SchemaForm {
           child.classList.contains("mini-viewer") &&
           child.getAttribute("data-field-name") == raw_name &&
           child.getAttribute("data-composite-unit") == String(unit)
-      )[0];
+      )[0].querySelector("div.input-view");
 
       // Extract the fields that are not inside nested composite fields and register them
       let not_nested = Object.keys(object).filter(
@@ -1526,7 +1528,6 @@ class SchemaForm {
       let nested = Object.keys(object).filter(
         (fid) => typeof object[fid][0] == "object"
       );
-
       // Go through each nested composite field and register its subfields, with an accumulated prefix
       nested.forEach((fid) => this.register_object(fid, object, obj, viewer));
     });
@@ -1541,12 +1542,12 @@ class SchemaForm {
   register_non_object(fid, annotated_data, form = null) {
     // Start with the original form, but in fields inside a composite field it will be its div.
     form = form || this.form;
-
+    
     // Extract the data linked to this field
     let existing_values = annotated_data[fid];
     let input_name =
       "__unit__" in annotated_data ? `${fid}__${annotated_data.__unit__}` : fid;
-
+    
     // Identify checkboxes as cases where there are multiple input fields with the same name in the form
     // (this is only for multiple-value multiple-choice fields)
     let is_checkbox =
@@ -1655,19 +1656,37 @@ class SchemaForm {
         split_unit.push(String(largest_suffix + 1));
         let new_unit = split_unit.join(".");
         clone.setAttribute("data-composite-unit", new_unit);
-        clone
-          .querySelectorAll("[name]")
-          .forEach(
-            (subfield) => (subfield.name = `${subfield.name}__${new_unit}`)
-          );
-        clone.querySelectorAll("[data-composite-unit]").forEach((subfield) => {
-          let current_subunit = subfield.getAttribute("data-composite-unit");
-          let new_subunit = current_subunit.replace(
-            new RegExp(`^${current_unit}`),
-            new_unit
-          );
-          subfield.setAttribute("data-composite-unit", new_subunit);
-        });
+        function update_children_names(composite_field, subform, new_unit) {
+          const direct_children = [...subform.querySelector("div.input-view").childNodes];
+          direct_children.forEach((child) => {
+            const field_data = composite_field.editor.fields[child.getAttribute("data-field-name")];
+            if (field_data.type != "object") {
+              child.querySelector("input").name = `${field_data.name}__${new_unit}`;
+            } else {
+              const sub_unit = new_unit + ".1";
+              child.setAttribute("data-composite-unit", sub_unit);
+              update_children_names(field_data, child, sub_unit);
+            }
+          });
+        }
+        update_children_names(field, clone, new_unit);
+        // console.log(field.editor.fields)
+        // const original_div_data = [...small_div.querySelectorAll("div.mini-viewer")]
+        //   .map((viewer) => {
+        //     const field_name = viewer.getAttribute("data-field-name");
+        //     const is_composite =  viewer.querySelector("div.input-view");
+        //     const name = is_composite ? (viewer.getAttribute("data-composite-unit") || current_unit + ".1") : viewer.querySelector('input').name;
+        //     const new_name = is_composite ? name.replace(current_unit, new_unit) : name.replace(`__${current_unit}`, `__${new_unit}`);
+        //     return { field_name: field_name, is_composite: is_composite, new_name: new_name, old_name: name.split("__")[0]}
+        //   });
+        // original_div_data.forEach((field_data) => {
+        //   const this_field = clone.querySelector(`div[data-field-name="${field_data.field_name}"]`);
+        //   if (field_data.is_composite) {
+        //     this_field.setAttribute("data-composite-unit", field_data.new_name);
+        //   } else {
+        //     this_field.querySelector(`input[name="${field_data.old_name}"]`).name = field_data.new_name;
+        //   }
+        // });
         let inner_repeatables = [...clone.childNodes]
           .filter((subfield) => subfield.classList.contains("mini-viewer"))
           .filter((subfield) => subfield.querySelector("button i.bi-front"));

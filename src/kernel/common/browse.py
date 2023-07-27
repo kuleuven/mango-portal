@@ -51,7 +51,8 @@ import logging
 import irods_session_pool
 from multidict import MultiDict
 from operator import itemgetter
-from pathlib import PurePath
+from pathlib import PurePath, Path
+import tarfile
 
 from kernel.metadata_schema import get_schema_manager
 from kernel.template_overrides import get_template_override_manager
@@ -97,12 +98,10 @@ def group_prefix_metadata_items(
     schemas=[],
 ):
     """ """
+
     def is_valid_composite_units(units):
-        try:
-            int(units)
-            return True
-        except Exception as e:
-            return False
+        return re.match("\d+(\.\d+)*$", units)
+
     grouped_metadata = {no_schema_label: MultiDict()}
     if group_analysis_unit:
         grouped_metadata["analysis"] = MultiDict()
@@ -119,15 +118,35 @@ def group_prefix_metadata_items(
             if avu.units and avu.name.count(".") == 2:
                 grouped_metadata[schema].add(avu.name, avu)
                 continue
-            if avu.units and avu.name.count(".") > 2 and is_valid_composite_units(avu.units):
+            if (
+                avu.units
+                and avu.name.count(".") > 2
+                and is_valid_composite_units(avu.units)
+                and avu_name.count(".") == (avu.units.count(".") + 1)
+            ):
+                components = avu.name.split(".")
+                parent = grouped_metadata[schema]
+                for _i in range(len(components)):
+                    if _i < 2:
+                        continue
+                    composite_id = ".".join(components[:_i+1])
+                    level_units = ".".join(avu.units.split(".")[:_i-1])
+                    if _i == len(components)-1:
+                        parent.add(avu.name, avu)
+                    else:
+                        if composite_id not in parent:
+                            parent[composite_id] = {level_units: MultiDict()}
+                        if level_units not in parent[composite_id]:
+                            parent[composite_id][level_units] = MultiDict()
+                        parent = parent[composite_id][level_units]
                 # creating a dict with the ordinal string from avu.unit as key
                 # chop off the last part to get the composite identifier
-                composite_id = ".".join(avu.name.split(".")[:-1])
-                if composite_id not in grouped_metadata[schema]:
-                    grouped_metadata[schema][composite_id] = {avu.units: MultiDict()}
-                if avu.units not in grouped_metadata[schema][composite_id]:
-                    grouped_metadata[schema][composite_id][avu.units] = MultiDict()
-                grouped_metadata[schema][composite_id][avu.units].add(avu.name, avu)
+                # composite_id = ".".join(avu.name.split(".")[:-1])
+                # if composite_id not in grouped_metadata[schema]:
+                #     grouped_metadata[schema][composite_id] = {avu.units: MultiDict()}
+                # if avu.units not in grouped_metadata[schema][composite_id]:
+                #     grouped_metadata[schema][composite_id][avu.units] = MultiDict()
+                # grouped_metadata[schema][composite_id][avu.units].add(avu.name, avu)
             else:
                 grouped_metadata[schema].add(avu.name, avu)
 
@@ -171,6 +190,29 @@ def get_current_user_rights(current_user_name, item):
             access += [permission.access_name]
     # pprint.pprint(access)
     return access
+
+
+def rm_pathlib_tree(directory_path: Path):
+    if directory_path.is_dir():
+        for child in directory_path.iterdir():
+            if child.is_file():
+                child.unlink()
+            else:
+                rm_pathlib_tree(child)
+        directory_path.rmdir()
+
+
+def read_file_in_chunks(file_posix_path: str, delete_after=False):
+    CHUNK_SIZE = 4 * 1024 * 1024
+    with open(file_posix_path, "rb") as fd:
+        while 1:
+            buf = fd.read(CHUNK_SIZE)
+            if buf:
+                yield buf
+            else:
+                break
+    if delete_after:
+        os.remove(file_posix_path)
 
 
 @browse_bp.route(
@@ -602,7 +644,7 @@ def download_object(data_object_path):
     if object_type is None:
         object_type = "application/octet-stream"
 
-    read_buffer_size = 2**22
+    read_buffer_size = 2**24  # 16MiB
     print(f"Current read buffer size is {read_buffer_size}")
 
     def data_object_chunks():
@@ -735,26 +777,32 @@ def delete_data_object():
 @browse_bp.route("/collection/upload/file", methods=["POST"])
 def collection_upload_file():
     """ """
+    MANGO_STORAGE_BASE_PATH = Path("storage")
+    TEMP_PATH = MANGO_STORAGE_BASE_PATH / "tmp"
+    if not TEMP_PATH.exists():
+        TEMP_PATH.mkdir(parents=True, exist_ok=True)
 
     collection = request.form["collection"]
     print(f"Requested upload file for collection {collection}")
     f = request.files["file"]
-    filename = "/tmp/" + f.filename
-    f.save(filename)
+    filename = f.filename
+    temp_file_name = tempfile.mktemp(dir=TEMP_PATH)
+    print(f"Temporary file for upload: {temp_file_name}")
+    f.save(temp_file_name)
 
     # current_collection = irods_session.collections.get(collection)
-    g.irods_session.data_objects.put(filename, collection + "/" + f.filename)
+    g.irods_session.data_objects.put(temp_file_name, collection + "/" + f.filename)
     data_object: iRODSDataObject = g.irods_session.data_objects.get(
         f"{collection}/{f.filename}"
     )
+
+    os.unlink(temp_file_name)
 
     signals.data_object_added.send(
         current_app._get_current_object(),
         irods_session=g.irods_session,
         data_object_path=data_object.path,
     )
-
-    os.unlink(filename)
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -1160,7 +1208,7 @@ def bulk_operation_items():
         # logging.info(f"get safe path: {path_to_check} does not exist yet")
         return path_to_check
 
-    if request.form["action"] == "move":
+    if action == "move":
         for item in request.form.getlist("items"):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
@@ -1213,7 +1261,7 @@ def bulk_operation_items():
                         failure_count += 1
                         flash(f"Problem moving collection {item_path} : {e}", "danger")
 
-    if request.form["action"] == "copy":
+    if action == "copy":
         for item in request.form.getlist("items"):
             match = re.match(r"(dobj|col)-(.*)", item)
             if match:
@@ -1240,10 +1288,69 @@ def bulk_operation_items():
                         failure_count += 1
                         flash(f"Problem copying {item_path} : {e}", "danger")
 
+    if action == "download":
+        # @todo move and read from global config
+        MANGO_STORAGE_BASE_PATH = Path("storage")
+        MAX_BD_ITEM_SIZE = 20 * 1024 * 1024 * 1024
+        MAX_TOTAL_ARCHIVE_SIZE = 50 * 1024 * 1024 * 1024
+
+        bulk_action_id = (
+            f"{irods_session.zone}-{irods_session.username}-{int(time.time())}"
+        )
+
+        temp_archive_dir = MANGO_STORAGE_BASE_PATH / "tmp_bulk" / bulk_action_id
+        temp_archive_dir.mkdir(parents=True, exist_ok=True)
+
+        total_size = 0
+
+        for item in request.form.getlist("items"):
+            match = re.match(r"(dobj|col)-(.*)", item)
+            if match:
+                (item_type, item_path) = (match.group(1), match.group(2))
+                if item_type == ITEM_TYPE_PART["data_object"]:
+                    try:
+                        data_object: iRODSDataObject = irods_session.data_objects.get(
+                            item_path
+                        )
+                        if data_object.size < MAX_BD_ITEM_SIZE:
+                            save_path: Path = temp_archive_dir / data_object.name
+                            irods_session.data_objects.get(
+                                item_path, save_path.as_posix()
+                            )
+                        total_size += data_object.size
+                        success_count += 1
+                    except Exception as e:
+                        success = False
+                        failure_count += 1
+                        flash(f"Problem copying {item_path} : {e}", "danger")
+            if total_size > MAX_TOTAL_ARCHIVE_SIZE:
+                flash(
+                    f"Maximum size reached {total_size} > {MAX_TOTAL_ARCHIVE_SIZE}, stopped adding files to the archive",
+                    "danger",
+                )
+                break
+        bd_tar_filename = temp_archive_dir.as_posix() + ".tar"
+        bd_tar_file = tarfile.TarFile(bd_tar_filename, "w")
+        bd_tar_file.add(temp_archive_dir.as_posix(), arcname=bulk_action_id)
+        bd_tar_file.close()
+
+        rm_pathlib_tree(temp_archive_dir)
+
+        return Response(
+            stream_with_context(
+                read_file_in_chunks(bd_tar_filename, delete_after=True)
+            ),
+            direct_passthrough=True,
+            headers={
+                "Content-Disposition": f"attachment; filename={bulk_action_id}.tar"
+            },
+        )
+
     OPERATION_SUCCESS_STRINGS = {
         "delete": "deleted",
         "copy": "copied",
         "move": "moved",
+        "download": "downloaded",
     }
     if success and failure_count == 0:
         flash(

@@ -50,7 +50,7 @@ class FileSystemSchemaManager:
         self._schemas = self.list_schemas(filters=[])
         self._schemas_dir_mtime = self._storage_schemas_path.stat().st_mtime
 
-        print(self)
+        #print(self)
 
     def increment_version(self, version_string: str, part="major"):
         if re.match(r"\d\.\d\.\d", version_string):
@@ -89,7 +89,7 @@ class FileSystemSchemaManager:
             return self._schemas[schema_name]
 
         all_schema_files = list(schema_dir.glob("*.json"))
-        pprint.pprint(all_schema_files)
+        #pprint.pprint(all_schema_files)
         published_files = list(schema_dir.glob("*published.json"))
         draft_files = list(schema_dir.glob("*draft.json"))
         total_count = len(all_schema_files)
@@ -153,8 +153,8 @@ class FileSystemSchemaManager:
                 for schema_path in realm_schemas_path.glob("*")
                 if schema_path.is_dir()
             ]
-            print(f"Found schemas for filters {filters}:")
-        pprint.pprint(schemas)
+            #print(f"Found schemas for filters {filters}:")
+        #pprint.pprint(schemas)
 
         schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
 

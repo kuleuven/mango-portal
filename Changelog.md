@@ -1,6 +1,43 @@
 # Changelog
 
 Note: versioning follows Semver standard with 3 levels
+
+## Release 0.13.2 (t,q) [2023-07-20]
+
+### Smaller improvements and bug fixes
+
+- Synchronous bulk download is available for data objects
+- Allow copy/download bulk operations for non-owners
+
+
+## Release 0.13.1 (t,q) [2023-07-19]
+
+### Smaller improvements and bug fixes
+
+- changed temp upload directory to use the nfs storage given the larger upload limits could crash the container
+
+## Release 0.13.0 (t,q) [2023-07-19]
+
+### New features
+
+- Added initial statistics to projects (Via Mustafa)
+
+### Bug fixes
+
+- Fixed bug in bulk operations: make sure a HTML id does not contain spaces (via Mariana)
+
+### Smaller improvements and bug fixes
+
+- Increased download (50GiB) and upload limits (5GiB per file)
+- Corrections to connection info pages (via Filip)
+
+
+## Release 0.12.6 [2023-06-26]
+
+### Bug fixes
+
+- Made data platform / irods sessions more robust against missing name/email openid attributes (via Peter)
+
 ## Release 0.12.5 [2023-06-19]
 
 ### Bug fixes

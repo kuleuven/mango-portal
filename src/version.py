@@ -1,2 +1,2 @@
-__version__ = "0.12.5"
-__comment__ = "Bugfix: avoid showing doubles in case metadata units are set"
+__version__ = "0.13.2"
+__comment__ = "Bugfixes, bulk download (synchronous, limited to 50 GiB)"

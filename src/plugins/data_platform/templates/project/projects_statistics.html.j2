@@ -1,0 +1,90 @@
+{% extends "base_openid.html.j2" %}
+
+{% block custom_style %}
+<style type="text/css">
+div.dataTables_wrapper {
+  width: 1100px; /* table with, original was 800* for scrollX */
+  margin: 0 auto;
+  white-space: nowrap; /* this is for the long lines, if not, multiple lines */
+}
+</style>
+{% endblock %}
+
+{% block container %}
+   <div class="m-2">
+   <nav aria-label="breadcrumb m-2">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Statistics</li>
+    </ol>
+  </nav>
+    <div class="m-1" "btn-toolbar mb-3" role="toolbar">
+      <a href="{{url_for('data_platform_project_bp.projects_usage')}}" class="btn btn-block btn-primary">Dashboards</a>
+    </div>
+  </div>
+
+  <form method="get" class="m-2">
+    <div class="row">
+      <div class="col-auto p-0">
+        <input type="number" name="year" value="{{ year }}" class="form-control form-control-sm" />
+      </div>
+      <div class="col-auto">
+        <input type="submit" value="Select" class="btn btn-secondary btn-sm" />
+      </div>
+    </div>
+  </form>
+
+  {# creating tables and styling #}
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+  <link rel="stylesheet"href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css"/>
+
+  {# scrollX #}
+  <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+  {# buttons #}
+  <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+
+  {# styles of buttons #}
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css"/>
+  
+  <div class="table-responsive">
+    <table id="data-table" class="display">
+      <script>
+        let data = {{projects_list | safe}};
+        let table = new DataTable("#data-table", { 
+                                                  data:data,
+                                                  columns:[ 
+                                                            { data: 'zone_name', title: "Zone"},
+                                                            { data: 'project_name', title: "Project"},
+                                                            { data: 'usage_total', title: "Usage (GB)"},
+                                                            { data: 'quota_set', title: "Quota (GB)"},
+                                                            { data: 'responsible_name', title: "Responsible"},
+                                                            { data: 'responsible_account', title: "Responsible (account)"},
+                                                            { data: 'sap_ref', title: "SAP"},
+                                                          ],
+                                                  scrollX: true,
+                                                  "autoWidth": false,
+                                                  responsive: true,
+                                                  dom: 'Bfrtip',
+                                                  buttons: [
+                                                      'pageLength', 'copy', 'csv', 'excel', 'pdf', 'print'
+                                                  ]
+                                                  })
+
+      </script>    
+    </table>
+  </div>
+  
+{% endblock container %}
