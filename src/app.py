@@ -29,6 +29,7 @@ import humanize
 import re
 import base64
 import binascii
+import importlib
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -131,6 +132,33 @@ if os.getenv("FLASK_DEBUG_TOOLBAR", "disabled").lower() == "enabled":
     from flask_debugtoolbar import DebugToolbarExtension
 
     toolbar = DebugToolbarExtension(app)
+
+
+# TODO: import blueprints dynamically
+# import importlib
+
+# SERVICES = [
+#     {'path': 'plugins.plugin.views', 'blueprint': 'plugin_bp'},
+#     {'path': 'plugins.plugin2.views', 'blueprint': 'plugin2_bp'}
+# ]
+
+# for service in SERVICES:
+#     module = importlib.import_module(service['path']) #, package='app')
+#     app.register_blueprint(getattr(module, service['blueprint']))
+
+##################
+MANGO_PLUGIN_BLUEPRINTS = [
+    {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"}
+]
+
+for mango_plugin_bp in MANGO_PLUGIN_BLUEPRINTS:
+    app.register_blueprint(
+        getattr(
+            importlib.import_module(mango_plugin_bp["module"]),
+            mango_plugin_bp["blueprint"],
+        )
+    )
+##################
 
 
 # Register blueprints
@@ -414,69 +442,15 @@ def irods_to_sha256_checksum(irods_checksum):
     return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode("utf-8")
 
 
-@app.route("/")
-def index():
-    return render_template(
-        "index.html.j2",
-    )
-
-
-# Testing endpoint
-@app.route("/metadata-template/dump-form-contents", methods=["POST"])
-@csrf.exempt
-def dump_meta_data_form():
-    """
-    dumps all variables defined url encoded from the request body, for example
-    variable1=value1&variable2=value2
-    """
-
-    # log output
-    print(f"{json.dumps(request.form)}")
-
-    return json.dumps(request.form)
-
-
-# Testing endpoint
-@app.route("/metadata-template/dump-contents-body/<filename>", methods=["POST"])
-@csrf.exempt
-def dump_meta_data_body_json(filename):
-    """
-    expects "Content-Type: application/json" header
-    """
-    print(f"{filename}")
-    print(f"{request.data}")
-
-    return "OK"
-
-
-# Blueprint api
-# Endpoint for obtaining collection trees
-
-
-@app.route(
-    "/api/collection/tree",
-    methods=["GET"],
-    defaults={"collection": None},
-    strict_slashes=False,
+# register the main landing page route dynamically
+MAIN_LANDING_ROUTE = app.config.get(
+    "MANGO_MAIN_LANDING_ROUTE", {"module": "kernel.common.browse", "function": "index"}
 )
-@app.route("/api/collection/tree/<path:collection>")
-def api_collection_tree(collection):
-    if collection is None or collection == "~":
-        collection = g.zone_home
-    if not collection.startswith("/"):
-        collection = "/" + collection
-    current_collection = g.irods_session.collections.get(collection)
 
-    @cache.cached(
-        timeout=50,
-        key_prefix=f"{g.irods_session.username}-{g.irods_session.zone}-{request.path}",
-    )
-    def json_tree(collection):
-        return flask.jsonify([collection_tree_to_dict(current_collection)])
+main_landing_route_module = importlib.import_module(
+    MAIN_LANDING_ROUTE["module"], package="app"
+)
 
-    return json_tree(current_collection)
-
-
-@app.route("/test", methods=["GET"])
-def test_simple_vue():
-    return render_template("test.html.j2")
+app.add_url_rule(
+    "/", view_func=getattr(main_landing_route_module, MAIN_LANDING_ROUTE["function"])
+)
