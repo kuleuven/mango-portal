@@ -6,13 +6,10 @@
     {% set subcollections = home_collections.subcollections %}
     {% set columns = 2 %}
     {% set num_subcollections = (subcollections|length) %}
-    <p>Num subs: {{ num_subcollections }}</p>
     {% if num_subcollections < 4 %}
         {% set columns = 1 %}
     {% endif %}
-    {# {% if num_subcollections > 8 %}
-        {% set columns = 3 %}
-    {% endif %} #}
+    
     <div class="row row-cols-1 row-cols-md-{{ columns }}">
         
         {% for realm in home_collections.subcollections %}
@@ -31,13 +28,6 @@
                         </h4>
                         <h6 class="card-subtitle text-muted">{{ realm["path"] }}</h6>
                     </div>
-                    {# <div class="card-body">
-                        <div class="card-text">
-                            <p class="card-text">Stats will be displayed here</p>
-                        </div>
-                        <a href="#" class="card-link">Link 1</a>
-                        <a href="#" class="card-link">Link 2</a>
-                    </div> #}
                     <div class="card-body">
                         <form method="post"
                               action="{{ url_for("user_tantra_realm_bp.handle_realm") }}">
