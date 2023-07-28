@@ -1,0 +1,65 @@
+{% extends "base.html.j2" %}
+{% block body %}
+    <h2 class="mb-4">
+        Welcome to your <i class="text-success">{{ g.irods_session.zone }}</i> active data repository
+    </h2>
+    {% set subcollections = home_collections.subcollections %}
+    {% set columns = 2 %}
+    {% set num_subcollections = (subcollections|length) %}
+    <p>Num subs: {{ num_subcollections }}</p>
+    {% if num_subcollections < 4 %}
+        {% set columns = 1 %}
+    {% endif %}
+    {# {% if num_subcollections > 8 %}
+        {% set columns = 3 %}
+    {% endif %} #}
+    <div class="row row-cols-1 row-cols-md-{{ columns }}">
+        
+        {% for realm in home_collections.subcollections %}
+            <div class="col mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            {% if (realm["name"] | regex_match("vsc\d{5}$|(r|u|b|x|s)\d{7}$")) %}
+                                <i class="bi bi-person"></i>&nbsp;
+                            {% elif (realm["name"] == "public") %}
+                                <i class="bi bi-globe2"></i>&nbsp;
+                            {% else %}
+                                <i class="bi bi-box"></i>&nbsp;
+                            {% endif %}
+                            {{ realm["name"] }}
+                        </h4>
+                        <h6 class="card-subtitle text-muted">{{ realm["path"] }}</h6>
+                    </div>
+                    {# <div class="card-body">
+                        <div class="card-text">
+                            <p class="card-text">Stats will be displayed here</p>
+                        </div>
+                        <a href="#" class="card-link">Link 1</a>
+                        <a href="#" class="card-link">Link 2</a>
+                    </div> #}
+                    <div class="card-body">
+                        <form method="post"
+                              action="{{ url_for("user_tantra_realm_bp.handle_realm") }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <input type="hidden" name="realm_name" value="{{ realm['name'] }}" />
+                            <input type="hidden" name="realm_path" value="{{ realm['path'] }}" />
+                            {% if g.irods_session['realm'] and g.irods_session.realm['name'] == realm['name'] %}
+                                <input type="hidden" name="operation" value="DELETE" />
+                                <button type="submit" class="btn btn-danger mt-3">
+                                     Exit  <i class="bi bi-box-arrow-right"></i>
+                                </button>
+                            {% else %}
+                                <input type="hidden" name="redirect_route" value="{{ url_for('browse_bp.collection_browse') ~ realm['path'] }}" />
+                                <button type="submit" class="btn btn-success mt-3">
+                                    <i class="bi bi-box-arrow-in-right"></i> Enter 
+                                </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                    {# <img src="holder.js/100x180/" alt=""> #}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock body %}

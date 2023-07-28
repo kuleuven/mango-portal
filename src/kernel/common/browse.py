@@ -202,6 +202,10 @@ def read_file_in_chunks(file_posix_path: str, delete_after=False):
     if delete_after:
         os.remove(file_posix_path)
 
+def index():
+    return render_template(
+        "index.html.j2",
+    )
 
 @browse_bp.route(
     "/collection/browse", defaults={"collection": None}, strict_slashes=False
