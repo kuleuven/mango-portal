@@ -100,11 +100,7 @@ def group_prefix_metadata_items(
     """ """
 
     def is_valid_composite_units(units):
-        try:
-            int(units)
-            return True
-        except Exception as e:
-            return False
+        return re.match("\d+(\.\d+)*$", units)
 
     grouped_metadata = {no_schema_label: MultiDict()}
     if group_analysis_unit:
@@ -126,15 +122,31 @@ def group_prefix_metadata_items(
                 avu.units
                 and avu.name.count(".") > 2
                 and is_valid_composite_units(avu.units)
+                and avu_name.count(".") == (avu.units.count(".") + 1)
             ):
+                components = avu.name.split(".")
+                parent = grouped_metadata[schema]
+                for _i in range(len(components)):
+                    if _i < 2:
+                        continue
+                    composite_id = ".".join(components[:_i+1])
+                    level_units = ".".join(avu.units.split(".")[:_i-1])
+                    if _i == len(components)-1:
+                        parent.add(avu.name, avu)
+                    else:
+                        if composite_id not in parent:
+                            parent[composite_id] = {level_units: MultiDict()}
+                        if level_units not in parent[composite_id]:
+                            parent[composite_id][level_units] = MultiDict()
+                        parent = parent[composite_id][level_units]
                 # creating a dict with the ordinal string from avu.unit as key
                 # chop off the last part to get the composite identifier
-                composite_id = ".".join(avu.name.split(".")[:-1])
-                if composite_id not in grouped_metadata[schema]:
-                    grouped_metadata[schema][composite_id] = {avu.units: MultiDict()}
-                if avu.units not in grouped_metadata[schema][composite_id]:
-                    grouped_metadata[schema][composite_id][avu.units] = MultiDict()
-                grouped_metadata[schema][composite_id][avu.units].add(avu.name, avu)
+                # composite_id = ".".join(avu.name.split(".")[:-1])
+                # if composite_id not in grouped_metadata[schema]:
+                #     grouped_metadata[schema][composite_id] = {avu.units: MultiDict()}
+                # if avu.units not in grouped_metadata[schema][composite_id]:
+                #     grouped_metadata[schema][composite_id][avu.units] = MultiDict()
+                # grouped_metadata[schema][composite_id][avu.units].add(avu.name, avu)
             else:
                 grouped_metadata[schema].add(avu.name, avu)
 
@@ -202,6 +214,10 @@ def read_file_in_chunks(file_posix_path: str, delete_after=False):
     if delete_after:
         os.remove(file_posix_path)
 
+def index():
+    return render_template(
+        "index.html.j2",
+    )
 
 @browse_bp.route(
     "/collection/browse", defaults={"collection": None}, strict_slashes=False

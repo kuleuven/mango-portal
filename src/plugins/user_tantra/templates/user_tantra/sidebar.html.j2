@@ -1,0 +1,71 @@
+<div style="height:fit-content"
+     class="col-3 col-sm-3 flex-grow-sm-1 flex-shrink-1 flex-grow-0 sticky-top pb-sm-0 pb-3">
+    <div class="bg-light border rounded-3 p-1 h-100 sticky-top">
+        <ul class="nav nav-pills flex-sm-column flex-row mb-auto justify-content-between text-truncate">
+            {% if g.irods_session.realm and g.irods_session.realm["name"] %}
+                {% set current_realm = g.irods_session.realm %}
+            {% endif %}
+            {% if current_realm %}
+                <li title="Your project" class="h4 text-success text-center mt-3">
+                    <div class="d-flex align-items-center gap-3 mx-auto">
+                        <div>
+                            {% if (current_realm["name"] | regex_match("vsc\d{5}$|(r|u|b|x|s)\d{7}$")) %}
+                                <i class="bi bi-person"></i>&nbsp;
+                            {% elif (current_realm["name"] == "public") %}
+                                <i class="bi bi-globe2"></i>&nbsp;
+                            {% else %}
+                                <i class="bi bi-box ps-2"></i>&nbsp;
+                            {% endif %}
+                            {{ current_realm["name"] }}
+                        </div>
+                        <div>
+                            <form method="post"
+                                  action="{{ url_for("user_tantra_realm_bp.handle_realm") }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                <input type="hidden" name="realm_name" value="{{ current_realm['name'] }}" />
+                                <input type="hidden" name="realm_path" value="{{ current_realm['path'] }}" />
+                                <input type="hidden" name="operation" value="DELETE" />
+                                <input type="hidden" name="redirect_route" value="/" />
+                                <button type="submit"
+                                        class="btn btn-danger pl-4"
+                                        title="Exit your chosen realm">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </li>
+                <hr />
+            {% endif %}
+            {% for _, navbar_entry in navbar_entries.items() %}
+                {% if current_realm and navbar_entry.index in ['metadata_schemas','group_manager_index'] %}
+                    {% set extra_uri_param = "/" ~ current_realm['name'] %}
+                {% elif current_realm and navbar_entry.index in ['collection_browse'] %}
+                    {% set extra_uri_param = current_realm['path'] %}
+                {% elif current_realm and navbar_entry.index in ['catalog_search'] %}
+                    {% set extra_uri_param = '?collection_subtree-collection=' ~ current_realm['path'] %}
+                {% else %}
+                    {% set extra_uri_param = "" %}
+                {% endif %}
+                <li title="{{ navbar_entry.description }}">
+                    <a href="{{ url_for(navbar_entry.blueprint ~ '.' ~ navbar_entry.index) ~ extra_uri_param }}"
+                       class="nav-link px-2 text-truncate"><i class="bi bi-{{ navbar_entry.bootstrap_icon }} fs-4"></i> {{ navbar_entry.title }}</a>
+                </li>
+            {% endfor %}
+            <li title="Browse the items in your personal trash can">
+            <a href="{{ url_for("browse_bp.collection_browse") + '/' + g.irods_session.zone + '/trash/home/' + g.irods_session.username }}"
+               class="nav-link px-2 text-truncate"><i class="bi bi-trash fs-4"></i>
+            <span class="d-none d-sm-inline">Trash</span> </a>
+    </li>
+    {% if "mango_portal_admin" in g.irods_session.roles %}
+        <hr />
+        <li>
+            <a href="{{ url_for("admin_admin_bp.index") }}"
+               class="nav-link px-2 text-truncate">
+                <span class="d-none d-sm-inline">Admin</span> <i class="bi bi-wrench-adjustable fs-4"></i>
+            </a>
+        </li>
+    {% endif %}
+</ul>
+</div>
+</div>

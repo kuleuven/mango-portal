@@ -18,6 +18,7 @@ def enrich_irods_session_listener(sender, **parameters):
             parameters["username"]
         )
 
+        # Add role mango_portal_admin if eligible
         mango_admins = app.config.get("MANGO_ADMINS", [])
         if parameters["username"] in mango_admins:
             if hasattr(mango_irods_session, "roles"):
@@ -26,6 +27,10 @@ def enrich_irods_session_listener(sender, **parameters):
                 mango_irods_session.roles = ["mango_portal_admin"]
             logging.info(f"User has role portal admin")
 
+        # Get the current realm if set in the regular session and add it to the irods_session
+        if (realm:=session.get("realm", None)) and not hasattr(mango_irods_session, "realm"):
+            setattr(mango_irods_session, "realm", realm) 
+        
         zone_operator = get_zone_operator_session(parameters["zone"])
         user_object = zone_operator.users.get(parameters["username"])
         # see if we can find the user name and email in the irods_session to set as metadata, but only in the case of not impersonating

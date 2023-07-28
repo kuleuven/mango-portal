@@ -23,7 +23,7 @@
         <p>Please select a realm to continue</p>
         <div class="list-group realms">
             {% for p_realm in realms %}
-                <a href="{{ url_for('operator_group_manager_admin_bp.index', realm=p_realm)}}"
+                <a href="{{ url_for('operator_group_manager_admin_bp.group_manager_index', realm=p_realm)}}"
                    class="list-group-item list-group-item-action"><i class="bi bi-box fs-5"></i> {{ p_realm }}</a>
             {% endfor %}
         </div>

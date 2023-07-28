@@ -17,6 +17,7 @@ UI = {
     "bootstrap_icon": "people",
     "description": "Group administration using operator (rodsadmin) account",
     "blueprint": operator_group_manager_admin_bp.name,
+    "index": "group_manager_index",
 }
 
 register_module(**UI)
@@ -44,7 +45,7 @@ def get_realms_for_projects(irods_session: iRODSSession, base_path):
     "/operator_group_manager", defaults={"realm": None}
 )
 @operator_group_manager_admin_bp.route("/operator_group_manager/<realm>")
-def index(realm: str):
+def group_manager_index(realm: str):
     groups = []
     realms = []
     operator_session = get_operator_session(g.irods_session.zone)

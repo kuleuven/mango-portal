@@ -81,7 +81,7 @@
       <main class="container">
         <div class="row flex-grow-sm-1 flex-grow-0">
           {% if 'irods_session' in g %}
-            {% include "sidebar.html.j2" %}
+            {% include "sidebar.html.j2"|mango_template(g.irods_session.zone) %}
             <div class="col-9">
             {% else %}
               <div class="col">
