@@ -57,7 +57,7 @@ def get_zone_operator_session(zone: str) -> iRODSSession:
         zone_operator_sessions[zone] = irods_session
         return zone_operator_sessions[zone]
     except:
-        logging.warn(f"Failed getting indexing session for zone {zone}")
+        logging.warn(f"Failed getting operator session for zone {zone}")
         return None
 
 
