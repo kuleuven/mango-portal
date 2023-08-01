@@ -462,7 +462,9 @@ class MovingViewer extends MovingField {
 
         // remove the field from the schema
         this.schema.field_ids.splice(form_index, 1);
+        this.schema.fields[this.idx].delete_modal();
         delete this.schema.fields[this.idx];
+        this.schema.update_field_id_regex();
 
         // update the schema editor
         this.schema.toggle_saving();
@@ -1201,11 +1203,13 @@ class Modal {
 
     // capture action button and assign action
     let action_btn = conf_modal.querySelector("button#action");
-    action_btn.type = "button";
-    action_btn.addEventListener("click", () => {
+    let new_action_btn = action_btn.cloneNode(true)
+    new_action_btn.type = "button";
+    new_action_btn.addEventListener("click", () => {
       action();
       modal.hide();
     });
+    action_btn.parentElement.replaceChild(new_action_btn, action_btn)
 
     // capture dismiss button and attach action
     conf_modal

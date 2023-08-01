@@ -4,11 +4,11 @@
  * @property {String} initial_name Placeholder name for DOM element IDs.
  * @property {String} title User-facing label of the schema (or composite field).
  * @property {String} data_status Derived status used for IDs of DOM elements, e.g. 'new', 'copy', 'draft'...
- * @property {Object<String,InputField>} initials Collection of empty fields to start creating.
- * @property {TypedInput} initials.typed Initial simple field.
- * @property {SelectInput} initials.select Initial single-value multiple-choice field.
- * @property {CheckboxInput} initials.checkbox Initial multiple-value multiple-choice field.
- * @property {ObjectInput} initials.object Initial composite field.
+ * @property {Object<String,InputField>} placeholders Collection of empty fields to start creating.
+ * @property {TypedInput} placeholders.typed Placeholder for a simple field.
+ * @property {SelectInput} placeholders.select Placeholder for a single-value multiple-choice field.
+ * @property {CheckboxInput} placeholders.checkbox Placeholder for a multiple-value multiple-choice field.
+ * @property {ObjectInput} placeholders.object Placeholder for a composite field.
  * @property {String[]} field_ids Ordered names of the fields.
  * @property {Object<String,InputField>} fields Collection of fields that belong to the schema.
  * @property {Object<String,FieldInfo>} properties Object-version of the information of the fields, to store in a JSON.
@@ -26,19 +26,32 @@ class ComplexField {
     this.modal_id = `choice-${name}-${data_status}`;
     this.initial_name = name;
     this.data_status = data_status;
+    this.field_id_regex = "[a-zA-Z0-9_\\-]+";
 
-    // empty fields to start with
-    this.initials = {
-      typed: new TypedInput(name, this.data_status),
-      select: new SelectInput(name, this.data_status),
-      checkbox: new CheckboxInput(name, this.data_status),
-      object: new ObjectInput(name, this.data_status),
+    // Placeholder fields to start with
+    this.placeholders = {
+      typed: new TypedInput(name, this.field_id_regex, this.data_status),
+      select: new SelectInput(name, this.field_id_regex, this.data_status),
+      checkbox: new CheckboxInput(name, this.field_id_regex, this.data_status),
+      object: new ObjectInput(name, this.field_id_regex, this.data_status),
     };
 
     // initial state before adding any fields
     this.field_ids = [];
     this.fields = {};
     this.new_field_idx = 0;
+  }
+
+  update_field_id_regex() {
+    this.field_id_regex = `^((?!^${this.field_ids.join("$|^")}$)[a-z0-9_\\-]+)+$`;
+    this.field_ids.forEach((field_id) => {
+      if (field_id in this.fields) {
+        this.fields[field_id].update_id_regex(this.field_id_regex);
+      }
+    });
+    Object.keys(this.placeholders).forEach((key) => {
+      this.placeholders[key].update_id_regex(this.field_id_regex);
+    });
   }
 
   /**
@@ -63,10 +76,12 @@ class ComplexField {
     this.field_ids = Object.keys(data.properties);
     this.status = data.status; // only relevant for Schema class
     this.data_status = this.set_data_status();
+    this.update_field_id_regex();
 
     this.field_ids.forEach((field_id) => {
       let new_field = InputField.choose_class(
         this.initial_name,
+        this.field_id_regex,
         this.data_status,
         [field_id, data.properties[field_id]]
       );
@@ -84,6 +99,7 @@ class ComplexField {
     Object.keys(data).forEach((field_id) => {
       let new_field = InputField.choose_class(
         this.initial_name,
+        this.field_id_regex,
         this.data_status,
         [field_id, data[field_id]]
       );
@@ -122,15 +138,15 @@ class ComplexField {
     );
     form_choice_modal.create_modal([formTemp], "lg");
 
-    // when the modal is first shown, render all the initial fields
+    // when the modal is first shown, render all the placeholder fields
     let this_modal = document.getElementById(this.modal_id);
     this_modal.addEventListener("show.bs.modal", () => {
       let formTemp = this_modal.querySelector("div.formContainer");
       let from_json_load = InputField.from_json_example(this);
       if (formTemp.childNodes.length == 0) {
-        Object.values(this.initials).forEach((initial) => {
-          initial.schema_status = this.data_status;
-          formTemp.appendChild(initial.render(this));
+        Object.values(this.placeholders).forEach((placeholder) => {
+          placeholder.schema_status = this.data_status;
+          formTemp.appendChild(placeholder.render(this));
         });
         formTemp.appendChild(from_json_load);
       } else {
@@ -209,6 +225,7 @@ class ComplexField {
 
     // Add the field to the object with fields
     this.fields[form_object.id] = form_object;
+    this.update_field_id_regex();
 
     // Enable or disable 'saving' the schema based on whether this field has been created by duplicating.
     this.toggle_saving();
@@ -451,7 +468,7 @@ class DummyObject extends ComplexField {
     // Initialize the basics - all we care about is actually the viewer
     let schema_name = "example";
     super(schema_name, schema_name);
-    delete this.initials;
+    delete this.placeholders;
     this.field_ids = ["text", "date", "hair"];
 
     // Create a simple field of type 'text' for illustration
@@ -498,6 +515,7 @@ class ObjectEditor extends ComplexField {
     if (parent.form_field) {
       this.form_id = parent.form_field.form.id;
     }
+    delete this.placeholders.object; // disable nested composite fields
   }
 
   /**
@@ -702,8 +720,8 @@ class Schema extends ComplexField {
         // trigger confirmation message, which also has its hidden fields
         let second_sentence =
           this.data_status != "copy" &&
-          schemas[this.name] &&
-          schemas[this.name].published.length > 0
+            schemas[this.name] &&
+            schemas[this.name].published.length > 0
             ? ` Version ${schemas[this.name].published[0]} will be archived.`
             : "";
         let starting_data = {
@@ -733,7 +751,7 @@ class Schema extends ComplexField {
       name_input.setAttribute("readonly", ""); // name cannot be changed if a version has been saved
       if (
         schemas[this.name].published.length +
-          schemas[this.name].archived.length >
+        schemas[this.name].archived.length >
         0
       ) {
         title_input.setAttribute("readonly", ""); // title cannot be changed if there is a published or archived version in history
@@ -761,10 +779,12 @@ class Schema extends ComplexField {
       ids: [...parent.field_ids],
       json: { ...parent.properties },
     };
+    this.field_id_regex = parent.field_id_regex;
     // go through each existing field and clone it
     Object.entries(parent.properties).forEach((entry) => {
       let new_field = InputField.choose_class(
         this.initial_name,
+        this.field_id_regex,
         "child",
         entry
       );
@@ -817,11 +837,11 @@ class Schema extends ComplexField {
     full_link.addEventListener(
       "click",
       (e) =>
-        (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(
-          this.saved_json,
-          null,
-          "  "
-        )}`)
+      (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(
+        this.saved_json,
+        null,
+        "  "
+      )}`)
     );
     for_download_full.appendChild(full_link);
 
@@ -846,11 +866,11 @@ class Schema extends ComplexField {
     fields_link.addEventListener(
       "click",
       (e) =>
-        (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(
-          to_download,
-          null,
-          "  "
-        )}`)
+      (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(
+        to_download,
+        null,
+        "  "
+      )}`)
     );
     for_download_full.appendChild(fields_link);
 
@@ -1241,7 +1261,7 @@ class SchemaGroup {
     schema.loaded = false;
     // create an HTTP request for this schema
     let reader = new TemplateReader(
-      this.urls.get.replace("status", version.status),
+      `${this.urls.get}?version=${version.version}`,
       schema
     ); // url to get this template
 
@@ -1333,6 +1353,15 @@ class SchemaForm {
 
     // create the form and add the fields
     this.from_json(json.properties);
+    this.names = SchemaForm.get_flattened_names(this.fields);
+  }
+
+  static get_flattened_names(fields) {
+    return Object.values(fields)
+      .map((x) =>
+        x.name ? x.name : SchemaForm.get_flattened_names(x.editor.fields)
+      )
+      .flat();
   }
 
   /**
@@ -1343,7 +1372,7 @@ class SchemaForm {
     // Go through each field in the JSON file and create its InputField
     for (let entry of Object.entries(schema_json)) {
       // the 'data_status' argument is not relevant here
-      let new_field = InputField.choose_class(this.name, "", entry);
+      let new_field = InputField.choose_class(this.name, "", "", entry);
       if (new_field.constructor.name == "ObjectInput") {
         new_field.editor = new ObjectEditor(new_field);
         new_field.editor.from_json(new_field.json_source);
@@ -1424,7 +1453,9 @@ class SchemaForm {
 
     // extract fields that are not in composite fields and register them
     let non_objects = keys.filter(
-      (fid) => typeof annotated_data[fid][0] != "object"
+      (fid) =>
+        typeof annotated_data[fid][0] != "object" &&
+        this.names.indexOf(fid) > -1
     );
     non_objects.forEach((fid) => this.register_non_object(fid, annotated_data));
 
@@ -1465,9 +1496,7 @@ class SchemaForm {
     first_viewer
       .querySelectorAll("[name]")
       .forEach(
-        (subfield) => {
-          subfield.name = `${subfield.name.split('__')[0]}__${first_unit}`;
-        }
+        (subfield) => (subfield.name = `${subfield.name.split('__')[0]}__${first_unit}`)
       );
     if (existing_values.length > 1) {
       for (let i = 0; i < existing_values.length - 1; i++) {
@@ -1511,12 +1540,12 @@ class SchemaForm {
   register_non_object(fid, annotated_data, form = null) {
     // Start with the original form, but in fields inside a composite field it will be its div.
     form = form || this.form;
-    
+
     // Extract the data linked to this field
     let existing_values = annotated_data[fid];
     let input_name =
       "__unit__" in annotated_data ? `${fid}__${annotated_data.__unit__}` : fid;
-    
+
     // Identify checkboxes as cases where there are multiple input fields with the same name in the form
     // (this is only for multiple-value multiple-choice fields)
     let is_checkbox =
@@ -1639,23 +1668,7 @@ class SchemaForm {
           });
         }
         update_children_names(field, clone, new_unit);
-        // console.log(field.editor.fields)
-        // const original_div_data = [...small_div.querySelectorAll("div.mini-viewer")]
-        //   .map((viewer) => {
-        //     const field_name = viewer.getAttribute("data-field-name");
-        //     const is_composite =  viewer.querySelector("div.input-view");
-        //     const name = is_composite ? (viewer.getAttribute("data-composite-unit") || current_unit + ".1") : viewer.querySelector('input').name;
-        //     const new_name = is_composite ? name.replace(current_unit, new_unit) : name.replace(`__${current_unit}`, `__${new_unit}`);
-        //     return { field_name: field_name, is_composite: is_composite, new_name: new_name, old_name: name.split("__")[0]}
-        //   });
-        // original_div_data.forEach((field_data) => {
-        //   const this_field = clone.querySelector(`div[data-field-name="${field_data.field_name}"]`);
-        //   if (field_data.is_composite) {
-        //     this_field.setAttribute("data-composite-unit", field_data.new_name);
-        //   } else {
-        //     this_field.querySelector(`input[name="${field_data.old_name}"]`).name = field_data.new_name;
-        //   }
-        // });
+
         let inner_repeatables = [...clone.childNodes]
           .filter((subfield) => subfield.classList.contains("mini-viewer"))
           .filter((subfield) => subfield.querySelector("button i.bi-front"));
