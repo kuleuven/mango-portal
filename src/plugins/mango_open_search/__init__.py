@@ -50,13 +50,7 @@ MANGO_OPEN_SEARCH_AUTH = (MANGO_OPEN_SEARCH_USER, MANGO_OPEN_SEARCH_PASSWORD)
 MANGO_INDEX_THREAD_SLEEP_TIME = 2
 MANGO_INDEX_THREAD_HEARTBEAT_DELTA = 300
 MANGO_OPEN_SEARCH_SESSION_REFRESH_DELTA = 3600
-MANGO_OPEN_SEARCH_SPECIAL_FIELDS = {
-    "metadata_noschema_flat_object": "mango_noschema_flat_fields",
-    "metadata_schema_flat_object": "mango_schema_flat_fields",
-    "metadata_mango_flat_object": "mango_flat_fields",
-    "full_text_aggregate": "mango_simple_text_basket",
-    "ngram_text_aggregate": "mango_ngram_basket",
-}
+
 # For now a single client
 # @todo: create a pool (object) of clients to use by multiple threads
 mango_open_search_client = OpenSearch(
@@ -179,6 +173,7 @@ def ping_open_search_servers():
         "ingest": get_open_search_client("ingest").ping(),
     }
 
+
 def check_mapping_for_avu_name(avu_name):
     # currently no special mapping
     # returns the mapping type or False
@@ -187,18 +182,45 @@ def check_mapping_for_avu_name(avu_name):
 
 
 
+
 def update_mapping_schema():
+    settings = {
+        "analysis": {
+            "filter": {
+                "edge_ngram_filter": {
+                    "type": "edge_ngram",
+                    "min_gram": 1,
+                    "max_gram": 20,
+                }
+            },
+            "analyzer": {
+                "autocomplete": {
+                    "type": "custom",
+                    "tokenizer": "standard",
+                    "filter": ["lowercase", "edge_ngram_filter"],
+                }
+            },
+        }
+    }
+
     mappings = {
         "properties": [
-            {MANGO_OPEN_SEARCH_SPECIAL_FIELDS["metadata_noschema_flat_object"]: {"type": "flat_object"}},
-            {MANGO_OPEN_SEARCH_SPECIAL_FIELDS["metadata_schema_flat_object"]: {"type": "flat_object"}},
-            {MANGO_OPEN_SEARCH_SPECIAL_FIELDS["metadata_mango_flat_object"]: {"type": "flat_object"}},
-            {MANGO_OPEN_SEARCH_SPECIAL_FIELDS["full_text_aggregate"]: {"type": "text"}},
+            {"mango_noschema_flat_fields": {"type": "flat_object"}},
+            {"mango_schema_flat_fields": {"type": "flat_object"}},
+            {"mango_flat_fields": {"type": "flat_object"}},
+            {"mango_simple_text_basket": {"type": "text"}},
+            {"mango_suggestions_basket": {"type": "text", "analyzer": "autocomplete"}},
+            {"irods_item_type": {"type": "keyword"}},
+            {"irods_item_type_simple": {"type": "keyword"}},
+            {"irods_parent_paths": {"type": "keyword"}},
+            {"irods_path": {"type": "keyword"}},
+            {"irods_zone_name": {"type": "keyword"}},
+            {"irods_item_type": {"type": "keyword"}},
         ]
     }
 
     response = get_open_search_client("ingest").indices.put_settings(
-        index=MANGO_OPEN_SEARCH_INDEX_NAME
+        index=MANGO_OPEN_SEARCH_INDEX_NAME, body=settings
     )
     response = get_open_search_client("ingest").indices.put_mapping(
         index=MANGO_OPEN_SEARCH_INDEX_NAME, body=mappings

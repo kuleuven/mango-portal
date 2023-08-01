@@ -17,7 +17,6 @@ from . import (
     add_index_job,
     get_open_search_client,
     MANGO_OPEN_SEARCH_INDEX_NAME,
-    MANGO_OPEN_SEARCH_SPECIAL_FIELDS,
 )
 from opensearchpy import client
 
@@ -88,7 +87,7 @@ def zone_search():
                             {
                                 "multi_match": {
                                     "query": request.values["search_string"],
-                                    "fields": ["irods_name^4",MANGO_OPEN_SEARCH_SPECIAL_FIELDS["full_text_aggregate"]],
+                                    "fields": ["irods_name^4", "mango_simple_text_basket"],
                                     "fuzziness": "AUTO",
                                     "fuzzy_transpositions": True,
                                     "minimum_should_match": 1,
