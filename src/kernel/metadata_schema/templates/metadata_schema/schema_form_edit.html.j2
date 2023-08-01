@@ -8,7 +8,7 @@
     {{ render_messages() }}
     <p>Realm: {{ realm }}</p>
     <div id="metadata_form"
-         schema-url="{{ url_for('metadata_schema_editor_bp.get_schema', schema=schema, realm=realm, status='published', version='none') }}"
+         schema-url="{{ url_for('metadata_schema_editor_bp.get_schema', schema=schema, realm=realm, status='published') }}"
          schema-values="{{ schema_values }}"
          prefix="{{ prefix }}"
          post-url="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}"></div>

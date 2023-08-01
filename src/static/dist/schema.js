@@ -1261,7 +1261,7 @@ class SchemaGroup {
     schema.loaded = false;
     // create an HTTP request for this schema
     let reader = new TemplateReader(
-      this.urls.get.replace("version", version.version),
+      `${this.urls.get}?version=${version.version}`,
       schema
     ); // url to get this template
 
