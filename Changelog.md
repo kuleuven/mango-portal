@@ -10,7 +10,7 @@ Note: versioning follows Semver standard with 3 levels
     - landing page displays a card for every project the current user is entitled to
     - "Entering" a project means that the project's 2 main properties (name and path) are saved in the flask and irods user sessions as the active "realm"
     - The sidebar menu is overriden with a plugin specific template that displays the realm name along an exit button and modifies the menu items for browsing, templates, search and group management to go direct to the realm specific pages
-
+- Introduced support for repeatable nested composite fields of different levels for metadata schemas (as long as they are created by importing from JSON).
 
 ### Smaller improvements and bug fixes
 
@@ -19,6 +19,9 @@ Note: versioning follows Semver standard with 3 levels
 - Template overrides: "always" option was not working, easy fix
 - Landing page is now configurable (points a the plugins/user_tantra/realm.py route)
 - Started implementing the dynamic registration of plugins via configs rather than hardcoded in the main app.py application entry point (Python importlib module)
+- Metadata schema manager: fields previously selected for deletion would be deleted every time another field was deleted, fixed.
+- Refined the regular expressions in the names of metadata schema fields to prevent repetition.
+- Metadata schemas can now be requested via either status or version number.
 
 ## Release 0.13.2 (t,q) [2023-07-20]
 
