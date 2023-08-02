@@ -52,13 +52,13 @@ Note: versioning follows Semver standard with 3 levels
 - Increased download (50GiB) and upload limits (5GiB per file)
 - Corrections to connection info pages (via Filip)
 
-## Release 0.12.6 [2023-06-26]
+## Release 0.12.6 (t,q) [2023-06-26]
 
 ### Bug fixes
 
 - Made data platform / irods sessions more robust against missing name/email openid attributes (via Peter)
 
-## Release 0.12.5 [2023-06-19]
+## Release 0.12.5 (t,q) [2023-06-19]
 
 ### Bug fixes
 

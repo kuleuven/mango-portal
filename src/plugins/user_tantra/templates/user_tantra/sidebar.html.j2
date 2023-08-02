@@ -6,7 +6,7 @@
                 {% set current_realm = g.irods_session.realm %}
             {% endif %}
             {% if current_realm %}
-                <li title="Your project" class="h4 text-success mt-3 ms-2 text-wrap">
+                <li title="Your project" class="h4 text-success mt-3 ms-2 text-wrap text-break">
                     <div class="d-flex align-items-center gap-3 mx-auto">
                         <div>
                             {% if (current_realm["name"] | regex_match("vsc\d{5}$|(r|u|b|x|s)\d{7}$")) %}
