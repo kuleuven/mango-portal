@@ -19,6 +19,7 @@ Note: versioning follows Semver standard with 3 levels
 - Template overrides: "always" option was not working, easy fix
 - Landing page is now configurable (points a the plugins/user_tantra/realm.py route)
 - Started implementing the dynamic registration of plugins via configs rather than hardcoded in the main app.py application entry point (Python importlib module)
+- Bulk copy/move: subdirectories of collections with spaces in their names were not shown as possible destinations, fixed.
 - Metadata schema manager: fields previously selected for deletion would be deleted every time another field was deleted, fixed.
 - Refined the regular expressions in the names of metadata schema fields to prevent repetition.
 - Metadata schemas can now be requested via either status or version number.
