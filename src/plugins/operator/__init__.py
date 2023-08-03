@@ -102,9 +102,7 @@ class OperatorSessionCleanupThread(Thread):
             for zone in zone_operator_sessions.keys():
                 if not is_zone_operator_session_valid(zone):
                     logging.info(f"Removed invalid zone operator session for zone {zone}")
-
             time.sleep(120)
-
 
 cleanup_old_sessions_thread = OperatorSessionCleanupThread()
 cleanup_old_sessions_thread.start()
