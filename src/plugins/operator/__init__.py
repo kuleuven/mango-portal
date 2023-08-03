@@ -72,6 +72,7 @@ def get_zone_operator_session(zone: str) -> iRODSSession:
 
 
 def remove_zone_operator_session(zone: str):
+    global zone_operator_sessions
     if zone in zone_operator_sessions:
         del zone_operator_sessions[zone]
         return True
@@ -97,17 +98,12 @@ class OperatorSessionCleanupThread(Thread):
         while True:
             if self.stopped():
                 return
-            zone_operator_sessions = {
-                zone: operator_session
-                for zone, operator_session in zone_operator_sessions.items()
-                if is_zone_operator_session_valid(zone)
-            }   
+            logging.info(f"Checking {len(zone_operator_sessions)} operator sessions")
+            for zone in zone_operator_sessions.keys():
+                if not is_zone_operator_session_valid(zone):
+                    logging.info(f"Removed invalid zone operator session for zone {zone}")
+
             time.sleep(120)
-            # emit a heartbeat logging at most every 300 seconds
-            if time.time() - self.heartbeat_time > 300:
-                # reset the heartbeat reference time point
-                self.heartbeat_time = time.time()
-                logging.info(f"Operator session cleanup heartbeat")
 
 
 cleanup_old_sessions_thread = OperatorSessionCleanupThread()
