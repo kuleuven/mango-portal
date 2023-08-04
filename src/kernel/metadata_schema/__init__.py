@@ -11,27 +11,6 @@ import semver
 from pathlib import Path
 import importlib
 
-# class SchemaManager(object):
-#     def __init__(self, zone: str, realm: str):
-#         pass
-
-#     def load_schema(self, **kwargs) -> dict:
-#         pass
-
-#     def list_schemas(self, **kwargs) -> dict:
-#         pass
-
-#     def store_schema(self, **kwargs):
-#         pass
-
-#     def delete_schema(self, **kwargs):
-#         pass
-
-
-######## File system based schema management, using realms (projects, public, ....) to group schemas
-### See doc folder in root of this repository
-
-
 MANGO_STORAGE_BASE_PATH = Path("storage")
 
 SCHEMA_CORE_PERMISSIONS = {
