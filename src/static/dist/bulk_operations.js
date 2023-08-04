@@ -131,7 +131,8 @@ function apply_bulk_operation() {
         confirmation_form.querySelector('.modal-body').insertBefore(new_input, confirmation_text);
     });
     /** Checkbox to force delete items. */
-    const del_checkbox = confirmation_form.querySelector('div.form-check#force-delete');
+    const del_checkbox = confirmation_form.querySelector('div.form-check#force-checkbox');
+
 
     // ACT
     if (selected_option.value == 'copy' || selected_option.value == 'move') {
@@ -167,11 +168,10 @@ function apply_bulk_operation() {
 
     } else {
         // if the items will be deleted
+        confirmation_form.querySelector('input#destination').value = ""; // don't send a destination value
+        confirmation_modal.querySelector('p#confirmation-text').innerHTML = `${n_items} will be deleted.`; // update message
         if (del_checkbox == undefined) {
             // if there is no force-delete checkbox
-            confirmation_form.querySelector('input#destination').value = ""; // don't send a destination value
-            confirmation_modal.querySelector('p#confirmation-text').innerHTML = `${n_items} will be deleted.`; // update message
-
             // create force-delete checkbox and add it to the form
             const del_checkbox = Field.quick('div', 'form-check');
             del_checkbox.id = 'force-checkbox';
@@ -187,7 +187,7 @@ function apply_bulk_operation() {
             confirmation_form.querySelector('div.modal-body').insertBefore(del_checkbox, confirmation_text);
         } else {
             // all the actions from before have already been done
-            del_checkbox.removeAttribute('checked');
+            del_checkbox.querySelector("input").removeAttribute('checked');
         }
         modal.show() // show confirmation modal
     }
