@@ -2,7 +2,7 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.14.0 (TBD) [TBD]
+## Release 0.14.0 (t,q,p) [2023-08-04]
 
 ### New features
 
@@ -23,6 +23,7 @@ Note: versioning follows Semver standard with 3 levels
 - Metadata schema manager: fields previously selected for deletion would be deleted every time another field was deleted, fixed.
 - Refined the regular expressions in the names of metadata schema fields to prevent repetition.
 - Metadata schemas can now be requested via either status or version number.
+- Operator sessions bug fix: they were destroyed upon checking their validity
 
 ## Release 0.13.2 (t,q) [2023-07-20]
 
