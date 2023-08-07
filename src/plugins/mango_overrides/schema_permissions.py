@@ -15,7 +15,7 @@ class GroupBasedSchemaPermissions(BaseSchemaPermissionsManager):
         # check if the realm is the user personal space and grant full access
         if self.realm == irods_session.username:
             return self.allow_all
-        # the public realm hols all common zone schemas
+        # the public realm holds all common zone schemas
         # mango portal admins are the sole responsibles for managing them
         # other users get read access (published and archived only)
         if self.realm == "public":
