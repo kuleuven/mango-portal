@@ -124,8 +124,8 @@ def list_meta_data_schemas(realm):
     for schema in schemas:
         current_user_permissions = schemas[schema][
             "current_user_permissions"
-        ] = schema_manager.get_user_permissions(g.irods_session, schema)
-        if not current_user_permissions:
+        ] = schema_manager.get_user_permissions_schema(g.irods_session, schema)
+        if current_user_permissions == schema_manager.permission_manager.deny_all:
             schemas_to_remove.append(schema)
             continue
         if (
@@ -139,16 +139,23 @@ def list_meta_data_schemas(realm):
         schemas.pop(schema, None)
 
     return json.dumps(
-        [
-            {
-                "name": schema,
-                "url": url_for(
-                    "metadata_schema_editor_bp.get_schema", realm=realm, schema=schema
-                ),
-                "schema_info": schema_info,
-            }
-            for (schema, schema_info) in schemas.items()
-        ]
+        {
+            "realm_permissions": schema_manager.get_user_permissions_realm(
+                g.irods_session
+            ),
+            "schemas": [
+                {
+                    "name": schema,
+                    "url": url_for(
+                        "metadata_schema_editor_bp.get_schema",
+                        realm=realm,
+                        schema=schema,
+                    ),
+                    "schema_info": schema_info,
+                }
+                for (schema, schema_info) in schemas.items()
+            ],
+        }
     )
 
 

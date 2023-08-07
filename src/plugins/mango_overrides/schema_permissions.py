@@ -11,7 +11,7 @@ class GroupBasedSchemaPermissions(BaseSchemaPermissionsManager):
         super().__init__(zone, realm)
         self.group_schema_manager = f"{realm}_{SCHEMA_MANAGER_GROUP_SUFFIX}"
 
-    def get_user_permissions(self, irods_session: iRODSSession, schema: str | None = None):
+    def get_user_permissions_realm(self, irods_session: iRODSSession):
         # check if the realm is the user personal space and grant full access
         if self.realm == irods_session.username:
             return self.allow_all
@@ -33,3 +33,5 @@ class GroupBasedSchemaPermissions(BaseSchemaPermissionsManager):
         # if no matches, nothing allowed
         return self.deny_all
     
+    def get_user_permissions_schema(self, irods_session: iRODSSession, schema):
+        return self.inherit_permissions

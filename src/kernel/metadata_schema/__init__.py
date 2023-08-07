@@ -21,8 +21,8 @@ SCHEMA_CORE_PERMISSIONS = {
     "create_draft": 1 << 4,
     "delete_draft": 1 << 5,
     "publish_draft": 1 << 6,
-    "archive_schema": 1
-    << 7,  # basically disable the schema, archive the published version if any
+    "create_new_schema_draft": 1 << 7,
+    "archive_schema": 1 << 8,  # basically disable the schema
 }
 
 
@@ -31,10 +31,20 @@ def combine_permissions(_keys: list[str]):
 
 
 SCHEMA_PERMISSIONS = SCHEMA_CORE_PERMISSIONS | {
-    "write_draft": combine_permissions(
-        ["read_draft", "edit_draft", "create_draft", "delete_draft"]
+    "write_schema": combine_permissions(
+        ["read_schema", "read_draft", "edit_draft", "create_draft", "delete_draft"]
     ),
     "read": combine_permissions(["read_schema", "read_archived"]),
+    "create_new_schema": combine_permissions(
+        [
+            "create_new_schema_draft",
+            "read_schema",
+            "read_draft",
+            "edit_draft",
+            "create_draft",
+            "delete_draft",
+        ]
+    ),
 }
 
 
@@ -47,15 +57,19 @@ class BaseSchemaPermissionsManager:
             permission: True for permission in SCHEMA_CORE_PERMISSIONS.keys()
         }
         self.allow_all = sum(self.schema_permissions.values())
-        self.delf_deny_all = 0
+        self.deny_all = 0
+        self.inherit_permissions = None
 
-    def get_user_permissions(
-        self, irods_session: iRODSSession, schema: str | None = None
-    ):
+    def get_user_permissions_for_realm(self, irods_session: iRODSSession):
         # anyone can do anything
         return self.allow_all
 
-    def get_schema_permissions(self, realm: None):
+    def get_user_permissions_for_schema(
+        self, irods_session: iRODSSession, schema: str | None = None
+    ):
+        return self.inherit_permissions
+
+    def get_defined_schema_permissions(self, realm: None):
         return self.schema_permissions
 
 
@@ -379,8 +393,13 @@ class FileSystemSchemaManager:
         else:
             return False
 
-    def get_user_permissions(self, irods_session, schema):
-        return self.permission_manager.get_user_permissions(
+    def get_user_permissions_realm(self, irods_session):
+        return self.permission_manager.get_user_permissions_realm(
+            irods_session=irods_session
+        )
+
+    def get_user_permissions_schema(self, irods_session, schema):
+        return self.permission_manager.get_user_permissions_schema(
             irods_session=irods_session, schema=schema
         )
 
@@ -399,7 +418,10 @@ schema_permissions_manager_class = getattr(
 
 schema_managers = {}
 
-logging.info(f"Schema permissions manager from config: {schema_permissions_manager_class.__name__}")
+logging.info(
+    f"Schema permissions manager from config: {schema_permissions_manager_class.__name__}"
+)
+
 
 def get_schema_manager(zone: str, realm: str) -> FileSystemSchemaManager:
     global schema_managers
