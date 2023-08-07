@@ -97,7 +97,9 @@ class TemplatesRequest extends MangoRequest {
       /**
        * @type {Array<SchemaInfo>}
        */
-      let grouped_templates = this.json;
+      let realm_schemas = this.json
+      let realm_permissions = realm_schemas.realm_permissions
+      let grouped_templates = realm_schemas.schemas;
       for (let template of grouped_templates) {
         // don't do anything if there are only archived versions
         if (!(template.schema_info.draft | template.schema_info.published)) {
