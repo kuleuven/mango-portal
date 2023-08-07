@@ -10,10 +10,15 @@ user_tantra_realm_bp = Blueprint(
 def index():
     irods_session: iRODSSession = g.irods_session
     # projects = irods_session.query()
-    home_collections = irods_session.collections.get(f"/{irods_session.zone}/home")
+    realm_collections = irods_session.collections.get(f"/{irods_session.zone}/home").subcollections
+
+    realm = get_realm(g.irods_session)
+    if realm["name"] not in [coll.name for coll in realm_collections]:
+        realm = None
+        set_realm(g.irods_session)
 
     return render_template(
-        "user_tantra/index.html.j2", home_collections=home_collections, realm = get_realm(g.irods_session)
+        "user_tantra/index.html.j2", realm_collections=realm_collections, realm = realm
     )
 
 
