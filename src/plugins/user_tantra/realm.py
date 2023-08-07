@@ -13,7 +13,7 @@ def index():
     realm_collections = irods_session.collections.get(f"/{irods_session.zone}/home").subcollections
 
     realm = get_realm(g.irods_session)
-    if realm not in [coll.name for coll in realm_collections]:
+    if realm["name"] not in [coll.name for coll in realm_collections]:
         realm = None
         set_realm(g.irods_session)
 
