@@ -39,6 +39,7 @@ SCHEMA_PERMISSIONS = SCHEMA_CORE_PERMISSIONS | {
         [
             "create_new_schema_draft",
             "read_schema",
+            "read_archived",
             "read_draft",
             "edit_draft",
             "create_draft",
@@ -56,7 +57,7 @@ class BaseSchemaPermissionsManager:
         self.allow_all_bool = {
             permission: True for permission in SCHEMA_CORE_PERMISSIONS.keys()
         }
-        self.allow_all = sum(self.schema_permissions.values())
+        self.allow_all = sum(SCHEMA_CORE_PERMISSIONS.values())
         self.deny_all = 0
         self.inherit_permissions = None
 

@@ -98,7 +98,15 @@ class TemplatesRequest extends MangoRequest {
        * @type {Array<SchemaInfo>}
        */
       let realm_schemas = this.json
-      let realm_permissions = realm_schemas.realm_permissions
+      realm_permissions = realm_schemas.realm_permissions
+      // Add the new schema button if permissions are good
+      // console.log(realm_permissions)
+      if (checkAllPermissions(realm_permissions, ["new_schema"])) {
+        starting_schema.create_creator();
+      } else {
+        console.log("Not allowed to create new schemas, nah!")
+      }
+
       let grouped_templates = realm_schemas.schemas;
       for (let template of grouped_templates) {
         // don't do anything if there are only archived versions
