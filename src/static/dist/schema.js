@@ -1104,7 +1104,7 @@ class Schema extends ComplexField {
         "viewer",
         'This schema does not have any fields yet. Go to "edit" mode to add one.'
       );
-      this.nav_bar.tab_content.querySelector("#metadata_template_list_container").appendChild(msg);
+      this.nav_bar.tab_content.querySelector(".input-view").appendChild(msg);
     }
 
     // show all existing fields
