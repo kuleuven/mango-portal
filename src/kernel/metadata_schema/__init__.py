@@ -73,7 +73,6 @@ class BaseSchemaPermissionsManager:
     def get_defined_schema_permissions(self, realm: None):
         return self.schema_permissions
 
-
 class FileSystemSchemaManager:
     def __init__(
         self,

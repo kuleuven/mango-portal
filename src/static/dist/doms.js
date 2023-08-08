@@ -1400,8 +1400,9 @@ class NavBar {
    * @param {Number} [position=-1] Index of the item. If -1, the item is added at the end.
    */
   add_item(item_id, button_text, active = false, position = -1) {
-    this.add_button(item_id, button_text, active, position);
+    let button_id = this.add_button(item_id, button_text, active, position);
     this.add_tab(item_id, active, position);
+    return button_id;
   }
 
   /**
@@ -1449,6 +1450,7 @@ class NavBar {
     } else {
       this.nav_bar.appendChild(li);
     }
+    return button.id;
   }
 
   /**
@@ -1509,5 +1511,6 @@ class NavBar {
 
     // Add to the navigation bar
     this.nav_bar.appendChild(btn);
+    return btn.id;
   }
 }

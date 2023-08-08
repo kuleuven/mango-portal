@@ -44,7 +44,7 @@ const realm = urls.realm;
  * @type {Object<String,String[]>}
  */
 const schemas = {};
-
+const schema_infos = {};
 /**
  * REGEX Pattern to control possible schema names. This pattern is then filled with existing names.
  * @type {String}
@@ -64,7 +64,6 @@ let starting_schema = new Schema("schema-editor-100", container_id, urls);
 // Request the list of schemas and start!
 let templates_request = new TemplatesRequest(urls, container_id);
 templates_request.retrieve();
-
 
 // permissions and related helper functions hiding the bitwise logic and make the code compact
 
@@ -130,3 +129,10 @@ function checkAllPermissions(target, permissionArray = []) {
   return false;
 }
 // end permission helper functions
+
+// ide: use centralized id generator functions, there are a few variants across the code
+// placeholders for now
+
+function genid_tab_action_button() {
+
+}
