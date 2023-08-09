@@ -6,32 +6,34 @@
     </h2>
     <h4 class="mt-3">
         <i class="bi bi-people" title="Group"></i> {{ group }}
-        {% if not editable %}<i class="bi bi-lock" title="Read only"></i>{% endif %}
+        {% if protected_group %}<i class="bi bi-lock" title="Read only"></i>{% endif %}
     </h4>
     <div class="row">
         <div class="col-6">
-            {% if editable and non_members %}<h4>Current members</h4>{% endif %}
-            {% if editable %}
-                <form method="post"
-                      action="{{ url_for('operator_group_manager_admin_bp.remove_members', realm=realm, group=group)}}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                {% endif %}
+            <h4>Current members</h4>
+            {% if members %}
                 <div class="list-group">
                     {% for member in members %}
                         <div class="list-group-item">
                             {% if editable %}
                                 <span class="text-end">
                                     <input class="form-check-input"
+                                           form="remove-members-form"
                                            type="checkbox"
                                            value="{{ member.name }}"
-                                           name="members-to-remove"/>
+                                           name="members-to-remove" />
                                 </span>
                             {% endif %}
                             {{ member.name }}
                         </div>
                     {% endfor %}
                 </div>
-                {% if editable %}
+            {% endif %}
+            {% if editable %}
+                <form method="post"
+                      id="remove-members-form"
+                      action="{{ url_for('operator_group_manager_admin_bp.remove_members', realm=realm, group=group) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <button type="submit"
                             class="btn btn-secondary mt-3"
                             id="remove-members"
@@ -40,29 +42,40 @@
             {% endif %}
         </div>
         <div class="col-6">
-            {% if editable and non_members %}
-                <h4>Other members of {{ realm }}</h4>
-                <form method="post"
-                      action="{{ url_for('operator_group_manager_admin_bp.add_members', realm=realm, group=group)}}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <div class="list-group">
-                        {% for member in non_members %}
-                            <div class="list-group-item">
-                                <span class="text-end">
+            <h4>Other members of {{ realm }}</h4>
+            {% if non_members %}
+                <div class="list-group">
+                    {% for member in non_members %}
+                        <div class="list-group-item">
+                            <span class="text-end">
+                                {% if editable %}
                                     <input class="form-check-input"
+                                           form="add-members-form"
                                            type="checkbox"
                                            value="{{ member.name }}"
-                                           name="members-to-add"/>
-                                    {{ member.name }}
-                                </span>
-                            </div>
-                        {% endfor %}
-                    </div>
+                                           name="members-to-add" />
+                                {% endif %}
+                                {{ member.name }}
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if editable %}
+                <form method="post"
+                      id="add-members-form"
+                      action="{{ url_for('operator_group_manager_admin_bp.add_members', realm=realm, group=group) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <button type="submit" class="btn btn-primary mt-3" id="add-members" disabled>Add selected users</button>
                 {% endif %}
             </form>
         </div>
     </div>
+    {% if editable %}
+        <div class="text-end">
+            {{ dialogs.confirm_delete_dialog('delete_group_'~group, url_for("operator_group_manager_admin_bp.remove_group",  realm=realm) , title = 'Delete this group', button_title='Delete', readonly_fields=[{'name': 'group_name', 'label': 'Group name', 'value': group}]) }}
+        </div>
+    {% endif %}
     <script>
     remove_checkboxes = document.getElementsByName("members-to-remove");
     add_checkboxes = document.getElementsByName("members-to-add");

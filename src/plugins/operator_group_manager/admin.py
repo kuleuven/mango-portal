@@ -24,7 +24,9 @@ register_module(**UI)
 
 # Protected groups are excluded from manipulation through the operator_group_manager functions
 # as they are handled through the data api platform
-PROTECTED_USER_GROUP_SUFFIXES = ["", "_manager", "_ingress", "_egress", "_responsible"]
+PROTECTED_USER_GROUP_SUFFIXES = ["manager", "ingress", "egress", "responsible"]
+
+SEMANTIC_USER_GROUP_SUFFIXES = ["schema_manager"]
 
 
 # @cache.memoize(1200)
@@ -68,12 +70,18 @@ def group_manager_index(realm: str):
             realms = get_realms_for_projects(
                 g.irods_session, f"/{g.irods_session.zone}/home"
             )
-    editable = False
 
-    if {"datateam", f"{realm}_manager", "mango_admin"}.intersection(
-        set(g.irods_session.my_group_names)
-    ):
-        editable = True
+    editable = current_user_is_group_manager = (
+        True
+        if (f"{realm}_manager" in g.irods_session.my_group_names)
+        or ("mango_portal_admin" in g.irods_session.roles)
+        else False
+    )
+
+    missing_semantic_suffixes = []
+    for sematic_suffix in SEMANTIC_USER_GROUP_SUFFIXES:
+        if f"{realm}_{sematic_suffix}" not in [group.name for group in groups]:
+            missing_semantic_suffixes.append(sematic_suffix)
 
     return render_template(
         "operator_group_manager/index.html.j2",
@@ -81,6 +89,13 @@ def group_manager_index(realm: str):
         groups=groups,
         realms=realms,
         editable=editable,
+        semantic_suffixes=SEMANTIC_USER_GROUP_SUFFIXES,
+        protected_groups=[
+            f"{realm}_{protected_group_suffix}"
+            for protected_group_suffix in PROTECTED_USER_GROUP_SUFFIXES
+        ]
+        + [realm],
+        missing_semantic_suffixes=missing_semantic_suffixes,
     )
 
 
@@ -101,15 +116,18 @@ def view_members(realm, group):
         member for member in realm_members if member.name in non_member_names
     ]
 
-    editable = False
-    if group not in [
-        f"{realm}{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES
-    ] and (
-        {"datateam", f"{realm}_manager", "mango_admin"}.intersection(
-            set(g.irods_session.my_group_names)
-        )
-    ):
-        editable = True
+    protected_group = (
+        True
+        if group in [f"{realm}_{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES]+[realm]
+        else False
+    )
+
+    current_user_is_group_manager = (
+        True
+        if (f"{realm}_manager" in g.irods_session.my_group_names)
+        or ("mango_portal_admin" in g.irods_session.roles)
+        else False
+    )
 
     return render_template(
         "operator_group_manager/view_group.html.j2",
@@ -118,9 +136,9 @@ def view_members(realm, group):
         members=members,
         realm_members=realm_members,
         non_members=non_members,
-        editable=editable
-        if group not in [f"{realm}{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES]
-        else False,
+        protected_group=protected_group,
+        current_user_is_group_manager=current_user_is_group_manager,
+        editable=current_user_is_group_manager and not protected_group,
     )
 
 
@@ -145,18 +163,18 @@ def add_group(realm):
     return redirect(request.referrer)
 
 
-# @operator_group_manager_admin_bp.route(
-#     "/operator_group_manager/remove_group/<realm>", methods=["POST", "DELETE"]
-# )
-# def remove_group(realm):
-#     """ """
-#     operator_session = get_operator_session(g.irods_session.zone)
-#     group_name = request.form["group_name"]
-#     try:
-#         operator_session.groups.remove(group_name)
-#     except Exception as e:
-#         flash(f"Failed to remove group: {e}", "danger")
-#     return redirect(request.referrer)
+@operator_group_manager_admin_bp.route(
+    "/operator_group_manager/remove_group/<realm>", methods=["POST", "DELETE"]
+)
+def remove_group(realm):
+    """ """
+    operator_session = get_operator_session(g.irods_session.zone)
+    group_name = request.form["group_name"]
+    try:
+        operator_session.groups.remove(group_name)
+    except Exception as e:
+        flash(f"Failed to remove group: {e}", "danger")
+    return redirect(request.referrer)
 
 
 @operator_group_manager_admin_bp.route(
