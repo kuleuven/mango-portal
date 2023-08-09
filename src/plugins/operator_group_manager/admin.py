@@ -74,7 +74,7 @@ def group_manager_index(realm: str):
     editable = current_user_is_group_manager = (
         True
         if (f"{realm}_manager" in g.irods_session.my_group_names)
-        or ("mango_portal_admin" in g.irods_session.roles)
+        or (hasattr(g.irods_session, "roles") and "mango_portal_admin" in g.irods_session.roles)
         else False
     )
 
