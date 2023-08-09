@@ -148,7 +148,8 @@ if os.getenv("FLASK_DEBUG_TOOLBAR", "disabled").lower() == "enabled":
 
 ##################
 MANGO_PLUGIN_BLUEPRINTS = [
-    {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"}
+    {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
+    {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
 ]
 
 for mango_plugin_bp in MANGO_PLUGIN_BLUEPRINTS:
