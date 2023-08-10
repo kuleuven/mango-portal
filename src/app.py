@@ -5,6 +5,7 @@ rootlogger = logging.getLogger()
 rootlogger.setLevel("INFO")
 
 from irods.session import iRODSSession
+from irods.manager.metadata_manager import iRODSMeta
 from flask import (
     Flask,
     g,
@@ -433,6 +434,13 @@ def irods_to_sha256_checksum(irods_checksum):
 
     return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode("utf-8")
 
+@app.template_filter("get_one_irods_metadata")
+def get_one_irods_metadata(irods_object, meta_name):
+    try:
+        avu = irods_object.metadata.get_one(meta_name)
+        return avu
+    except Exception as e:
+        return iRODSMeta(meta_name, '')
 
 # register the main landing page route dynamically
 main_landing_route = app.config.get(
