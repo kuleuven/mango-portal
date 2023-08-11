@@ -3,17 +3,51 @@
 {% block body %}
     {% if groups and realm %}
         <h4>Group manager for realm {{ realm }}</h4>
-        <div class="list-group">
+        <ul class="list-group">
             {% for group in groups %}
-                <a href="{{ url_for('operator_group_manager_admin_bp.view_members', realm = realm, group = group.name)}}"
-                   class="list-group-item list-group-item-action"><i class="bi bi-people"></i> {{ group.name }}</a>
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 col-9">
+                        <a href="{{ url_for('operator_group_manager_admin_bp.view_members', realm = realm, group = group.name) }}"
+                           class="list-group-item list-group-item-action"><i class="bi bi-people"></i> {{ group.name }}</a>
+                    </div>
+                    {% if group.name in protected_groups %}
+                        <span><i class="bi bi-lock" title="Read only"></i></span>
+                    {% else %}
+                        {{ dialogs.confirm_delete_dialog('delete_group_'~group.id, url_for("operator_group_manager_admin_bp.remove_group",  realm=realm) , title = 'Delete this group', button_title='<i class="bi bi-trash"></i>', readonly_fields=[{'name': 'group_name', 'label': 'Group name', 'value': group.name}]) }}
+                    {% endif %}
+                </li>
             {% endfor %}
-        </div>
+        </ul>
         {% if editable %}
-            <div class="row mt-3">
-                {{ dialogs.general_dialog("add_group", url_for("operator_group_manager_admin_bp.add_group", realm=realm),
-                title="Add group", hidden_fields = [{"name":"realm", "value": realm}], fields=[{"name": "group_name_suffix", "label": "Group name suffix "+realm+"_[suffix]","placeholder": "suffix", "value": ""}])
-                }}
+            <div class="d-flex align-items-center mt-3">
+                <div>
+                    {{ dialogs.general_dialog("add_group", url_for("operator_group_manager_admin_bp.add_group", realm=realm) ,
+                    title="Add custom group", hidden_fields = [{"name":"realm", "value": realm}], fields=[{"name": "group_name_suffix", "label": "Group name suffix "+realm+"_[suffix]","placeholder": "suffix", "value": ""}])
+                    }}
+                </div>
+                {% if missing_semantic_suffixes %}
+                    <div class="ms-3">or</div>
+                    <div>
+                        <form id="add-semantic-group"
+                              class="form"
+                              method="post"
+                              action="{{ url_for("operator_group_manager_admin_bp.add_group", realm=realm) }}">
+                            <select id="missing-suffixes"
+                                    name="group_name_suffix"
+                                    class="form-select me-5">
+                                {% for semantic_suffix in missing_semantic_suffixes %}
+                                    <option value="{{ semantic_suffix }}">
+                                        {{ semantic_suffix | replace('_', ' ') | trim | capitalize }} [{{ realm }}_{{ semantic_suffix }}]
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        </form>
+                    </div>
+                    <div>
+                        <button form="add-semantic-group" type="submit" class="btn btn-primary">Add special group</button>
+                    </div>
+                {% endif %}
             </div>
         {% endif %}
     {% endif %}
@@ -23,7 +57,7 @@
         <p>Please select a realm to continue</p>
         <div class="list-group realms">
             {% for p_realm in realms %}
-                <a href="{{ url_for('operator_group_manager_admin_bp.group_manager_index', realm=p_realm)}}"
+                <a href="{{ url_for('operator_group_manager_admin_bp.group_manager_index', realm=p_realm) }}"
                    class="list-group-item list-group-item-action"><i class="bi bi-box fs-5"></i> {{ p_realm }}</a>
             {% endfor %}
         </div>

@@ -583,6 +583,7 @@ class Schema extends ComplexField {
     this.version = version;
     this.container = container_id;
     this.urls = urls;
+    this.nav_bar_btn_ids = {}
   }
 
   /**
@@ -996,7 +997,7 @@ class Schema extends ComplexField {
 
     if (this.status == "draft") {
       // add button and tab for editing the schema
-      this.nav_bar.add_item("edit", "Edit");
+      this.nav_bar_btn_ids["edit_draft"] = this.nav_bar.add_item("edit", "Edit");
 
       // create the modal to show the options for new fields
       this.display_options();
@@ -1014,7 +1015,7 @@ class Schema extends ComplexField {
       this.prepare_json_download();
 
       // add and define 'discard' button
-      this.nav_bar.add_action_button("Discard", "danger", () => {
+      this.nav_bar_btn_ids["delete_draft"] = this.nav_bar.add_action_button("Discard", "danger", () => {
         // fill the confirmation modal with the hidden form to delete this schema
         Modal.submit_confirmation(
           "A deleted draft cannot be recovered.",
@@ -1028,12 +1029,13 @@ class Schema extends ComplexField {
       });
     } else if (this.status == "published") {
       // create modal and form for a new draft
+      // checks also for the existence of a draft version
       this.draft_from_publish();
 
       // initalize a new schema as child/clone and create its modal and form
       this.setup_copy();
       this.child.display_options(); // create field-choice modal
-      this.nav_bar.add_item("child", "Copy to new schema"); // add to tabs
+      this.nav_bar_btn_ids["create_new_schema_draft"] = this.nav_bar.add_item("child", "Copy to new schema"); // add to tabs
       this.child.create_editor(); // create form
       this.nav_bar.add_tab_content("child", this.child.form.form); // add form to tab
 
@@ -1041,7 +1043,7 @@ class Schema extends ComplexField {
       this.prepare_json_download();
 
       // add and define the 'archive' button
-      this.nav_bar.add_action_button("Archive", "danger", () => {
+      this.nav_bar_btn_ids["archive_schema"] = this.nav_bar.add_action_button("Archive", "danger", () => {
         // Fill the confirmation modal with the hidden fields to archive this schema version
         Modal.submit_confirmation(
           "Archived schemas cannot be implemented.",
@@ -1063,7 +1065,7 @@ class Schema extends ComplexField {
     // only if there are no existing drafts
     if (schemas[this.name].draft.length == 0) {
       this.display_options(); // create field-choice modal
-      this.nav_bar.add_item("new", "New (draft) version", false, 1); // create tab
+      this.nav_bar_btn_ids["create_draft"] = this.nav_bar.add_item("new", "New (draft) version", false, 1); // create tab
       this.create_editor(); // create form
 
       // fill in name and title
@@ -1086,6 +1088,14 @@ class Schema extends ComplexField {
     this.card.appendChild(this.nav_bar.nav_bar);
     this.card.appendChild(this.nav_bar.tab_content);
     document.getElementById(this.container).appendChild(this.card);
+
+    Object.keys(this.nav_bar_btn_ids).forEach(permission => {
+      let use_permissions = schema_infos[this.name].current_user_permissions ? schema_infos[this.name].current_user_permissions: realm_permissions;
+      if (!checkAllPermissions(use_permissions, [permission])) {
+        document.getElementById(this.nav_bar_btn_ids[permission]).setAttribute("disabled","disabled");
+      }
+
+    });
 
     // show a message if there are no fields
     if (this.field_ids.length == 0) {

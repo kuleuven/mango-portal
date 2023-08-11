@@ -1,5 +1,6 @@
 # from irods.collection import iRODSCollection
-# from irods.session import iRODSSession
+from irods.session import iRODSSession
+from app import app
 import json
 import re
 import logging
@@ -7,37 +8,78 @@ import semver
 
 # import time
 
-from pathlib import Path, PurePath
-
-import pprint
-
-
-# class SchemaManager(object):
-#     def __init__(self, zone: str, realm: str):
-#         pass
-
-#     def load_schema(self, **kwargs) -> dict:
-#         pass
-
-#     def list_schemas(self, **kwargs) -> dict:
-#         pass
-
-#     def store_schema(self, **kwargs):
-#         pass
-
-#     def delete_schema(self, **kwargs):
-#         pass
-
-
-######## File system based schema management, using realms (projects, public, ....) to group schemas
-### See doc folder in root of this repository
-
+from pathlib import Path
+import importlib
 
 MANGO_STORAGE_BASE_PATH = Path("storage")
 
+SCHEMA_CORE_PERMISSIONS = {
+    "read_schema": 1 << 0,
+    "read_archived": 1 << 1,
+    "read_draft": 1 << 2,
+    "edit_draft": 1 << 3,
+    "create_draft": 1 << 4,
+    "delete_draft": 1 << 5,
+    "publish_draft": 1 << 6,
+    "create_new_schema_draft": 1 << 7,
+    "archive_schema": 1 << 8,  # basically disable the schema
+}
+
+
+def combine_permissions(_keys: list[str]):
+    return sum([SCHEMA_CORE_PERMISSIONS[scp] for scp in _keys])
+
+
+SCHEMA_PERMISSIONS = SCHEMA_CORE_PERMISSIONS | {
+    "write_schema": combine_permissions(
+        ["read_schema", "read_draft", "edit_draft", "create_draft", "delete_draft"]
+    ),
+    "read": combine_permissions(["read_schema", "read_archived"]),
+    "create_new_schema": combine_permissions(
+        [
+            "create_new_schema_draft",
+            "read_schema",
+            "read_archived",
+            "read_draft",
+            "edit_draft",
+            "create_draft",
+            "delete_draft",
+        ]
+    ),
+}
+
+
+class BaseSchemaPermissionsManager:
+    def __init__(self, zone: str, realm: str = ""):
+        self.zone = zone
+        self.realm = realm
+        self.schema_permissions = SCHEMA_PERMISSIONS
+        self.allow_all_bool = {
+            permission: True for permission in SCHEMA_CORE_PERMISSIONS.keys()
+        }
+        self.allow_all = sum(SCHEMA_CORE_PERMISSIONS.values())
+        self.deny_all = 0
+        self.inherit_permissions = None
+
+    def get_user_permissions_for_realm(self, irods_session: iRODSSession):
+        # anyone can do anything
+        return self.allow_all
+
+    def get_user_permissions_for_schema(
+        self, irods_session: iRODSSession, schema: str | None = None
+    ):
+        return self.inherit_permissions
+
+    def get_defined_schema_permissions(self, realm: None):
+        return self.schema_permissions
 
 class FileSystemSchemaManager:
-    def __init__(self, zone: str, realm: str):
+    def __init__(
+        self,
+        zone: str,
+        realm: str,
+        permission_manager_class=BaseSchemaPermissionsManager,
+    ):
         self._storage_schemas_path = (
             MANGO_STORAGE_BASE_PATH / zone / "mango" / "realms" / realm / "schemas"
         )
@@ -47,10 +89,14 @@ class FileSystemSchemaManager:
         # load schemas if any exist yet
         self.zone = zone
         self.realm = realm
+        self.permission_manager: BaseSchemaPermissionsManager = (
+            permission_manager_class(zone=zone, realm=realm)
+        )
+
         self._schemas = self.list_schemas(filters=[])
         self._schemas_dir_mtime = self._storage_schemas_path.stat().st_mtime
 
-        #print(self)
+        # print(self)
 
     def increment_version(self, version_string: str, part="major"):
         if re.match(r"\d\.\d\.\d", version_string):
@@ -89,7 +135,7 @@ class FileSystemSchemaManager:
             return self._schemas[schema_name]
 
         all_schema_files = list(schema_dir.glob("*.json"))
-        #pprint.pprint(all_schema_files)
+        # pprint.pprint(all_schema_files)
         published_files = list(schema_dir.glob("*published.json"))
         draft_files = list(schema_dir.glob("*draft.json"))
         total_count = len(all_schema_files)
@@ -153,8 +199,6 @@ class FileSystemSchemaManager:
                 for schema_path in realm_schemas_path.glob("*")
                 if schema_path.is_dir()
             ]
-            #print(f"Found schemas for filters {filters}:")
-        #pprint.pprint(schemas)
 
         schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
 
@@ -227,7 +271,6 @@ class FileSystemSchemaManager:
             current_version = self.increment_version(
                 current_schema_info["latest_version"], part="major"
             )
-            logging.warn(f"")
         if current_schema_info["title"] and current_schema_info["title"] != title:
             title = current_schema_info["title"]
             validity["title"] = {
@@ -350,13 +393,41 @@ class FileSystemSchemaManager:
         else:
             return False
 
+    def get_user_permissions_realm(self, irods_session):
+        return self.permission_manager.get_user_permissions_realm(
+            irods_session=irods_session
+        )
+
+    def get_user_permissions_schema(self, irods_session, schema):
+        return self.permission_manager.get_user_permissions_schema(
+            irods_session=irods_session, schema=schema
+        )
+
+
+# register the schema permissions manager
+schema_permissions_manager_config = app.config.get(
+    "MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS",
+    {"module": "kernel.metadata_schema", "class": "BaseSchemaPermissionsManager"},
+)
+schema_permissions_manager_module = importlib.import_module(
+    schema_permissions_manager_config["module"], package="app"
+)
+schema_permissions_manager_class = getattr(
+    schema_permissions_manager_module, schema_permissions_manager_config["class"]
+)
 
 schema_managers = {}
+
+logging.info(
+    f"Schema permissions manager from config: {schema_permissions_manager_class.__name__}"
+)
 
 
 def get_schema_manager(zone: str, realm: str) -> FileSystemSchemaManager:
     global schema_managers
     if zone_realm_key := f"{zone}-{realm}" not in schema_managers:
-        schema_managers[zone_realm_key] = FileSystemSchemaManager(zone, realm)
+        schema_managers[zone_realm_key] = FileSystemSchemaManager(
+            zone, realm, schema_permissions_manager_class
+        )
 
     return schema_managers[zone_realm_key]
