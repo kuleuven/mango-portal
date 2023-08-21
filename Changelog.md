@@ -2,7 +2,13 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.14.0 (t,q,p) [2023-08-04]
+## Release 0.14.1
+
+### Smaller improvements and bug fixes
+
+- Fixed bug (crash) for regular users trying to view the members of a group but have no roles assigned
+
+## Release 0.14.0 (t,q,p) [2023-08-04 (t,q), 2023-08-21 (p)]
 
 ### New features
 
