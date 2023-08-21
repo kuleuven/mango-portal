@@ -72,6 +72,7 @@ def get_zone_operator_session(zone: str) -> iRODSSession:
 
 
 def remove_zone_operator_session(zone: str):
+    global zone_operator_sessions
     if zone in zone_operator_sessions:
         del zone_operator_sessions[zone]
         return True

@@ -44,7 +44,7 @@ const realm = urls.realm;
  * @type {Object<String,String[]>}
  */
 const schemas = {};
-
+const schema_infos = {};
 /**
  * REGEX Pattern to control possible schema names. This pattern is then filled with existing names.
  * @type {String}
@@ -54,10 +54,85 @@ let schema_pattern = "[a-z][a-z0-9_\\-]*";
 /**
  * Empty schema to start with.
  * @type {Schema}
+ * 
+ * starting_schema is defined here but only to be initialized in httprequests.js 
+ * after the realm permissions are retrieved and a related permission check is performed
+ * 
  */
 let starting_schema = new Schema("schema-editor-100", container_id, urls);
-starting_schema.create_creator();
 
 // Request the list of schemas and start!
 let templates_request = new TemplatesRequest(urls, container_id);
 templates_request.retrieve();
+
+// permissions and related helper functions hiding the bitwise logic and make the code compact
+
+// SCHEMA_CORE_PERMISSIONS should be synced with the Python equivalent
+const SCHEMA_CORE_PERMISSIONS = {
+  "read_schema": 1 << 0,
+  "read_archived": 1 << 1,
+  "read_draft": 1 << 2,
+  "edit_draft": 1 << 3,
+  "create_draft": 1 << 4,
+  "delete_draft": 1 << 5,
+  "publish_draft": 1 << 6,
+  "create_new_schema_draft": 1 << 7,
+  "archive_schema": 1 << 8,
+};
+
+let realm_permissions = 0;
+
+function combinePermissions(permissionArray = [], from=SCHEMA_CORE_PERMISSIONS) {
+  permission = 0;
+  permissionArray.forEach(item => permission |= from[item]);
+  return permission;
+}
+
+// some more macro-like permissions for convenience and illustration
+// SCHEMA_PERMISSIONS should be synced with the Python equivalent
+const SCHEMA_PERMISSIONS = {
+  ...SCHEMA_CORE_PERMISSIONS,
+  "write": combinePermissions(
+    ["read_schema", "read_draft", "edit_draft", "create_draft", "delete_draft"]
+  ),
+  "read": combinePermissions(["read_schema", "read_archived"]),
+  "new_schema": combinePermissions(
+    [
+      "create_new_schema_draft",
+      "read_schema",
+      "read_draft",
+      "edit_draft",
+      "create_draft",
+      "delete_draft",
+      "read_archived",
+    ]
+  ),
+};
+
+function checkAnyCorePermissions(target, corePermissionArray = []) {
+  if (target && corePermissionArray) {
+    permission = 0;
+    corePermissionArray.forEach(item =>
+      permission |= SCHEMA_CORE_PERMISSIONS[item]);
+    return !!(target & permission);
+  }
+  return false;
+}
+
+function checkAllPermissions(target, permissionArray = []) {
+  if (target && permissionArray) {
+    permission = 0;
+    permissionArray.forEach(item =>
+      permission |= SCHEMA_PERMISSIONS[item]);
+    return ((target & permission) === permission);
+  }
+  return false;
+}
+// end permission helper functions
+
+// ide: use centralized id generator functions, there are a few variants across the code
+// placeholders for now
+
+function genid_tab_action_button() {
+
+}

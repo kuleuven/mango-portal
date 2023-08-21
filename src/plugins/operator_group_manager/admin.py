@@ -24,7 +24,9 @@ register_module(**UI)
 
 # Protected groups are excluded from manipulation through the operator_group_manager functions
 # as they are handled through the data api platform
-PROTECTED_USER_GROUP_SUFFIXES = ["", "_manager", "_ingress", "_egress", "_responsible"]
+PROTECTED_USER_GROUP_SUFFIXES = ["manager", "ingress", "egress", "responsible"]
+
+SEMANTIC_USER_GROUP_SUFFIXES = ["schema_manager"]
 
 
 # @cache.memoize(1200)
@@ -68,12 +70,18 @@ def group_manager_index(realm: str):
             realms = get_realms_for_projects(
                 g.irods_session, f"/{g.irods_session.zone}/home"
             )
-    editable = False
 
-    if {"datateam", f"{realm}_manager", "mango_admin"}.intersection(
-        set(g.irods_session.my_group_names)
-    ):
-        editable = True
+    editable = current_user_is_group_manager = (
+        True
+        if (f"{realm}_manager" in g.irods_session.my_group_names)
+        or (hasattr(g.irods_session, "roles") and "mango_portal_admin" in g.irods_session.roles)
+        else False
+    )
+
+    missing_semantic_suffixes = []
+    for sematic_suffix in SEMANTIC_USER_GROUP_SUFFIXES:
+        if f"{realm}_{sematic_suffix}" not in [group.name for group in groups]:
+            missing_semantic_suffixes.append(sematic_suffix)
 
     return render_template(
         "operator_group_manager/index.html.j2",
@@ -81,13 +89,20 @@ def group_manager_index(realm: str):
         groups=groups,
         realms=realms,
         editable=editable,
+        semantic_suffixes=SEMANTIC_USER_GROUP_SUFFIXES,
+        protected_groups=[
+            f"{realm}_{protected_group_suffix}"
+            for protected_group_suffix in PROTECTED_USER_GROUP_SUFFIXES
+        ]
+        + [realm],
+        missing_semantic_suffixes=missing_semantic_suffixes,
     )
 
 
 @operator_group_manager_admin_bp.route("/operator_group_manager/<realm>/<group>")
 def view_members(realm, group):
     """ """
-    operator_session = get_operator_session(g.irods_session.zone)
+    operator_session : iRODSSession = get_operator_session(g.irods_session.zone)
     members = operator_session.groups.getmembers(group)
     realm_members = operator_session.groups.getmembers(realm)
     member_names = [member.name for member in members]
@@ -101,26 +116,49 @@ def view_members(realm, group):
         member for member in realm_members if member.name in non_member_names
     ]
 
-    editable = False
-    if group not in [
-        f"{realm}{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES
-    ] and (
-        {"datateam", f"{realm}_manager", "mango_admin"}.intersection(
-            set(g.irods_session.my_group_names)
-        )
-    ):
-        editable = True
+    protected_group = (
+        True
+        if group in [f"{realm}_{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES]+[realm]
+        else False
+    )
+
+    current_user_is_group_manager = (
+        True
+        if (f"{realm}_manager" in g.irods_session.my_group_names)
+        or ("mango_portal_admin" in g.irods_session.roles)
+        else False
+    )
+
+    irodsgroup = operator_session.groups.get(group)
+    metadata = irodsgroup.metadata.items()
+    has_realm_set = False
+    try:
+        avu = irodsgroup.metadata.get_one('mg.realm')
+        has_realm_set = avu.value
+    except:
+        logging.info(f"")
+        has_realm_set = False
+    
+    has_valid_realm = False
+    if has_realm_set and has_realm_set == realm:
+        has_valid_realm = True
+
+
 
     return render_template(
         "operator_group_manager/view_group.html.j2",
         realm=realm,
         group=group,
+        irodsgroup=irodsgroup,
+        has_metadata=len(irodsgroup.metadata.items()),
+        has_realm_set=has_realm_set,
+        has_valid_realm=has_valid_realm,
         members=members,
         realm_members=realm_members,
         non_members=non_members,
-        editable=editable
-        if group not in [f"{realm}{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES]
-        else False,
+        protected_group=protected_group,
+        current_user_is_group_manager=current_user_is_group_manager,
+        editable=current_user_is_group_manager and not protected_group,
     )
 
 
@@ -131,7 +169,8 @@ def add_group(realm):
     operator_session = get_operator_session(g.irods_session.zone)
     group_name = f"{realm}_{request.form['group_name_suffix']}"
     try:
-        operator_session.groups.create(group_name)
+        new_group : iRODSGroup = operator_session.user_groups.create(group_name)
+        new_group.metadata.add('mg.realm', realm)
         return redirect(
             url_for(
                 "operator_group_manager_admin_bp.view_members",
@@ -145,18 +184,24 @@ def add_group(realm):
     return redirect(request.referrer)
 
 
-# @operator_group_manager_admin_bp.route(
-#     "/operator_group_manager/remove_group/<realm>", methods=["POST", "DELETE"]
-# )
-# def remove_group(realm):
-#     """ """
-#     operator_session = get_operator_session(g.irods_session.zone)
-#     group_name = request.form["group_name"]
-#     try:
-#         operator_session.groups.remove(group_name)
-#     except Exception as e:
-#         flash(f"Failed to remove group: {e}", "danger")
-#     return redirect(request.referrer)
+@operator_group_manager_admin_bp.route(
+    "/operator_group_manager/remove_group/<realm>", methods=["POST", "DELETE"]
+)
+def remove_group(realm):
+    """ """
+    operator_session = get_operator_session(g.irods_session.zone)
+    group_name = request.form["group_name"]
+    try:
+        operator_session.groups.remove(group_name)
+    except Exception as e:
+        flash(f"Failed to remove group: {e}", "danger")
+    if "redirect_route" in request.values:
+        return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
 
 
 @operator_group_manager_admin_bp.route(
@@ -186,4 +231,17 @@ def remove_members(realm, group):
             operator_session.groups.removemember(group, member)
     except Exception as e:
         flash(f"Failed to add members {members} to group {group}: {e}", "danger")
+    return redirect(request.referrer)
+
+@operator_group_manager_admin_bp.route('/operator_group_manager/set/realm/<realm>/<group>', methods=['POST'])
+def set_realm(realm, group):
+    try:
+        operator_session = get_operator_session(g.irods_session.zone)
+        irodsgroup = operator_session.groups.get(group)
+        metadata = irodsgroup.metadata.items()
+        if 'mg.realm' in [avu.name for avu in metadata]:
+            irodsgroup.metadata.remove('mg.realm')
+        irodsgroup.metadata.add('mg.realm', realm)
+    except Exception as e:
+        flash(f"Failed to add realm {realm} to group {group}: {e}", "danger")
     return redirect(request.referrer)

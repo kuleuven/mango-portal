@@ -5,6 +5,7 @@ rootlogger = logging.getLogger()
 rootlogger.setLevel("INFO")
 
 from irods.session import iRODSSession
+from irods.manager.metadata_manager import iRODSMeta
 from flask import (
     Flask,
     g,
@@ -16,6 +17,13 @@ from flask import (
     session,
     current_app,
 )
+# Early initialisation to avoid circulr imports from main app and its config by other modules
+app = Flask(__name__)
+app.config.from_pyfile("config.py")
+# global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
+
+irods_sessions = {}
+
 from cache import cache
 import os
 import flask
@@ -63,12 +71,8 @@ import datetime
 
 
 print(f"Flask version {flask.__version__}")
-
-app = Flask(__name__)
-
-
-app.config.from_pyfile("config.py")
 app.config["irods_zones"] = irods_zones
+
 
 # set the loggin level to the configured one
 rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
@@ -103,8 +107,6 @@ if "admin" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
 if "template_overrides" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.template_overrides.admin import template_overrides_admin_bp
 
-# global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
-irods_sessions = {}
 ## Allow cross origin requests for SPA/Ajax situations
 CORS(app)
 
@@ -135,16 +137,6 @@ if os.getenv("FLASK_DEBUG_TOOLBAR", "disabled").lower() == "enabled":
 
 
 # TODO: import blueprints dynamically
-# import importlib
-
-# SERVICES = [
-#     {'path': 'plugins.plugin.views', 'blueprint': 'plugin_bp'},
-#     {'path': 'plugins.plugin2.views', 'blueprint': 'plugin2_bp'}
-# ]
-
-# for service in SERVICES:
-#     module = importlib.import_module(service['path']) #, package='app')
-#     app.register_blueprint(getattr(module, service['blueprint']))
 
 ##################
 MANGO_PLUGIN_BLUEPRINTS = [
@@ -196,7 +188,7 @@ with app.app_context():
 
 from mango_ui import admin_navbar_entries, navbar_entries
 
-logging.info(admin_navbar_entries)
+#logging.info(admin_navbar_entries)
 
 
 @app.context_processor
@@ -443,16 +435,24 @@ def irods_to_sha256_checksum(irods_checksum):
 
     return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode("utf-8")
 
+@app.template_filter("get_one_irods_metadata")
+def get_one_irods_metadata(irods_object, meta_name):
+    try:
+        avu = irods_object.metadata.get_one(meta_name)
+        return avu
+    except Exception as e:
+        return iRODSMeta(meta_name, '')
 
 # register the main landing page route dynamically
-MAIN_LANDING_ROUTE = app.config.get(
+main_landing_route = app.config.get(
     "MANGO_MAIN_LANDING_ROUTE", {"module": "kernel.common.browse", "function": "index"}
 )
 
 main_landing_route_module = importlib.import_module(
-    MAIN_LANDING_ROUTE["module"], package="app"
+    main_landing_route["module"], package="app"
 )
 
 app.add_url_rule(
-    "/", view_func=getattr(main_landing_route_module, MAIN_LANDING_ROUTE["function"])
+    "/", view_func=getattr(main_landing_route_module, main_landing_route["function"])
 )
+

@@ -97,8 +97,33 @@ class TemplatesRequest extends MangoRequest {
       /**
        * @type {Array<SchemaInfo>}
        */
-      let grouped_templates = this.json;
+      let realm_schemas = this.json
+      realm_permissions = realm_schemas.realm_permissions
+      let grouped_templates = realm_schemas.schemas;
+      // Add the new schema button if permissions are good
+      // console.log(realm_permissions)
+      if (checkAllPermissions(realm_permissions, ["new_schema"])) {
+        starting_schema.create_creator();
+      } else {
+        // Provide a message to the user to contact the realm manager to create 
+        // use the container id to look up
+        // check if there are no published schemas at al, ie 0 schema to display
+        if (realm_schemas.schemas.length == 0) {
+          let msg = Field.quick(
+            "div",
+            "viewer",
+            'This realm does not have any schemas. Contact your realm manager to create schemas or to give you the permissions to do it'
+          );
+          document.querySelector("#metadata_template_list_container").appendChild(msg);
+        }
+        console.log("Not allowed to create new schemas, nah!")
+      }
+
+
+      // if length is 0, put a nice message 
+      // container id
       for (let template of grouped_templates) {
+        schema_infos[template.name]=template.schema_info
         // don't do anything if there are only archived versions
         if (!(template.schema_info.draft | template.schema_info.published)) {
           continue;
