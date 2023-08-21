@@ -65,8 +65,8 @@ class TemplateOverrideManager:
         self, catalog_item: iRODSDataObject | iRODSCollection, matches: str
     ) -> bool:
         # no checks needed for global overrides
-        if "always" in matches and matches["always"]:
-            return matches["always"]
+        if type(matches) == str and matches == "always":
+            return True
 
         # process AND match patters aka all
         def match_item(match_key: str, match_value: str):
@@ -169,9 +169,9 @@ class TemplateOverrideManager:
                     pass
 
         except Exception as e:
-            logging.debug(
-                f"No dedicated template definition found in metadata for {catalog_item.path}: {e}"
-            )
+            # logging.debug(
+            #     f"No dedicated template definition found in metadata for {catalog_item.path}: {e}"
+            # )
             pass
 
         # check if there exists a rule for this template
@@ -188,9 +188,9 @@ class TemplateOverrideManager:
                 if "matches" in rule_set and self.check_rules(
                     catalog_item=catalog_item, matches=rule_set["matches"]
                 ):
-                    logging.info(
-                        f"Rule matched for {catalog_item.path}: source {source_template_path} -> {rule_set['target']}"
-                    )
+                    # logging.info(
+                    #     f"Rule matched for {catalog_item.path}: source {source_template_path} -> {rule_set['target']}"
+                    # )
                     return rule_set["target"]
         # so nothing matches, return the source_path
         return source_template_path
@@ -218,7 +218,7 @@ template_overrides_bp = Blueprint("template_overrides_bp", __name__)
 
 @template_overrides_bp.app_template_filter(name="mango_template")
 def mango_template_override_filter(
-    template: str, zone: str, catalog_item: iRODSDataObject | iRODSCollection
+    template: str, zone: str, catalog_item: iRODSDataObject | iRODSCollection = None
 ) -> str:
     return get_template_override_manager(zone).get_template_for_catalog_item(
         catalog_item, template

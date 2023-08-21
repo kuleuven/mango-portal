@@ -50,6 +50,7 @@
     <thead>
     <tr>
       <th>Project</th>
+      <th>Platform/Zone</th>
       <th>Reference</th>
       <th>Responsible</th>
       <th>Usage Jan</th>
@@ -75,6 +76,13 @@
         <a href="{{url_for('data_platform_project_bp.project', project_name = project.name)}}">{{project.name}}</a>
       </td>
       <td class="align-middle">
+        {% set opts = {} %}
+        {% for opt in project['platform_options'] %}
+        {% if opts.update({opt['key']: opt['value']}) %}{% endif %}
+        {% endfor %}
+        {{ opts['zone-jobid'] }}
+      </td>
+      <td class="align-middle">
         {% if project['sap_ref'] %}SAP {{ project['sap_ref'] }}{% endif %}
         {% if project['vsc_call'] %}VSC {{ project['vsc_call'] }}{% endif %}
       </td>
@@ -86,7 +94,7 @@
         {% endif %}
       </td>
 
-      {% for m in ["-01","-02","-03","-04","-05","-6","-7","-8","-9","-10","-11","-12"] %}
+      {% for m in ["-01","-02","-03","-04","-05","-06","-07","-08","-09","-10","-11","-12"] %}
       <td>
       {% for usage in item['usage'] %}
       {% if usage['date'].endswith(m) %}

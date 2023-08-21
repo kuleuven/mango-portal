@@ -1,6 +1,70 @@
 # Changelog
 
 Note: versioning follows Semver standard with 3 levels
+
+## Release 0.14.0 (t,q,p) [2023-08-04]
+
+### New features
+
+- Introduced the paradigm of "logging in into projects" besides the zones (plugin user_tantra). 
+    - landing page displays a card for every project the current user is entitled to
+    - "Entering" a project means that the project's 2 main properties (name and path) are saved in the flask and irods user sessions as the active "realm"
+    - The sidebar menu is overriden with a plugin specific template that displays the realm name along an exit button and modifies the menu items for browsing, templates, search and group management to go direct to the realm specific pages
+- Introduced support for repeatable nested composite fields of different levels for metadata schemas (as long as they are created by importing from JSON).
+
+### Smaller improvements and bug fixes
+
+- Additional check for Host header in order to decide which logo to use on the data platform API landing page
+- Fixed max download size in template code to match the code guard limit 
+- Template overrides: "always" option was not working, easy fix
+- Landing page is now configurable (points a the plugins/user_tantra/realm.py route)
+- Started implementing the dynamic registration of plugins via configs rather than hardcoded in the main app.py application entry point (Python importlib module)
+- Bulk copy/move: subdirectories of collections with spaces in their names were not shown as possible destinations, fixed.
+- Metadata schema manager: fields previously selected for deletion would be deleted every time another field was deleted, fixed.
+- Refined the regular expressions in the names of metadata schema fields to prevent repetition.
+- Metadata schemas can now be requested via either status or version number.
+- Operator sessions bug fix: they were destroyed upon checking their validity
+
+## Release 0.13.2 (t,q) [2023-07-20]
+
+### Smaller improvements and bug fixes
+
+- Synchronous bulk download is available for data objects
+- Allow copy/download bulk operations for non-owners
+
+## Release 0.13.1 (t,q) [2023-07-19]
+
+### Smaller improvements and bug fixes
+
+- changed temp upload directory to use the nfs storage given the larger upload limits could crash the container
+
+## Release 0.13.0 (t,q) [2023-07-19]
+
+### New features
+
+- Added initial statistics to projects (Via Mustafa)
+
+### Bug fixes
+
+- Fixed bug in bulk operations: make sure a HTML id does not contain spaces (via Mariana)
+
+### Smaller improvements and bug fixes
+
+- Increased download (50GiB) and upload limits (5GiB per file)
+- Corrections to connection info pages (via Filip)
+
+## Release 0.12.6 (t,q) [2023-06-26]
+
+### Bug fixes
+
+- Made data platform / irods sessions more robust against missing name/email openid attributes (via Peter)
+
+## Release 0.12.5 (t,q) [2023-06-19]
+
+### Bug fixes
+
+- Avoid showing doubles in case metadata units are set
+
 ## Release 0.12.4 [2023-06-16]
 
 ### Bug fixes

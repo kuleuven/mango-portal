@@ -215,8 +215,6 @@ def get_schema_prefix(schema_identifier=False, schema_filename=False):
     if schema_filename:
         return f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{get_schema_prefix_from_filename(schema_filename)}"
 
-
-
 def add_to_dict(metadata_items, multidict, unit_level=1):
     name_length = 2 + unit_level
     simple_fields = [
@@ -256,7 +254,6 @@ def add_to_dict(metadata_items, multidict, unit_level=1):
             ]
         add_to_dict(composite_items, subdict, unit_level + 1)
         multidict.add(composite_name, subdict.to_dict(flat=False))
-
 
 @metadata_schema_form_bp.route("/metadata-schema/edit", methods=["POST", "GET"])
 @csrf.exempt

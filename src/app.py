@@ -5,6 +5,7 @@ rootlogger = logging.getLogger()
 rootlogger.setLevel("INFO")
 
 from irods.session import iRODSSession
+from irods.manager.metadata_manager import iRODSMeta
 from flask import (
     Flask,
     g,
@@ -16,6 +17,13 @@ from flask import (
     session,
     current_app,
 )
+# Early initialisation to avoid circulr imports from main app and its config by other modules
+app = Flask(__name__)
+app.config.from_pyfile("config.py")
+# global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
+
+irods_sessions = {}
+
 from cache import cache
 import os
 import flask
@@ -29,6 +37,7 @@ import humanize
 import re
 import base64
 import binascii
+import importlib
 
 # proxy so it can also be imported in blueprints from csrf.py independently
 from csrf import csrf
@@ -62,12 +71,8 @@ import datetime
 
 
 print(f"Flask version {flask.__version__}")
-
-app = Flask(__name__)
-
-
-app.config.from_pyfile("config.py")
 app.config["irods_zones"] = irods_zones
+
 
 # set the loggin level to the configured one
 rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
@@ -102,8 +107,6 @@ if "admin" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
 if "template_overrides" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
     from plugins.template_overrides.admin import template_overrides_admin_bp
 
-# global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
-irods_sessions = {}
 ## Allow cross origin requests for SPA/Ajax situations
 CORS(app)
 
@@ -131,6 +134,23 @@ if os.getenv("FLASK_DEBUG_TOOLBAR", "disabled").lower() == "enabled":
     from flask_debugtoolbar import DebugToolbarExtension
 
     toolbar = DebugToolbarExtension(app)
+
+
+# TODO: import blueprints dynamically
+
+##################
+MANGO_PLUGIN_BLUEPRINTS = [
+    {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"}
+]
+
+for mango_plugin_bp in MANGO_PLUGIN_BLUEPRINTS:
+    app.register_blueprint(
+        getattr(
+            importlib.import_module(mango_plugin_bp["module"]),
+            mango_plugin_bp["blueprint"],
+        )
+    )
+##################
 
 
 # Register blueprints
@@ -167,7 +187,7 @@ with app.app_context():
 
 from mango_ui import admin_navbar_entries, navbar_entries
 
-logging.info(admin_navbar_entries)
+#logging.info(admin_navbar_entries)
 
 
 @app.context_processor
@@ -224,6 +244,9 @@ def init_and_secure_views():
         "data_platform_user_bp.local_client_retrieve_token_callback",
         "data_platform_project_bp.project_overview",
         "data_platform_project_bp.set_project_options",
+        "data_platform_project_bp.projects_statistics",
+        "data_platform_project_bp.projects_usage",
+        "operator_admin_bp.reset_all",
     ]:
         return None
 
@@ -409,71 +432,26 @@ def irods_to_sha256_checksum(irods_checksum):
     if irods_checksum is None or not irods_checksum.startswith("sha2:"):
         return None
 
-    return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode('utf-8')
+    return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode("utf-8")
 
-@app.route("/")
-def index():
-    return render_template(
-        "index.html.j2",
-    )
+@app.template_filter("get_one_irods_metadata")
+def get_one_irods_metadata(irods_object, meta_name):
+    try:
+        avu = irods_object.metadata.get_one(meta_name)
+        return avu
+    except Exception as e:
+        return iRODSMeta(meta_name, '')
 
-
-# Testing endpoint
-@app.route("/metadata-template/dump-form-contents", methods=["POST"])
-@csrf.exempt
-def dump_meta_data_form():
-    """
-    dumps all variables defined url encoded from the request body, for example
-    variable1=value1&variable2=value2
-    """
-
-    # log output
-    print(f"{json.dumps(request.form)}")
-
-    return json.dumps(request.form)
-
-
-# Testing endpoint
-@app.route("/metadata-template/dump-contents-body/<filename>", methods=["POST"])
-@csrf.exempt
-def dump_meta_data_body_json(filename):
-    """
-    expects "Content-Type: application/json" header
-    """
-    print(f"{filename}")
-    print(f"{request.data}")
-
-    return "OK"
-
-
-# Blueprint api
-# Endpoint for obtaining collection trees
-
-
-@app.route(
-    "/api/collection/tree",
-    methods=["GET"],
-    defaults={"collection": None},
-    strict_slashes=False,
+# register the main landing page route dynamically
+main_landing_route = app.config.get(
+    "MANGO_MAIN_LANDING_ROUTE", {"module": "kernel.common.browse", "function": "index"}
 )
-@app.route("/api/collection/tree/<path:collection>")
-def api_collection_tree(collection):
-    if collection is None or collection == "~":
-        collection = g.zone_home
-    if not collection.startswith("/"):
-        collection = "/" + collection
-    current_collection = g.irods_session.collections.get(collection)
 
-    @cache.cached(
-        timeout=50,
-        key_prefix=f"{g.irods_session.username}-{g.irods_session.zone}-{request.path}",
-    )
-    def json_tree(collection):
-        return flask.jsonify([collection_tree_to_dict(current_collection)])
+main_landing_route_module = importlib.import_module(
+    main_landing_route["module"], package="app"
+)
 
-    return json_tree(current_collection)
+app.add_url_rule(
+    "/", view_func=getattr(main_landing_route_module, main_landing_route["function"])
+)
 
-
-@app.route("/test", methods=["GET"])
-def test_simple_vue():
-    return render_template("test.html.j2")

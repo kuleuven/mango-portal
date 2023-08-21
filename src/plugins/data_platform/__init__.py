@@ -183,10 +183,16 @@ class Session(dict):
     
     @property
     def name(self):
+        if 'name' not in self['user_info']:
+            return None
+
         return self['user_info']['name']
     
     @property
     def email(self):
+        if 'email' not in self['user_info']:
+            return None
+
         return self['user_info']['email']
     
     @property

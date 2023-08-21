@@ -162,7 +162,7 @@ def login_openid_select_zone():
             **connection_info['ssl_settings']
         )
 
-        irods_session_pool.add_irods_session(user_name, irods_session)
+        irods_session_pool.add_irods_session(user_name, irods_session, Session(session['openid_session']).name, Session(session['openid_session']).email)
         session['userid'] = user_name
         session['password'] = password
         session['zone'] = irods_session.zone

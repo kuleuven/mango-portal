@@ -8,13 +8,13 @@
                 <th>Value</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="row">
             {% for config_name, config_value in config.items() %}
                 <tr>
-                    <td class="text-break fs-6">
+                    <th class="fs-6 col-1">
                         <pre>{{ config_name }}</pre>
-                    </td>
-                    <td class="text-break fs-6">
+                    </th>
+                    <td class="fs-6">
                         <pre>{{ config_value|pprint }}</pre>
                     </td>
                 </tr>

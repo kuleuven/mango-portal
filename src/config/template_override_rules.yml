@@ -64,3 +64,8 @@ object_view_trash:
   matches:
     all:
       subtree: '/{{zone}}/trash'
+
+realm_powered_side_bar:
+  source: sidebar.html.j2
+  target: user_tantra/sidebar.html.j2
+  matches: always
