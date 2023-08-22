@@ -69,3 +69,8 @@ realm_powered_side_bar:
   source: sidebar.html.j2
   target: user_tantra/sidebar.html.j2
   matches: always
+
+user_profile:
+  source: user/myprofile.html.j2
+  target: mango_overrides/user/myprofile.html.j2
+  matches: always

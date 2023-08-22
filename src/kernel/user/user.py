@@ -13,6 +13,7 @@ from flask import (
 from irods.models import User
 from irods.session import iRODSSession
 from irods.exception import PAM_AUTH_PASSWORD_FAILED
+from kernel.template_overrides import get_template_override_manager
 
 import irods_session_pool
 import logging
@@ -59,8 +60,13 @@ def my_profile():
     except Exception:
         home_total_size_in_bytes = -1
 
+    view_template = get_template_override_manager(
+        g.irods_session.zone
+    ).get_template_for_catalog_item(
+        None, "user/myprofile.html.j2"
+    )
     return render_template(
-        "user/myprofile.html.j2",
+        view_template,
         me=me,
         my_groups=my_groups,
         logged_in_since=logged_in_since,

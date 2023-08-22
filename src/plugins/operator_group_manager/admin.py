@@ -125,7 +125,7 @@ def view_members(realm, group):
     current_user_is_group_manager = (
         True
         if (f"{realm}_manager" in g.irods_session.my_group_names)
-        or ("mango_portal_admin" in g.irods_session.roles)
+        or (hasattr(g.irods_session, "roles") and "mango_portal_admin" in g.irods_session.roles)
         else False
     )
 
@@ -136,7 +136,6 @@ def view_members(realm, group):
         avu = irodsgroup.metadata.get_one('mg.realm')
         has_realm_set = avu.value
     except:
-        logging.info(f"")
         has_realm_set = False
     
     has_valid_realm = False
