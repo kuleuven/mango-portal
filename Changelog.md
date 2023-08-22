@@ -6,6 +6,7 @@ Note: versioning follows Semver standard with 3 levels
 
 ### Smaller improvements and bug fixes
 
+- Added role in user profile, yet another example of template overrides
 - Fixed bug (crash) for regular users trying to view the members of a group but have no roles assigned (re-adding vanished check)
 
 ## Release 0.14.0 (t,q,p) [2023-08-04 (t,q), 2023-08-21 (p)]
