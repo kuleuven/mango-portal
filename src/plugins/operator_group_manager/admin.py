@@ -136,7 +136,6 @@ def view_members(realm, group):
         avu = irodsgroup.metadata.get_one('mg.realm')
         has_realm_set = avu.value
     except:
-        logging.info(f"")
         has_realm_set = False
     
     has_valid_realm = False
