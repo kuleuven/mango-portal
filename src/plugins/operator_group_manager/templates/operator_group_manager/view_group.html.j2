@@ -1,69 +1,135 @@
 {% extends "base.html.j2" %}
 {% import "dialogs.html.j2" as dialogs %}
 {% block body %}
-    <h2>
+    <h4>
         Group manager for realm <a href="{{ url_for('operator_group_manager_admin_bp.group_manager_index', realm=realm) }}">{{ realm }}</a>
-    </h2>
-    <h4 class="mt-3">
-        <i class="bi bi-people" title="Group"></i> {{ group }}
-        {% if not editable %}<i class="bi bi-lock" title="Read only"></i>{% endif %}
     </h4>
+    <h2 class="mt-3 bg-light text-dark border p-4">
+        <i class="bi bi-people" title="Group"></i>
+            {{ group }}
+        {% if protected_group %}<i class="bi bi-lock" title="Read only"></i>{% endif %}
+    </h2>
     <div class="row">
         <div class="col-6">
-            {% if editable and non_members %}<h4>Current members</h4>{% endif %}
-            {% if editable %}
-                <form method="post"
-                      action="{{ url_for('operator_group_manager_admin_bp.remove_members', realm=realm, group=group)}}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                {% endif %}
+            <h4>Current members</h4>
+            {% if members %}
                 <div class="list-group">
                     {% for member in members %}
-                        <div class="list-group-item">
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
                             {% if editable %}
-                                <span class="text-end">
+                                <span>
                                     <input class="form-check-input"
+                                           form="remove-members-form"
                                            type="checkbox"
                                            value="{{ member.name }}"
-                                           name="members-to-remove"/>
-                                </span>
-                            {% endif %}
-                            {{ member.name }}
-                        </div>
-                    {% endfor %}
-                </div>
-                {% if editable %}
-                    <button type="submit"
-                            class="btn btn-secondary mt-3"
-                            id="remove-members"
-                            disabled>Remove selected users</button>
-                </form>
-            {% endif %}
-        </div>
-        <div class="col-6">
-            {% if editable and non_members %}
-                <h4>Other members of {{ realm }}</h4>
-                <form method="post"
-                      action="{{ url_for('operator_group_manager_admin_bp.add_members', realm=realm, group=group)}}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <div class="list-group">
-                        {% for member in non_members %}
-                            <div class="list-group-item">
-                                <span class="text-end">
-                                    <input class="form-check-input"
-                                           type="checkbox"
-                                           value="{{ member.name }}"
-                                           name="members-to-add"/>
-                                    {{ member.name }}
-                                </span>
+                                           name="members-to-remove" />
+                                {% endif %}
+                                {{ member.name }}</span> <span>{{ (member | get_one_irods_metadata("name") ).value }}</span>
                             </div>
                         {% endfor %}
                     </div>
-                    <button type="submit" class="btn btn-primary mt-3" id="add-members" disabled>Add selected users</button>
                 {% endif %}
-            </form>
+                {% if editable %}
+                    <form method="post"
+                          id="remove-members-form"
+                          action="{{ url_for('operator_group_manager_admin_bp.remove_members', realm=realm, group=group) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit"
+                                class="btn btn-secondary mt-3"
+                                id="remove-members"
+                                disabled>Remove selected users</button>
+                    </form>
+                {% endif %}
+            </div>
+            {% if editable %}
+                <div class="col-6">
+                    <h4>Other members of {{ realm }}</h4>
+                    {% if non_members %}
+                        <div class="list-group">
+                            {% for member in non_members %}
+                                <div class="list-group-item d-flex justify-content-between align-items-start">
+                                    <span>
+                                        {% if editable %}
+                                            <input class="form-check-input"
+                                                   form="add-members-form"
+                                                   type="checkbox"
+                                                   value="{{ member.name }}"
+                                                   name="members-to-add" />
+                                        {% endif %}
+                                        {{ member.name }}</span> <span>{{ (member | get_one_irods_metadata("name") ).value }}</span>
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if editable %}
+                        <form method="post"
+                              id="add-members-form"
+                              action="{{ url_for('operator_group_manager_admin_bp.add_members', realm=realm, group=group) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="btn btn-primary mt-3" id="add-members" disabled>Add selected users</button>
+                        {% endif %}
+                    </form>
+                </div>
+            {% endif %}
         </div>
-    </div>
-    <script>
+        {% if has_metadata %}
+            <div class="accordion mt-4" id="group-metadata">
+                <div class="accordion-item">
+                    <h2 class="accordion-title">
+                        <button class="accordion-button fs-5 fw-bold"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#metadata-list"
+                                aria-expanded="true"
+                                aria-controls="collapseOne">Metadata</button>
+                    </h2>
+                    <div id="metadata-list"
+                         class="accordion-collapse collapse"
+                         aria-labelledby="headingOne"
+                         data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="list-group">
+                                {% for avu in irodsgroup.metadata.items() %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-start">
+                                        <span class="text-start fw-bold">{{ avu.name }}</span> <span class="badge bg-light text-dark fs-6">{{ avu.value }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if (has_realm_set and not has_valid_realm) or (not has_realm_set) %}
+                {% if not has_valid_realm and has_realm_set %}
+                    <div class="alert alert-danger mt-4" role="alert">
+                        <p>
+                            <span class="fs-1"><i class="bi bi-exclamation-diamond"> </i></span> There is a mismatch between the metadata realm {{ has_realm_set }} and the current realm {{ realm }}.
+                        </p>
+                        <p>
+                            It is possible this group does not belong to <b>{{ realm }}</b>
+                        </p>
+                    </div>
+                {% endif %}
+                {% if not has_realm_set %}
+                    <div class="alert alert-warning mt-4" role="alert">
+                        <p>
+                            <span class="fs-1"><i class="bi bi-exclamation-diamond"> </i></span> The current realm <b>{{ realm }}</b> is not set as metadata
+                        </p>
+                    </div>
+                {% endif %}
+                {{ dialogs.general_dialog("set-realm-as-metadata", url_for('operator_group_manager_admin_bp.set_realm',
+                                realm=realm, group=group) , title="Set realm <b>"~realm~"</b> on group <b>"~group~"</b>" ) }}
+            {% endif %}
+            {% if editable %}
+                <div class="text-end mt-4">
+                    {{ dialogs.confirm_delete_dialog('delete_group_'~group, url_for("operator_group_manager_admin_bp.remove_group",  realm=realm) ,
+                    title = 'Delete this group', button_title='Delete group',
+                    readonly_fields=[{'name': 'group_name', 'label': 'Group name', 'value': group}],
+                    hidden_fields=[{'name': 'redirect_route', 'value': url_for("operator_group_manager_admin_bp.group_manager_index",  realm=realm)}]) }}
+                </div>
+            {% endif %}
+            <script>
     remove_checkboxes = document.getElementsByName("members-to-remove");
     add_checkboxes = document.getElementsByName("members-to-add");
     remove_btn = document.getElementById("remove-members")
@@ -88,5 +154,5 @@
 
     }
 
-    </script>
-{% endblock body %}
+            </script>
+        {% endblock body %}

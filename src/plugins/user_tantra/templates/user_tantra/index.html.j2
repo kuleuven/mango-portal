@@ -3,16 +3,15 @@
     <h2 class="mb-4">
         Welcome to your <i class="text-success">{{ g.irods_session.zone }}</i> active data repository
     </h2>
-    {% set subcollections = home_collections.subcollections %}
     {% set columns = 2 %}
-    {% set num_subcollections = (subcollections|length) %}
+    {% set num_subcollections = (realm_collections|length) %}
     {% if num_subcollections < 4 %}
         {% set columns = 1 %}
     {% endif %}
     
     <div class="row row-cols-1 row-cols-md-{{ columns }}">
         
-        {% for realm in home_collections.subcollections %}
+        {% for realm in realm_collections %}
             <div class="col mb-4">
                 <div class="card">
                     <div class="card-body">

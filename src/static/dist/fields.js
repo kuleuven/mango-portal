@@ -40,7 +40,7 @@ class InputField {
    * @param {String} schema_name Name of the schema that the field is attached to, for form identification purposes.
    * @param {String} [data_status=draft] Status of the schema version that the field is attached to, for form identification purposes.
    */
-  constructor(schema_name, data_status = "draft") {
+  constructor(schema_name, id_regex, data_status = "draft") {
     // Strings for the example
     this.description = "";
     this.dummy_title = "Informative label";
@@ -59,6 +59,7 @@ class InputField {
     // Schema information
     this.schema_name = schema_name;
     this.schema_status = data_status;
+    this.id_regex = id_regex;
   }
 
   /**
@@ -402,6 +403,56 @@ class InputField {
   }
 
   /**
+   * Remove the ID of a field from the regular expression that limits the possible names for the field,
+   * to allow editing of a field.
+   *
+   * Create a regular expression template that identifies the field id from the string of IDs in the pattern
+   * The output of providing this regex to the schema-level regex is five groups:
+   * - start: Anything that goes before the field
+   * - before: The character before: "!" if it's the first field, "|" otherwise
+   * - match: The id of this field, preceded by "^" and followed by "$"
+   * - after: The character right after: ")" if it's the last field, "|" otherwise
+   * - end: The rest of the pattern
+   * Then a concatenation of these fields is returned, removing 'match' and updating 'before'/'after' if necessary
+   *
+   * @param {String or RegExp} regex Regular expression defined at the schema level that limits
+   *    the possible values of a field id. It includes the existing field.
+   * @returns {String} Updated regular expression for the ID of this field, which excludes the name of the current field.
+   */
+  remove_id_from_regex(regex) {
+    //
+    let id_regex_template =
+      "^(?<start>.+)(?<before>!|\\|)(?<match>\\^__FIELDID__\\$)(?<after>\\||\\))(?<end>.+$)";
+    let regex_match = regex.match(
+      new RegExp(id_regex_template.replace("__FIELDID__", this.id), "u")
+    );
+    if (regex_match == undefined) {
+      return regex;
+    }
+    let { start, before, after, end } = regex_match.groups;
+
+    if (before == "|") {
+      // if this is not the first field, remove the "|" before
+      before = "";
+    } else if (after == "|") {
+      // if this is the first field but not the last, remove the "|" afterwards
+      after == "|";
+    } else {
+      // if this is the last field, just provide the ending regex
+      return `^(${end}`;
+    }
+    return start + before + after + end;
+  }
+
+  update_id_regex(new_regex) {
+    this.id_regex = this.remove_id_from_regex(new_regex);
+    if (this.form_field != undefined) {
+      this.form_field.form.querySelector(`#${this.id}-id`).pattern =
+        this.id_regex;
+    }
+  }
+
+  /**
    * Initalize a form to edit the field and add the components at the beginning of the form.
    */
   setup_form() {
@@ -417,8 +468,8 @@ class InputField {
           "Use lowercase or numbers, no spaces, no special characters other than '_'.",
         value: this.field_id,
         validation_message:
-          "This field is compulsory. Use only lowercase, numbers, and '_'.",
-        pattern: "[a-z0-9_]+",
+          "This field is compulsory. Use only lowercase, numbers, and '_'. Existing names cannot be reused.",
+        pattern: this.id_regex,
       }
     );
 
@@ -673,9 +724,7 @@ class InputField {
     }
     if (this.help_is_custom) {
       let help = data.get(`${this.id}-help`);
-      if (help) {
-        this.help = help.trim();
-      }
+      this.help = help.trim();
     }
 
     // if we are updating an existing field without changing the ID
@@ -739,6 +788,7 @@ class InputField {
     // id as it will show in the "ID" field of the form
     clone.field_id = new_id;
     clone.id = new_id;
+    clone.id_regex = this.id_regex;
 
     // transfer the form
     clone.form_field = this.form_field;
@@ -794,24 +844,25 @@ class InputField {
    * @param {FieldInfo} data Contents of the field to create.
    * @returns {InputField} The right input field with the data from the FieldInfo object.
    */
-  static choose_class(schema_name, data_status, [id, data] = []) {
+  static choose_class(schema_name, id_regex, data_status, [id, data] = []) {
     let new_field;
 
     // if the type is 'object', create a composite field
     if (data.type == "object") {
-      new_field = new ObjectInput(schema_name, data_status);
+      new_field = new ObjectInput(schema_name, id_regex, data_status);
     } else if (data.type == "select") {
       // if the type is 'select', create a multiple-value or single-value multiple choice, depending on the value of 'multiple'
       new_field = data.multiple
-        ? new CheckboxInput(schema_name, data_status)
-        : new SelectInput(schema_name, data_status);
+        ? new CheckboxInput(schema_name, id_regex, data_status)
+        : new SelectInput(schema_name, id_regex, data_status);
     } else {
       // the other remaining option is the single field
-      new_field = new TypedInput(schema_name, data_status);
+      new_field = new TypedInput(schema_name, id_regex, data_status);
     }
     // fill in the basic information not present in the FieldInfo object
     new_field.field_id = id;
     new_field.id = id;
+    new_field.update_id_regex(id_regex);
     new_field.mode = "mod";
 
     // read the FieldInfo object to retrieve and register the data
@@ -873,8 +924,8 @@ class TypedInput extends InputField {
    * @param {String} schema_name Name of the schema that the field is attached to, for form identification purposes.
    * @param {String} [data_status=draft] Status of the schema version that the field is attached to, for form identification purposes.
    */
-  constructor(schema_name, data_status = "draft") {
-    super(schema_name, data_status);
+  constructor(schema_name, id_regex = "", data_status = "draft") {
+    super(schema_name, id_regex, data_status);
     this.type = "text";
     this.values = { placeholder: "", pattern: "" };
     this.temp_values = {
@@ -1219,6 +1270,10 @@ class TypedInput extends InputField {
       if (divider.nextSibling != placeholder_div) {
         this.form_field.form.insertBefore(placeholder_div, divider.nextSibling);
       }
+    } else {
+      this.form_field.form.querySelector(
+        `#div-${this.id}-placeholder input`
+      ).value = "";
     }
   }
 
@@ -1625,8 +1680,8 @@ class ObjectInput extends InputField {
    * @param {String} schema_name Name of the schema that the field is attached to, for form identification purposes.
    * @param {String} [data_status=draft] Status of the schema version that the field is attached to, for form identification purposes.
    */
-  constructor(schema_name, data_status = "draft") {
-    super(schema_name, data_status);
+  constructor(schema_name, id_regex = "", data_status = "draft") {
+    super(schema_name, id_regex, data_status);
   }
 
   form_type = "object";
@@ -1855,8 +1910,8 @@ class MultipleInput extends InputField {
    * @param {String} schema_name Name of the schema that the field is attached to, for form identification purposes.
    * @param {String} [data_status=draft] Status of the schema version that the field is attached to, for form identification purposes.
    */
-  constructor(schema_name, data_status = "draft") {
-    super(schema_name, data_status);
+  constructor(schema_name, id_regex = "", data_status = "draft") {
+    super(schema_name, id_regex, data_status);
     this.type = "select";
     this.values.values = [];
   }
@@ -2113,8 +2168,8 @@ class SelectInput extends MultipleInput {
    * @param {String} schema_name Name of the schema that the field is attached to, for form identification purposes.
    * @param {String} [data_status=draft] Status of the schema version that the field is attached to, for form identification purposes.
    */
-  constructor(schema_name, data_status = "draft") {
-    super(schema_name, data_status);
+  constructor(schema_name, id_regex = "", data_status = "draft") {
+    super(schema_name, id_regex, data_status);
     this.values.multiple = false;
     this.values.ui = "radio";
   }
@@ -2227,8 +2282,8 @@ class CheckboxInput extends MultipleInput {
    * @param {String} schema_name Name of the schema that the field is attached to, for form identification purposes.
    * @param {String} [data_status=draft] Status of the schema version that the field is attached to, for form identification purposes.
    */
-  constructor(schema_name, data_status = "draft") {
-    super(schema_name, data_status);
+  constructor(schema_name, id_regex = "", data_status = "draft") {
+    super(schema_name, id_regex, data_status);
     this.values.multiple = true;
     this.values.ui = "checkbox";
   }

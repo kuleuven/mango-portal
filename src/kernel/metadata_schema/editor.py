@@ -119,29 +119,56 @@ def list_meta_data_schemas(realm):
         filters=["published", "draft", "archived"]
     )
 
+    # permissions setting and basic check
+    schemas_to_remove = []
+    for schema in schemas:
+        current_user_permissions = schemas[schema][
+            "current_user_permissions"
+        ] = schema_manager.get_user_permissions_schema(g.irods_session, schema)
+        if current_user_permissions == schema_manager.permission_manager.deny_all:
+            schemas_to_remove.append(schema)
+            continue
+        if (
+            current_user_permissions
+            == schema_manager.permission_manager.schema_permissions["read_schema"]
+        ) and not schemas[schema]["published"]:
+            schemas_to_remove.append(schema)
+            continue
+
+    for schema in schemas_to_remove:
+        schemas.pop(schema, None)
+
     return json.dumps(
-        [
-            {
-                "name": schema,
-                "url": url_for(
-                    "metadata_schema_editor_bp.get_schema",
-                    realm=realm,
-                    schema=schema,
-                    status="status",
-                ),
-                "schema_info": schema_info,
-            }
-            for (schema, schema_info) in schemas.items()
-        ]
+        {
+            "realm_permissions": schema_manager.get_user_permissions_realm(
+                g.irods_session
+            ),
+            "schemas": [
+                {
+                    "name": schema,
+                    "url": url_for(
+                        "metadata_schema_editor_bp.get_schema",
+                        realm=realm,
+                        schema=schema,
+                    ),
+                    "schema_info": schema_info,
+                }
+                for (schema, schema_info) in schemas.items()
+            ],
+        }
     )
 
 
 @metadata_schema_editor_bp.route(
-    "/metadata-schema/get/<realm>/<schema>/<status>", methods=["GET"]
+    "/metadata-schema/get/<realm>/<schema>", methods=["GET"]
 )
-def get_schema(realm: str, schema: str, status="published"):
+def get_schema(realm: str, schema: str):
     schema_manager = get_schema_manager(g.irods_session.zone, realm)
-    schema_content = schema_manager.load_schema(schema_name=schema, status=status)
+    if version := request.values.get("version", None):
+        schema_content = schema_manager.load_schema(schema_name=schema, version=version)
+    else:
+        status = request.values.get("status", "published")
+        schema_content = schema_manager.load_schema(schema_name=schema, status=status)
     if schema_content:
         return Response(schema_content, status=200, mimetype="application/json")
     else:

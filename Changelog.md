@@ -2,7 +2,14 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.14.0 (TBD) [TBD]
+## Release 0.14.1 [2023-08-22 (t,q,p)]
+
+### Smaller improvements and bug fixes
+
+- Added role in user profile, yet another example of template overrides
+- Fixed bug (crash) for regular users trying to view the members of a group but have no roles assigned (re-adding vanished check)
+
+## Release 0.14.0 (t,q,p) [2023-08-04 (t,q), 2023-08-21 (p)]
 
 ### New features
 
@@ -10,7 +17,7 @@ Note: versioning follows Semver standard with 3 levels
     - landing page displays a card for every project the current user is entitled to
     - "Entering" a project means that the project's 2 main properties (name and path) are saved in the flask and irods user sessions as the active "realm"
     - The sidebar menu is overriden with a plugin specific template that displays the realm name along an exit button and modifies the menu items for browsing, templates, search and group management to go direct to the realm specific pages
-
+- Introduced support for repeatable nested composite fields of different levels for metadata schemas (as long as they are created by importing from JSON).
 
 ### Smaller improvements and bug fixes
 
@@ -19,6 +26,11 @@ Note: versioning follows Semver standard with 3 levels
 - Template overrides: "always" option was not working, easy fix
 - Landing page is now configurable (points a the plugins/user_tantra/realm.py route)
 - Started implementing the dynamic registration of plugins via configs rather than hardcoded in the main app.py application entry point (Python importlib module)
+- Bulk copy/move: subdirectories of collections with spaces in their names were not shown as possible destinations, fixed.
+- Metadata schema manager: fields previously selected for deletion would be deleted every time another field was deleted, fixed.
+- Refined the regular expressions in the names of metadata schema fields to prevent repetition.
+- Metadata schemas can now be requested via either status or version number.
+- Operator sessions bug fix: they were destroyed upon checking their validity
 
 ## Release 0.13.2 (t,q) [2023-07-20]
 
@@ -48,13 +60,13 @@ Note: versioning follows Semver standard with 3 levels
 - Increased download (50GiB) and upload limits (5GiB per file)
 - Corrections to connection info pages (via Filip)
 
-## Release 0.12.6 [2023-06-26]
+## Release 0.12.6 (t,q) [2023-06-26]
 
 ### Bug fixes
 
 - Made data platform / irods sessions more robust against missing name/email openid attributes (via Peter)
 
-## Release 0.12.5 [2023-06-19]
+## Release 0.12.5 (t,q) [2023-06-19]
 
 ### Bug fixes
 

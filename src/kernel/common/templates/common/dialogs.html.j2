@@ -74,14 +74,14 @@
     </div>
 {% endmacro %}
 {# delete dialog #}
-{% macro confirm_delete_dialog(dialog_id, post_url, title="", mode="standalone", btn_ok="delete", btn_cancel="cancel", hidden_fields=[], readonly_fields=[], modal_class="") %}
+{% macro confirm_delete_dialog(dialog_id, post_url, title="", button_title="Delete", mode="standalone", btn_ok="delete", btn_cancel="cancel", hidden_fields=[], readonly_fields=[], modal_class="") %}
     {% if mode == "custom" %}{% endif %}
     {% if mode == "standalone" %}
         <button type="button"
                 class="btn btn-danger"
                 data-bs-toggle="modal"
                 data-bs-target="#{{ dialog_id }}">
-            {{ title|safe }}
+            {{ button_title |safe }}
         </button>
     {% endif %}
     <div class="modal fade"
@@ -158,7 +158,7 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
                 class="btn btn-primary"
                 data-bs-toggle="modal"
                 data-bs-target="#{{ dialog_id }}">
-            {{ title }}
+            {{ title | safe }}
         </button>
     {% endif %}
     <div class="modal fade"
@@ -169,7 +169,7 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
         <div class="modal-dialog {{ modal_class }}">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="dialogLabel">{{ title }}</h5>
+                    <h5 class="modal-title" id="dialogLabel">{{ title | safe }}</h5>
                     <button type="button"
                             class="btn-close"
                             data-bs-dismiss="modal"
