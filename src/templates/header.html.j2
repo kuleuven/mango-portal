@@ -47,6 +47,8 @@
                            placeholder="Search file names, collection names, owner names and selected metadata fields..."
                            required/>
                 </form>
+            {% else %}
+                <div class="w-100 me-3"></div>
             {% endif %}
             {% if 'irods_session' in g %}
                 <div class="flex-shrink-0 dropdown">
