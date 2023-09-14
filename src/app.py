@@ -247,6 +247,7 @@ def init_and_secure_views():
         "data_platform_project_bp.set_project_options",
         "data_platform_project_bp.projects_statistics",
         "data_platform_project_bp.projects_usage",
+        "data_platform_project_bp.project_user_search",
         "operator_admin_bp.reset_all",
     ]:
         return None

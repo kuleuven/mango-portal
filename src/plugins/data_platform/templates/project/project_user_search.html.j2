@@ -1,0 +1,72 @@
+{% extends "base_openid.html.j2" %}
+
+{% block custom_style %}
+<style type="text/css">
+div.dataTables_wrapper {
+  width: 1100px; /* table with, original was 800* for scrollX */
+  margin: 0 auto;
+}
+/* for search field */
+div.dataTables_wrapper  div.dataTables_filter {
+  width: 100%;
+  float: none;
+  text-align: center;
+}
+
+.dataTables_wrapper .dataTables_paginate{
+  float:none;
+  text-align:center;
+}
+
+.dataTables_wrapper .dataTables_info{
+  float:none;
+  text-align:center
+}
+
+
+</style>
+{% endblock %}
+
+{% block container %}
+   <div class="m-2">
+   <nav aria-label="breadcrumb m-2">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">project_user_search</li>
+    </ol>
+  </nav>
+  </div>
+
+  
+  {# creating tables and styling #}
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+  <link rel="stylesheet"href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css"/>
+
+  <div class="table-responsive">
+    <table id="data-table" class="display">
+      <script>
+        let data = {{user_project_search_list | safe}};
+        let table = new DataTable("#data-table", { 
+                                                  data:data,
+                                                  columns:[ 
+                                                            { data: 'user_name', title: "User Name"},
+                                                            { data: 'user_account', title: "User Account"},
+                                                            { data: 'user_role', title: "Role"},
+                                                            { data: 'user_email', title: "Email"},
+                                                            { data: 'project_name', title: "Project"},
+                                                            { data: 'zone_name', title: "Zone"},
+                                                          ],
+                                                  "autoWidth": false,
+                                                  responsive: true,
+                                                  "lengthChange": false,
+                                                  pageLength: 4,
+                                                  })
+        
+      </script>    
+    </table>
+  </div>
+  
+{% endblock container %}

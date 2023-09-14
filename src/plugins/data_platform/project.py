@@ -562,3 +562,55 @@ def projects_usage():
         usage_graphJSON=json.dumps(fig_usage, cls=plotly.utils.PlotlyJSONEncoder),
         quota_graphJSON=json.dumps(fig_quota, cls=plotly.utils.PlotlyJSONEncoder),
     )
+
+
+@data_platform_project_bp.route("/data-platform/project_user_search", methods=["GET"])
+@openid_login_required
+def project_user_search():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    response = requests.get(f"{API_URL}/v1/projects", headers=header)
+    response.raise_for_status()
+
+    projects = response.json()
+
+    projects_list = []
+    for project in projects:
+        if project["platform"] == "irods":
+            zone_name = "-".join(project["platform_options"][0]["value"].split("-")[4:])
+            projects_list.append((zone_name, project["name"]))
+        else:
+            projects_list.append(("Non iRODS", project["name"]))
+
+    project_list_of_dicts = [
+        {
+            "user_name": "",
+            "user_account": "",
+            "user_role": "",
+            "user_email": "",
+            "project_name": "",
+            "zone_name": "",
+        }
+    ] * 4
+    for project in projects_list:
+        response = requests.get(
+            f"{API_URL}/v1/projects/{project[1]}/members", headers=header
+        )
+        members = response.json()
+        for member in members:
+            project_list_of_dicts.append(
+                {
+                    "user_name": member["name"],
+                    "user_account": member["username"],
+                    "user_role": member["role"],
+                    "user_email": member["email"],
+                    "project_name": project[1],
+                    "zone_name": project[0],
+                }
+            )
+
+    return render_template(
+        "project/project_user_search.html.j2",
+        user_project_search_list=json.dumps(project_list_of_dicts),
+    )
