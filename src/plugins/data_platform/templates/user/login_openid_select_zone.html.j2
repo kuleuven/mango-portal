@@ -210,6 +210,27 @@
                 </div>
 
                 <div class="mb-3">
+                <label for="type" class="col-form-label">
+                    Project Type
+                </label>
+                <select
+                     class="form-select"
+                     id="type"
+                     name="type"
+                     required>
+                        <option value="project" selected>project</option>
+                        <option value="test">test</option>
+                        <option value="training">training</option>
+                        <option value="pilot">pilot</option>
+                        <option value="demo">demo</option>
+                </select>
+                <div class="invalid-feedback">
+                    A project type is required
+                </div>
+                </div>
+
+
+                <div class="mb-3">
                 <label for="zone" class="col-form-label">
                     Zone
                 </label>

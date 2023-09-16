@@ -57,6 +57,15 @@
           </tr>
           {% endif %}
           <tr>
+            <th>Project Type</th>
+            <td>
+            {{ project['type'] }}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            </td>
+          </tr>
+          <tr>
             <th>Description</th>
             <td>
             {{ project['description'] }}
@@ -599,6 +608,26 @@
               novalidation>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <div class="modal-body">
+            <div class="mb-3">
+              <label for="type" class="col-form-label">
+                Project Type
+              </label>
+              <select
+                     class="form-select"
+                     id="type"
+                     name="type"
+                     required>
+                        <option value="project" selected>project</option>
+                        <option value="test">test</option>
+                        <option value="training">training</option>
+                        <option value="pilot">pilot</option>
+                        <option value="demo">demo</option>
+                </select>
+                <div class="invalid-feedback">
+                    A project type is required
+                </div>
+            </div>
+
             <div class="mb-3">
               <label for="description" class="col-form-label">
                 Description

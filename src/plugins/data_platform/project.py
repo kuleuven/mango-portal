@@ -146,6 +146,7 @@ def modify_project():
 
     if "description" in request.form:
         data = {
+            "project_type": request.form.get("type"),
             "description": request.form.get("description"),
             "sap_ref": request.form.get("sap_ref"),
             "vsc_call": request.form.get("vsc_call"),
@@ -339,6 +340,7 @@ def add_irods_project():
         f"{API_URL}/v1/projects/{id}",
         headers=header,
         json={
+            "project_type": request.form.get("type"),
             "platform": request.form.get("platform"),
             "platform_options": [
                 {
@@ -353,7 +355,6 @@ def add_irods_project():
         },
     )
     response.raise_for_status()
-
     flash(response.json()["message"], "success")
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
