@@ -580,7 +580,7 @@ def project_user_search():
     for project in projects:
         if project["platform"] == "irods":
             zone_name = "-".join(project["platform_options"][0]["value"].split("-")[4:])
-            projects_list.append((zone_name, project["name"]))
+            projects_list.append((zone_name, project["name"], project["type"]))
         else:
             projects_list.append(("Non iRODS", project["name"]))
 
@@ -591,6 +591,7 @@ def project_user_search():
             "user_role": "",
             "user_email": "",
             "project_name": "",
+            "project_type": "",
             "zone_name": "",
         }
     ] * 4
@@ -607,6 +608,7 @@ def project_user_search():
                     "user_role": member["role"],
                     "user_email": member["email"],
                     "project_name": project[1],
+                    "project_type": project[2],
                     "zone_name": project[0],
                 }
             )
