@@ -582,8 +582,7 @@ def project_user_search():
             zone_name = "-".join(project["platform_options"][0]["value"].split("-")[4:])
             projects_list.append((zone_name, project["name"], project["type"]))
         else:
-            projects_list.append(("Non iRODS", project["name"]))
-
+            projects_list.append(("Non iRODS", project["name"], ""))
     project_list_of_dicts = [
         {
             "user_name": "",
