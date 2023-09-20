@@ -3,7 +3,7 @@
 {% block custom_style %}
 <style type="text/css">
 div.dataTables_wrapper {
-  width: 1100px; /* table with, original was 800* for scrollX */
+  width: 1200px; /* table with, original was 800* for scrollX */
   margin: 0 auto;
   white-space: nowrap; /* this is for the long lines, if not, multiple lines */
 }
@@ -68,6 +68,7 @@ div.dataTables_wrapper {
                                                   columns:[ 
                                                             { data: 'zone_name', title: "Zone"},
                                                             { data: 'project_name', title: "Project"},
+                                                            { data: 'project_type', title: "Type"},
                                                             { data: 'usage_total', title: "Usage (GB)"},
                                                             { data: 'quota_set', title: "Quota (GB)"},
                                                             { data: 'responsible_name', title: "Responsible"},
