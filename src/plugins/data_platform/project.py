@@ -673,18 +673,20 @@ def rule_management():
                 rule_info.append(list(item.values()))
                 rule_info[-1].insert(0, session.zone)
 
-    utc_tz = pytz.timezone("UTC")
-    local_tz = pytz.timezone("Europe/Brussels")
+    def localize_datetime(
+        value, format="%Y-%m-%d %H:%M:%S", local_timezone="Europe/Brussels"
+    ):
+        tz = pytz.timezone(local_timezone)
+        utc = pytz.timezone("UTC")
+        value = utc.localize(value, is_dst=None).astimezone(pytz.utc)
+        local_dt = value.astimezone(tz)
+        local_dt = local_dt.strftime(format)
+        return datetime.strptime(local_dt, "%Y-%m-%d %H:%M:%S")
+
     for item in rule_info:
         if item[5] is not None:
-            item[4] = utc_tz.localize(item[4])
-            local_tz_time = item[4].astimezone(local_tz)
-            item[4] = datetime.strftime(local_tz_time, "%Y-%m-%d %H:%M:%S")
-            item[4] = datetime.strptime(item[4], "%Y-%m-%d %H:%M:%S")
-            item[5] = utc_tz.localize(item[5])
-            local_tz_time = item[5].astimezone(local_tz)
-            item[5] = datetime.strftime(local_tz_time, "%Y-%m-%d %H:%M:%S")
-            item[5] = datetime.strptime(item[5], "%Y-%m-%d %H:%M:%S")
+            item[4] = localize_datetime(item[4])
+            item[5] = localize_datetime(item[5])
             delta = item[4] - datetime.now().replace(microsecond=0)
             item.insert(4, delta)
         else:
