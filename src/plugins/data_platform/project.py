@@ -5,7 +5,10 @@ import pandas as pd
 import plotly
 import plotly.express as px
 import plotly.graph_objects as go
+import pytz
 from datetime import datetime
+from irods.session import iRODSSession
+from irods.models import RuleExec
 from flask import (
     Blueprint,
     render_template,
@@ -616,4 +619,65 @@ def project_user_search():
     return render_template(
         "project/project_user_search.html.j2",
         user_project_search_list=json.dumps(project_list_of_dicts),
+    )
+
+
+@data_platform_project_bp.route("/data-platform/rule-management", methods=["GET"])
+@openid_login_required
+def rule_management():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    def get_zones():
+        response = requests.get(f"{API_URL}/v1/irods/zones", headers=header)
+        response.raise_for_status()
+        response = response.json()
+        return [item["jobid"] for item in response]
+
+    def get_irods_credentials(jobid):
+        response = requests.post(
+            f"{API_URL}/v1/irods/zones/{jobid}/admin_token", headers=header
+        )
+        response.raise_for_status()
+        response = response.json()
+        irods_environment = response["irods_environment"]
+        password = response["token"]
+        return irods_environment, password
+
+    rule_info = []
+    for zone in get_zones():
+        zone_environment, password = get_irods_credentials(zone)
+        with iRODSSession(**zone_environment, password=password) as session:
+            query = session.query(
+                RuleExec.name,
+                RuleExec.id,
+                RuleExec.user_name,
+                RuleExec.time,
+                RuleExec.last_exe_time,
+                RuleExec.frequency,
+            )
+            for item in query:
+                rule_info.append(list(item.values()))
+                rule_info[-1].insert(0, session.zone)
+
+    utc_tz = pytz.timezone("UTC")
+    local_tz = pytz.timezone("Europe/Brussels")
+    for item in rule_info:
+        if item[5] is not None:
+            item[4] = utc_tz.localize(item[4])
+            local_tz_time = item[4].astimezone(local_tz)
+            item[4] = datetime.strftime(local_tz_time, "%Y-%m-%d %H:%M:%S")
+            item[4] = datetime.strptime(item[4], "%Y-%m-%d %H:%M:%S")
+            item[5] = utc_tz.localize(item[5])
+            local_tz_time = item[5].astimezone(local_tz)
+            item[5] = datetime.strftime(local_tz_time, "%Y-%m-%d %H:%M:%S")
+            item[5] = datetime.strptime(item[5], "%Y-%m-%d %H:%M:%S")
+            delta = item[4] - datetime.now().replace(microsecond=0)
+            item.insert(4, delta)
+        else:
+            item.insert(4, "Not executed yet!")
+
+    return render_template(
+        "project/rule_management.html.j2",
+        rule_info=rule_info,
     )

@@ -1,0 +1,86 @@
+{% extends "base_openid.html.j2" %}
+
+{% block custom_style %}
+<style type="text/css">
+.table {
+  width: 1600px;
+  margin: 0 auto;
+  margin-top: 2em;
+}
+.no_exec {
+    color: red;
+}
+</style>
+{% endblock %}
+
+{% block container %}
+   <div class="m-2">
+   <nav aria-label="breadcrumb m-2">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">rules</li>
+    </ol>
+  </nav>
+  </div>
+
+
+<div class="title">
+  <h1 class="text-primary text-center">Delay Rules</h1>
+</div>
+
+<div class="table">
+  <table class="table table-striped table-hover">
+      <thead>
+      <tr>
+        <th>Zone</th>
+        <th>Rule Name</th>
+        <th>Rule ID</th>
+        <th>Executer</th>
+        <th>Remaining Time</th>
+        <th>Next Execution Time</th>
+        <th>Last Execution Time</th>
+        <th>Frequency</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for item in rule_info %}
+      <tr>
+        <td class="align-middle">
+          {{ item[0] }}
+        </td>
+        <td class="align-middle">
+          {{ item[1] }}
+        </td>
+        <td class="align-middle">
+          {{ item[2] }}
+        </td>
+        <td class="align-middle">
+          {{ item[3] }}
+        </td>
+        <td class="align-middle">
+        {% if item[4] is string %}
+        {{ item[4] }}
+        {% else %}
+        {% if item[4].total_seconds() < 0 %} <em class="no_exec"> {{ item[4] }} </em>
+        {% else %}
+        {{ item[4] }}
+        {% endif %}{% endif %}
+        </td>
+        <td class="align-middle">
+          {{ item[5] }}
+        </td>
+        <td class="align-middle">
+          {{ item[6] }}
+        </td>
+        <td class="align-middle">
+          {{ item[7] }}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    
+{% endblock container %}
