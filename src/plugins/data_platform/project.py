@@ -681,7 +681,7 @@ def rule_management():
         value = utc.localize(value, is_dst=None).astimezone(pytz.utc)
         local_dt = value.astimezone(tz)
         local_dt = local_dt.strftime(format)
-        return datetime.strptime(local_dt, "%Y-%m-%d %H:%M:%S")
+        return datetime.strptime(local_dt, format)
 
     for item in rule_info:
         if item[5] is not None:
