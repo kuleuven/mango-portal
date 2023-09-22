@@ -11,12 +11,18 @@
                              width="137"
                              style="margin: -10px auto" />
                         <span class="fw-bold fs-5 align-bottom"><i class="bi bi-boxes"></i> {{ g.irods_session.zone }}</span>
+                    {% elif request.headers["Host"] and "vscentrum" in request.headers["Host"] %}
+                        <img class="logo"
+                             alt="logo"
+                             src="{{ url_for('static', filename='vsc-combi.webp') }}"
+                             width="137"
+                             style="margin: -10px auto" />
                     {% else %}
-                        {# <img class="logo"
+                        <img class="logo"
                              alt="logo"
                              src="{{ url_for('static', filename='logo.svg') }}"
                              width="137"
-                             style="margin: -10px auto" /> #}
+                             style="margin: -10px auto" />
                         <img class="logo"
                              alt="logo"
                              src="{{ url_for('static', filename='mango-logo.svg') }}"
@@ -61,10 +67,19 @@
                         <li>
                             <a class="dropdown-item" href="{{ url_for('user_bp.my_profile')}}">My profile</a>
                         </li>
+                    
+                        <li>
+                            <a class="dropdown-item" href="/data-platform/connection-info">How to connect</a>
+                        </li>
                         <li>
                             <hr class="dropdown-divider" />
                         </li>
-                        
+                        {% if 'openid_session' in session %}
+                            <li>
+                                <a class="dropdown-item"
+                                   href="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}">Switch zone</a>
+                            </li>
+                        {% endif %}
                         {% if config['MANGO_AUTH'] == 'localdev' %}
                             <li>
                                 <a class="dropdown-item disabled" href="#">Sign out</a>
@@ -75,6 +90,7 @@
                                    href="{{ url_for(config['MANGO_LOGOUT_ACTION']) }}">Sign out</a>
                             </li>
                         {% endif %}
+                        <!--<li><a class="dropdown-item" href="#">Switch to admin</a></li>-->
                     </ul>
                 </div>
             {% endif %}

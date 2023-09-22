@@ -13,6 +13,13 @@
             </li>
           {% endfor %}
         </ul>
+        {% if group_name != 'public' %}
+          {% set project_name = group_name | replace("_manager", "") | replace("_responsible", "") %}
+          <div>
+            <a class="btn btn-block btn-primary m-2"
+               href="{{ url_for('data_platform_project_bp.project', project_name = project_name) }}">Project details</a>
+          </div>
+        {% endif %}
       </div>
     </div>
   </div>
