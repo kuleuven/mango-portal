@@ -125,14 +125,11 @@ with app.app_context():
 # import plugin blueprints dynamically based on the configuration
 
 for mango_plugin_bp in app.config.get('MANGO_PLUGIN_BLUEPRINTS', []):
-    app.register_blueprint(
-        getattr(
-            importlib.import_module(mango_plugin_bp["module"]),
-            mango_plugin_bp["blueprint"],
-        )
-    )
+    module = importlib.import_module(mango_plugin_bp["module"])
+    app.register_blueprint(getattr(module, mango_plugin_bp["blueprint"]))
 
-
+if app.config.get('DEBUG', False):
+    print(app.url_map)
 
 from mango_ui import admin_navbar_entries, navbar_entries
 

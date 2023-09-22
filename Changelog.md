@@ -2,6 +2,14 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.15.0 (development, sharing with TU Delft)[TBD]
+
+## New features
+
+The main changes are related to the possibility of a generic use of the ManGO portal for other installations with third parties and is necessary to fully open source the software stack.
+
+A dedicated document is created in the file `Custom-deployments.md` which is WIP
+
 ## Release 0.14.1 [2023-08-22 (t,q,p)]
 
 ### Smaller improvements and bug fixes

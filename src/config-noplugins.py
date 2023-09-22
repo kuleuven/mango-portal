@@ -1,8 +1,8 @@
 import os
 
 MANGO_AUTH = os.environ.get("MANGO_AUTH", "login")  # "localdev" or "login"
-MANGO_LOGIN_ACTION = "data_platform_user_bp.login_openid"
-MANGO_LOGOUT_ACTION = "data_platform_user_bp.logout_openid"
+MANGO_LOGIN_ACTION = "user_bp.login_basic"
+MANGO_LOGOUT_ACTION = "user_bp.logout_basic"
 UPLOAD_FOLDER = "/tmp"
 SECRET_KEY = os.environ.get("SECRET_KEY", "HV44H6oH-eKMqJDU0W6Xw6ch_c4wpmDWf5tgD0p-0Gc")
 DATA_OBJECT_MAX_SIZE_PREVIEW = 1024 * 1024 * 128  # 128MiB
@@ -35,8 +35,6 @@ USER_MAX_HOME_SIZE = 100 * 10**6  # 100MB
 HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
 
 MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG = "config/template_override_rules_basic.yml"
-
-MANGO_ENABLE_CORE_PLUGINS = [] #deprecated
 
 MANGO_ADMINS = [] # list of usernames that would be considered ManGO portal admins
 
