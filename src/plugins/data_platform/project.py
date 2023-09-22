@@ -430,6 +430,15 @@ def convert_bytes_to_GB(size_bytes, conversion_to="GB"):
     return round(float_size, 2)
 
 
+def calculate_usage_percent(quota, usage):
+    if quota == 0:
+        return "No quota set!"
+    if quota > 0 and usage == 0:
+        return "0 %"
+    usage_percent = (usage / quota) * 100
+    return f"{round(usage_percent, 2)} %"
+
+
 @data_platform_project_bp.route("/data-platform/statistics", methods=["GET"])
 @openid_login_required
 def projects_statistics():
@@ -465,6 +474,10 @@ def projects_statistics():
                 [x["used_size"] for x in project["usage"]][-1]
             ),
             "quota_set": convert_bytes_to_GB(project["project"]["quota_size"]),
+            "quota_usage_rate": calculate_usage_percent(
+                project["project"]["quota_size"],
+                [x["used_size"] for x in project["usage"]][-1],
+            ),
             "responsible_name": project["responsibles"][0]["name"]
             if project["responsibles"] != None
             else "",
