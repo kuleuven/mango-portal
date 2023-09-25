@@ -71,18 +71,6 @@ then the zone(s) are read and a login form is activated where any valid user can
 
 To be written
 
-## iRODS zones configuration
-
-As the ManGO portal is multi-tenant out of the box, the iRODS zones it should serve are configured via a dedicated file `irods_zones_config.py` which contains dictionary structures with parameters for the zones concerned. 
-
-The parameters are mainly for authentication, but some extra parameters are available to display custom logos and optionally a splash image:
-
-```python
-    # located in static folder
-    "logo": "vsc-combi.webp",  
-    "splash_image": "portal2.jpg",
-```
-
 ## Main landing page
 
 The main landing page is also available for custom override via the `MANGO_CONFIG` parameter `MANGO_MAIN_LANDING_ROUTE`
@@ -167,3 +155,7 @@ The admin pages (if any) are only accessible for a set of explicitely defined iR
 ```python
 MANGO_ADMINS = ['rods', 'u0123318'] # list of usernames that would be considered ManGO portal admins
 ```
+
+## Tika for meta data inspection and extraction
+
+This functionality will be moved to a dedicated plugin. In order to use it, tika needs to be set up in server mode. The instructions can be found on the corresponding web site https://tika.apache.org/
