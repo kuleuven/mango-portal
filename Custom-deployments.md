@@ -33,17 +33,39 @@ MANGO_PLUGIN_BLUEPRINTS = [
 ]
 ```
 
+## iRODS zones configuration
+
+As the ManGO portal is multi-tenant out of the box, the iRODS zones it should serve are configured via a dedicated file `irods_zones_config.py` which contains dictionary structures with parameters for the zones concerned. 
+
+The parameters are mainly for authentication, but some extra parameters are available to display custom logos and optionally a splash image:
+
+```python
+    # located in static folder
+    "logo": "vsc-combi.webp",  
+    "splash_image": "portal2.jpg",
+```
+
+A correct configuration is mandatory for the default login mode when using the generic portal server startup through `src/run_waitress_generic.sh`
+
 ## Authentication
 
 Authentication is possible for generic installations in development mode or by using the standard iRODS authentication. The main environment parameter that configures the authentication method is `MANGO_AUTH`
 
 ### Local development mode
 
-When specifyng `MANGO_AUTH=localdev`, the zone and session parameters are read from `~/.irods/irods_environment.json`
+When specifyng `MANGO_AUTH=localdev` either as an environment variable or by configuration in `MANGO_CONFIG`, the zone and session parameters are read from `~/.irods/irods_environment.json` and a login using those local credentials is performed automatically. The provided startup script `src/run_waitress_generic_local.sh` has this configuration
 
 ### Basic authentication
 
-To be written
+When specifying  `MANGO_AUTH=login` and the configuration has specified the required login routes:
+
+```python
+  MANGO_LOGIN_ACTION = "user_bp.login_basic"
+  MANGO_LOGOUT_ACTION = "user_bp.logout_basic"
+```
+
+then the zone(s) are read and a login form is activated where any valid user can login using the correct iRODS credentials.
+
 
 ### OIDC plugin (KUL specific, can be used for inspiration)
 
