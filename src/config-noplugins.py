@@ -1,3 +1,5 @@
+# This configuration is meant for a vanilla iRODS installation and should work out of the box
+# provided either 
 import os
 
 MANGO_AUTH = os.environ.get("MANGO_AUTH", "login")  # "localdev" or "login"
