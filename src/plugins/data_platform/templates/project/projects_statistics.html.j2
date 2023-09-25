@@ -76,6 +76,17 @@ div.dataTables_wrapper {
                                                             { data: 'responsible_account', title: "Responsible (account)"},
                                                             { data: 'sap_ref', title: "SAP"},
                                                           ],
+                                                  columnDefs: [
+                                                                {
+                                                                  targets:1,
+                                                                  render: function ( data, type ) {
+                                                                      if(type === 'display'){
+                                                                          data = '<a href="project/' + encodeURIComponent(data) + '">' + data + '</a>';
+                                                                      }
+                                                                      return data;
+                                                                  }
+                                                                }
+                                                              ],
                                                   scrollX: true,
                                                   "autoWidth": false,
                                                   responsive: true,
