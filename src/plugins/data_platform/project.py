@@ -58,6 +58,13 @@ def project(project_name):
 
     status = response.json()
 
+    response = requests.get(
+        f"{API_URL}/v1/projects/{project_name}/quota", headers=header
+    )
+    response.raise_for_status()
+
+    quotalog = response.json()
+
     project["activated"] = (
         not project["archived"]
         or not project["valid_after"]
@@ -89,6 +96,7 @@ def project(project_name):
         "project/project_view.html.j2",
         project=project,
         status=status,
+        quotalog=quotalog,
         zones=zones,
         admin=("operator" in perms or "admin" in perms),
     )

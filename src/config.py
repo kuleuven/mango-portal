@@ -3,7 +3,6 @@ import os
 MANGO_AUTH = os.environ.get("MANGO_AUTH", "login")  # "localdev" or "login"
 MANGO_LOGIN_ACTION = "data_platform_user_bp.login_openid"
 MANGO_LOGOUT_ACTION = "data_platform_user_bp.logout_openid"
-UPLOAD_FOLDER = "/tmp"
 SECRET_KEY = os.environ.get("SECRET_KEY", "HV44H6oH-eKMqJDU0W6Xw6ch_c4wpmDWf5tgD0p-0Gc")
 DATA_OBJECT_MAX_SIZE_PREVIEW = 1024 * 1024 * 128  # 128MiB
 DATA_OBJECT_MAX_SIZE_DOWNLOAD = 1024 * 1024 * 1024 * 50  # 50GiB
@@ -33,15 +32,27 @@ TIKA_URL = os.environ.get("TIKA_URL", "http://localhost:9998/")
 USER_MAX_HOME_SIZE = 100 * 10**6  # 100MB
 MANGO_GLOBAL_SEARCH_ACTION = "mango_open_search_bp.zone_search"
 HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
-MANGO_ENABLE_CORE_PLUGINS = [
-    "admin",
-    "mango_open_search",
-    "data_platform",
-    "operator",
-    "operator_group_manager",
-    "user_tantra",
-    "template_overrides",
+
+   
+
+MANGO_PLUGIN_BLUEPRINTS = [
+    # {"module": "", "blueprint": ""},
+    {"module": "plugins.mango_open_search.search", "blueprint": "mango_open_search_bp"},
+    {"module": "plugins.mango_open_search.admin", "blueprint": "mango_open_search_admin_bp"},
+    {"module": "plugins.mango_open_search.api", "blueprint": "mango_open_search_api_bp"},
+    {"module": "plugins.mango_open_search.stats", "blueprint": "mango_open_search_stats_bp"},
+    {"module": "plugins.data_platform.user", "blueprint": "data_platform_user_bp"},
+    {"module": "plugins.data_platform.project", "blueprint": "data_platform_project_bp"},
+    {"module": "plugins.data_platform.autocomplete", "blueprint": "data_platform_autocomplete_bp"},
+    {"module": "plugins.operator_group_manager.admin", "blueprint": "operator_group_manager_admin_bp"},
+    {"module": "plugins.operator.admin", "blueprint": "operator_admin_bp"},
+    {"module": "plugins.admin.admin", "blueprint": "admin_admin_bp"},
+    {"module": "plugins.template_overrides.admin", "blueprint": "template_overrides_admin_bp"},
+    {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
+    {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
 ]
+
+
 
 MANGO_MODULE_ADMIN_BP = [
     "admi_admin_bp",

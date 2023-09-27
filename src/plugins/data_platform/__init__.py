@@ -341,3 +341,7 @@ class Session(dict):
         payload = response.json()
 
         return payload
+
+# moved here from the main app/config: if the dataplatform plugin is loaded, it should take over the zones config
+from app import app
+update_zone_info(app.config["irods_zones"])
