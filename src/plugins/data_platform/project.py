@@ -696,3 +696,46 @@ def rule_management():
         "project/rule_management.html.j2",
         rule_info=rule_info,
     )
+
+
+@data_platform_project_bp.route("/data-platform/quota-change", methods=["GET"])
+@openid_login_required
+def project_quota_change():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    response = requests.get(f"{API_URL}/v1/projects/quota", headers=header)
+
+    response.raise_for_status()
+
+    projects = response.json()
+
+    projects_list = []
+    for project in projects:
+        for day in project["log"]:
+            projects_list.append(
+                {
+                    "project_name": project["name"],
+                    "project_type": project["type"],
+                    "quota_set": convert_bytes_to_GB(
+                        day["quota_size"], conversion_to="TB"
+                    ),
+                    "quota_set_date": day["date"],
+                    "responsible_name": (
+                        project["responsibles"][0]["name"]
+                        if len(project["responsibles"]) != 0
+                        else ""
+                    ),
+                    "responsible_account": (
+                        project["responsibles"][0]["username"]
+                        if len(project["responsibles"]) != 0
+                        else ""
+                    ),
+                    "sap_ref": project["sap_ref"],
+                }
+            )
+
+    return render_template(
+        "project/projects_quota_change.html.j2",
+        projects_list=json.dumps(projects_list),
+    )
