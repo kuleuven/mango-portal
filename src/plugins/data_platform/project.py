@@ -596,7 +596,11 @@ def project_user_search():
     projects_list = []
     for project in projects:
         if project["platform"] == "irods":
-            zone_name = "-".join(project["platform_options"][0]["value"].split("-")[4:])
+            zone_name = [
+                "-".join(x["value"].split("-")[4:])
+                for x in project["platform_options"]
+                if x["key"] == "zone-jobid"
+            ][0]
             projects_list.append((zone_name, project["name"], project["type"]))
         else:
             projects_list.append(("Non iRODS", project["name"], ""))
