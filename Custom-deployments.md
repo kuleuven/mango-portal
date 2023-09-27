@@ -35,7 +35,7 @@ MANGO_PLUGIN_BLUEPRINTS = [
 
 ## iRODS zones configuration
 
-As the ManGO portal is multi-tenant out of the box, the iRODS zones it should serve are configured via a dedicated file `irods_zones_config.py` which contains dictionary structures with parameters for the zones concerned. 
+As the ManGO portal is multi-tenant out of the box, the iRODS zones (one or more) it should serve are configured via a dedicated file specified via `IRODS_ZONES_CONFIG` env variable (with a default `irods_zones_config.py`) which contains dictionary structures with parameters for the zones concerned. 
 
 The parameters are mainly for authentication, but some extra parameters are available to display custom logos and optionally a splash image:
 
@@ -45,7 +45,7 @@ The parameters are mainly for authentication, but some extra parameters are avai
     "splash_image": "portal2.jpg",
 ```
 
-A correct configuration is mandatory for the default login mode when using the generic portal server startup through `src/run_waitress_generic.sh`
+A correct configuration is mandatory for the default login mode when using the generic portal server startup through `src/run_waitress_generic.sh`.  `irods_zones_config_minimal.py` can be used as a stareting point to add your own zones zonfiguration.
 
 ## Authentication
 
@@ -64,7 +64,7 @@ When specifying  `MANGO_AUTH=login` and the configuration has specified the requ
   MANGO_LOGOUT_ACTION = "user_bp.logout_basic"
 ```
 
-then the zone(s) are read and a login form is activated where any valid user can login using the correct iRODS credentials.
+then the zone(s) are read and a login form is activated where any valid user can login using the correct iRODS credentials. Make sure that `IRODS_ZONES_CONFIG` points to a valid configuration.
 
 
 ### OIDC plugin (KUL specific, can be used for inspiration)
@@ -159,3 +159,9 @@ MANGO_ADMINS = ['rods', 'u0123318'] # list of usernames that would be considered
 ## Tika for meta data inspection and extraction
 
 This functionality will be moved to a dedicated plugin. In order to use it, tika needs to be set up in server mode. The instructions can be found on the corresponding web site https://tika.apache.org/
+
+For the ManGO portal, the tika URL needs to be specified in `MANGO_CONFIG` with the entry either hard coded or env variable `TIKA_URL`
+
+```python
+TIKA_URL = os.environ.get("TIKA_URL", "http://localhost:9998/")
+```

@@ -59,11 +59,8 @@ import platform
 import version
 
 
-from irods_zones_config import (
-    irods_zones,
-    DEFAULT_IRODS_PARAMETERS,
-    DEFAULT_SSL_PARAMETERS,
-)
+irods_zone_config_module = importlib.import_module(os.getenv('IRODS_ZONES_CONFIG', 'irods_zones_config.py').rstrip('.py'))
+
 import irods_session_pool
 from werkzeug.exceptions import HTTPException
 
@@ -71,7 +68,7 @@ import datetime
 
 
 print(f"Flask version {flask.__version__}")
-app.config["irods_zones"] = irods_zones
+app.config["irods_zones"] = irods_zone_config_module.irods_zones
 
 
 # set the loggin level to the configured one
@@ -233,8 +230,8 @@ def init_and_secure_views():
         if not irods_session and "password" in session and "zone" in session:
             # try to recreate a session object,maybe the password is still valid
             try:
-                parameters = DEFAULT_IRODS_PARAMETERS.copy()
-                ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
+                parameters = irods_zone_config_module.DEFAULT_IRODS_PARAMETERS.copy()
+                ssl_settings = irods_zone_config_module.DEFAULT_SSL_PARAMETERS.copy()
                 zone = session["zone"]
                 parameters.update(app.config["irods_zones"][zone]["parameters"])
                 ssl_settings.update(app.config["irods_zones"][zone]["ssl_settings"])
