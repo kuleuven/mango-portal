@@ -461,11 +461,14 @@ def projects_statistics():
         projects = []
 
     def create_project_dict(project):
-        zone_name = (
-            "-".join(project["project"]["platform_options"][0]["value"].split("-")[4:])
-            if project["project"]["platform"] == "irods"
-            else "Non iRODS"
-        )
+        if project["project"]["platform"] == "irods":
+            zone_name = [
+                "-".join(x["value"].split("-")[4:])
+                for x in project["project"]["platform_options"]
+                if x["key"] == "zone-jobid"
+            ][0]
+        else:
+            zone_name = "Non iRODS"
         return {
             "zone_name": zone_name,
             "project_name": project["project"]["name"],
@@ -527,9 +530,11 @@ def projects_usage():
         if project["project"]["platform"] == "irods":
             for usage in project["usage"]:
                 projects_dict["date"].append(usage["date"])
-                zone_name = "-".join(
-                    project["project"]["platform_options"][0]["value"].split("-")[4:]
-                )
+                zone_name = [
+                    "-".join(x["value"].split("-")[4:])
+                    for x in project["project"]["platform_options"]
+                    if x["key"] == "zone-jobid"
+                ][0]
                 projects_dict["zone"].append(zone_name)
                 projects_dict["project_name"].append(project["project"]["name"])
                 projects_dict["usage"].append(convert_bytes_to_GB(usage["used_size"]))
