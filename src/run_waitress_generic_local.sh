@@ -9,7 +9,7 @@ export SERVICE_PORT=3000
 export spOption="mango_portal"
 
 #export MANGO_AUTH="via_callback"
-export MANGO_CONFIG=config-noplugins.py
+export MANGO_CONFIG=config_noplugins.py
 export MANGO_AUTH=localdev #login
 export HOSTNAME
 
