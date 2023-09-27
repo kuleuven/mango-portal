@@ -717,10 +717,6 @@ def project_quota_change():
                 {
                     "project_name": project["name"],
                     "project_type": project["type"],
-                    "quota_set": convert_bytes_to_GB(
-                        day["quota_size"], conversion_to="TB"
-                    ),
-                    "quota_set_date": day["date"],
                     "responsible_name": (
                         project["responsibles"][0]["name"]
                         if len(project["responsibles"]) != 0
@@ -732,6 +728,11 @@ def project_quota_change():
                         else ""
                     ),
                     "sap_ref": project["sap_ref"],
+                    "quota_set": convert_bytes_to_GB(
+                        day["quota_size"], conversion_to="TB"
+                    ),
+                    "quota_set_date": day["date"],
+                    "quota_modified_by": day["modified_by"],
                 }
             )
 
