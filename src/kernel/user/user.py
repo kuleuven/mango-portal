@@ -87,8 +87,14 @@ def group_members(group_name):
     except Exception:
         status = "Error"
 
+    view_template = get_template_override_manager(
+        g.irods_session.zone
+    ).get_template_for_catalog_item(
+        None, "user/group_members.html.j2"
+    )
+
     return render_template(
-        "user/group_members.html.j2",
+        view_template,
         group_name=group_name,
         members=members,
         status=status,
