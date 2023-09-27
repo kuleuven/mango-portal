@@ -172,10 +172,11 @@
     <div class="mt-2">
         <a href="{{url_for('data_platform_project_bp.rule_management')}}" class="btn btn-block btn-primary">Rule Management</a>
         <a href="{{url_for('data_platform_project_bp.project_quota_change')}}" class="btn btn-block btn-primary">Quota Change</a>
-        {% elif finance %}
-        <a href="{{url_for('data_platform_project_bp.project_quota_change')}}" class="btn btn-block btn-primary">Quota Change</a>
     </div>
-
+    {% elif finance %}
+    <div class="mt-2">
+    <a href="{{url_for('data_platform_project_bp.project_quota_change')}}" class="btn btn-block btn-primary">Quota Change</a>
+    </div>
     <!-- Add project model -->
     <div class="modal fade"
         id="addRodsProject"
