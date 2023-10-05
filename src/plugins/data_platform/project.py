@@ -18,7 +18,7 @@ from flask import (
     session,
     flash,
 )
-
+from cache import cache
 from . import API_URL, current_user_api_token, openid_login_required, Session
 
 data_platform_project_bp = Blueprint(
@@ -597,6 +597,7 @@ def projects_usage():
 
 @data_platform_project_bp.route("/data-platform/project_user_search", methods=["GET"])
 @openid_login_required
+@cache.cached(timeout=120)
 def project_user_search():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
