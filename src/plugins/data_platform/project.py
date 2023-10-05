@@ -627,7 +627,7 @@ def project_user_search():
             "project_type": "",
             "zone_name": "",
         }
-    ] * 4
+    ]
     for project in projects_list:
         response = requests.get(
             f"{API_URL}/v1/projects/{project[1]}/members", headers=header
