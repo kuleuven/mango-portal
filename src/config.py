@@ -15,7 +15,7 @@ DATA_OBJECT_PREVIEW_ALLOWED_SUFFIXES = (
     "tiff",
     "gif",
 )
-CACHE_TYPE = "SimpleCache"
+CACHE_TYPE = "FileSystemCache"
 CACHE_DEFAULT_TIMEOUT = 300
 CACHE_DIR = "storage/cache"
 DEBUG = os.environ.get("DEBUG", False)

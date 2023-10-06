@@ -89,8 +89,8 @@ bootstrap = Bootstrap5(app)
 # register csrf on the main app
 csrf.init_app(app)
 
-# Caching, make sure the filesystem dir exists
-if not os.path.exists(app.config["CACHE_DIR"]):
+# Caching, make sure the filesystem dir existsif CACHE_TYPE  is FileSystemCache 
+if app.config["CACHE_TYPE"] == "FileSystemCache" and not os.path.exists(app.config["CACHE_DIR"]):
     os.makedirs(app.config["CACHE_DIR"])
 
 cache.init_app(app)

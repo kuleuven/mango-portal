@@ -17,14 +17,23 @@ from flask import (
     url_for,
     session,
     flash,
+    current_app,
 )
 from cache import cache
+from signals import mango_signals
 from . import API_URL, current_user_api_token, openid_login_required, Session
 
 data_platform_project_bp = Blueprint(
     "data_platform_project_bp", __name__, template_folder="templates"
 )
 
+project_changed = mango_signals.signal("project_changed")
+
+def project_user_search_cache_update_listener(sender, **params):
+    cache_item_path = f"view/{url_for('data_platform_project_bp.project_user_search')}"
+    cache.delete(cache_item_path)
+
+project_changed.connect(project_user_search_cache_update_listener)
 
 @data_platform_project_bp.route(
     "/data-platform/project/<project_name>", methods=["GET"]
@@ -123,6 +132,8 @@ def add_project_member():
 
     flash(response.json()["message"], "success")
 
+    project_changed.send(current_app._get_current_object())
+
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
 
@@ -143,6 +154,8 @@ def delete_project_member():
     response.raise_for_status()
 
     flash(response.json()["message"], "success")
+
+    project_changed.send(current_app._get_current_object())
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
@@ -195,6 +208,8 @@ def modify_project():
 
     flash(response.json()["message"], "success")
 
+    project_changed.send(current_app._get_current_object())
+
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
 
@@ -243,6 +258,8 @@ def set_project_options():
 
         flash(response.json()["message"], "success")
 
+        project_changed.send(current_app._get_current_object())
+
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
 
@@ -289,6 +306,8 @@ def deploy_project():
     response.raise_for_status()
 
     flash(response.json()["message"], "success")
+
+    project_changed.send(current_app._get_current_object())
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
@@ -368,6 +387,8 @@ def add_irods_project():
     response.raise_for_status()
     flash(response.json()["message"], "success")
 
+    project_changed.send(current_app._get_current_object())
+
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
 
@@ -389,6 +410,8 @@ def add_generic_project():
     response.raise_for_status()
 
     flash(response.json()["message"], "success")
+
+    project_changed.send(current_app._get_current_object())
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
@@ -597,7 +620,7 @@ def projects_usage():
 
 @data_platform_project_bp.route("/data-platform/project_user_search", methods=["GET"])
 @openid_login_required
-@cache.cached(timeout=120)
+@cache.cached(timeout=3600)
 def project_user_search():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
