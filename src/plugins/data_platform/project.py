@@ -29,11 +29,14 @@ data_platform_project_bp = Blueprint(
 
 project_changed = mango_signals.signal("project_changed")
 
+
 def project_user_search_cache_update_listener(sender, **params):
     cache_item_path = f"view/{url_for('data_platform_project_bp.project_user_search')}"
     cache.delete(cache_item_path)
 
+
 project_changed.connect(project_user_search_cache_update_listener)
+
 
 @data_platform_project_bp.route(
     "/data-platform/project/<project_name>", methods=["GET"]
@@ -641,17 +644,7 @@ def project_user_search():
             projects_list.append((zone_name, project["name"], project["type"]))
         else:
             projects_list.append(("Non iRODS", project["name"], ""))
-    project_list_of_dicts = [
-        {
-            "user_name": "",
-            "user_account": "",
-            "user_role": "",
-            "user_email": "",
-            "project_name": "",
-            "project_type": "",
-            "zone_name": "",
-        }
-    ]
+    project_list_of_dicts = []
     for project in projects_list:
         response = requests.get(
             f"{API_URL}/v1/projects/{project[1]}/members", headers=header
