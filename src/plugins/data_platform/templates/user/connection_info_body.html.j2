@@ -16,9 +16,6 @@
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="pill" href="#sftp">SFTP Client</a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="pill" href="#davrods">WebDAV</a>
-      </li>
     </ul>
 
     <div class="tab-content">
@@ -164,22 +161,6 @@ with iRODSSession(irods_env_file=env_file) as session:
           </li>
         </ol>
       </div>
-      <div class="tab-pane container fade p-1" id="davrods">
-        <p style="margin-top: 10px">Access via WebDAV to iRODS is enabled but not supported.
-          For programs that support it, use SFTP.
-          If WebDAV access is used in Windows drive mapping, it is known to give regular timeouts.
-        </p>
-        <p>
-          To connect to Davrods via WebDAV, go to
-          <a href="https://{{ info['irods_environment']['irods_host'] }}:8443/"
-            >https://{{ info['irods_environment']['irods_host'] }}:8443/</a
-          >
-          and enter the username and password displayed in the first tab. <br /><b
-            >Make sure to copy the password without leading or trailing spaces.</b
-          >
-        </p>
-      </div>
-    </div>
     {% else %}
     <p style="margin-top: 10px">
       You can use SFTP to connect to iRODS and use programs such as Filezilla, WinSCP or <code>lftp</code>.
