@@ -87,7 +87,7 @@ def zone_search():
                             {
                                 "multi_match": {
                                     "query": request.values["search_string"],
-                                    "fields": ["irods_name^4", "mango_simple_text_basket"],
+                                    "fields": ["irods_name^4", "mango_descriptive_text_basket"],
                                     "fuzziness": "AUTO",
                                     "fuzzy_transpositions": True,
                                     "minimum_should_match": 1,
