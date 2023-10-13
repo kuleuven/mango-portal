@@ -14,6 +14,7 @@ import signals
 from flask import current_app
 import multidict
 import traceback
+import json
 
 mango_prefix = ""  #
 
@@ -183,7 +184,6 @@ def check_mapping_for_avu_name(avu_name):
 
 
 def update_mapping_schema():
-    
     mappings = {
         "properties": {
             "mango_noschema_flat_fields": {"type": "flat_object"},
@@ -239,8 +239,10 @@ def get_open_search_doc_id(
 ):
     return f"{zone}_{item_type}_{item_id}"
 
-def aggregate_descriptive_field_values(fields: dict, mango_descriptive_text_basket: list) -> None:
 
+def aggregate_descriptive_field_values(
+    fields: dict, mango_descriptive_text_basket: list
+) -> None:
     def add_text(value_or_values):
         if type(value_or_values) is list:
             mango_descriptive_text_basket.extend(value_or_values)
@@ -250,7 +252,7 @@ def aggregate_descriptive_field_values(fields: dict, mango_descriptive_text_bask
     white_listed_fields = ["irods_name"]
     black_listed_prefix = ("irods_", "mango_descriptive_text_basket")
     match_text_partials = ["name", "title", "description", "comment", "summary"]
-    
+
     for field_name in fields.keys():
         if field_name in white_listed_fields:
             add_text(fields[field_name])
@@ -260,7 +262,7 @@ def aggregate_descriptive_field_values(fields: dict, mango_descriptive_text_bask
         for partial in match_text_partials:
             if partial in field_name_lower:
                 add_text(fields[field_name])
-                    
+
 
 def get_basic_index_doc_for_item(
     irods_session: iRODSSession, item: iRODSCollection | iRODSDataObject, **options
@@ -270,7 +272,7 @@ def get_basic_index_doc_for_item(
     def get_no_schema_name(name):
         # return "mango_flat_field." + slugify(avu.name, separator="__")
         return slugify(avu.name, separator="__")
-    
+
     def unflatten_namespace_into_dict(
         target_dict: dict, namespaced_string: str, value=None
     ) -> dict:
@@ -289,7 +291,6 @@ def get_basic_index_doc_for_item(
     md_flat_fields = multidict.MultiDict()  # mg. special fields collection
     md_schema_flat_fields = multidict.MultiDict()  # schema fields collections
     md_noschema_flat_fields = multidict.MultiDict()  # everything else
-    
 
     # field_mappings = {}
     metadata_counts = {"schema": 0, "mango": 0, "other": 0}
@@ -315,13 +316,15 @@ def get_basic_index_doc_for_item(
         "mango_schema_flat_fields": md_schema_flat_fields,
         "mango_noschema_flat_fields": md_noschema_flat_fields,
     }
-    for (field_name_prefix, ff_md) in all_flat_fields.items():
+    for field_name_prefix, ff_md in all_flat_fields.items():
         if len(ff_md) > 0:
             fields[field_name_prefix] = {}
             for key in set(ff_md.keys()):
                 values = ff_md.getall(key)
                 value = values if len(values) > 1 else values[0]
-                aggregate_descriptive_field_values({key: value}, fields["mango_descriptive_text_basket"])
+                aggregate_descriptive_field_values(
+                    {key: value}, fields["mango_descriptive_text_basket"]
+                )
                 unflatten_namespace_into_dict(fields[field_name_prefix], key, value)
 
     if metadata_counts["schema"]:
@@ -397,6 +400,7 @@ def get_basic_index_doc_for_item(
 
     return fields
 
+
 def generate_docs_for_children(
     irods_session: iRODSSession, collection: iRODSCollection, action="index"
 ):
@@ -434,6 +438,9 @@ def generate_docs_for_children(
             )
             logging.warn(traceback.format_exc())
             pass
+    # Code left here commented for possible future ad hoc re-use: save the fields as json (this is part of what is sent to OS)
+    # with open(f"/tmp/os-json-collection-{collection.id}.json", "w") as fp:
+    #     json.dump(docs,fp, indent=3, sort_keys=True, default=str)
     return docs
 
 
@@ -581,20 +588,19 @@ def delete_subtree_by_path(zone: str, item_path):
 
 
 def delete_all():
-    
     response = get_open_search_client(type="ingest").indices.delete(
         index=MANGO_OPEN_SEARCH_INDEX_NAME
     )
     logging.warning("deleted index entirely")
-    #print(response) # {'acknowledged': True}
+    # print(response) # {'acknowledged': True}
     response = get_open_search_client(type="ingest").indices.create(
         index=MANGO_OPEN_SEARCH_INDEX_NAME
     )
     logging.warning("Recreated empty index")
-    #print(response) # {'acknowledged': True}
+    # print(response) # {'acknowledged': True}
     mapping_result = update_mapping_schema()
     logging.info("Updating mapping for opensearch index")
-    #print(mapping_result)  # {'acknowledged': True}
+    # print(mapping_result)  # {'acknowledged': True}
     return response
 
 
