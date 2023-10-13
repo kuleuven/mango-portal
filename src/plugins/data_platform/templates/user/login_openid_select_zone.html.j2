@@ -165,10 +165,13 @@
             Add globus share
         </button>
 
-        <a href="{{url_for('data_platform_project_bp.project_overview')}}" class="btn btn-block btn-primary">Usage report</a>
         <a href="{{url_for('data_platform_project_bp.projects_statistics')}}" class="btn btn-block btn-primary">Statistics</a>
+        <a href="{{url_for('data_platform_project_bp.project_user_search')}}" class="btn btn-block btn-primary">Search User/Project</a>
     </div>
-
+    <div class="mt-2">
+        <a href="{{url_for('data_platform_project_bp.rule_management')}}" class="btn btn-block btn-primary">Rule Management</a>
+        <a href="{{url_for('data_platform_project_bp.project_quota_change')}}" class="btn btn-block btn-primary">Quota Change</a>
+    </div>
     <!-- Add project model -->
     <div class="modal fade"
         id="addRodsProject"
@@ -209,6 +212,27 @@
                 </div>
 
                 <div class="mb-3">
+                <label for="type" class="col-form-label">
+                    Project Type
+                </label>
+                <select
+                     class="form-select"
+                     id="type"
+                     name="type"
+                     required>
+                        <option value="project" selected>project</option>
+                        <option value="test">test</option>
+                        <option value="training">training</option>
+                        <option value="pilot">pilot</option>
+                        <option value="demo">demo</option>
+                </select>
+                <div class="invalid-feedback">
+                    A project type is required
+                </div>
+                </div>
+
+
+                <div class="mb-3">
                 <label for="zone" class="col-form-label">
                     Zone
                 </label>
@@ -228,7 +252,7 @@
 
                 <div class="mb-3">
                 <label for="layout" class="col-form-label">
-                    Type
+                    Platform Type
                 </label>
 
                 <div>
@@ -325,7 +349,12 @@
         </div>
         </div>
     </div>
+    {% elif finance %}
+    <div class="mt-2">
+        <a href="{{url_for('data_platform_project_bp.project_quota_change')}}" class="btn btn-block btn-primary">Quota Change</a>
+    </div>
     {% endif %}
+
 
     <div class="modal fade"
         id="connectInformation"

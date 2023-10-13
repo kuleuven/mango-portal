@@ -89,8 +89,8 @@ bootstrap = Bootstrap5(app)
 # register csrf on the main app
 csrf.init_app(app)
 
-# Caching, make sure the filesystem dir exists
-if not os.path.exists(app.config["CACHE_DIR"]):
+# Caching, make sure the filesystem dir existsif CACHE_TYPE  is FileSystemCache 
+if app.config["CACHE_TYPE"] == "FileSystemCache" and not os.path.exists(app.config["CACHE_DIR"]):
     os.makedirs(app.config["CACHE_DIR"])
 
 cache.init_app(app)
@@ -187,6 +187,9 @@ def init_and_secure_views():
         "data_platform_project_bp.set_project_options",
         "data_platform_project_bp.projects_statistics",
         "data_platform_project_bp.projects_usage",
+        "data_platform_project_bp.project_user_search",
+        "data_platform_project_bp.rule_management",
+        "data_platform_project_bp.project_quota_change",
         "operator_admin_bp.reset_all",
     ]:
         return None

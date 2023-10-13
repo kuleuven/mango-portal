@@ -5,7 +5,10 @@ import pandas as pd
 import plotly
 import plotly.express as px
 import plotly.graph_objects as go
+import pytz
 from datetime import datetime
+from irods.session import iRODSSession
+from irods.models import RuleExec
 from flask import (
     Blueprint,
     render_template,
@@ -14,13 +17,25 @@ from flask import (
     url_for,
     session,
     flash,
+    current_app,
 )
-
+from cache import cache
+from signals import mango_signals
 from . import API_URL, current_user_api_token, openid_login_required, Session
 
 data_platform_project_bp = Blueprint(
     "data_platform_project_bp", __name__, template_folder="templates"
 )
+
+project_changed = mango_signals.signal("project_changed")
+
+
+def project_user_search_cache_update_listener(sender, **params):
+    cache_item_path = f"view/{url_for('data_platform_project_bp.project_user_search')}"
+    cache.delete(cache_item_path)
+
+
+project_changed.connect(project_user_search_cache_update_listener)
 
 
 @data_platform_project_bp.route(
@@ -120,6 +135,8 @@ def add_project_member():
 
     flash(response.json()["message"], "success")
 
+    project_changed.send(current_app._get_current_object())
+
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
 
@@ -141,6 +158,8 @@ def delete_project_member():
 
     flash(response.json()["message"], "success")
 
+    project_changed.send(current_app._get_current_object())
+
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
 
@@ -154,6 +173,7 @@ def modify_project():
 
     if "description" in request.form:
         data = {
+            "type": request.form.get("type"),
             "description": request.form.get("description"),
             "sap_ref": request.form.get("sap_ref"),
             "vsc_call": request.form.get("vsc_call"),
@@ -190,6 +210,8 @@ def modify_project():
     response.raise_for_status()
 
     flash(response.json()["message"], "success")
+
+    project_changed.send(current_app._get_current_object())
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
@@ -239,6 +261,8 @@ def set_project_options():
 
         flash(response.json()["message"], "success")
 
+        project_changed.send(current_app._get_current_object())
+
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
 
@@ -285,6 +309,8 @@ def deploy_project():
     response.raise_for_status()
 
     flash(response.json()["message"], "success")
+
+    project_changed.send(current_app._get_current_object())
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
@@ -347,6 +373,7 @@ def add_irods_project():
         f"{API_URL}/v1/projects/{id}",
         headers=header,
         json={
+            "type": request.form.get("type"),
             "platform": request.form.get("platform"),
             "platform_options": [
                 {
@@ -361,8 +388,9 @@ def add_irods_project():
         },
     )
     response.raise_for_status()
-
     flash(response.json()["message"], "success")
+
+    project_changed.send(current_app._get_current_object())
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
@@ -385,6 +413,8 @@ def add_generic_project():
     response.raise_for_status()
 
     flash(response.json()["message"], "success")
+
+    project_changed.send(current_app._get_current_object())
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
@@ -434,6 +464,15 @@ def convert_bytes_to_GB(size_bytes, conversion_to="GB"):
     return round(float_size, 2)
 
 
+def calculate_usage_percent(quota, usage):
+    if quota == 0:
+        return "No quota set!"
+    if quota > 0 and usage == 0:
+        return "0 %"
+    usage_percent = (usage / quota) * 100
+    return f"{round(usage_percent, 2)} %"
+
+
 @data_platform_project_bp.route("/data-platform/statistics", methods=["GET"])
 @openid_login_required
 def projects_statistics():
@@ -456,18 +495,26 @@ def projects_statistics():
         projects = []
 
     def create_project_dict(project):
-        zone_name = (
-            "-".join(project["project"]["platform_options"][0]["value"].split("-")[4:])
-            if project["project"]["platform"] == "irods"
-            else "Non iRODS"
-        )
+        if project["project"]["platform"] == "irods":
+            zone_name = [
+                "-".join(x["value"].split("-")[4:])
+                for x in project["project"]["platform_options"]
+                if x["key"] == "zone-jobid"
+            ][0]
+        else:
+            zone_name = "Non iRODS"
         return {
             "zone_name": zone_name,
             "project_name": project["project"]["name"],
+            "project_type": project["project"]["type"],
             "usage_total": convert_bytes_to_GB(
                 [x["used_size"] for x in project["usage"]][-1]
             ),
             "quota_set": convert_bytes_to_GB(project["project"]["quota_size"]),
+            "quota_usage_rate": calculate_usage_percent(
+                project["project"]["quota_size"],
+                [x["used_size"] for x in project["usage"]][-1],
+            ),
             "responsible_name": project["responsibles"][0]["name"]
             if project["responsibles"] != None
             else "",
@@ -517,9 +564,11 @@ def projects_usage():
         if project["project"]["platform"] == "irods":
             for usage in project["usage"]:
                 projects_dict["date"].append(usage["date"])
-                zone_name = "-".join(
-                    project["project"]["platform_options"][0]["value"].split("-")[4:]
-                )
+                zone_name = [
+                    "-".join(x["value"].split("-")[4:])
+                    for x in project["project"]["platform_options"]
+                    if x["key"] == "zone-jobid"
+                ][0]
                 projects_dict["zone"].append(zone_name)
                 projects_dict["project_name"].append(project["project"]["name"])
                 projects_dict["usage"].append(convert_bytes_to_GB(usage["used_size"]))
@@ -569,4 +618,159 @@ def projects_usage():
         year=year,
         usage_graphJSON=json.dumps(fig_usage, cls=plotly.utils.PlotlyJSONEncoder),
         quota_graphJSON=json.dumps(fig_quota, cls=plotly.utils.PlotlyJSONEncoder),
+    )
+
+
+@data_platform_project_bp.route("/data-platform/project_user_search", methods=["GET"])
+@openid_login_required
+@cache.cached(timeout=3600)
+def project_user_search():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    response = requests.get(f"{API_URL}/v1/projects", headers=header)
+    response.raise_for_status()
+
+    projects = response.json()
+
+    projects_list = []
+    for project in projects:
+        if project["platform"] == "irods":
+            zone_name = [
+                "-".join(x["value"].split("-")[4:])
+                for x in project["platform_options"]
+                if x["key"] == "zone-jobid"
+            ][0]
+            projects_list.append((zone_name, project["name"], project["type"]))
+        else:
+            projects_list.append(("Non iRODS", project["name"], ""))
+    project_list_of_dicts = []
+    for project in projects_list:
+        response = requests.get(
+            f"{API_URL}/v1/projects/{project[1]}/members", headers=header
+        )
+        members = response.json()
+        for member in members:
+            project_list_of_dicts.append(
+                {
+                    "user_name": member["name"],
+                    "user_account": member["username"],
+                    "user_role": member["role"],
+                    "user_email": member["email"],
+                    "project_name": project[1],
+                    "project_type": project[2],
+                    "zone_name": project[0],
+                }
+            )
+
+    return render_template(
+        "project/project_user_search.html.j2",
+        user_project_search_list=json.dumps(project_list_of_dicts),
+    )
+
+
+@data_platform_project_bp.route("/data-platform/rule-management", methods=["GET"])
+@openid_login_required
+def rule_management():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    def get_zones():
+        response = requests.get(f"{API_URL}/v1/irods/zones", headers=header)
+        response.raise_for_status()
+        response = response.json()
+        return [item["jobid"] for item in response]
+
+    def get_irods_credentials(jobid):
+        response = requests.post(
+            f"{API_URL}/v1/irods/zones/{jobid}/admin_token", headers=header
+        )
+        response.raise_for_status()
+        response = response.json()
+        irods_environment = response["irods_environment"]
+        password = response["token"]
+        return irods_environment, password
+
+    rule_info = []
+    for zone in get_zones():
+        zone_environment, password = get_irods_credentials(zone)
+        with iRODSSession(**zone_environment, password=password) as session:
+            query = session.query(
+                RuleExec.name,
+                RuleExec.id,
+                RuleExec.user_name,
+                RuleExec.time,
+                RuleExec.last_exe_time,
+                RuleExec.frequency,
+            )
+            for item in query:
+                rule_info.append(list(item.values()))
+                rule_info[-1].insert(0, session.zone)
+
+    def localize_datetime(
+        value, format="%Y-%m-%d %H:%M:%S", local_timezone="Europe/Brussels"
+    ):
+        tz = pytz.timezone(local_timezone)
+        utc = pytz.timezone("UTC")
+        value = utc.localize(value, is_dst=None).astimezone(pytz.utc)
+        local_dt = value.astimezone(tz)
+        local_dt = local_dt.strftime(format)
+        return datetime.strptime(local_dt, format)
+
+    for item in rule_info:
+        if item[5] is not None:
+            item[4] = localize_datetime(item[4])
+            item[5] = localize_datetime(item[5])
+            delta = item[4] - datetime.now().replace(microsecond=0)
+            item.insert(4, delta)
+        else:
+            item.insert(4, "Not executed yet!")
+
+    return render_template(
+        "project/rule_management.html.j2",
+        rule_info=rule_info,
+    )
+
+
+@data_platform_project_bp.route("/data-platform/quota-change", methods=["GET"])
+@openid_login_required
+def project_quota_change():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    response = requests.get(f"{API_URL}/v1/projects/quota", headers=header)
+
+    response.raise_for_status()
+
+    projects = response.json()
+
+    projects_list = []
+    for project in projects:
+        for day in project["log"]:
+            projects_list.append(
+                {
+                    "project_name": project["name"],
+                    "project_type": project["type"],
+                    "responsible_name": (
+                        project["responsibles"][0]["name"]
+                        if len(project["responsibles"]) != 0
+                        else ""
+                    ),
+                    "responsible_account": (
+                        project["responsibles"][0]["username"]
+                        if len(project["responsibles"]) != 0
+                        else ""
+                    ),
+                    "sap_ref": project["sap_ref"],
+                    "quota_set": convert_bytes_to_GB(
+                        day["quota_size"], conversion_to="TB"
+                    ),
+                    "quota_set_date": day["date"],
+                    "quota_modified_by": day["modified_by"],
+                }
+            )
+
+    return render_template(
+        "project/projects_quota_change.html.j2",
+        projects_list=json.dumps(projects_list),
     )

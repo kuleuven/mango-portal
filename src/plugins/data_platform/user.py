@@ -145,6 +145,7 @@ def login_openid_select_zone():
             other_platforms=other_platforms,
             last_zone_name=last_zone_name,
             admin=('operator' in perms or 'admin' in perms),
+            finance=('finance' in perms),
             sftp_host=sftp_host,
         )
 

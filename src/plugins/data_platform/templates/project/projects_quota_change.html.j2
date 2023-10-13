@@ -4,7 +4,7 @@
 <style type="text/css">
 div.dataTables_wrapper {
   width: 1200px; /* table with, original was 800* for scrollX */
-  margin: 0 auto;
+  margin: auto;
   white-space: nowrap; /* this is for the long lines, if not, multiple lines */
 }
 </style>
@@ -17,27 +17,12 @@ div.dataTables_wrapper {
       <li class="breadcrumb-item">
         <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
       </li>
-      <li class="breadcrumb-item active" aria-current="page">Statistics</li>
+      <li class="breadcrumb-item active" aria-current="page">quota-change</li>
     </ol>
   </nav>
-    <div class="m-1" "btn-toolbar mb-3" role="toolbar">
-      <a href="{{url_for('data_platform_project_bp.project_overview')}}" class="btn btn-block btn-primary">Usage Report</a>
-      <a href="{{url_for('data_platform_project_bp.projects_usage')}}" class="btn btn-block btn-primary">Dashboards</a>
-    </div>
   </div>
 
-  <form method="get" class="m-2">
-    <div class="row">
-      <div class="col-auto p-0">
-        <input type="number" name="year" value="{{ year }}" class="form-control form-control-sm" />
-      </div>
-      <div class="col-auto">
-        <input type="submit" value="Select" class="btn btn-secondary btn-sm" />
-      </div>
-    </div>
-  </form>
-
-  {# creating tables and styling #}
+{# creating tables and styling #}
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
   <link rel="stylesheet"href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css"/>
@@ -67,27 +52,15 @@ div.dataTables_wrapper {
         let table = new DataTable("#data-table", { 
                                                   data:data,
                                                   columns:[ 
-                                                            { data: 'zone_name', title: "Zone"},
                                                             { data: 'project_name', title: "Project Name"},
                                                             { data: 'project_type', title: "Project Type"},
-                                                            { data: 'usage_total', title: "Usage (GB)"},
-                                                            { data: 'quota_set', title: "Quota (GB)"},
-                                                            { data: 'quota_usage_rate', title: "Usage %"},
                                                             { data: 'responsible_name', title: "Responsible"},
                                                             { data: 'responsible_account', title: "Responsible (account)"},
                                                             { data: 'sap_ref', title: "SAP"},
+                                                            { data: 'quota_set', title: "Quota (TB)"},
+                                                            { data: 'quota_set_date', title: "Quota Date"},
+                                                            { data: 'quota_modified_by', title: "Quota Set By"},
                                                           ],
-                                                  columnDefs: [
-                                                                {
-                                                                  targets:1,
-                                                                  render: function ( data, type ) {
-                                                                      if(type === 'display'){
-                                                                          data = '<a href="project/' + encodeURIComponent(data) + '">' + data + '</a>';
-                                                                      }
-                                                                      return data;
-                                                                  }
-                                                                }
-                                                              ],
                                                   scrollX: true,
                                                   "autoWidth": false,
                                                   responsive: true,
@@ -100,5 +73,5 @@ div.dataTables_wrapper {
       </script>    
     </table>
   </div>
-  
+
 {% endblock container %}
