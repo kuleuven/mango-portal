@@ -12,7 +12,9 @@ import datetime, time, logging
 from lib import util
 import signals
 from flask import current_app
-
+import multidict
+import traceback
+import json
 
 mango_prefix = ""  #
 
@@ -50,6 +52,7 @@ MANGO_OPEN_SEARCH_AUTH = (MANGO_OPEN_SEARCH_USER, MANGO_OPEN_SEARCH_PASSWORD)
 MANGO_INDEX_THREAD_SLEEP_TIME = 2
 MANGO_INDEX_THREAD_HEARTBEAT_DELTA = 300
 MANGO_OPEN_SEARCH_SESSION_REFRESH_DELTA = 3600
+
 # For now a single client
 # @todo: create a pool (object) of clients to use by multiple threads
 mango_open_search_client = OpenSearch(
@@ -173,21 +176,41 @@ def ping_open_search_servers():
     }
 
 
-# def update_mapping_schema():
-#     mappings = {
-#         "mappings": {
-#             "dynamic_templates": [
-#                 {
-#                     "keyword": {
-#                         "match": "*_kw",
-#                         "mapping": {"type": "keyword"},
-#                     }
-#                 },
-#                 {"text": {"match": "*_t", "mapping": {"type": "text"}}},
-#             ]
-#         }
-#     }
-#     return
+def check_mapping_for_avu_name(avu_name):
+    # currently no special mapping
+    # returns the mapping type or False
+    # TODO
+    return False
+
+
+def update_mapping_schema():
+    mappings = {
+        "properties": {
+            "mango_noschema_flat_fields": {"type": "flat_object"},
+            "mango_schema_flat_fields": {"type": "flat_object"},
+            "mango_flat_fields": {"type": "flat_object"},
+            "mango_descriptive_text_basket": {"type": "text"},
+            "mango_suggestions_basket": {"type": "completion"},
+            "irods_item_type": {"type": "keyword"},
+            "irods_item_type_simple": {"type": "keyword"},
+            "irods_parent_paths": {"type": "keyword"},
+            "irods_path": {"type": "keyword"},
+            "irods_zone_name": {"type": "keyword"},
+            "irods_item_type": {"type": "keyword"},
+            "irods_owner_name": {"type": "keyword"},
+            "irods_owner_zone": {"type": "keyword"},
+            "irods_parent_path": {"type": "keyword"},
+            "irods_name": {"type": "keyword"},
+            "irods_created": {"type": "date"},
+            "irods_modified": {"type": "date"},
+        }
+    }
+
+    response = get_open_search_client("ingest").indices.put_mapping(
+        index=MANGO_OPEN_SEARCH_INDEX_NAME, body=mappings
+    )
+
+    return response
 
 
 # simple caching strategy
@@ -217,24 +240,100 @@ def get_open_search_doc_id(
     return f"{zone}_{item_type}_{item_id}"
 
 
+def aggregate_descriptive_field_values(
+    fields: dict, mango_descriptive_text_basket: list
+) -> None:
+    def add_text(value_or_values):
+        if type(value_or_values) is list:
+            mango_descriptive_text_basket.extend(value_or_values)
+        else:
+            mango_descriptive_text_basket.append(value_or_values)
+
+    white_listed_fields = ["irods_name"]
+    black_listed_prefix = ("irods_", "mango_descriptive_text_basket")
+    match_text_partials = ["name", "title", "description", "comment", "summary"]
+
+    for field_name in fields.keys():
+        if field_name in white_listed_fields:
+            add_text(fields[field_name])
+        if field_name.startswith(black_listed_prefix):
+            continue
+        field_name_lower = field_name.lower()
+        for partial in match_text_partials:
+            if partial in field_name_lower:
+                add_text(fields[field_name])
+
+
 def get_basic_index_doc_for_item(
     irods_session: iRODSSession, item: iRODSCollection | iRODSDataObject, **options
 ):
     """ """
-    fields = {}
-    field_mappings = {}
 
+    def get_no_schema_name(name):
+        # return "mango_flat_field." + slugify(avu.name, separator="__")
+        return slugify(avu.name, separator="__")
+
+    def unflatten_namespace_into_dict(
+        target_dict: dict, namespaced_string: str, value=None
+    ) -> dict:
+        if "." in namespaced_string:
+            lead_key, rest = namespaced_string.split(".", 1)
+            if lead_key not in target_dict:
+                target_dict[lead_key] = {}
+            unflatten_namespace_into_dict(target_dict[lead_key], rest, value)
+        else:
+            target_dict[namespaced_string] = value
+
+    fields = {}
+    fields["mango_descriptive_text_basket"] = []
+
+    # avu fields can be multivalued
+    md_flat_fields = multidict.MultiDict()  # mg. special fields collection
+    md_schema_flat_fields = multidict.MultiDict()  # schema fields collections
+    md_noschema_flat_fields = multidict.MultiDict()  # everything else
+
+    # field_mappings = {}
+    metadata_counts = {"schema": 0, "mango": 0, "other": 0}
     metadata = item.metadata.items()
     for avu in metadata:
-        if avu.name.startswith(mango_prefix):
-            fields[avu.name] = avu.value
-            field_mappings[avu.name] = avu.name
+        if avu.name.startswith((mango_prefix, "mg.")):
+            if avu.name.startswith("mg."):
+                md_flat_fields.add(avu.name, avu.value)
+                metadata_counts["mango"] += 1
+            else:
+                md_schema_flat_fields.add(avu.name, avu.value)
+                metadata_counts["schema"] += 1
         else:
-            os_field_name = slugify(avu.name, separator="__")
-            fields[os_field_name] = avu.value
-            field_mappings[os_field_name] = avu.name
+            normalised_field_name = get_no_schema_name(avu.name)
+            md_noschema_flat_fields.add(f"{normalised_field_name}", avu.value)
+            # field_mappings[os_field_name] = avu.name
             if avu.units:
-                fields[f"{slugify(avu.name, separator='__')}_units"] = avu.units
+                md_noschema_flat_fields.add(f"{normalised_field_name}_units", avu.units)
+            metadata_counts["other"] += 1
+    # for flattened objects, the field needs to be an object (mapped from Python dict)
+    all_flat_fields = {
+        "mango_flat_fields": md_flat_fields,
+        "mango_schema_flat_fields": md_schema_flat_fields,
+        "mango_noschema_flat_fields": md_noschema_flat_fields,
+    }
+    for field_name_prefix, ff_md in all_flat_fields.items():
+        if len(ff_md) > 0:
+            fields[field_name_prefix] = {}
+            for key in set(ff_md.keys()):
+                values = ff_md.getall(key)
+                value = values if len(values) > 1 else values[0]
+                aggregate_descriptive_field_values(
+                    {key: value}, fields["mango_descriptive_text_basket"]
+                )
+                unflatten_namespace_into_dict(fields[field_name_prefix], key, value)
+
+    if metadata_counts["schema"]:
+        fields["irods_metadata_count_schema"] = metadata_counts["schema"]
+    if metadata_counts["mango"]:
+        fields["irods_metadata_count_mango"] = metadata_counts["mango"]
+    if metadata_counts["other"]:
+        fields["irods_metadata_count_other"] = metadata_counts["other"]
+
     fields["irods_zone_name"] = irods_session.zone
     fields["irods_item_type"] = item.__class__.__name__.lower()
     fields["irods_item_type_simple"] = "c" if isinstance(item, iRODSCollection) else "d"
@@ -254,9 +353,9 @@ def get_basic_index_doc_for_item(
         if acl_user.type in ["rodsgroup"]:
             acl_read_groups += [acl_user.id]
     if acl_read_users:
-        fields["acl_read_users"] = acl_read_users
+        fields["irods_acl_read_users"] = acl_read_users
     if acl_read_groups:
-        fields["acl_read_groups"] = acl_read_groups
+        fields["irods_acl_read_groups"] = acl_read_groups
     fields["irods_path"] = item.path
     fields["irods_name"] = item.name
     fields["irods_created"] = item.create_time
@@ -296,18 +395,9 @@ def get_basic_index_doc_for_item(
         item_type=fields["irods_item_type_simple"],
         item_id=fields["irods_id"],
     )
+    fields["mango_descriptive_text_basket"].extend([item.name])
+    fields["mango_suggestions_basket"] = fields["mango_descriptive_text_basket"]
 
-    return fields
-
-
-def aggregate_fields(fields: dict):
-    match_text_partials = ["name", "title", "description", "comment", "summary"]
-    match_all = ""
-    for field_name in fields:
-        for partial in match_text_partials:
-            if partial in field_name.lower():
-                match_all = " ".join([match_all, fields[field_name]])
-    fields["match_all"] = match_all
     return fields
 
 
@@ -318,33 +408,39 @@ def generate_docs_for_children(
     # logging.info(f"Starting, requesting subcollections")
     for sub_collection in collection.subcollections:
         logging.info(f"generating doc for collection {sub_collection.path}")
+        fields = {}
         try:
             fields = get_basic_index_doc_for_item(irods_session, sub_collection)
-            aggregate_fields(fields)
+
             fields["index_timestamp"] = time.time()
             fields["_index"] = MANGO_OPEN_SEARCH_INDEX_NAME
             fields["_op_type"] = action
             docs.append(fields)
         except Exception as e:
             logging.warn(
-                f"Failed getting doc for collection {sub_collection.path}, skipping this one"
+                f"Failed getting doc for collection {sub_collection.path}, skipping this one: {e}"
             )
+            logging.warn(traceback.format_exc())
 
     # logging.info(f"Done generating docs for collections, requesting data objects now")
     for data_object in collection.data_objects:
+        logging.info(f"generating doc for data object {data_object.path}")
+        fields = {}
         try:
-            logging.info(f"generating doc for data object {data_object.path}")
             fields = get_basic_index_doc_for_item(irods_session, data_object)
-            aggregate_fields(fields)
             fields["index_timestamp"] = time.time()
             fields["_index"] = MANGO_OPEN_SEARCH_INDEX_NAME
             fields["_op_type"] = "index"
             docs.append(fields)
         except Exception as e:
             logging.warn(
-                f"Failed getting doc fields for {data_object.path}, skipping this one"
+                f"Failed getting doc fields for data object {data_object.path}, skipping this one: {e}"
             )
+            logging.warn(traceback.format_exc())
             pass
+    # Code left here commented for possible future ad hoc re-use: save the fields as json (this is part of what is sent to OS)
+    # with open(f"/tmp/os-json-collection-{collection.id}.json", "w") as fp:
+    #     json.dump(docs,fp, indent=3, sort_keys=True, default=str)
     return docs
 
 
@@ -368,7 +464,6 @@ def index_item(irods_session: iRODSSession, item_type: str, item_path: str):
 
         fields = get_basic_index_doc_for_item(irods_session, item)
         id = fields.pop("_id")
-        aggregate_fields(fields)
         response = get_open_search_client(type="ingest").index(
             MANGO_OPEN_SEARCH_INDEX_NAME, fields, id=id, refresh=True
         )
@@ -489,6 +584,23 @@ def delete_subtree_by_path(zone: str, item_path):
     response = get_open_search_client(type="ingest").delete_by_query(
         index=MANGO_OPEN_SEARCH_INDEX_NAME, body=query_body
     )
+    return response
+
+
+def delete_all():
+    response = get_open_search_client(type="ingest").indices.delete(
+        index=MANGO_OPEN_SEARCH_INDEX_NAME
+    )
+    logging.warning("deleted index entirely")
+    # print(response) # {'acknowledged': True}
+    response = get_open_search_client(type="ingest").indices.create(
+        index=MANGO_OPEN_SEARCH_INDEX_NAME
+    )
+    logging.warning("Recreated empty index")
+    # print(response) # {'acknowledged': True}
+    mapping_result = update_mapping_schema()
+    logging.info("Updating mapping for opensearch index")
+    # print(mapping_result)  # {'acknowledged': True}
     return response
 
 

@@ -7,16 +7,19 @@
         <h4 class="mt-4">Launch ad hoc indexing job</h4>
         <div class="col">
             <form method="post"
-                  action="{{ url_for('mango_open_search_bp.index_collection')}}"
+                  action="{{ url_for('mango_open_search_bp.index_collection') }}"
                   id="index_collection">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <select name="collection_path" class="form-select">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <select name="collection_path" class="form-select mb-2">
                     {% for collection in available_collections %}
-                        <option value="{{ collection.path }}">
-                            {{ collection.path }}
-                        </option>
+                        <option value="{{ collection.path }}">{{ collection.path }}</option>
                     {% endfor %}
                 </select>
+                <label for="skip_reset_collection">Update only</label>
+                <input type="checkbox"
+                       id="skip_reset_collection"
+                       name="skip_reset_collection"
+                       class="mt-2">
             </form>
             <button type="submit" form="index_collection" class="btn btn-success mt-3">Add collection to index jobs</button>
         </div>
@@ -29,22 +32,14 @@
         <div class="col">
             <form method="post"
                   class="align-bottom"
-                  action="{{ url_for('mango_open_search_admin_bp.change_index_thread_status')}}"
+                  action="{{ url_for('mango_open_search_admin_bp.change_index_thread_status') }}"
                   id="change_indexing_status">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <select name="status" class="form-select">
-                    <option value="active">
-                        Active
-                    </option>
-                    <option value="sleep">
-                        Sleep
-                    </option>
-                    <option value="flush_sleep">
-                        Flush jobs and sleep
-                    </option>
-                    <option value="flush_active">
-                        Flush jobs and run
-                    </option>
+                    <option value="active">Active</option>
+                    <option value="sleep">Sleep</option>
+                    <option value="flush_sleep">Flush jobs and sleep</option>
+                    <option value="flush_active">Flush jobs and run</option>
                 </select>
             </form>
             <button type="submit"
@@ -56,15 +51,13 @@
                 Indexing thread health : {{ ('<i class="bi-check-square text-success"></i>' if indexing_thread_health else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
             </p>
             <form method="post"
-                  action="{{ url_for('mango_open_search_admin_bp.refresh_indexing_thread')}}"
+                  action="{{ url_for('mango_open_search_admin_bp.refresh_indexing_thread') }}"
                   id="refresh_indexing_thread">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             </form>
             <button type="submit"
                     form="refresh_indexing_thread"
-                    class="btn btn-success mt-3 align-bottom">
-                Restart indexing thread
-            </button>
+                    class="btn btn-success mt-3 align-bottom">Restart indexing thread</button>
         </div>
     </div>
     <div class="row p-3">
@@ -78,7 +71,7 @@
         <form method="post"
               action="{{ url_for('mango_open_search_admin_bp.refresh_clients') }}"
               id="refresh_clients">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         </form>
         <button type="submit" form="refresh_clients" class="btn btn-success mt-3">Refresh client/server connections</button>
     </div>
@@ -126,15 +119,9 @@
                                 <tr>
                                     <td>{{ item['zone'] }}</td>
                                     <td>{{ item['job_type'] }}</td>
-                                    <td class="text-break">
-                                        {{ item['item_path'] }}
-                                    </td>
-                                    <td>
-                                        {{ item['item_type'] }}
-                                    </td>
-                                    <td>
-                                        {{ item['time'] }}
-                                    </td>
+                                    <td class="text-break">{{ item['item_path'] }}</td>
+                                    <td>{{ item['item_type'] }}</td>
+                                    <td>{{ item['time'] }}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -142,12 +129,16 @@
                 {% endfor %}
             {% endif %}
         {% else %}
-            <p>
-                No active jobs on this node
-            </p>
+            <p>No active jobs on this node</p>
         {% endif %}
-        <button class="btn btn-success mt-3 mb-3" onclick="window.location.reload();">
-            Refresh
-        </button>
+        <button class="btn btn-success mt-3 mb-3" onclick="window.location.reload();">Refresh</button>
+    </div>
+    <div class="row p-3">
+    <form method="post"
+              action="{{ url_for('mango_open_search_admin_bp.clear_index') }}"
+              id="clear_index">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        </form>
+        <button type="submit" form="clear_index" class="btn btn-danger mt-3">Clear entire index!</button>
     </div>
 {% endblock body %}
