@@ -7,7 +7,7 @@
 
 {% block body %}
 {% set can_edit = project['my_role'] == 'manager' or project['my_role'] == 'responsible' or admin %}
-{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-icommands': 'true', 'gdpr-data': 'false', 'enforce-quota': 'false', 'inherit-permissions': 'false', 'strict-permissions': 'false'} %}
+{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-icommands': 'true', 'enable-sftp-ingress': 'false', 'gdpr-data': 'false', 'enforce-quota': 'false', 'inherit-permissions': 'false', 'strict-permissions': 'false'} %}
 {% for opt in project['platform_options'] %}
 {% if opts.update({opt['key']: opt['value']}) %}{% endif %}
 {% endfor %}
@@ -201,6 +201,10 @@
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" value="true" id="enable-icommands" name="enable-icommands" onChange="this.form.submit()" {% if opts['enable-icommands'] == "true" %}checked{% endif %} />
                 <label class="form-check-label" for="enable-icommands">Enable iCommand/PRC access</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" value="true" id="enable-sftp-ingress" name="enable-sftp-ingress" onChange="this.form.submit()" {% if opts['enable-sftp-ingress'] == "true" %}checked{% endif %} />
+                <label class="form-check-label" for="enable-sftp-ingress">Enable SFTP ingress service</label>
               </div>
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" value="true" id="strict-permissions" name="strict-permissions" onChange="this.form.submit()" {% if opts['strict-permissions'] == "true" %}checked{% endif %} />

@@ -235,6 +235,7 @@ def set_project_options():
         options += [
             "sftp-openfile",
             "enable-icommands",
+            "enable-sftp-ingress",
             "enforce-quota",
             "inherit-permissions",
             "strict-permissions",
