@@ -2,10 +2,8 @@ import requests
 import json
 import math
 import pandas as pd
-import plotly
-import plotly.express as px
-import plotly.graph_objects as go
 import pytz
+import time
 from datetime import datetime
 from irods.session import iRODSSession
 from irods.models import RuleExec
@@ -21,6 +19,7 @@ from flask import (
 )
 from cache import cache
 from signals import mango_signals
+from csrf import csrf
 from . import API_URL, current_user_api_token, openid_login_required, Session
 
 data_platform_project_bp = Blueprint(
@@ -534,26 +533,73 @@ def projects_statistics():
     )
 
 
-@data_platform_project_bp.route("/data-platform/statistics/usage", methods=["GET"])
+def summarize(source_name: str, data: pd.DataFrame, y_axis: str, group_index: int, hovertemplate=""):
+    def get_color(i):
+        color_mapping = [
+            '#4e79a7',
+            '#f28e2c',
+            '#e15759',
+            '#76b7b2',
+            '#59a14f',
+            '#edc949',
+            '#af7aa1',
+            '#ff9da7',
+            '#9c755f',
+            '#bab0ab'
+        ]
+        return color_mapping[i]
+
+    grouped_data = data.groupby("date")
+    if y_axis == "usage":
+        y = list(grouped_data.usage.agg("sum"))
+    elif y_axis == "quota":
+        y = list(grouped_data.quota.agg("sum"))
+    else:
+        raise ValueError("should be usage or quota")
+
+    group_data = {
+        "x": [month for month, _ in grouped_data],
+        "y": y,
+        "name": source_name,
+        "marker": {"color": get_color(group_index)},
+        "type": "bar",
+    }
+    if hovertemplate:
+        group_data["hovertemplate"] = hovertemplate
+    return group_data
+
+
+def get_next_month(year_month: str):
+    year, month = year_month.split("-")
+    if month == "12":
+        return f"{int(year)+1}-01"
+    else:
+        return f"{year}-{int(month)+1:02d}"
+
+
+@data_platform_project_bp.route("/data-platform/statistics/usage", methods=["GET", "POST"])
 @openid_login_required
+@csrf.exempt
 def projects_usage():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
 
-    year = request.args.get("year")
+    start_date = "2023-01"
+    end_date = str(time.strftime("%Y-%m"))
+    start_date_year = int(start_date.split("-")[0])
+    end_date_year = int(end_date.split("-")[0])
 
-    if not year:
-        year = datetime.now().year
+    if start_date_year == end_date_year:
+        response = requests.get(f"{API_URL}/v1/projects/usage/{start_date_year}", headers=header)
+        response.raise_for_status()
+        projects = response.json()
 
-    response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
-
-    response.raise_for_status()
-
-    projects = response.json()
-
-    if not projects:
-        flash(f"No project information found in {year}.")
-        projects = []
+    # Todos for incoming years:
+    # rewrite the logic to get all projects for each response below.
+    # else:
+    #     projects = []
+    #     for date in range(end_date_year - start_date_year):
+    #         response = requests.get(f"{API_URL}/v1/projects/usage/{start_date_year+1}", headers=header)
 
     projects_dict = {}
     projects_dict["date"] = []
@@ -572,53 +618,56 @@ def projects_usage():
                 ][0]
                 projects_dict["zone"].append(zone_name)
                 projects_dict["project_name"].append(project["project"]["name"])
-                projects_dict["usage"].append(convert_bytes_to_GB(usage["used_size"]))
-                projects_dict["quota"].append(convert_bytes_to_GB(usage["quota_size"]))
+                projects_dict["usage"].append(usage["used_size"])
+                projects_dict["quota"].append(usage["quota_size"])
 
-    df_raw = pd.DataFrame(projects_dict)
-    df = (
-        df_raw.groupby(["date", "zone", "quota", "project_name"])["usage"]
-        .sum()
-        .reset_index(name="used_size")
-    )
+    df = pd.DataFrame(projects_dict)
 
-    fig_usage = px.histogram(
-        df, x="date", y=df["used_size"], color="zone", barmode="stack", text_auto=True
-    )
-    fig_usage.update_layout(
-        title="Usage Per Zone",
-        title_x=0.5,
-        autosize=True,
-        margin=dict(
-            autoexpand=True,
-            l=100,
-            r=20,
-            t=110,
-        ),
-        plot_bgcolor="white",
-    )
+    filters = {
+        "start_date": start_date,
+        "end_date": end_date,
+        "from_date": start_date,
+        "to_date": end_date,
+    }
 
-    fig_quota = px.histogram(
-        df, x="date", y=df["quota"], color="zone", barmode="stack", text_auto=True
-    )
-    fig_quota.update_layout(
-        title="Quota Per Zone",
-        title_x=0.5,
-        autosize=True,
-        margin=dict(
-            autoexpand=True,
-            l=100,
-            r=20,
-            t=110,
-        ),
-        plot_bgcolor="white",
-    )
+    if request.method == "POST":
+        filters["from_date"] = request.form.get("from-month", filters["from_date"])
+        filters["to_date"] = request.form.get("to-month", filters["to_date"])
+        df = df.loc[
+            (df.date >= filters["from_date"])
+            & (df.date < get_next_month(filters["to_date"]))
+        ]
+
+    all_groups = list(df.zone.unique())
+    all_groups.sort()
+
+    usage_plot = [
+        summarize(
+            source_name,
+            data,
+            "usage",
+            all_groups.index(source_name),
+            "%{y:.4s}B data used in %{x}",
+        )
+        for source_name, data in df.groupby("zone")
+    ]
+
+    quota_plot = [
+        summarize(
+            source_name,
+            data,
+            "quota",
+            all_groups.index(source_name),
+            "%{y:.4s}B quota set in %{x}",
+        )
+        for source_name, data in df.groupby("zone")
+    ]
 
     return render_template(
         "project/projects_usage.html.j2",
-        year=year,
-        usage_graphJSON=json.dumps(fig_usage, cls=plotly.utils.PlotlyJSONEncoder),
-        quota_graphJSON=json.dumps(fig_quota, cls=plotly.utils.PlotlyJSONEncoder),
+        usage_plot=usage_plot,
+        quota_plot=quota_plot,
+        filters=filters,
     )
 
 

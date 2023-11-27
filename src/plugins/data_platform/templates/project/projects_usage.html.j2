@@ -1,57 +1,103 @@
 {% extends "base_openid.html.j2" %}
 
-{% block custom_style %}
-<style type="text/css">
-div.dataTables_wrapper {
-  width: 1200px; /* table with, original was 800* for scrollX */
-  margin: 0 auto;
-  white-space: nowrap; /* this is for the long lines, if normal multiple lines*/
-}
-</style>
-{% endblock %}
-
 {% block container %}
-   <div class="m-2">
-   <nav aria-label="breadcrumb m-2">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item">
-        <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
-      </li>
-      <li class="breadcrumb-item">
-        <a href="{{ url_for('data_platform_project_bp.projects_statistics')}}">Statistics</a>
-      </li>
-    </ol>
-  </nav>
-  </div>
-
-  <form method="get" class="m-2">
-    <div class="row">
-      <div class="col-auto p-0">
-        <input type="number" name="year" value="{{ year }}" class="form-control form-control-sm" />
-      </div>
-      <div class="col-auto">
-        <input type="submit" value="Select" class="btn btn-secondary btn-sm" />
-      </div>
+<div class="container-fluid px-5 content">
+    <div class="m-2">
+      <nav aria-label="breadcrumb m-2">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('data_platform_project_bp.projects_statistics')}}">Statistics</a>
+          </li>
+        </ol>
+      </nav>
     </div>
-  </form>
-
-{# js plotly to plot json string#}
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-
-
-<div class="chart" id="bargraph_usage">
-  <script>
-    let graphs_usage = {{usage_graphJSON | safe}};
-    Plotly.plot('bargraph_usage', graphs_usage, {});
-</script>
+    <div class="row">
+        <div class="col-3 text-start pt-3 border-end">
+            <h5>Filter by month</h5>
+            <form method="post">
+                <div class="d-flex flex-row-reverse">
+                    <button type="button" class="btn btn-dark mt-1 p-1" id="reset">Reset</button>
+                </div>
+                <div class="mb-3">
+                    <label for="from-month" class="form-label">From:</label>
+                    <input type="month" class="form-control" id="from-month" name="from-month"
+                        min="{{ filters['start_date'] }}" max="{{ filters['to_date'] }}"
+                        value="{{ filters['from_date'] }}" pattern="20[12][0-9]-(0[0-9]|1[12])">
+                </div>
+                <div class="mb-3">
+                    <label for="to-month" class="form-label">To:</label>
+                    <input type="month" class="form-control" id="to-month" name="to-month"
+                        min="{{ filters['from_date'] }}" max="{{ filters['end_date'] }}"
+                        value="{{ filters['to_date'] }}" pattern="20[12][0-9]-(0[0-9]|1[12])">
+                </div>
+            </form>
+        </div>
+        <div class="col-9">
+            <div class="d-flex flex-row justify-content-evenly flex-wrap">
+                <div id="usage_plot"></div>
+                <div id="quota_plot"></div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<div class="chart" id="bargraph_quota">
-  <script>
-    let graphs_quota = {{quota_graphJSON | safe}};
-    Plotly.plot('bargraph_quota', graphs_quota, {});
-  </script>
-</div>
-  
 {% endblock container %}
+
+
+{% block footer %}
+<!-- JavaScript and dependencies -->
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+
+<script>
+    const usage_plot = JSON.parse('{{ usage_plot | tojson }}')
+    const quota_plot = JSON.parse('{{ quota_plot | tojson }}')
+
+    const general_layout = {
+        barmode: "stack",
+        xaxis: {
+            tickangle: -90, // vertical names
+            hoverformat: "%B", // only show month name (and year)
+            dtick: "M1", // show names for ALL months
+        },
+        legend: { orientation: "h", x: 0.5, y: 1.25, xanchor: "center" },
+    };
+
+    Plotly.newPlot("usage_plot", usage_plot, {
+        ...general_layout,
+        title: {
+        text:"Monthly usage per zone",
+        y:0.999,
+        yanchor:"top"
+      },
+      yaxis: {
+          tickformat: ".3s",
+      },
+    });
+
+    Plotly.newPlot("quota_plot", quota_plot, {
+        ...general_layout,
+        title: {
+              text:"Monthly quota set per zone",
+              y:0.999,
+              yanchor:"top"
+        },
+        yaxis: {
+          tickformat: ".3s",
+      },
+    });
+
+    const form = document.querySelector("form")
+    form.querySelectorAll("input")
+        .forEach((input) => {
+            input.addEventListener("change", () => form.submit())
+        });
+    form.querySelector('button#reset').addEventListener('click', () => {
+        const { start_date, end_date } = JSON.parse('{{ filters|tojson }}');
+        form.querySelector('input[name="from-month"]').value = start_date;
+        form.querySelector('input[name="to-month"]').value = end_date;
+        form.submit();
+    });
+</script>
+{% endblock footer %}
