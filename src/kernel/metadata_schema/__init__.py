@@ -61,11 +61,11 @@ class BaseSchemaPermissionsManager:
         self.deny_all = 0
         self.inherit_permissions = None
 
-    def get_user_permissions_for_realm(self, irods_session: iRODSSession):
+    def get_user_permissions_realm(self, irods_session: iRODSSession):
         # anyone can do anything
         return self.allow_all
 
-    def get_user_permissions_for_schema(
+    def get_user_permissions_schema(
         self, irods_session: iRODSSession, schema: str | None = None
     ):
         return self.inherit_permissions
