@@ -369,7 +369,7 @@ class ComplexField {
       this.name = "schema-editor"; // then the name should be 'schema-editor'
     } else if (this.parent) {
       // if this is the clone of another schema
-      this.name = this.parent.match(/(.+)-\d\.\d\.\d/)[1]; // get the name of the parent (no versions)
+      this.name = this.parent.match(/(.+)-\d+\.\d+\.\d+/)[1]; // get the name of the parent (no versions)
     }
   }
 
@@ -579,7 +579,7 @@ class Schema extends ComplexField {
   ) {
     super(card_id, data_status);
     this.card_id = card_id;
-    this.name = card_id.match(/^(.*)-\d\d\d$/)[1];
+    this.name = card_id.match(/^(.*)-\d{3,}$/)[1];
     this.version = version;
     this.container = container_id;
     this.urls = urls;

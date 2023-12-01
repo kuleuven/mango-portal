@@ -99,7 +99,7 @@ class FileSystemSchemaManager:
         # print(self)
 
     def increment_version(self, version_string: str, part="major"):
-        if re.match(r"\d\.\d\.\d", version_string):
+        if re.match(r"\d+\.\d+\.\d+", version_string):
             (major, minor, bugfix) = version_string.split(".")
             if part == "major":
                 major = str(int(major) + 1)
@@ -144,7 +144,7 @@ class FileSystemSchemaManager:
         versions_sorted = sorted(
             [
                 re.search(
-                    r"-v(\d\.\d\.\d)(\.json|-published\.json|-draft\.json)$",
+                    r"-v(\d+\.\d+\.\d+)(\.json|-published\.json|-draft\.json)$",
                     schema_file.name,
                 ).group(1)
                 for schema_file in all_schema_files
