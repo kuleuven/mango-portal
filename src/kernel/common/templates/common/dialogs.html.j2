@@ -236,3 +236,34 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
         </script>
     {% endif %}
 {% endmacro %}
+{% macro iframe_dialog(selector, modalId="iframeModal", header="") %}
+<div class="modal fade" id="{{ modalId }}">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">{{ header }}</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" area-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <iframe src="" width="100%" height="400" frameborder="0" allowtransparency="true" id="{{ modalId }}iframe"></iframe>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var modalLinks = document.querySelectorAll('{{ selector }}');
+for (let i = 0; i < modalLinks.length; i++) {
+  modalLinks[i].addEventListener('click', function (event) {
+    event.preventDefault();
+    let url = modalLinks[i].getAttribute("href");
+    document.getElementById('{{ modalId }}iframe').setAttribute("src", url);
+    let myModal = new bootstrap.Modal(document.getElementById('{{ modalId }}'), {});
+    myModal.show();
+  });
+}
+</script>
+{% endmacro %}

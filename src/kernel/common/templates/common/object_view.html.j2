@@ -122,10 +122,11 @@
           <th>Status</th>
           <td>
             {% if data_object.replicas[-1] and ((data_object.replicas[-1].status | int)  == 1) %}
-              <i class="bi bi-check-circle text-success"></i>
+              <i class="bi bi-file-earmark-check text-success"></i>
             {% else %}
-              <i class="bi bi-radioactive text-danger"></i>
+              <i class="bi bi-file-earmark-x text-danger"></i>
             {% endif %}
+            {% if data_object.comments %}{{ data_object.comments|bleach_clean(tags=["i", "span", "a"], attributes=["class", "href"])|safe }}{% endif %}
           </td>
         </tr>
         <tr>
@@ -426,6 +427,7 @@
     </div>
   </div>
 </div>
+{{ dialogs.iframe_dialog('a.pipeline', header="Build information") }}
 {% endblock body %}
 {% block javascript %}
   {{ super() }}
