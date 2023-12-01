@@ -175,6 +175,7 @@ def modify_project():
             "type": request.form.get("type"),
             "description": request.form.get("description"),
             "sap_ref": request.form.get("sap_ref"),
+            "an": request.form.get("an"),
             "vsc_call": request.form.get("vsc_call"),
             "valid_after": request.form.get("valid_after"),
             "invalid_after": request.form.get("invalid_after"),
