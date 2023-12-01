@@ -801,23 +801,16 @@ def project_quota_change():
             projects_list.append(
                 {
                     "project_name": project["name"],
+                    "project_create": project["log"][0]["date"],
                     "project_type": project["type"],
-                    "responsible_name": (
-                        project["responsibles"][0]["name"]
-                        if len(project["responsibles"]) != 0
-                        else ""
-                    ),
-                    "responsible_account": (
-                        project["responsibles"][0]["username"]
-                        if len(project["responsibles"]) != 0
-                        else ""
-                    ),
+                    "project_status": (f"Active" if day["archived"]==False else "Archived"),
                     "sap_ref": project["sap_ref"],
+                    "an": project["an"],
                     "quota_set": convert_bytes_to_GB(
                         day["quota_size"], conversion_to="TB"
-                    ),
-                    "quota_set_date": day["date"],
-                    "quota_modified_by": day["modified_by"],
+                    ) if day["archived"]==False else None,
+                    "quota_set_date": None if (day["quota_size"]==0 or day["archived"]==True) else day["date"],
+                    "modified_by": day["modified_by"],
                 }
             )
 
