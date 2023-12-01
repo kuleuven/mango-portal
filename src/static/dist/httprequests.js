@@ -97,33 +97,34 @@ class TemplatesRequest extends MangoRequest {
       /**
        * @type {Array<SchemaInfo>}
        */
-      let realm_schemas = this.json
-      realm_permissions = realm_schemas.realm_permissions
+      let realm_schemas = this.json;
+      realm_permissions = realm_schemas.realm_permissions;
       let grouped_templates = realm_schemas.schemas;
       // Add the new schema button if permissions are good
       // console.log(realm_permissions)
       if (checkAllPermissions(realm_permissions, ["new_schema"])) {
         starting_schema.create_creator();
       } else {
-        // Provide a message to the user to contact the realm manager to create 
+        // Provide a message to the user to contact the realm manager to create
         // use the container id to look up
         // check if there are no published schemas at al, ie 0 schema to display
         if (realm_schemas.schemas.length == 0) {
           let msg = Field.quick(
             "div",
             "viewer",
-            'This realm does not have any schemas. Contact your realm manager to create schemas or to give you the permissions to do it'
+            "This realm does not have any schemas. Contact your realm manager to create schemas or to give you the permissions to do it"
           );
-          document.querySelector("#metadata_template_list_container").appendChild(msg);
+          document
+            .querySelector("#metadata_template_list_container")
+            .appendChild(msg);
         }
-        console.log("Not allowed to create new schemas, nah!")
+        console.log("Not allowed to create new schemas, nah!");
       }
 
-
-      // if length is 0, put a nice message 
+      // if length is 0, put a nice message
       // container id
       for (let template of grouped_templates) {
-        schema_infos[template.name]=template.schema_info
+        schema_infos[template.name] = template.schema_info;
         // don't do anything if there are only archived versions
         if (!(template.schema_info.draft | template.schema_info.published)) {
           continue;
@@ -131,7 +132,7 @@ class TemplatesRequest extends MangoRequest {
         let schema_name = template.name;
         // pattern to retrieve the name, version and status from the filename
         let re =
-          /(?<name>.*)-v(?<version>\d+\.\d+\.\d+)-(?<status>|published|draft).json/;
+          /(?<name>.*)-v(?<version>\d\.\d\.\d)-(?<status>|published|draft).json/;
         let this_template = template.schema_info;
 
         // create a list of objects with the information of each version
@@ -146,44 +147,101 @@ class TemplatesRequest extends MangoRequest {
 
         // provide the information to generate the accordions and badges
         // this will create the schemas, which will load on demand
-        new SchemaGroup(schema_name, title, versions, container_id, {
-          get: template.url,
-          ...urls,
-        });
+        new SchemaGroup(
+          schema_name,
+          title,
+          versions,
+          container_id,
+          {
+            get: template.url,
+            ...urls,
+          },
+          this_template.timestamp
+        );
       }
       // if there are existing schemas
       // adapt the pattern for schema names so that existing names cannot be used
+      let existing_names = grouped_templates.map((x) => x.name);
       if (grouped_templates.length > 0) {
-        let existing_names = grouped_templates.map((x) => x.name).join("$|^");
-
-        schema_pattern = `^((?!^${existing_names}$)${schema_pattern})$`;
+        schema_pattern = `^((?!^${existing_names.join(
+          "$|^"
+        )}$)${schema_pattern})$`;
         document
           .querySelectorAll('input[name="schema_name"]')
           .forEach((input) => input.setAttribute("pattern", schema_pattern));
       }
 
+      // but first, if the starting schema was being edited, focus on that
+      let starting_schema_timestamp;
+      let localstorage_timestamp;
+      if (starting_schema.ls_id in localStorage) {
+        starting_schema_timestamp = JSON.parse(
+          localStorage.getItem(starting_schema.ls_id)
+        ).last_modified;
+        new bootstrap.Collapse(`#${starting_schema.card_id}`).show();
+      }
+      if (last_mod_ls in localStorage) {
+        const { timestamp, schema_name, schema_version, ls_id } = JSON.parse(
+          localStorage.getItem(last_mod_ls)
+        );
+        if (
+          existing_names.indexOf(schema_name) > -1 &&
+          schema_infos[schema_name].versions_sorted.indexOf(schema_version) > -1
+        ) {
+          if (
+            starting_schema_timestamp == undefined ||
+            timestamp > starting_schema_timestamp
+          ) {
+            localstorage_timestamp = timestamp;
+            new bootstrap.Collapse(`#${schema_name}-schemas`).show();
+            let trigger = document.querySelector(
+              `#nav-tab-${schema_name} button`
+            );
+            bootstrap.Tab.getOrCreateInstance(trigger).show();
+            let version_trigger = document.querySelector(
+              `button#v${schema_version.replaceAll(".", "")}-tab-${schema_name}`
+            );
+            bootstrap.Tab.getOrCreateInstance(version_trigger).show();
+            // focused on the editor automatically if there is temporary data in the editor
+          } else {
+            localstorage_timestamp = starting_schema_timestamp;
+          }
+        } else {
+          localStorage.removeItem(ls_id);
+          localStorage.removeItem(last_mod_ls);
+        }
+      } else {
+        localstorage_timestamp = starting_schema_timestamp;
+      }
       // if a 'latest/current schema' is provided, focus on its accordion
       const current_schema = urls.schema_name;
       if (current_schema && Object.keys(schemas).indexOf(current_schema) > -1) {
-        new bootstrap.Collapse(`#${current_schema}-schemas`).show();
-        let trigger = document.querySelector(
-          `#nav-tab-${current_schema} button`
-        );
-        bootstrap.Tab.getOrCreateInstance(trigger).show();
-        const current_version = urls.schema_version;
-        const version_data = grouped_templates.filter(
-          (x) => x.name == current_schema
-        )[0].schema_info;
-        // if the version of that schema still exists, focus on that tab
+        let current_schema_timestamp = schema_infos[current_schema].timestamp;
+        // if this current schema was updated after the latest changes in localStorage
         if (
-          current_version &&
-          version_data.versions_sorted.indexOf(current_version) > -1
+          localstorage_timestamp == undefined ||
+          current_schema_timestamp > localstorage_timestamp
         ) {
-          let simple_version = current_version.replaceAll(".", "");
-          let version_trigger = document.querySelector(
-            `button#v${simple_version}-tab-${current_schema}`
+          new bootstrap.Collapse(`#${current_schema}-schemas`).show();
+          let trigger = document.querySelector(
+            `#nav-tab-${current_schema} button`
           );
-          bootstrap.Tab.getOrCreateInstance(version_trigger).show();
+          bootstrap.Tab.getOrCreateInstance(trigger).show();
+          const current_version = urls.schema_version;
+          const version_data = grouped_templates.filter(
+            (x) => x.name == current_schema
+          )[0].schema_info;
+          // if the version of that schema still exists, focus on that tab
+          if (
+            current_version &&
+            version_data.versions_sorted.indexOf(current_version) > -1
+          ) {
+            let simple_version = current_version.replaceAll(".", "");
+            let version_trigger = document.querySelector(
+              `button#v${simple_version}-tab-${current_schema}`
+            );
+            bootstrap.Tab.getOrCreateInstance(version_trigger).show();
+          }
         }
       }
     });

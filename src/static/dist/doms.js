@@ -392,6 +392,7 @@ class MovingViewer extends MovingField {
     // move the field down in the schema
     this.schema.field_ids.splice(form_index, 1);
     this.schema.field_ids.splice(form_index + 1, 0, this.idx);
+    this.schema.autosave();
   }
 
   /**
@@ -422,6 +423,7 @@ class MovingViewer extends MovingField {
     // move the field up in the schema
     this.schema.field_ids.splice(form_index, 1);
     this.schema.field_ids.splice(form_index - 1, 0, this.idx);
+    this.schema.autosave();
   }
 
   /**
@@ -468,6 +470,7 @@ class MovingViewer extends MovingField {
 
         // update the schema editor
         this.schema.toggle_saving();
+        this.schema.autosave();
 
         // if the field belongs to a composite field, show its editing modal
         if (this.parent_modal) {
@@ -1203,13 +1206,13 @@ class Modal {
 
     // capture action button and assign action
     let action_btn = conf_modal.querySelector("button#action");
-    let new_action_btn = action_btn.cloneNode(true)
+    let new_action_btn = action_btn.cloneNode(true);
     new_action_btn.type = "button";
     new_action_btn.addEventListener("click", () => {
       action();
       modal.hide();
     });
-    action_btn.parentElement.replaceChild(new_action_btn, action_btn)
+    action_btn.parentElement.replaceChild(new_action_btn, action_btn);
 
     // capture dismiss button and attach action
     conf_modal
