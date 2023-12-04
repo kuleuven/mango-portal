@@ -436,7 +436,7 @@ class InputField {
       before = "";
     } else if (after == "|") {
       // if this is the first field but not the last, remove the "|" afterwards
-      after == "|";
+      after = "";
     } else {
       // if this is the last field, just provide the ending regex
       return `^(${end}`;
@@ -588,7 +588,10 @@ class InputField {
     let modal_id = `${this.mode}-${this.id}-${this.schema_name}-${this.schema_status}`;
 
     // create the modal
-    let edit_modal = new Modal(modal_id, `Add ${this.button_title}`);
+    let edit_modal = new Modal(
+      modal_id,
+      `${this.mode == "add" ? "Add" : "Edit"} ${this.button_title}`
+    );
 
     // retrieve the form and add it to the modal
     let form = this.form_field.form;
@@ -610,11 +613,14 @@ class InputField {
       "add",
       (e) => {
         e.preventDefault();
+        console.log(modal_id);
         // BS5 validation check
         if (!form.checkValidity()) {
           e.stopPropagation();
           form.classList.add("was-validated");
+          console.log(form);
         } else {
+          console.log("validation ok");
           // create a new field of the same type with the data in the form
           let clone = this.register_fields(schema);
 
