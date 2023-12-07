@@ -97,9 +97,7 @@ class Field {
       new_input.value = i;
       new_input.id = `check-${i}`;
 
-      if (active) {
-        new_input.name = field.name;
-      }
+      new_input.name = field.name;
 
       if (value) {
         let this_is_the_value = multiple ? value.indexOf(i) > -1 : value == i;
@@ -116,6 +114,55 @@ class Field {
       inner_input.appendChild(new_option);
     }
     return inner_input;
+  }
+
+  static autocomplete(field, active) {
+    const input_tag = document.createElement("input");
+    input_tag.id = `${field.schema_name}-${field.id}`;
+    input_tag.type = "search";
+
+    if (active) {
+      input_tag.name = field.name;
+      if (field.required) {
+        input_tag.setAttribute("required", "");
+      }
+    }
+
+    let value = Field.include_value(field);
+    if (value != undefined && field.constructor.name == "SelectInput") {
+      // check that the value still exists!
+      input_tag.value = value;
+    }
+    return input_tag;
+  }
+
+  static autocomplete_checkbox(text, field_name) {
+    const button = Field.quick("input", "btn-check");
+    button.name = field_name;
+    button.id = `${field_name}-${text}`;
+    button.setAttribute("value", text);
+    const button_text = Field.quick(
+      "label",
+      "btn btn-secondary p-1 shadow-sm mx-1 fw-light",
+      text
+    );
+    button_text.setAttribute("for", `${field_name}-${text}`);
+    button_text.setAttribute("style", "font-size:0.8em;");
+    const close_button = Field.quick(
+      "button",
+      "btn-close btn-close-white py-0 my-0"
+    );
+    close_button.setAttribute("aria-label", "Close");
+    close_button.setAttribute("style", "font-size:0.8em;");
+    button_text.append(close_button);
+
+    close_button.addEventListener("click", (e) => {
+      e.preventDefault();
+      button.remove();
+      button_text.remove();
+    });
+
+    return [button, button_text];
   }
 
   /**
@@ -247,6 +294,11 @@ class MovingViewer extends MovingField {
     this.div = Field.quick("div", "card border-primary viewer");
     this.div.id = form.id;
     this.body = form.viewer_input();
+    const search_input = this.body.querySelector("input[type='search']");
+    if (search_input != undefined) {
+      search_input.id = search_input.id + "-editor";
+    }
+
     // Modal called for editing the field
     let modal_id = `mod-${form.id}-${form.schema_name}-${form.schema_status}`;
     let modal = bootstrap.Modal.getOrCreateInstance(
@@ -554,8 +606,8 @@ class MovingChoice extends MovingField {
   add_input() {
     let input_tag = Field.quick("input", "form-control mover");
     input_tag.id = `mover-${this.idx}`;
-    input_tag.name = `mover-${this.idx}`;
-    input_tag.setAttribute("required", ""); // it must be required (or removed if it won't be filled)
+    input_tag.name = "mover";
+    // input_tag.setAttribute("required", ""); // it must be required (or removed if it won't be filled)
 
     // if a value exists, fill it in
     if (this.value) {
@@ -601,13 +653,19 @@ class MovingChoice extends MovingField {
 
     // class "blocked" is the class of this kind of divs
     // if this div went to first place
-    if (this.div.previousSibling.className !== "blocked") {
+    if (
+      this.div.previousSibling == undefined ||
+      this.div.previousSibling.className !== "blocked"
+    ) {
       this.up.setAttribute("disabled", "");
       sibling.querySelector(".up").removeAttribute("disabled");
     }
 
     // if we were in the last place
-    if (sibling.nextSibling.className !== "blocked") {
+    if (
+      sibling.nextSibling == undefined ||
+      sibling.nextSibling.className !== "blocked"
+    ) {
       this.down.removeAttribute("disabled");
       sibling.querySelector(".down").setAttribute("disabled", "");
     }
@@ -621,11 +679,17 @@ class MovingChoice extends MovingField {
    */
   static remove_div(div) {
     // if this is the last option
-    if (!div.nextSibling.classList.contains("blocked")) {
+    if (
+      div.nextSibling == undefined ||
+      !div.nextSibling.classList.contains("blocked")
+    ) {
       div.previousSibling.querySelector(".down").setAttribute("disabled", "");
     }
     // if this was the first option
-    if (!div.previousSibling.classList.contains("blocked")) {
+    if (
+      div.previousSibling == undefined ||
+      !div.previousSibling.classList.contains("blocked")
+    ) {
       div.nextSibling.querySelector(".up").setAttribute("disabled", "");
     }
 
@@ -711,7 +775,8 @@ class BasicForm {
       pattern = ".*",
       required = true,
       as_textarea = false,
-    } = {}
+    } = {},
+    add_automatically = true
   ) {
     // Create the input tag
     let input_tag = Field.quick(
@@ -752,12 +817,10 @@ class BasicForm {
     }
 
     input_div.appendChild(validator);
-
-    // Append the input to the form, before the switches if they exist, or before the divider
-    if (this.switches) {
-      this.form.insertBefore(input_div, this.switches);
+    if (add_automatically) {
+      this.add_editor(input_div);
     } else {
-      this.form.insertBefore(input_div, this.divider);
+      return input_div;
     }
   }
 
@@ -827,8 +890,9 @@ class BasicForm {
    * for a MultipleInput field.
    * @param {String} label_text Text for the label of the input fields (e.g. "Select option").
    * @param {Array<String|Number>} [starting_values] Initial values for the moving fields.
+   * @param {HTMLDivElement} div Div element to put the moving options on
    */
-  add_moving_options(label_text, input_field) {
+  add_moving_options(label_text, input_field, div) {
     let options = input_field.values.values;
     let has_values = options.length > 0;
     // if no options are provided, start with two
@@ -844,16 +908,16 @@ class BasicForm {
         i,
         has_values ? options[i] : false
       );
-      input
-        .querySelector("input.mover")
-        .addEventListener("change", () => input_field.update_default_field());
-      input
-        .querySelectorAll("button.mover")
-        .forEach((btn) =>
-          btn.addEventListener("click", () =>
-            input_field.update_default_field()
-          )
-        );
+      input.querySelector("input.mover").addEventListener("change", () => {
+        input_field.update_default_field();
+        input_field.toggle_dropdown_switch();
+      });
+      input.querySelectorAll("button.mover").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          input_field.update_default_field();
+          input_field.toggle_dropdown_switch();
+        })
+      );
 
       // re-enable removing if there are more than two options
       if (options.length > 2) {
@@ -870,7 +934,7 @@ class BasicForm {
       }
 
       // add the field to the form, before the divider
-      this.form.insertBefore(input, this.divider);
+      div.appendChild(input);
     }
 
     // create and add a button to add more inputs
@@ -886,21 +950,21 @@ class BasicForm {
 
       // add a new mover with a higher index
       let new_input = this.add_mover(label_text, current_max + 1);
-      new_input
-        .querySelector("input.mover")
-        .addEventListener("change", () => input_field.update_default_field());
-      new_input
-        .querySelectorAll("button.mover")
-        .forEach((btn) =>
-          btn.addEventListener("click", () =>
-            input_field.update_default_field()
-          )
-        );
+      new_input.querySelector("input.mover").addEventListener("change", () => {
+        input_field.update_default_field();
+        input_field.toggle_dropdown_switch();
+      });
+      new_input.querySelectorAll("button.mover").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          input_field.update_default_field();
+          input_field.toggle_dropdown_switch();
+        })
+      );
       // disable its 'down' button
       new_input.querySelector(".down").setAttribute("disabled", "");
 
       // add it to the form
-      this.form.insertBefore(new_input, plus.parentNode);
+      div.insertBefore(new_input, plus_div);
 
       // re-enable the 'down' button of the field before it
       new_input.previousSibling
@@ -908,7 +972,7 @@ class BasicForm {
         .removeAttribute("disabled");
 
       // check how many fields there are
-      let existing_children = this.form.querySelectorAll(".blocked");
+      let existing_children = div.querySelectorAll(".blocked");
       // if now there are three
       if (existing_children.length == 3) {
         existing_children.forEach((child) => {
@@ -917,7 +981,15 @@ class BasicForm {
       }
     });
     plus_div.appendChild(plus);
-    this.form.insertBefore(plus_div, this.divider);
+    div.appendChild(plus_div);
+  }
+
+  add_editor(div, before_switches = true) {
+    if (before_switches && this.switches) {
+      this.form.insertBefore(div, this.switches);
+    } else {
+      this.form.insertBefore(div, this.divider);
+    }
   }
 
   /**

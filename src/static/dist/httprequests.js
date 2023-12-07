@@ -184,10 +184,11 @@ class TemplatesRequest extends MangoRequest {
         const { timestamp, schema_name, schema_version, ls_id } = JSON.parse(
           localStorage.getItem(last_mod_ls)
         );
-        if (
-          existing_names.indexOf(schema_name) > -1 &&
-          schema_infos[schema_name].versions_sorted.indexOf(schema_version) > -1
-        ) {
+        const available_versions = schema_name in schemas && [
+          ...schemas[schema_name].published,
+          ...schemas[schema_name].draft,
+        ];
+        if (available_versions.indexOf(schema_version) > -1) {
           if (
             starting_schema_timestamp == undefined ||
             timestamp > starting_schema_timestamp
@@ -222,6 +223,8 @@ class TemplatesRequest extends MangoRequest {
           localstorage_timestamp == undefined ||
           current_schema_timestamp > localstorage_timestamp
         ) {
+          console.log("current schema wins");
+          console.log(current_schema);
           new bootstrap.Collapse(`#${current_schema}-schemas`).show();
           let trigger = document.querySelector(
             `#nav-tab-${current_schema} button`

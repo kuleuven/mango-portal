@@ -78,7 +78,12 @@ class ComplexField {
     this.status = data.status; // only relevant for Schema class
     this.data_status = this.set_data_status();
     this.ls_id = `_mgs_${this.card_id}_${this.data_status}`;
-    this.properties_from_json(data);
+    if (this.ls_id != undefined && this.ls_id in localStorage) {
+      let schema_from_ls = JSON.parse(localStorage.getItem(this.ls_id));
+      this.properties_from_json(schema_from_ls);
+    } else {
+      this.properties_from_json(data);
+    }
   }
 
   properties_from_json(data) {
@@ -180,6 +185,7 @@ class ComplexField {
     if (form == undefined) {
       return;
     }
+    // console.log(form_object, form, form.querySelectorAll(".viewer"));
 
     // select the button that (supposedly, not necessarily) was used to add this field
     let clicked_button = form.querySelectorAll(".adder")[this.new_field_idx];
@@ -189,11 +195,15 @@ class ComplexField {
 
     // obtain the MovingViewer of the field and create a new button for it (to add things under it)
     let moving_viewer = form_object.view(this);
+
     moving_viewer.below = this.create_button();
 
     // add both the MovingViewer and its button after the clicked button
     below.parentElement.insertBefore(moving_viewer.div, below);
     below.parentElement.insertBefore(moving_viewer.below, below);
+    if (form_object.autocomplete_id != undefined) {
+      form_object.activate_autocomplete(true);
+    }
 
     // disable/re-enable the buttons of the existing viewers
     let viewers = below.parentElement.querySelectorAll(".viewer");
@@ -261,15 +271,19 @@ class ComplexField {
     let rep_icon = Field.quick("i", "bi bi-front px-2");
     if (form_object.repeatable) {
       viewer.querySelector("h5").appendChild(rep_icon);
-    } else if (viewer.querySelector("h5 .bi-front") != null) {
+    } else if (viewer.querySelector("h5 .bi-front")) {
       viewer.querySelector("h5").removeChild(rep_icon);
     }
 
     // Replace the contents of the MovingViewer
     let form_field = viewer.querySelector(".card-body");
     let new_input = form_object.viewer_input();
-    form_field.replaceChild(new_input, form_field.firstChild);
     if (form_object.constructor.name == "ObjectInput") {
+      form_field.replaceChild(
+        new_input,
+        form_field.querySelector("div.input-view")
+      );
+
       let help_div = form_field.querySelector(".form-text#help-composite");
       if (help_div) {
         if (form_object.help) {
@@ -285,6 +299,11 @@ class ComplexField {
         );
         description.id = "help-composite";
         form_field.insertBefore(description, new_input);
+      }
+    } else {
+      form_field.replaceChild(new_input, form_field.firstChild);
+      if (form_object.autocomplete_id != undefined) {
+        form_object.activate_autocomplete();
       }
     }
   }
@@ -446,6 +465,7 @@ class ComplexField {
     // create the contents of the viewer based on the specific kind of field
     let input = subfield.viewer_input(active);
     small_div.appendChild(label);
+
     if (subfield.constructor.name == "ObjectInput" && subfield.help) {
       let help_text = Field.quick(
         "p",
@@ -648,7 +668,7 @@ class Schema extends ComplexField {
   create_creator() {
     this.status = "draft";
 
-    if (this.ls_id in localStorage) {
+    if (this.ls_id in localStorage && this.field_ids.length == 0) {
       let schema_from_ls = JSON.parse(localStorage.getItem(this.ls_id));
       this.properties_from_json(schema_from_ls);
       // this.field_ids.forEach((field_id, idx) => {
@@ -1165,6 +1185,14 @@ class Schema extends ComplexField {
     this.card.appendChild(this.nav_bar.nav_bar);
     this.card.appendChild(this.nav_bar.tab_content);
     document.getElementById(this.container).appendChild(this.card);
+    const autocomplete_viewers = this.card.querySelectorAll(
+      "input[type='search']"
+    );
+    autocomplete_viewers.forEach((viewer) => {
+      const id_parts = viewer.id.split("-");
+      const field = this.fields[id_parts[id_parts.length - 1]];
+      field.activate_autocomplete();
+    });
 
     Object.keys(this.nav_bar_btn_ids).forEach((permission) => {
       let use_permissions = schema_infos[this.name].current_user_permissions
@@ -1184,7 +1212,7 @@ class Schema extends ComplexField {
         schema_from_ls.last_modified > this.latest_saved
       ) {
         this.temp_title = schema_from_ls.title;
-        this.properties_from_json(schema_from_ls);
+        // this.properties_from_json(schema_from_ls);
         this.offer_reset_ls();
       } else if (schema_from_ls.last_modified <= this.latest_saved) {
         this.reset_ls();
@@ -1290,7 +1318,7 @@ class Schema extends ComplexField {
     const to_save = {
       title: this.temp_title ? this.temp_title : this.title,
       properties: this.properties,
-      last_modified: Date.now(),
+      last_modified: Date.now() / 1000,
     };
     if (
       this.data_status == "copy" ||
@@ -1307,7 +1335,7 @@ class Schema extends ComplexField {
         last_mod_ls,
         JSON.stringify({
           ls_id: this.ls_id,
-          timestamp: Date.now(),
+          timestamp: Date.now() / 1000,
           schema_name: this.name,
           schema_version: this.version,
           editing_tab: `#${tab_prefixes[this.data_status]}-tab-${
@@ -1635,7 +1663,7 @@ class SchemaForm {
     // Add attributes to the form so it submits directly
     form_div.setAttribute("action", post_url);
     form_div.setAttribute("method", "POST");
-
+    form_div.setAttribute("novalidate", "");
     // Include BS5 validation
     form_div.addEventListener("submit", (e) => {
       if (!form_div.checkValidity()) {
@@ -1646,6 +1674,15 @@ class SchemaForm {
     });
 
     document.getElementById(this.container).appendChild(form_div);
+    const autocomplete_fields = form_div.querySelectorAll(
+      "input[type='search']"
+    );
+    autocomplete_fields.forEach((viewer) => {
+      const id_parts = viewer.id.split("-");
+      const field = this.fields[id_parts[id_parts.length - 1]];
+      field.activate_autocomplete();
+      field.read_autocomplete();
+    });
     this.form = form_div;
   }
 
