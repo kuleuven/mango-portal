@@ -74,6 +74,15 @@
             {% endif %}
             </td>
           </tr>
+          <tr>
+            <th>Afsprakennota Code</th>
+            <td>
+            {{ project['an'] }}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            </td>
+          </tr>
 
           {% if project['sap_ref'] %}
           <tr>
@@ -658,6 +667,19 @@
                      value="{{ project['description'] }}" />
               <div class="invalid-feedback">
                 Description is required
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="an" class="col-form-label">
+                Afsprakennota Code
+              </label>
+              <input type="text"
+                     class="form-control"
+                     name="an"
+                     value="{{ project['an'] }}" />
+              <div class="invalid-feedback">
+                Afsprakennota Code is required
               </div>
             </div>
 
