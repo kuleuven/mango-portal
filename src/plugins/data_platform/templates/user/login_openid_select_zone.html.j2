@@ -157,24 +157,47 @@
 
     {% if admin %}
     <div class="mt-3">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRodsProject">
-            Add iRODS project
-        </button>
+        <div class="btn-group" role="group">
+            <button id="btnGroupAdd" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Add project
+            </button>
+            <div class="dropdown-menu" aria-labelledby="btnGroupAdd">
+                <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addRodsProject">
+                    Add iRODS project
+                </button>
 
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGenericProject">
-            Add globus share
-        </button>
+                <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addGenericProject">
+                    Add globus share
+                </button>
 
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRDRProject">
-            Add RDR S3 project
-        </button>
+                <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addRDRProject">
+                    Add RDR S3 project
+                </button>
+            </div>
+        </div>
 
-        <a href="{{url_for('data_platform_project_bp.projects_statistics')}}" class="btn btn-block btn-primary">Statistics</a>
-        <a href="{{url_for('data_platform_project_bp.project_user_search')}}" class="btn btn-block btn-primary">Search User/Project</a>
-    </div>
-    <div class="mt-2">
+        <form action="{{ url_for('data_platform_project_bp.project_user_search') }}" method="get" style="float: right; display: inline-block">
+            <div class="input-group rounded">
+                <input name="search" placeholder="Username or project" id="search" class="form-control rounded" aria-label="Search" aria-describedby="search-addon" />
+                <button type="submit" class="input-group-text border-0" id="search-addon">
+                    <i class="bi bi-search"></i>
+                </span>
+            </div>
+        </form>
+
+        <div class="btn-group" role="group">
+            <button id="btnGroupStats" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Project dashboards
+            </button>
+            <div class="dropdown-menu" aria-labelledby="btnGroupStats">
+                <a href="{{url_for('data_platform_project_bp.projects_statistics')}}" class="dropdown-item">Current Usages</a>
+                <a href="{{url_for('data_platform_project_bp.project_overview')}}" class="dropdown-item">Monthly Usage Report</a>
+                <a href="{{url_for('data_platform_project_bp.projects_usage')}}" class="dropdown-item">Graphs</a>
+                <a href="{{url_for('data_platform_project_bp.project_quota_change')}}" class="dropdown-item">Quota Changelog</a>
+            </div>
+        </div>  
+
         <a href="{{url_for('data_platform_project_bp.rule_management')}}" class="btn btn-block btn-primary">Rule Management</a>
-        <a href="{{url_for('data_platform_project_bp.project_quota_change')}}" class="btn btn-block btn-primary">Quota Change</a>
     </div>
     <!-- Add project model -->
     <div class="modal fade"
@@ -194,7 +217,7 @@
                     aria-label="Close">
             </button>
             </div>
-            <form action="{{ url_for('data_platform_project_bp.add_irods_project') }}""
+            <form action="{{ url_for('data_platform_project_bp.add_irods_project') }}"
                 method="post"
                 enctype="multipart/form-data"
                 class="row g-3 needs-validation"
@@ -253,42 +276,6 @@
                     An irods zone is required
                 </div>
                 </div>
-
-                <div class="mb-3">
-                <label for="layout" class="col-form-label">
-                    Platform Type
-                </label>
-
-                <div>
-                    <input type="radio" class="btn-check" name="platform" id="p-irods" autocomplete="off" checked value="irods" />
-                    <label class="btn btn-outline-secondary" for="p-irods">Native iRODS</label>
-
-                    <input type="radio" class="btn-check" name="platform" id="p-irods-sftp" autocomplete="off" disabled value="irods-sftp" />
-                    <label class="btn btn-outline-secondary" for="p-irods-sftp">SFTP optimized - iRODS as index</label>
-                </div>
-
-                <div class="invalid-feedback">
-                    An irods folder layout is required
-                </div>
-                </div>
-
-                <div class="mb-3" id="folder-layout">
-                <label for="layout" class="col-form-label">
-                    Folder layout
-                </label>
-
-                <div>
-                    <input type="radio" class="btn-check" name="layout" id="v0-layout" autocomplete="off" checked value="v0" />
-                    <label class="btn btn-outline-secondary" for="v0-layout">Single collection</label>
-
-                    <input type="radio" class="btn-check" name="layout" id="v1-layout" autocomplete="off" value="v1" />
-                    <label class="btn btn-outline-secondary" for="v1-layout">Structured subcollections</label>
-                </div>
-
-                <div class="invalid-feedback">
-                    An irods folder layout is required
-                </div>
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -320,7 +307,7 @@
                     aria-label="Close">
             </button>
             </div>
-            <form action="{{ url_for('data_platform_project_bp.add_generic_project') }}""
+            <form action="{{ url_for('data_platform_project_bp.add_generic_project') }}"
                 method="post"
                 enctype="multipart/form-data"
                 class="row g-3 needs-validation"
@@ -390,7 +377,7 @@
                     aria-label="Close">
             </button>
             </div>
-            <form action="{{ url_for('data_platform_project_bp.add_rdr_project') }}""
+            <form action="{{ url_for('data_platform_project_bp.add_rdr_project') }}"
                 method="post"
                 enctype="multipart/form-data"
                 class="row g-3 needs-validation"
@@ -450,7 +437,7 @@
     </div>
     {% elif finance %}
     <div class="mt-2">
-        <a href="{{url_for('data_platform_project_bp.project_quota_change')}}" class="btn btn-block btn-primary">Quota Change</a>
+        <a href="{{url_for('data_platform_project_bp.project_quota_change')}}" class="btn btn-block btn-primary">Quota Changelog</a>
     </div>
     {% endif %}
 

@@ -11,21 +11,16 @@ div.dataTables_wrapper {
 {% endblock %}
 
 {% block container %}
-   <div class="m-2">
+  <div class="m-2">
    <nav aria-label="breadcrumb m-2">
     <ol class="breadcrumb">
       <li class="breadcrumb-item">
         <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
       </li>
-      <li class="breadcrumb-item active" aria-current="page">Statistics</li>
+      <li class="breadcrumb-item active" aria-current="page">Current Usages</li>
     </ol>
   </nav>
-    <div class="m-1" "btn-toolbar mb-3" role="toolbar">
-      <a href="{{url_for('data_platform_project_bp.project_overview')}}" class="btn btn-block btn-primary">Usage Report</a>
-      <a href="{{url_for('data_platform_project_bp.projects_usage')}}" class="btn btn-block btn-primary">Dashboards</a>
-    </div>
   </div>
-
   <form method="get" class="m-2">
     <div class="row">
       <div class="col-auto p-0">

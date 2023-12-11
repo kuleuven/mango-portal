@@ -34,7 +34,7 @@ div.dataTables_wrapper  div.dataTables_filter {
       <li class="breadcrumb-item">
         <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
       </li>
-      <li class="breadcrumb-item active" aria-current="page">project_user_search</li>
+      <li class="breadcrumb-item active" aria-current="page">Search</li>
     </ol>
   </nav>
   </div>
@@ -46,9 +46,14 @@ div.dataTables_wrapper  div.dataTables_filter {
   <link rel="stylesheet"href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css"/>
 
   <div class="table-responsive">
-    <table id="data-table" class="display">
+    <table id="data-table" class="display"></table>
       <script>
         let data = {{user_project_search_list | safe}};
+        let search = {};
+        let params = new URLSearchParams(window.location.search);
+        if (params.has('search')) {
+            search = {"search": params.get('search')};
+        }
         let table = new DataTable("#data-table", { 
                                                   data:data,
                                                   columns:[ 
@@ -74,10 +79,10 @@ div.dataTables_wrapper  div.dataTables_filter {
                                                   "autoWidth": false,
                                                   responsive: true,
                                                   "lengthChange": false,
-                                                  })
-        
-      </script>    
-    </table>
+                                                  "search": search,
+                                                  });
+
+      </script>   
   </div>
   
 {% endblock container %}

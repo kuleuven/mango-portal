@@ -399,15 +399,11 @@ def add_irods_project():
         headers=header,
         json={
             "type": request.form.get("type"),
-            "platform": request.form.get("platform"),
+            "platform": "irods",
             "platform_options": [
                 {
                     "key": "zone-jobid",
                     "value": request.form.get("zone"),
-                },
-                {
-                    "key": "folder-layout",
-                    "value": request.form.get("layout"),
                 },
             ],
         },

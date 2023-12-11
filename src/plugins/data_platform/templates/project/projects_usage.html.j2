@@ -1,19 +1,17 @@
 {% extends "base_openid.html.j2" %}
 
 {% block container %}
+<div class="m-2">
+   <nav aria-label="breadcrumb m-2">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Graphs</li>
+    </ol>
+  </nav>
+  </div>
 <div class="container-fluid px-5 content">
-    <div class="m-2">
-      <nav aria-label="breadcrumb m-2">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item">
-            <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
-          </li>
-          <li class="breadcrumb-item">
-            <a href="{{ url_for('data_platform_project_bp.projects_statistics')}}">Statistics</a>
-          </li>
-        </ol>
-      </nav>
-    </div>
     <div class="row">
         <div class="col-3 text-start pt-3 border-end">
             <h5>Filter by month</h5>
