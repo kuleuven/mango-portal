@@ -97,7 +97,7 @@
                     </div>
                     {% endif %}
                     <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#{{ platform }}" aria-expanded="false" aria-controls="{{ platform }}">
-                        {{ platform|replace('generic', 'Data Transfer Shares') }}
+                        {{ platform|replace('generic', 'Data Transfer Shares')|replace('rdr', 'RDR S3 Projects') }}
                     </button>
                 </h4>
 
@@ -163,6 +163,10 @@
 
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGenericProject">
             Add globus share
+        </button>
+
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRDRProject">
+            Add RDR S3 project
         </button>
 
         <a href="{{url_for('data_platform_project_bp.projects_statistics')}}" class="btn btn-block btn-primary">Statistics</a>
@@ -324,17 +328,112 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class="modal-body">
                 <div class="mb-3">
-                <label for="name" class="col-form-label">
-                    Project name
-                </label>
-                <input type="text"
-                        class="form-control"
-                        id="name"
-                        name="name"
-                        required pattern="^[a-zA-Z0-9-_]*$" />
-                <div class="invalid-feedback">
-                    A valid project name is required. It may consist of <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>-</code> and <code>_</code> only.
+                    <label for="name" class="col-form-label">
+                        Project name
+                    </label>
+                    <input type="text"
+                            class="form-control"
+                            id="name"
+                            name="name"
+                            required pattern="^[a-zA-Z0-9-_]*$" />
+                    <div class="invalid-feedback">
+                        A valid project name is required. It may consist of <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>-</code> and <code>_</code> only.
+                    </div>
                 </div>
+                <div class="mb-3">
+                    <label for="type" class="col-form-label">
+                        Project Type
+                    </label>
+                    <select
+                        class="form-select"
+                        id="type"
+                        name="type"
+                        required>
+                            <option value="project" selected>project</option>
+                            <option value="test">test</option>
+                            <option value="training">training</option>
+                            <option value="pilot">pilot</option>
+                            <option value="demo">demo</option>
+                    </select>
+                    <div class="invalid-feedback">
+                        A project type is required
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+                </button>
+                <button class="btn btn-primary" type="submit">
+                Add
+                </button>
+            </div>
+            </form>
+        </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+        id="addRDRProject"
+        tabindex="-1"
+        aria-labelledby="addRDRProjectLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="addRDRProjectLabel">
+                Add RDR S3 project
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <form action="{{ url_for('data_platform_project_bp.add_rdr_project') }}""
+                method="post"
+                enctype="multipart/form-data"
+                class="row g-3 needs-validation"
+                novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="name" class="col-form-label">
+                        Project name
+                    </label>
+                    <input type="text"
+                            class="form-control"
+                            id="name"
+                            name="name"
+                            required pattern="^[a-zA-Z0-9-_]*$" />
+                    <div class="invalid-feedback">
+                        A valid project name is required. It may consist of <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>-</code> and <code>_</code> only.
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="name" class="col-form-label">
+                        S3 Bucket
+                    </label>
+                    <input type="text"
+                            class="form-control"
+                            id="s3bucket"
+                            name="s3_bucket"
+                            value="dataverse" />
+                    <div class="invalid-feedback">
+                        A S3 bucket name is required.
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="name" class="col-form-label">
+                        S3 Prefix
+                    </label>
+                    <input type="text"
+                            class="form-control"
+                            id="s3prefix"
+                            name="s3_prefix" />
+                    <div class="invalid-feedback">
+                        A S3 bucket prefix is required.
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">

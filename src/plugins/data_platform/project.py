@@ -408,7 +408,18 @@ def add_generic_project():
         f"{API_URL}/v1/projects/{id}",
         headers=header,
         json={
+            "type": request.form.get("type"),
             "platform": "generic",
+            "platform_options": [
+                {
+                    "key": "s3_bucket",
+                    "value": request.form.get("s3_bucket"),
+                },
+                {
+                    "key": "s3_prefix",
+                    "value": request.form.get("s3_prefix"),
+                },
+            ],
         },
     )
     response.raise_for_status()
@@ -419,6 +430,28 @@ def add_generic_project():
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
+@data_platform_project_bp.route("/data-platform/projects/add/rdr", methods=["POST"])
+@openid_login_required
+def add_rdr_project():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    id = request.form.get("name")
+
+    response = requests.put(
+        f"{API_URL}/v1/projects/{id}",
+        headers=header,
+        json={
+            "platform": "rdr",
+        },
+    )
+    response.raise_for_status()
+
+    flash(response.json()["message"], "success")
+
+    project_changed.send(current_app._get_current_object())
+
+    return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
 @data_platform_project_bp.route("/data-platform/projects", methods=["GET"])
 @openid_login_required

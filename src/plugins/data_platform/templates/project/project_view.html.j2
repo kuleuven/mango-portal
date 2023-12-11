@@ -157,6 +157,13 @@
             </td>
           </tr>
           {% endif %}
+
+          {% if project['platform'].startswith("rdr") %}
+          <tr>
+            <th>S3 Bucket</th>
+            <td>{{ opts['s3_bucket']|default('dataverse') }}/{{ opts['s3_prefix']|default('') }}</td>
+          </tr>
+          {% endif %}
           <tr>
             <th>Size</th>
             <td>{{ status['used_size']|format_size }} of {{ project['quota_size']|format_size }} used

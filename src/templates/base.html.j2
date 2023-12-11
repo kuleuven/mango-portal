@@ -55,7 +55,11 @@
   </head>
   <body>
     {% block header %}
+      {% if 'irods_session' in g %}
       {% include "header.html.j2"|mango_template(g.irods_session.zone) %}
+      {% else %}
+      {% include "header.html.j2" %}
+      {% endif %}
     {% endblock header %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
