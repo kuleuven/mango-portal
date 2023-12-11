@@ -215,6 +215,30 @@ def modify_project():
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
+@data_platform_project_bp.route("/data-platform/projects/modify/rdr", methods=["POST"])
+@openid_login_required
+def modify_project_rdr():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    id = request.form.get("project")
+
+    for key in ['s3_bucket', 's3_prefix']:
+        value = request.form.get(key, "")
+
+        response = requests.put(
+            f"{API_URL}/v1/projects/{id}/option/{key}",
+            headers=header,
+            json={"value": value},
+        )
+        response.raise_for_status()
+
+        flash(response.json()["message"], "success")
+
+        project_changed.send(current_app._get_current_object())
+
+    return redirect(url_for("data_platform_project_bp.project", project_name=id))
+
 
 @data_platform_project_bp.route("/data-platform/projects/option", methods=["POST"])
 @openid_login_required
@@ -410,16 +434,6 @@ def add_generic_project():
         json={
             "type": request.form.get("type"),
             "platform": "generic",
-            "platform_options": [
-                {
-                    "key": "s3_bucket",
-                    "value": request.form.get("s3_bucket"),
-                },
-                {
-                    "key": "s3_prefix",
-                    "value": request.form.get("s3_prefix"),
-                },
-            ],
         },
     )
     response.raise_for_status()
@@ -443,6 +457,16 @@ def add_rdr_project():
         headers=header,
         json={
             "platform": "rdr",
+            "platform_options": [
+                {
+                    "key": "s3_bucket",
+                    "value": request.form.get("s3_bucket"),
+                },
+                {
+                    "key": "s3_prefix",
+                    "value": request.form.get("s3_prefix"),
+                },
+            ],
         },
     )
     response.raise_for_status()

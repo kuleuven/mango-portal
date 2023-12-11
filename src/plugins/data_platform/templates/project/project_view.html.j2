@@ -161,7 +161,12 @@
           {% if project['platform'].startswith("rdr") %}
           <tr>
             <th>S3 Bucket</th>
-            <td>{{ opts['s3_bucket']|default('dataverse') }}/{{ opts['s3_prefix']|default('') }}</td>
+            <td>
+              {{ opts['s3_bucket']|default('dataverse') }}/{{ opts['s3_prefix']|default('') }}
+              {% if admin %}
+              <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProjectRDR"><i class="bi bi-pencil"></i></a>
+              {% endif %}
+            </td>
           </tr>
           {% endif %}
           <tr>
@@ -811,6 +816,76 @@
             </div>
             <input type="hidden"
                    id="project-modify"
+                   name="project"
+                   value="{{ project['name']}}"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modify project rdr modal -->
+  <div class="modal fade"
+       id="modifyProjectRDR"
+       tabindex="-1"
+       aria-labelledby="modifyProjectRDRLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modifyProjectRDRLabel">
+            Modify rdr project settings
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.modify_project_rdr') }}"
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="s3_bucket" class="col-form-label">
+                S3 Bucket
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="s3_bucket"
+                     name="s3_bucket"
+                     value="{{ opts['s3_bucket'] }}" required />
+              <div class="invalid-feedback">
+                A S3 bucket name is required.
+              </div>
+            </div>
+            <div class="mb-3">
+                <label for="s3_prefix" class="col-form-label">
+                    S3 Prefix
+                </label>
+                <input type="text"
+                        class="form-control"
+                        id="s3_prefix"
+                        name="s3_prefix"
+                        value="{{ opts['s3_prefix'] }}" />
+                <div class="invalid-feedback">
+                    A S3 bucket prefix is required.
+                </div>
+            </div>
+
+            <input type="hidden"
+                   id="project-modify-rdr"
                    name="project"
                    value="{{ project['name']}}"/>
           </div>
