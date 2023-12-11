@@ -132,7 +132,7 @@ class TemplatesRequest extends MangoRequest {
         let schema_name = template.name;
         // pattern to retrieve the name, version and status from the filename
         let re =
-          /(?<name>.*)-v(?<version>\d\.\d\.\d)-(?<status>|published|draft).json/;
+          /(?<name>.*)-v(?<version>\d+\.\d\.\d)-(?<status>|published|draft).json/;
         let this_template = template.schema_info;
 
         // create a list of objects with the information of each version
