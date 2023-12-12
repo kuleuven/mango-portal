@@ -79,6 +79,10 @@ def zone_search():
     search_string = ""
     if "search_string" in request.values and request.values["search_string"]:
         search_string = request.values["search_string"]
+        # combined user and group ids into a global list
+        irods_acl_reader_ids = [g.irods_session.user.id]
+        irods_acl_reader_ids.extend(g.irods_session.my_group_ids)
+
         search_results = mango_osc.search(
             {
                 "query": {
@@ -87,7 +91,10 @@ def zone_search():
                             {
                                 "multi_match": {
                                     "query": request.values["search_string"],
-                                    "fields": ["irods_name^4", "mango_descriptive_text_basket"],
+                                    "fields": [
+                                        "irods_name^4",
+                                        "mango_descriptive_text_basket",
+                                    ],
                                     "fuzziness": "AUTO",
                                     "fuzzy_transpositions": True,
                                     "minimum_should_match": 1,
@@ -102,22 +109,8 @@ def zone_search():
                                             }
                                         },
                                         {
-                                            "bool": {
-                                                "should": [
-                                                    {
-                                                        "term": {
-                                                            "irods_acl_read_users": g.irods_session.user.id
-                                                        }
-                                                    }
-                                                ]
-                                                + [
-                                                    {
-                                                        "term": {
-                                                            "irods_acl_read_groups": group_id
-                                                        }
-                                                    }
-                                                    for group_id in g.irods_session.my_group_ids
-                                                ]
+                                            "terms": {
+                                                "irods_acl_reader_ids": irods_acl_reader_ids
                                             }
                                         },
                                     ]
@@ -131,7 +124,6 @@ def zone_search():
             },
             index=MANGO_OPEN_SEARCH_INDEX_NAME,
         )
-    #print(search_results)
 
     view_template = "mango_open_search/search_results.html.j2"
     return render_template(

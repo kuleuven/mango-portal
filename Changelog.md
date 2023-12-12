@@ -10,6 +10,18 @@ The main changes are related to the possibility of a generic use of the ManGO po
 
 A dedicated document is created in the file `Custom-deployments.md` which is WIP
 
+In addition, changed various parts for Kafka indexing:
+
+- Implementation for OpenSearch indexing must be specified, defaults to "external"
+- If this value is "internal", a local indexing thread is created and listeners configured
+- Some field definitions have changed
+
+
+## Bug fixes
+
+- Fixed metadata schema version validation code to allow more than 9 versions in any part
+ 
+
 ## Release 0.14.1 [2023-08-22 (t,q,p)]
 
 ### Smaller improvements and bug fixes
