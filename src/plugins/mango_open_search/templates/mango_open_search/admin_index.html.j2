@@ -3,108 +3,84 @@
     <h3>
         <i class="bi bi-search"></i> Open search index plugin
     </h3>
-    <div clsss="row mb-4">
-        <h4 class="mt-4">Launch ad hoc indexing job</h4>
-        <div class="col">
-            <form method="post"
-                  action="{{ url_for('mango_open_search_bp.index_collection') }}"
-                  id="index_collection">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <select name="collection_path" class="form-select mb-2">
-                    {% for collection in available_collections %}
-                        <option value="{{ collection.path }}">{{ collection.path }}</option>
-                    {% endfor %}
-                </select>
-                <label for="skip_reset_collection">Update only</label>
-                <input type="checkbox"
-                       id="skip_reset_collection"
-                       name="skip_reset_collection"
-                       class="mt-2">
-            </form>
-            <button type="submit" form="index_collection" class="btn btn-success mt-3">Add collection to index jobs</button>
+    {% if indexing_implementation != "internal" %} <div inert class="bg-danger bg-opacity-10"><h4 class="text-danger">Indexing is done externally, form controls disabled</h4> {% else %} <div> {% endif %}
+        <div clsss="row mb-4">
+            <h4 class="mt-4">Launch ad hoc indexing job</h4>
+            <div class="col">
+                <form method="post"
+                      action="{{ url_for("mango_open_search_bp.index_collection") }}"
+                      id="index_collection">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <select name="collection_path" class="form-select mb-2">
+                        {% for collection in available_collections %}
+                            <option value="{{ collection.path }}">{{ collection.path }}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="skip_reset_collection">Update only</label>
+                    <input type="checkbox"
+                           id="skip_reset_collection"
+                           name="skip_reset_collection"
+                           class="mt-2" />
+                </form>
+                <button type="submit" form="index_collection" class="btn btn-success mt-3">Add collection to index jobs</button>
+            </div>
         </div>
-    </div>
-    <div class="row border p-3 mt-4">
-        <h4>Indexing thread status</h4>
-        <p>
-            Current status <b>{{ indexing_thread_status }}</b>
-        </p>
-        <div class="col">
-            <form method="post"
-                  class="align-bottom"
-                  action="{{ url_for('mango_open_search_admin_bp.change_index_thread_status') }}"
-                  id="change_indexing_status">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <select name="status" class="form-select">
-                    <option value="active">Active</option>
-                    <option value="sleep">Sleep</option>
-                    <option value="flush_sleep">Flush jobs and sleep</option>
-                    <option value="flush_active">Flush jobs and run</option>
-                </select>
-            </form>
-            <button type="submit"
-                    form="change_indexing_status"
-                    class="btn btn-success mt-3">Change status</button>
-        </div>
-        <div class="col">
+        <div class="row border p-3 mt-4">
+            <h4>Indexing thread status</h4>
             <p>
-                Indexing thread health : {{ ('<i class="bi-check-square text-success"></i>' if indexing_thread_health else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
+                Current status <b>{{ indexing_thread_status }}</b>
+            </p>
+            <div class="col">
+                <form method="post"
+                      class="align-bottom"
+                      action="{{ url_for("mango_open_search_admin_bp.change_index_thread_status") }}"
+                      id="change_indexing_status">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <select name="status" class="form-select">
+                        <option value="active">Active</option>
+                        <option value="sleep">Sleep</option>
+                        <option value="flush_sleep">Flush jobs and sleep</option>
+                        <option value="flush_active">Flush jobs and run</option>
+                    </select>
+                </form>
+                <button type="submit"
+                        form="change_indexing_status"
+                        class="btn btn-success mt-3">Change status</button>
+            </div>
+            <div class="col">
+                <p>
+                    Indexing thread health : {{ ('<i class="bi-check-square text-success"></i>' if indexing_thread_health else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
+                </p>
+                <form method="post"
+                      action="{{ url_for("mango_open_search_admin_bp.refresh_indexing_thread") }}"
+                      id="refresh_indexing_thread">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                </form>
+                <button type="submit"
+                        form="refresh_indexing_thread"
+                        class="btn btn-success mt-3 align-bottom">Restart indexing thread</button>
+            </div>
+        </div>
+        <div class="row p-3">
+            <h4>Client/server connection health</h4>
+            <p>
+                Query server: {{ ('<i class="bi-check-square text-success"></i>' if server_health['query'] else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
+            </p>
+            <p>
+                Ingest server: {{ ('<i class="bi-check-square text-success"></i>' if server_health['ingest'] else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
             </p>
             <form method="post"
-                  action="{{ url_for('mango_open_search_admin_bp.refresh_indexing_thread') }}"
-                  id="refresh_indexing_thread">
+                  action="{{ url_for("mango_open_search_admin_bp.refresh_clients") }}"
+                  id="refresh_clients">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             </form>
-            <button type="submit"
-                    form="refresh_indexing_thread"
-                    class="btn btn-success mt-3 align-bottom">Restart indexing thread</button>
+            <button type="submit" form="refresh_clients" class="btn btn-success mt-3">Refresh client/server connections</button>
         </div>
-    </div>
-    <div class="row p-3">
-        <h4>Client/server connection health</h4>
-        <p>
-            Query server: {{ ('<i class="bi-check-square text-success"></i>' if server_health['query'] else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
-        </p>
-        <p>
-            Ingest server: {{ ('<i class="bi-check-square text-success"></i>' if server_health['ingest'] else '<i class="bi-slash-circle-fill text-danger"></i>') | safe }}
-        </p>
-        <form method="post"
-              action="{{ url_for('mango_open_search_admin_bp.refresh_clients') }}"
-              id="refresh_clients">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        </form>
-        <button type="submit" form="refresh_clients" class="btn btn-success mt-3">Refresh client/server connections</button>
-    </div>
-    <div class="row border p-3">
-        <h3>Index job queue ({{ result["queue_length"] }})</h3>
-        {% if result["queue_length"] > 0 %}
-            {% if 'all' in result %}
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Zone</th>
-                            <th>Job type</th>
-                            <th>Item path</th>
-                            <th>Item type</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in result['all'] %}
-                            <tr>
-                                <td>{{ item['zone'] }}</td>
-                                <td>{{ item['job_type'] }}</td>
-                                <td class="text-break">{{ item['item_path'] }}</td>
-                                <td>{{ item['item_type'] }}</td>
-                                <td>{{ item['time'].isoformat(timespec='seconds') }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                {% for result_block in ['oldest', 'newest'] %}
-                    <h4>{{ result_block | capitalize }} {{ result[result_block] |length }}</h4>
-                    <table>
+        <div class="row border p-3">
+            <h3>Index job queue ({{ result["queue_length"] }})</h3>
+            {% if result["queue_length"] > 0 %}
+                {% if 'all' in result %}
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th>Zone</th>
@@ -115,30 +91,56 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for item in result[result_block] %}
+                            {% for item in result['all'] %}
                                 <tr>
                                     <td>{{ item['zone'] }}</td>
                                     <td>{{ item['job_type'] }}</td>
                                     <td class="text-break">{{ item['item_path'] }}</td>
                                     <td>{{ item['item_type'] }}</td>
-                                    <td>{{ item['time'] }}</td>
+                                    <td>{{ item['time'].isoformat(timespec='seconds') }}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
-                {% endfor %}
+                {% else %}
+                    {% for result_block in ['oldest', 'newest'] %}
+                        <h4>{{ result_block | capitalize }} {{ result[result_block] |length }}</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Zone</th>
+                                    <th>Job type</th>
+                                    <th>Item path</th>
+                                    <th>Item type</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in result[result_block] %}
+                                    <tr>
+                                        <td>{{ item['zone'] }}</td>
+                                        <td>{{ item['job_type'] }}</td>
+                                        <td class="text-break">{{ item['item_path'] }}</td>
+                                        <td>{{ item['item_type'] }}</td>
+                                        <td>{{ item['time'] }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endfor %}
+                {% endif %}
+            {% else %}
+                <p>No active jobs on this node</p>
             {% endif %}
-        {% else %}
-            <p>No active jobs on this node</p>
-        {% endif %}
-        <button class="btn btn-success mt-3 mb-3" onclick="window.location.reload();">Refresh</button>
-    </div>
-    <div class="row p-3">
-    <form method="post"
-              action="{{ url_for('mango_open_search_admin_bp.clear_index') }}"
-              id="clear_index">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        </form>
-        <button type="submit" form="clear_index" class="btn btn-danger mt-3">Clear entire index!</button>
+            <button class="btn btn-success mt-3 mb-3" onclick="window.location.reload();">Refresh</button>
+        </div>
+        <div class="row p-3">
+            <form method="post"
+                  action="{{ url_for("mango_open_search_admin_bp.clear_index") }}"
+                  id="clear_index">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            </form>
+            <button type="submit" form="clear_index" class="btn btn-danger mt-3">Clear entire index!</button>
+        </div>
     </div>
 {% endblock body %}
