@@ -15,6 +15,7 @@ In addition, changed various parts for Kafka indexing:
 - Implementation for OpenSearch indexing must be specified, defaults to "external"
 - If this value is "internal", a local indexing thread is created and listeners configured
 - Some field definitions have changed
+- Admin indexing actions are disabled in the view template
 
 
 ## Bug fixes
