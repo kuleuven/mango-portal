@@ -662,7 +662,7 @@ def projects_usage():
     projects_dict["usage"] = []
     projects_dict["quota"] = []
     for project in projects:
-        if project["project"]["platform"] == "irods":
+        if project["project"]["platform"] == "irods" and project["project"]["type"] == "project":
             for usage in project["usage"]:
                 projects_dict["date"].append(usage["date"])
                 zone_name = [
