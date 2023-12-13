@@ -23,7 +23,8 @@ from . import (
     MANGO_INDEX_THREAD_SLEEP_TIME,
     IndexingThread,
     ping_open_search_servers,
-    delete_all
+    delete_all,
+    MANGO_OPEN_SEARCH_INDEXING_IMPLEMENTATION
 )
 from opensearchpy import client
 
@@ -80,6 +81,7 @@ def index():
         indexing_thread_status=indexing_thread.status,
         indexing_thread_health=indexing_thread.is_alive(),
         server_health=ping_open_search_servers(),
+        indexing_implementation=MANGO_OPEN_SEARCH_INDEXING_IMPLEMENTATION
     )
 
 

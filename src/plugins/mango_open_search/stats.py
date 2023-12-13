@@ -83,7 +83,7 @@ def index():
             "query": {
                 "bool": {
                     "filter": [
-                        {"term": {"irods_parent_path_ids": c_id}},
+                        {"term": {"irods_parent_paths": c_path}},
                         {"term": {"irods_zone_name": zone}},
                     ],
                 }

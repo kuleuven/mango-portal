@@ -32,6 +32,10 @@ API_TOKEN = os.environ.get("API_TOKEN", "")
 if not API_TOKEN:
     logging.warn(f"No COZ API token, module opensearch will not work")
 
+# Implementation can be internal or external. If internal, a dedicated worker thread is started and listeners attached to 
+# action that change the catalog/data objects
+MANGO_OPEN_SEARCH_INDEXING_IMPLEMENTATION = os.environ.get("MANGO_OPEN_SEARCH_INDEXING_IMPLEMENTATION", "external")
+
 MANGO_OPEN_SEARCH_HOST = os.environ.get("MANGO_OPEN_SEARCH_HOST", "localhost")
 MANGO_OPEN_SEARCH_HOST_QUERY = os.environ.get(
     "MANGO_OPEN_SEARCH_HOST_QUERY", MANGO_OPEN_SEARCH_HOST
@@ -356,6 +360,8 @@ def get_basic_index_doc_for_item(
         fields["irods_acl_read_users"] = acl_read_users
     if acl_read_groups:
         fields["irods_acl_read_groups"] = acl_read_groups
+    # For Kafka indexinging, a combined field is created
+    fields["irods_acl_reader_ids"] = acl_read_users + acl_read_groups
     fields["irods_path"] = item.path
     fields["irods_name"] = item.name
     fields["irods_created"] = item.create_time
@@ -775,29 +781,6 @@ def data_object_copied_listener(sender, **parameters):
     )
 
 
-signals.collection_added.connect(collection_modified_listener)
-signals.collection_changed.connect(collection_modified_listener)
-signals.collection_deleted.connect(collection_deleted_listener)
-signals.collection_trashed.connect(collection_deleted_listener)
-signals.collection_moved.connect(collection_moved_listener)
-signals.collection_renamed.connect(collection_moved_listener)
-signals.subtree_added.connect(subtree_added_listener)
-
-signals.data_object_added.connect(data_object_modified_listener)
-signals.data_object_changed.connect(data_object_modified_listener)
-signals.data_object_deleted.connect(data_object_deleted_listener)
-signals.data_object_trashed.connect(data_object_deleted_listener)
-signals.data_object_moved.connect(data_object_moved_listener)
-signals.data_object_renamed.connect(data_object_moved_listener)
-signals.data_object_copied.connect(data_object_copied_listener)
-
-signals.permissions_changed.connect(permissions_changed_listener)
-
-# signals.collection_moved
-
-# Indexing thread :)
-
-
 class IndexingThread(Thread):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -883,9 +866,30 @@ class IndexingThread(Thread):
 # add_index_job(zone = 'kuleuven_tier1_pilot', job_type='subtree', item_path='/kuleuven_tier1_pilot/home/vsc33436', item_type='collection')
 
 indexing_thread = IndexingThread()
-indexing_thread.start()
+
+if MANGO_OPEN_SEARCH_INDEXING_IMPLEMENTATION == "internal":
+    signals.collection_added.connect(collection_modified_listener)
+    signals.collection_changed.connect(collection_modified_listener)
+    signals.collection_deleted.connect(collection_deleted_listener)
+    signals.collection_trashed.connect(collection_deleted_listener)
+    signals.collection_moved.connect(collection_moved_listener)
+    signals.collection_renamed.connect(collection_moved_listener)
+    signals.subtree_added.connect(subtree_added_listener)
+
+    signals.data_object_added.connect(data_object_modified_listener)
+    signals.data_object_changed.connect(data_object_modified_listener)
+    signals.data_object_deleted.connect(data_object_deleted_listener)
+    signals.data_object_trashed.connect(data_object_deleted_listener)
+    signals.data_object_moved.connect(data_object_moved_listener)
+    signals.data_object_renamed.connect(data_object_moved_listener)
+    signals.data_object_copied.connect(data_object_copied_listener)
+
+    signals.permissions_changed.connect(permissions_changed_listener)
+
+    # signals.collection_moved
+
+    # Indexing thread :)
 
 
-# except Exception:
-#     print(f"Failed index_children")
-#     return None
+    indexing_thread.start()
+    logging.info(f"Internal indexing thread started on {MANGO_HOSTNAME}")
