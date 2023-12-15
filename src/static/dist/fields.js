@@ -1972,7 +1972,7 @@ class MultipleInput extends InputField {
   }
 
   repeatable = false;
-  max_before_autocomplete = 10;
+  static max_before_autocomplete = 10;
 
   /**
    * Parse an object to fill in the properties of the object instance.
@@ -2006,9 +2006,16 @@ class MultipleInput extends InputField {
     let div = document.createElement("div");
     let form_shape;
 
-    if (this.values.values.length > this.max_before_autocomplete) {
+    // get actual input field
+    if (this.values.values.length > MultipleInput.max_before_autocomplete) {
+      // if we have so many values we go for a search gox
       form_shape = Field.autocomplete(this, active);
       this.autocomplete_id = form_shape.id;
+      if (this.values.multiple) {
+        // if many values are possible
+        this.answers_div = Field.quick("div", "my-2");
+        this.answers_div.id = `${this.name}-answers`;
+      }
     } else {
       form_shape =
         this.values.uid == "dropdown"
@@ -2016,11 +2023,13 @@ class MultipleInput extends InputField {
           : Field.checkbox_radio(this, active);
     }
 
+    // create description
     if (this.help) {
       let subtitle = Field.quick("div", "form-text mt-0 mb-1", this.help);
       subtitle.id = "help-" + this.id;
       div.appendChild(subtitle);
-      if (this.values.ui == "dropdown") {
+
+      if (this.autocomplete_id || this.values.ui == "dropdown") {
         form_shape.setAttribute("aria-describedby", subtitle.id);
       } else {
         form_shape.querySelectorAll("div.form-check").forEach((subdiv) => {
@@ -2030,8 +2039,15 @@ class MultipleInput extends InputField {
         });
       }
     }
+
+    // add field for multiple answers for search box, if relevant
+    if (this.answers_div) {
+      div.appendChild(this.answers_div);
+    }
     div.appendChild(form_shape);
-    if (this.values.values.length <= this.max_before_autocomplete && active) {
+
+    // add validation message
+    if (active) {
       div.appendChild(this.validator_message);
     }
 
@@ -2150,17 +2166,109 @@ class MultipleInput extends InputField {
   }
 
   add_moving_options() {
-    this.options_navbar.add_item("movers", "Moving options", true);
+    this.options_navbar.add_item("movers", "Edit individual options", true);
 
     const moving_div = Field.quick("div", "mover-container");
     moving_div.setAttribute("style", "max-height:300px;overflow:auto;");
     // Add moving input fields to design the options
-    this.form_field.add_moving_options("Select option", this, moving_div);
+    this.form_field.add_moving_options(this, moving_div);
     this.options_navbar.add_tab_content("movers", moving_div);
+    this.listen_to_movers(moving_div);
+  }
+
+  listen_to_movers(moving_div) {
+    moving_div.querySelectorAll("input.mover").forEach((input) => {
+      input.addEventListener("change", () => {
+        this.toggle_editing_navbar("movers");
+        this.alert_repeated_movers(moving_div);
+      });
+    });
+    moving_div.querySelectorAll("button.mover").forEach((input) => {
+      input.addEventListener("click", () => {
+        this.toggle_editing_navbar("movers");
+      });
+    });
+    moving_div.querySelectorAll("button.adder, button#rem").forEach(() => {
+      this.toggle_dropdown_switch();
+      this.update_help();
+      this.alert_repeated_movers(moving_div);
+    });
+  }
+
+  alert_repeated_movers(moving_div) {
+    const current_values = [...moving_div.querySelectorAll("input.mover")].map(
+      (x) => x.value
+    );
+    if ([...new Set(current_values)].length < current_values.length) {
+      const parent = moving_div.parentElement;
+      let msg_row = parent.querySelector("#repeated-values");
+      const repeated_values = [
+        ...new Set(
+          current_values.filter(
+            (x) => current_values.filter((y) => y == x).length > 1
+          )
+        ),
+      ];
+      const msg = `  The following values are repeated: ${repeated_values.join(
+        ", "
+      )}. Only one instance of each will be kept.`;
+
+      if (msg_row != null) {
+        msg_row.remove();
+      }
+
+      msg_row = Field.quick(
+        "div",
+        "row justify-content-between alert alert-info p-2 m-1 shadow align-items-center"
+      );
+      msg_row.id = "repeated-values";
+      const col_left = Field.quick("main", "col-8 p-0 m-0");
+      const col_right = Field.quick("aside", "col-3 p-0 m-0");
+      msg_row.appendChild(col_left);
+      msg_row.appendChild(col_right);
+
+      const icon = Field.quick("i", "bi bi-info-circle-fill");
+      icon.setAttribute("fill", "currentColor");
+      col_left.appendChild(icon);
+
+      let msg_box = Field.quick("span", "", msg);
+      msg_box.setAttribute("role", "alert");
+      msg_box.id = "repeated-warning";
+      col_left.appendChild(msg_box);
+
+      let btn = Field.quick(
+        "button",
+        "btn btn-info fw-bold",
+        "Delete duplicates"
+      );
+      // btn.setAttribute("style", "cursor: pointer;");
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const repeated_indices = repeated_values
+          .map((x) => {
+            return current_values
+              .map((y, i) => {
+                return y == x ? i : "other";
+              })
+              .filter((x) => x != "other")
+              .slice(1);
+          })
+          .flat();
+        parent.querySelectorAll(".blocked").forEach((x, i) => {
+          if (repeated_indices.indexOf(i) > -1) {
+            x.remove();
+          }
+          msg_row.remove();
+        });
+      });
+      col_right.appendChild(btn);
+
+      parent.insertBefore(msg_row, moving_div);
+    }
   }
 
   add_textarea_options(options_as_text) {
-    this.options_navbar.add_item("textarea", "Manual typing");
+    this.options_navbar.add_item("textarea", "Edit in a text box");
     const textarea_div = this.form_field.add_input(
       "Select options",
       `${this.id}-typed`,
@@ -2181,9 +2289,10 @@ class MultipleInput extends InputField {
         .split("\n")
         .map((x) => x.trim())
         .filter((x) => x.length > 0);
-      textarea.value = fixed_value.join("\n");
+      textarea.value = [...new Set(fixed_value)].join("\n");
       this.update_default_field();
       this.toggle_dropdown_switch();
+      this.toggle_editing_navbar("textarea", options_as_text);
     });
     this.options_navbar.add_tab_content("textarea", textarea_div);
   }
@@ -2197,10 +2306,10 @@ class MultipleInput extends InputField {
         .split("\n")
         .map((x) => x.trim())
         .filter((x) => x.length > 0);
-      dd_example.innerHTML = options.join("\n");
-      description.innerHTML = `${options.length} options:`;
+      dd_example.innerHTML = [...new Set(options)].join("\n");
       this.update_default_field();
       this.toggle_dropdown_switch();
+      this.toggle_editing_navbar("file", options_as_text);
     };
 
     let file_div = Field.quick("div", "ex my-2");
@@ -2224,18 +2333,10 @@ class MultipleInput extends InputField {
     let explanation = Field.quick(
       "div",
       "form-text",
-      "Plain text file with one option per row."
+      "Plain text file with one option per row. This will REPLACE existing values."
     );
     explanation.id = file_input_id + "-help";
 
-    // Example with drag-and-drop
-    const description = Field.quick(
-      "p",
-      "fw-light mt-2 mb-0",
-      this.values.values.length == 0
-        ? "No options have been loaded."
-        : `${this.values.values.length} options:`
-    );
     let dd_example = Field.quick("pre", "border p-1 bg-light", options_as_text);
     dd_example.setAttribute(
       "style",
@@ -2255,27 +2356,92 @@ class MultipleInput extends InputField {
     file_div.appendChild(label);
     file_div.appendChild(input);
     file_div.appendChild(explanation);
-    file_div.appendChild(description);
     file_div.appendChild(dd_example);
 
     this.options_navbar.add_tab_content("file", file_div);
   }
 
+  toggle_editing_navbar(active_id, options_as_text = "") {
+    this.options_navbar.nav_bar.querySelectorAll("button").forEach((btn) => {
+      if (!btn.id.startsWith(active_id)) {
+        btn.setAttribute("disabled", "");
+      }
+    });
+    const active_tab = this.options_navbar.tab_content.querySelector(
+      `[id^="${active_id}"]`
+    );
+
+    if (active_tab.querySelector("#in-editing") == undefined) {
+      const msg_row = Field.quick(
+        "div",
+        "row justify-content-between alert alert-warning p-2 m-1 shadow align-items-center"
+      );
+      msg_row.id = "in-editing";
+      const col_left = Field.quick("main", "col-8 p-0 m-0");
+      const col_right = Field.quick("aside", "col-2 p-0 m-0");
+      msg_row.appendChild(col_left);
+      msg_row.appendChild(col_right);
+
+      const icon = Field.quick("i", "bi bi-pencil-fill");
+      icon.setAttribute("fill", "currentColor");
+      col_left.appendChild(icon);
+
+      let msg_box = Field.quick(
+        "span",
+        "",
+        "  You are editing this tab, all other tabs are disabled.  "
+      );
+      msg_box.setAttribute("role", "alert");
+      msg_box.id = "autosave-warning";
+      col_left.appendChild(msg_box);
+
+      let btn = Field.quick("button", "btn btn-warning fw-bold", "Reset");
+      // btn.setAttribute("style", "cursor: pointer;");
+      btn.addEventListener("click", () => {
+        msg_row.remove();
+        this.options_navbar.nav_bar
+          .querySelectorAll("button")
+          .forEach((btn) => btn.removeAttribute("disabled"));
+        if (active_id == "textarea") {
+          active_tab.querySelector("textarea").value =
+            this.values.values.length > 0 ? options_as_text : "";
+        } else if (active_id == "file") {
+          active_tab.querySelector("input").value = "";
+          active_tab.querySelector("pre").innerHTML = options_as_text;
+        } else if (active_id == "movers") {
+          active_tab
+            .querySelectorAll("div.blocked, button")
+            .forEach((div) => div.remove());
+          this.form_field.add_moving_options(
+            this,
+            active_tab.querySelector(".mover-container")
+          );
+          this.listen_to_movers(active_tab.querySelector(".mover-container"));
+        }
+      });
+      col_right.appendChild(btn);
+
+      active_tab.prepend(msg_row);
+    }
+  }
+
   toggle_dropdown_switch() {
     const temp_options = this.get_temp_options();
-    if (temp_options.length > this.max_before_autocomplete) {
-      this.form_field.switches
-        .querySelector("input[id$='dropdown']")
-        .setAttribute("disabled", "");
-    } else {
-      this.form_field.switches
-        .querySelector("input[id$='dropdown']")
-        .removeAttribute("disabled");
+    if (this.form_field.switches) {
+      if (temp_options.length > MultipleInput.max_before_autocomplete) {
+        this.form_field.switches
+          .querySelector("input[id$='dropdown']")
+          .setAttribute("disabled", "");
+      } else {
+        this.form_field.switches
+          .querySelector("input[id$='dropdown']")
+          .removeAttribute("disabled");
+      }
     }
   }
 
   get_temp_options() {
-    let relevant_tab;
+    let relevant_tab, raw_list;
     if (this.relevant_id) {
       relevant_tab = this.options_navbar.tab_content.querySelector(
         `[id^="${this.relevant_id}"]`
@@ -2286,14 +2452,15 @@ class MultipleInput extends InputField {
     }
     if (this.relevant_id.startsWith("textarea")) {
       const textarea = relevant_tab.querySelector("textarea").value;
-      return textarea.split("\n");
+      raw_list = textarea.split("\n");
     } else if (this.relevant_id.startsWith("movers")) {
       const moving_fields = relevant_tab.querySelectorAll("div.blocked input");
-      return [...moving_fields].map((option) => option.value);
+      raw_list = [...moving_fields].map((option) => option.value);
     } else if (this.relevant_id.startsWith("file")) {
       const file_contents = relevant_tab.querySelector("pre").innerHTML;
-      return file_contents.split("\n");
+      raw_list = file_contents.split("\n");
     }
+    return [...new Set(raw_list)];
   }
 
   /**
@@ -2321,7 +2488,7 @@ class MultipleInput extends InputField {
         moving_div
           .querySelectorAll("div.blocked, div.mover")
           .forEach((x) => x.remove());
-        this.form_field.add_moving_options("Select option", this, moving_div);
+        this.form_field.add_moving_options(this, moving_div);
       }
       if (!this.relevant_id.startsWith("file")) {
         this.options_navbar.tab_content.querySelector("pre").innerHTML =

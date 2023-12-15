@@ -566,20 +566,19 @@ class MovingChoice extends MovingField {
   /**
    * Initiate a moving field in which to define an option for a dropdown, checkbox or radio.
    * @class
-   * @param {String} label_text Text for the label of the input (e.g. "Select option").
    * @param {Number} idx Index of this field as it gets created.
    * @param {String} [value=false] Value of the input field, or 'false' if it doesn't exist.
    */
-  constructor(label_text, idx, value = false) {
+  constructor(idx, value = false) {
     super(idx);
     // set up HTMLElement
-    this.div = Field.quick("div", "blocked");
+    this.div = Field.quick("div", "blocked mt-2");
     this.div.id = `block-${idx}`;
     this.value = value;
 
     // set up sub elements
     this.sub_div = Field.quick("div", "form-field");
-    this.label = Field.labeller(label_text, `mover-${idx}`);
+    // this.label = Field.labeller(label_text, `mover-${idx}`);
     this.input_tag = this.add_input();
     this.rem = this.add_btn("rem", "trash", () => this.remove());
 
@@ -595,7 +594,7 @@ class MovingChoice extends MovingField {
     this.sub_div.appendChild(this.up); // button to move upwards
     this.sub_div.appendChild(this.down); // button to move downwards
     this.sub_div.appendChild(this.rem); // button to remove the field
-    this.div.appendChild(this.label); // label for the input field
+    // this.div.appendChild(this.label); // label for the input field
     this.div.appendChild(this.sub_div); // div with input field and buttons
   }
 
@@ -612,6 +611,8 @@ class MovingChoice extends MovingField {
     // if a value exists, fill it in
     if (this.value) {
       input_tag.value = this.value;
+    } else {
+      input_tag.placeholder = "Some option";
     }
     return input_tag;
   }
@@ -873,8 +874,8 @@ class BasicForm {
    * @param {String|Boolean} value Value of the input field in the mover, if it exists.
    * @returns {MovingChoice} Moving input field.
    */
-  add_mover(label_text, idx, value = false) {
-    let input = new MovingChoice(label_text, idx, value).div;
+  add_mover(idx, value = false) {
+    let input = new MovingChoice(idx, value).div;
 
     // if there aren't more than two fields yet, don't allow removal
     if (idx < 2) {
@@ -892,22 +893,71 @@ class BasicForm {
    * @param {Array<String|Number>} [starting_values] Initial values for the moving fields.
    * @param {HTMLDivElement} div Div element to put the moving options on
    */
-  add_moving_options(label_text, input_field, div) {
+  add_moving_options(input_field, div) {
     let options = input_field.values.values;
     let has_values = options.length > 0;
     // if no options are provided, start with two
     if (!has_values) {
       options = [0, 1];
     }
+    // create and add a button to add more inputs
+    // let plus_div = Field.quick("div", "d-grid gap-2 mover mt-2");
+    let plus = Field.quick(
+      "button",
+      "btn btn-outline-primary adder mt-2",
+      "  Add option  "
+    );
+    plus.type = "button";
+    plus.id = "add-mover";
+    // define the behavior of the button when clicking
+    plus.addEventListener("click", (e) => {
+      e.preventDefault();
+      // check the maximum index of created fields
+      let current_max = Math.max(...this.option_indices);
 
+      // add a new mover with a higher index
+      let new_input = this.add_mover(current_max + 1);
+      new_input.querySelector("input.mover").addEventListener("change", () => {
+        input_field.update_default_field();
+        input_field.toggle_dropdown_switch();
+        input_field.toggle_editing_navbar("movers");
+        input_field.alert_repeated_movers(div);
+      });
+      new_input.querySelectorAll("button.mover").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          input_field.update_default_field();
+          input_field.toggle_dropdown_switch();
+          input_field.toggle_editing_navbar("movers");
+        })
+      );
+      // disable its 'down' button
+      new_input.querySelector(".down").setAttribute("disabled", "");
+
+      // add it to the form
+      div.insertBefore(new_input, plus);
+
+      // re-enable the 'down' button of the field before it
+      new_input.previousSibling
+        .querySelector(".down")
+        .removeAttribute("disabled");
+
+      // check how many fields there are
+      let existing_children = div.querySelectorAll(".blocked");
+      // if now there are three
+      if (existing_children.length == 3) {
+        existing_children.forEach((child) => {
+          child.querySelector(".rem").removeAttribute("disabled");
+        });
+      }
+    });
+    const plus_icon = Field.quick("i", "bi bi-plus-circle-fill");
+    plus_icon.setAttribute("fill", "currentColor");
+    plus_icon.setAttribute("width", "16");
+    plus.prepend(plus_icon);
     // go through each option and create a mover
     // with its value if provided
     for (let i in options) {
-      let input = this.add_mover(
-        label_text,
-        i,
-        has_values ? options[i] : false
-      );
+      let input = this.add_mover(i, has_values ? options[i] : false);
       input.querySelector("input.mover").addEventListener("change", () => {
         input_field.update_default_field();
         input_field.toggle_dropdown_switch();
@@ -936,52 +986,7 @@ class BasicForm {
       // add the field to the form, before the divider
       div.appendChild(input);
     }
-
-    // create and add a button to add more inputs
-    let plus_div = Field.quick("div", "d-grid gap-2 mover mt-2");
-    let plus = Field.quick("button", "btn btn-primary btn-sm", "Add option");
-    plus.type = "button";
-    plus.id = "add-mover";
-    // define the behavior of the button when clicking
-    plus.addEventListener("click", (e) => {
-      e.preventDefault();
-      // check the maximum index of created fields
-      let current_max = Math.max(...this.option_indices);
-
-      // add a new mover with a higher index
-      let new_input = this.add_mover(label_text, current_max + 1);
-      new_input.querySelector("input.mover").addEventListener("change", () => {
-        input_field.update_default_field();
-        input_field.toggle_dropdown_switch();
-      });
-      new_input.querySelectorAll("button.mover").forEach((btn) =>
-        btn.addEventListener("click", () => {
-          input_field.update_default_field();
-          input_field.toggle_dropdown_switch();
-        })
-      );
-      // disable its 'down' button
-      new_input.querySelector(".down").setAttribute("disabled", "");
-
-      // add it to the form
-      div.insertBefore(new_input, plus_div);
-
-      // re-enable the 'down' button of the field before it
-      new_input.previousSibling
-        .querySelector(".down")
-        .removeAttribute("disabled");
-
-      // check how many fields there are
-      let existing_children = div.querySelectorAll(".blocked");
-      // if now there are three
-      if (existing_children.length == 3) {
-        existing_children.forEach((child) => {
-          child.querySelector(".rem").removeAttribute("disabled");
-        });
-      }
-    });
-    plus_div.appendChild(plus);
-    div.appendChild(plus_div);
+    div.appendChild(plus);
   }
 
   add_editor(div, before_switches = true) {
@@ -1006,23 +1011,29 @@ class BasicForm {
     { required = false, repeatable = false, dropdown = false } = {}
   ) {
     // create the div for the switches
-    this.switches = Field.quick("div", "col-3 mt-2");
+    this.switches = Field.quick("div", "col-6 mt-2");
     this.switches.id = "switches-div";
-
-    // set up the switches
-    let subdiv = Field.quick("div", "form-check form-switch form-check-inline");
 
     // possible switches with their ids, text and values
     let switches = {
       required: { id: "required", text: "Required", value: required },
       repeatable: { id: "repeatable", text: "Repeatable", value: repeatable },
-      dropdown: { id: "dropdown", text: "As dropdown", value: dropdown },
+      dropdown: {
+        id: "dropdown",
+        text: `As dropdown <span class='text-danger'>(for up to ${MultipleInput.max_before_autocomplete} options)</span>`,
+        value: dropdown,
+      },
     };
 
     // only create the switches requested in switchnames, in that order
     for (let sname of switchnames) {
       // retrieve attributes
       let sw = switches[sname];
+      // set up the switches
+      let subdiv = Field.quick(
+        "div",
+        "form-check form-switch form-check-inline"
+      );
 
       // create the label
       let label = Field.quick("label", "form-check-label", sw.text);
@@ -1041,10 +1052,9 @@ class BasicForm {
       // assemble
       subdiv.appendChild(label);
       subdiv.appendChild(input);
+      this.switches.appendChild(subdiv);
     }
 
-    // attach to form
-    this.switches.appendChild(subdiv);
     this.form.insertBefore(this.switches, this.divider);
   }
 
