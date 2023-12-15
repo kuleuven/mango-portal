@@ -1993,7 +1993,7 @@ class MultipleInput extends InputField {
 
   get default_help() {
     return `Choose ${this.values.multiple ? "at least " : ""}one of ${
-      this.values.values.length
+      this.temp_options.length
     } options.`;
   }
 
@@ -2180,6 +2180,8 @@ class MultipleInput extends InputField {
     moving_div.querySelectorAll("input.mover").forEach((input) => {
       input.addEventListener("change", () => {
         this.toggle_editing_navbar("movers");
+        this.toggle_dropdown_switch();
+        this.update_help();
         this.alert_repeated_movers(moving_div);
       });
     });
@@ -2258,8 +2260,12 @@ class MultipleInput extends InputField {
           if (repeated_indices.indexOf(i) > -1) {
             x.remove();
           }
-          msg_row.remove();
         });
+
+        msg_row.remove();
+
+        this.toggle_dropdown_switch();
+        this.update_help();
       });
       col_right.appendChild(btn);
 
@@ -2426,7 +2432,7 @@ class MultipleInput extends InputField {
   }
 
   toggle_dropdown_switch() {
-    const temp_options = this.get_temp_options();
+    const temp_options = this.temp_options;
     if (this.form_field.switches) {
       if (temp_options.length > MultipleInput.max_before_autocomplete) {
         this.form_field.switches
@@ -2440,8 +2446,12 @@ class MultipleInput extends InputField {
     }
   }
 
-  get_temp_options() {
+  get temp_options() {
     let relevant_tab, raw_list;
+
+    if (!this.options_navbar) {
+      return this.values.values;
+    }
     if (this.relevant_id) {
       relevant_tab = this.options_navbar.tab_content.querySelector(
         `[id^="${this.relevant_id}"]`
@@ -2460,6 +2470,7 @@ class MultipleInput extends InputField {
       const file_contents = relevant_tab.querySelector("pre").innerHTML;
       raw_list = file_contents.split("\n");
     }
+    console.log(raw_list, [...new Set(raw_list)]);
     return [...new Set(raw_list)];
   }
 
@@ -2471,7 +2482,7 @@ class MultipleInput extends InputField {
     // reset whatever values existing
     this.values.values = [];
 
-    this.values.values = this.get_temp_options()
+    this.values.values = this.temp_options
       .map((x) => x.trim())
       .filter((x) => x.length > 0);
 
@@ -2706,7 +2717,7 @@ class SelectInput extends MultipleInput {
     default_field
       .querySelectorAll("option:not([value=''])")
       .forEach((option) => option.remove());
-    const new_fields = this.get_temp_options();
+    const new_fields = this.temp_options;
 
     if (
       selected &&
