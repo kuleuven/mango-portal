@@ -2200,7 +2200,7 @@ class MultipleInput extends InputField {
   alert_repeated_movers(moving_div) {
     const current_values = [...moving_div.querySelectorAll("input.mover")].map(
       (x) => x.value
-    );
+    ).filter((x) => x.length > 0);
     if ([...new Set(current_values)].length < current_values.length) {
       const parent = moving_div.parentElement;
       let msg_row = parent.querySelector("#repeated-values");

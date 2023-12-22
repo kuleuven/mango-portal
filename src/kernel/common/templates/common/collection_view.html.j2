@@ -8,21 +8,21 @@
         href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css"
         type="text/css" />
   <style>
-  /* dropzone multi file upload css override*/
-  .dropzone .dz-preview .dz-progress {
-    height: 6px;
-    top: 85%;
-  }
+      /* dropzone multi file upload css override*/
+      .dropzone .dz-preview .dz-progress {
+          height: 6px;
+          top: 85%;
+      }
 
-.btn-oc {
-  --bs-btn-font-weight: 600;
-  --bs-btn-color: var(--bs-primary);
-  --bs-btn-bg: var(--bs-white);
-  --bs-btn-border-radius: 0rem;
-  --bs-btn-active-color: var(--bs-white);
-  --bs-btn-active-bg: var(--bs-primary);
-  --bs-btn-active-border-color: var(--bs-primary);
-  }
+      .btn-oc {
+          --bs-btn-font-weight: 600;
+          --bs-btn-color: var(--bs-primary);
+          --bs-btn-bg: var(--bs-white);
+          --bs-btn-border-radius: 0rem;
+          --bs-btn-active-color: var(--bs-white);
+          --bs-btn-active-bg: var(--bs-primary);
+          --bs-btn-active-border-color: var(--bs-primary);
+      }
   </style>
 {% endblock head %}
 {% block body %}
@@ -130,487 +130,496 @@
       {{ block_macros.metadata_block(collection.id, collection.path.lstrip("/") , grouped_metadata, schemas, schema_labels, readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="collection", current_user_rights=current_user_rights, realm=realm) }}
     </div>
     <div class="tab-pane show active" id="collection-content">
-      <div style="width:fit-content" class="input-group my-3">
-        <select class="form-select"
-                aria-label="Select bulk operation"
-                id="action_select"
-                aria-describedby="selection_help">
-          <option value="copy">Copy</option>
-          <option value="download">Download</option>
+      <div class="btn-toolbar justify-content-between"
+           role="toolbar"
+           aria-label="Bulk operations"
+           id="bulk-operations">
+        <div class="btn-group" role="group" aria-label="Buttons">
           {% if ('own' in current_user_rights) %}
-            <option value="move">Move</option>
-            <option value="delete">Delete</option>
-          {% endif %}
-        </select>
-        <button type="button"
-                class="btn btn-primary"
-                onclick="apply_bulk_operation()"
-                disabled>Apply</button>
-      </div>
-      <div id="selection_help" class="form-text">Copying/Download is only available for data objects.</div>
-      <bulk-links tree="{{ url_for("browse_bp.get_sub_collections") }}" />
-      <table class="table table-striped table-hover mt-2" id="browseTable">
-        <thead>
-          <tr>
-            <th scope="col" class="position-relative">
-              <input class="form-check-input"
-                     type="checkbox"
-                     value=""
-                     id="select_all"
-                     aria-label="Select all rows" />
-              <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-primary"></span>
-            </th>
-            <th scope="col">Name</th>
-            <th scope="col">Owner</th>
-            <th scope="col">Created</th>
-            <th scope="col">Modified</th>
-            <th scope="col">Size</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for collection in sub_collections %}
-            <tr>
-              <td scope="row">
-                <input style="vertical-align:middle"
-                       class="form-check-input checkbox-inline"
-                       type="checkbox"
-                       value="col-{{ collection.path }}"
-                       aria-label="Select {{ collection.path }}" />
-              </td>
-              <td>
-                <i class="bi bi-folder fs-4"></i> <a href="{{ url_for('browse_bp.collection_browse', collection=collection.path.lstrip('/') ) }}">{{ collection.name }}</a>
-              </td>
-              <td>{{ collection.owner_name }}</td>
-              <td>{{ collection.create_time | localize_datetime }}</td>
-              <td>{{ collection.modify_time | localize_datetime }}</td>
-              <td></td>
-              <td></td>
-            </tr>
-          {% endfor %}
-          {% for data_object in data_objects %}
-            <tr>
-              <td scope="row">
-                <input style="vertical-align:middle"
-                       class="form-check-input checkbox-inline"
-                       type="checkbox"
-                       value="dobj-{{ data_object.path }}"
-                       aria-label="Select {{ collection.path }}" />
-              </td>
-              <td>
-                <i class="bi bi-file-earmark fs-4"></i><span> <a href="{{ url_for('browse_bp.view_object', data_object_path=data_object.path.lstrip('/') ) }}">{{ data_object.name }}</a></span>
-                {% if data_object.comments %}{{ data_object.comments|bleach_clean(tags=["i", "span", "a"], attributes=["class", "href"])|safe }}{% endif %}
-              </td>
-              <td>
-                <!--{{ data_object.__dict__ }}-->{{ data_object.owner_name }}
-              </td>
-              <td>{{ data_object.create_time | localize_datetime }}</td>
-              <td>{{ data_object.modify_time | localize_datetime }}</td>
-              <td>{{ data_object.size | filesizeformat }}</td>
-              <td>
-                {% if data_object.size < 50000000000 %}
-                  <a href="{{ url_for('browse_bp.download_object', data_object_path = data_object.path.lstrip('/') ) }}"><i class="bi bi-download"></i></a>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% if 'own' in current_user_rights and collection.path != g.user_home %}
-        {# and breadcrumbs|length > 2 %} #}
-        <div class="row mt-5">
-          <div class="col">
             <button type="button"
-                    class="btn btn-danger float-end"
-                    data-bs-toggle="modal"
-                    data-bs-target="#delete_collection"
-                    data-bs-field-ha="hihi"
-                    data-bs-field-bo="hoho">Delete Collection</button>
-          </div>
-        </div>
-        {{ dialogs.confirm_delete_dialog('delete_collection', url_for('browse_bp.delete_collection') , title='Delete collection and contents', mode='listen-many', readonly_fields = [{'name' : 'collection_path', 'value': collection.path, 'label': 'Collection Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=breadcrumbs[-2]['url'])}], modal_class="modal-xl" ) }}
-      {% endif %}
-    </div>
-    <div class="tab-pane" id="collection-permissions">
-      <div class="float-end">
-        <p class="mt-3">
-          <form method="post"
-                action="{{ url_for('browse_bp.set_inheritance', collection_path = collection.path.lstrip('/') ) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <input type="hidden" name="redirect_hash" value="#permissions" />
-            <div class="form-check form-switch">
-              <label for="inheritance-checkbox" class="me-3 form-check-label fw-bold">Inheritance</label>
-              <input type="checkbox"
-                     class="form-check-input"
-                     id="inheritance-checkbox"
-                     name="inheritance"
-                     onChange="this.form.submit()"
-                     {% if collection.inheritance %}checked{% endif %}
-                     {% if not 'own' in current_user_rights %}disabled{% endif %} />
-            </div>
-          </form>
-        </p>
-      </div>
-      <table class="table table-striped table-hover mt-2" id="permssions-table">
-        <thead>
-          <tr>
-            {# <th scope="col">Select</th> #}
-            <th scope="col">User / Group</th>
-            <th scope="col">Access level</th>
-            <th scope="col">Zone</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for permission in permissions %}
-            <tr>
-              <td>{{ permission.user_name }} ({{ acl_users_dict[permission.user_name] }})</td>
-              <td>{{ permission.access_name }}</td>
-              <td>{{ permission.user_zone }}</td>
-              <td>
-                {% if config['ACL_PROTECT_OWN'] and permission.access_name == 'own' and acl_counts['own'] < 2 %}
-                  <p title="disabled: need at least 1 owner">
-                    <button type="submit"
-                            class="btn btn-grey"
-                            disabled
-                            title="At least one owner required">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </p>
-                {% elif 'own' in current_user_rights %}
-                  <form method="post"
-                        action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <input type="hidden" name="groups" value="{{ permission.user_name }}" />
-                    <input type="hidden" name="permission_type" value="null" />
-                    <input type="hidden" name="redirect_hash" value="#permissions" />
-                    <button type="submit" class="btn">
-                      <i class="bi bi-trash text-danger"></i>
-                    </button>
-                  </form>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% if 'own' in current_user_rights %}
-        <form method="post"
-              action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <input type="hidden" name="redirect_hash" value="#permissions" />
-          <div class="row">
-            <div class="col">
-              <label for="permission_groups">Groups</label>
-              <select class="form-select"
-                      aria-label="Groups"
-                      name="groups"
-                      id="permission_groups">
-                {% for group in my_groups %}<option value="{{ group.name }}">{{ group.name }}</option>{% endfor %}
-              </select>
-            </div>
-            <div class="col">
-              <label for="permission_type">Rights</label>
-              <select class="form-select"
-                      aria-label="Groups"
-                      name="permission_type"
-                      id="permission_type">
-                <option value="own">Own</option>
-                <option value="write">Modify</option>
-                <option value="read">Read</option>
-              </select>
-            </div>
-            <div class="col">
-              <input type="checkbox" name="recursive" id="set_recursive" value="True" />
-              <label for="set_recursive">Recursive</label>
-            </div>
-            <div class="col">
-              <button type="submit" class="btn btn-primary">Apply</button>
-            </div>
-          </div>
-        </form>
-      {% endif %}
-      <!--{{ acl_users_dict |pprint }}-->
-    </div>
-  </div>
-  <!-- Add meta data modal -->
-  <div class="modal fade"
-       id="addMetaData"
-       tabindex="-1"
-       aria-labelledby="addMetaDataLabel"
-       aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addMetaDataLabel">Add metadata</h5>
+                    class="btn btn-light"
+                    onclick="bulk_delete()"
+                    id="bulk-delete"
+                    disabled>
+              <i class="bi bi-trash" fill="currentColor"></i> Delete
+            </button>
+            <button type="button"
+                    class="btn btn-light"
+                    onclick="bulk_move()"
+                    id="bulk-move"
+                    disabled>
+              <i class="bi bi-send" fill="currentColor"></i> Move
+            </button>
+          {% endif %}
           <button type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
-        </div>
-        <form action="{{ url_for("metadata_bp.add_meta_data_collection") }}"
-              method="post"
-              enctype="multipart/form-data"
-              class="row g-3 needs-validation"
-              novalidate>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <input type="hidden" name="redirect_hash" value="#metadata" />
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="meta-data-name-add" class="col-form-label">Name</label>
-              <input type="text"
-                     class="form-control"
-                     id="meta-data-name-add"
-                     name="meta-data-name"
-                     required />
-              <div class="invalid-feedback">Name is required for metadata items</div>
-            </div>
-            <div class="mb-3">
-              <label for="meta-data-value-add" class="col-form-label">Value</label>
-              <input type="text"
-                     class="form-control"
-                     id="meta-data-value-add"
-                     name="meta-data-value"
-                     required />
-              <div class="invalid-feedback">A value is required for metadata items</div>
-            </div>
-            <div class="mb-3">
-              <label for="meta-data-units-add" class="col-form-label">Unit</label>
-              <input type="text"
-                     class="form-control"
-                     id="meta-data-units-add"
-                     name="meta-data-units" />
-              <div class="valid-feedback">A unit is not required for metadata</div>
-            </div>
-            <input type="hidden"
-                   id="collection-path-add"
-                   name="collection-path"
-                   value="{{ collection.path }}" />
-            <input type="hidden"
-                   id="target-type-add"
-                   name="target-type"
-                   value="collection" />
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-primary" type="submit">Add</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  <!--Edit meta data nodal -->
-  <div class="modal fade"
-       id="editMetaData"
-       tabindex="-1"
-       aria-labelledby="editMetaDataLabel"
-       aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="editMetaDataLabel">Update metadata</h5>
+                  class="btn btn-light"
+                  onclick="bulk_copy()"
+                  id="bulk-copy"
+                  disabled>
+            <i class="bi bi-copy" fill="currentColor"></i> Copy
+          </button>
           <button type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
+                  class="btn btn-light"
+                  onclick="bulk_download()"
+                  id="bulk-download"
+                  disabled>
+            <i class="bi bi-download" fill="currentColor"></i> Download
+          </button>
         </div>
-        <form action="{{ url_for("metadata_bp.edit_meta_data_collection") }}"
-              method="post"
-              enctype="multipart/form-data"
-              class="row g-3 needs-validation"
-              novalidation>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <input type="hidden" name="redirect_hash" value="#metadata" />
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="meta-data-name" class="col-form-label">Name</label>
-              <input type="text"
-                     class="form-control"
-                     id="meta-data-name"
-                     name="meta-data-name"
-                     required />
-              <div class="invalid-feedback">Metadata field name is required</div>
-            </div>
-            <div class="mb-3">
-              <label for="meta-data-value" class="col-form-label">Value</label>
-              <input type="text"
-                     class="form-control"
-                     id="meta-data-value"
-                     name="meta-data-value"
-                     required />
-              <div class="invalid-feedback">Metadata field value is required</div>
-            </div>
-            <div class="mb-3">
-              <label for="meta-data-units" class="col-form-label">Unit</label>
-              <input type="text"
-                     class="form-control"
-                     id="meta-data-units"
-                     name="meta-data-units" />
-            </div>
-            <input type="hidden"
-                   id="object-path-edit"
-                   name="collection-path"
-                   value="{{ collection.path }}" />
-            <input type="hidden"
-                   id="target-type-edit"
-                   name="target-type"
-                   value="collection" />
-            <input type="hidden"
-                   id="orig-meta-data-name"
-                   name="orig-meta-data-name"
-                   value="" />
-            <input type="hidden"
-                   id="orig-meta-data-value"
-                   name="orig-meta-data-value"
-                   value="" />
-            <input type="hidden"
-                   id="orig-meta-data-units"
-                   name="orig-meta-data-units"
-                   value="" />
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-primary" type="submit">Update</button>
-          </div>
-        </form>
+      <span class="text-muted mt-2"><i class="bi bi-exclamation-triangle" fill="currentColor"></i>
+      Copying/Download is only available for data objects.
+    </span>
+  </div>
+  <bulk-links tree="{{ url_for("browse_bp.get_sub_collections") }}" />
+  <table class="table table-striped table-hover mt-2" id="browseTable">
+    <thead>
+      <tr>
+        <th scope="col" class="position-relative">
+          <input class="form-check-input"
+                 type="checkbox"
+                 value=""
+                 id="select_all"
+                 aria-label="Select all rows" />
+          <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-primary"></span>
+        </th>
+        <th scope="col">Name</th>
+        <th scope="col">Owner</th>
+        <th scope="col">Created</th>
+        <th scope="col">Modified</th>
+        <th scope="col">Size</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for collection in sub_collections %}
+        <tr>
+          <td scope="row">
+            <input style="vertical-align:middle"
+                   class="form-check-input checkbox-inline"
+                   type="checkbox"
+                   value="col-{{ collection.path }}"
+                   aria-label="Select {{ collection.path }}" />
+          </td>
+          <td>
+            <i class="bi bi-folder fs-4"></i> <a href="{{ url_for('browse_bp.collection_browse', collection=collection.path.lstrip('/') ) }}">{{ collection.name }}</a>
+          </td>
+          <td>{{ collection.owner_name }}</td>
+          <td>{{ collection.create_time | localize_datetime }}</td>
+          <td>{{ collection.modify_time | localize_datetime }}</td>
+          <td></td>
+          <td></td>
+        </tr>
+      {% endfor %}
+      {% for data_object in data_objects %}
+        <tr>
+          <td scope="row">
+            <input style="vertical-align:middle"
+                   class="form-check-input checkbox-inline"
+                   type="checkbox"
+                   value="dobj-{{ data_object.path }}"
+                   aria-label="Select {{ collection.path }}" />
+          </td>
+          <td>
+            <i class="bi bi-file-earmark fs-4"></i><span> <a href="{{ url_for('browse_bp.view_object', data_object_path=data_object.path.lstrip('/') ) }}">{{ data_object.name }}</a></span>
+            {% if data_object.comments %}
+              {{ data_object.comments|bleach_clean(tags=["i", "span", "a"], attributes=["class", "href"]) |safe }}
+            {% endif %}
+          </td>
+          <td>
+            <!--{{ data_object.__dict__ }}-->{{ data_object.owner_name }}
+          </td>
+          <td>{{ data_object.create_time | localize_datetime }}</td>
+          <td>{{ data_object.modify_time | localize_datetime }}</td>
+          <td>{{ data_object.size | filesizeformat }}</td>
+          <td>
+            {% if data_object.size < 50000000000 %}
+              <a href="{{ url_for('browse_bp.download_object', data_object_path = data_object.path.lstrip('/') ) }}"><i class="bi bi-download"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="tab-pane" id="collection-permissions">
+  <div class="float-end">
+    <p class="mt-3">
+      <form method="post"
+            action="{{ url_for('browse_bp.set_inheritance', collection_path = collection.path.lstrip('/') ) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="redirect_hash" value="#permissions" />
+        <div class="form-check form-switch">
+          <label for="inheritance-checkbox" class="me-3 form-check-label fw-bold">Inheritance</label>
+          <input type="checkbox"
+                 class="form-check-input"
+                 id="inheritance-checkbox"
+                 name="inheritance"
+                 onChange="this.form.submit()"
+                 {% if collection.inheritance %}checked{% endif %}
+                 {% if not 'own' in current_user_rights %}disabled{% endif %} />
+        </div>
+      </form>
+    </p>
+  </div>
+  <table class="table table-striped table-hover mt-2" id="permssions-table">
+    <thead>
+      <tr>
+        {# <th scope="col">Select</th> #}
+        <th scope="col">User / Group</th>
+        <th scope="col">Access level</th>
+        <th scope="col">Zone</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for permission in permissions %}
+        <tr>
+          <td>{{ permission.user_name }} ({{ acl_users_dict[permission.user_name] }})</td>
+          <td>{{ permission.access_name }}</td>
+          <td>{{ permission.user_zone }}</td>
+          <td>
+            {% if config['ACL_PROTECT_OWN'] and permission.access_name == 'own' and acl_counts['own'] < 2 %}
+              <p title="disabled: need at least 1 owner">
+                <button type="submit"
+                        class="btn btn-grey"
+                        disabled
+                        title="At least one owner required">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </p>
+            {% elif 'own' in current_user_rights %}
+              <form method="post"
+                    action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="hidden" name="groups" value="{{ permission.user_name }}" />
+                <input type="hidden" name="permission_type" value="null" />
+                <input type="hidden" name="redirect_hash" value="#permissions" />
+                <button type="submit" class="btn">
+                  <i class="bi bi-trash text-danger"></i>
+                </button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if 'own' in current_user_rights %}
+    <form method="post"
+          action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="redirect_hash" value="#permissions" />
+      <div class="row">
+        <div class="col">
+          <label for="permission_groups">Groups</label>
+          <select class="form-select"
+                  aria-label="Groups"
+                  name="groups"
+                  id="permission_groups">
+            {% for group in my_groups %}<option value="{{ group.name }}">{{ group.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col">
+          <label for="permission_type">Rights</label>
+          <select class="form-select"
+                  aria-label="Groups"
+                  name="permission_type"
+                  id="permission_type">
+            <option value="own">Own</option>
+            <option value="write">Modify</option>
+            <option value="read">Read</option>
+          </select>
+        </div>
+        <div class="col">
+          <input type="checkbox" name="recursive" id="set_recursive" value="True" />
+          <label for="set_recursive">Recursive</label>
+        </div>
+        <div class="col">
+          <button type="submit" class="btn btn-primary">Apply</button>
+        </div>
       </div>
+    </form>
+  {% endif %}
+  <!--{{ acl_users_dict |pprint }}-->
+</div>
+</div>
+<!-- Add meta data modal -->
+<div class="modal fade"
+     id="addMetaData"
+     tabindex="-1"
+     aria-labelledby="addMetaDataLabel"
+     aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addMetaDataLabel">Add metadata</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for("metadata_bp.add_meta_data_collection") }}"
+            method="post"
+            enctype="multipart/form-data"
+            class="row g-3 needs-validation"
+            novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="redirect_hash" value="#metadata" />
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="meta-data-name-add" class="col-form-label">Name</label>
+            <input type="text"
+                   class="form-control"
+                   id="meta-data-name-add"
+                   name="meta-data-name"
+                   required />
+            <div class="invalid-feedback">Name is required for metadata items</div>
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-value-add" class="col-form-label">Value</label>
+            <input type="text"
+                   class="form-control"
+                   id="meta-data-value-add"
+                   name="meta-data-value"
+                   required />
+            <div class="invalid-feedback">A value is required for metadata items</div>
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-units-add" class="col-form-label">Unit</label>
+            <input type="text"
+                   class="form-control"
+                   id="meta-data-units-add"
+                   name="meta-data-units" />
+            <div class="valid-feedback">A unit is not required for metadata</div>
+          </div>
+          <input type="hidden"
+                 id="collection-path-add"
+                 name="collection-path"
+                 value="{{ collection.path }}" />
+          <input type="hidden"
+                 id="target-type-add"
+                 name="target-type"
+                 value="collection" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Add</button>
+        </div>
+      </form>
     </div>
   </div>
-  <!-- Delete modal -->
-  <div class="modal fade"
-       id="deleteMetaData"
-       tabindex="-1"
-       aria-labelledby="deleteMetaDataLabel"
-       aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="deleteMetaDataLabel">Delete metadata</h5>
-          <button type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
-        </div>
-        <form action="{{ url_for("metadata_bp.delete_meta_data_collection") }}"
-              method="post"
-              enctype="multipart/form-data"
-              class="row g-3 needs-validation"
-              novalidation>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <input type="hidden" name="redirect_hash" value="#metadata" />
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="meta-data-name-delete" class="col-form-label">Name</label>
-              <input type="text"
-                     class="form-control"
-                     id="meta-data-name-delete"
-                     name="meta-data-name"
-                     readonly />
-              <div class="invalid-feedback">Metadata field name is required</div>
-            </div>
-            <div class="mb-3">
-              <label for="meta-data-value-delete" class="col-form-label">Value</label>
-              <input type="text"
-                     class="form-control"
-                     id="meta-data-value-delete"
-                     name="meta-data-value"
-                     readonly />
-              <div class="invalid-feedback">Metadata field value is required</div>
-            </div>
-            <div class="mb-3">
-              <label for="meta-data-units" class="col-form-label">Unit</label>
-              <input type="text"
-                     class="form-control"
-                     id="meta-data-units-delete"
-                     name="meta-data-units"
-                     readonly />
-            </div>
-            <input type="hidden"
-                   id="object-path-delete"
-                   name="collection-path"
-                   value="{{ collection.path }}" />
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-danger" type="submit">Delete</button>
-          </div>
-        </form>
+</div>
+<!--Edit meta data nodal -->
+<div class="modal fade"
+     id="editMetaData"
+     tabindex="-1"
+     aria-labelledby="editMetaDataLabel"
+     aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editMetaDataLabel">Update metadata</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
       </div>
+      <form action="{{ url_for("metadata_bp.edit_meta_data_collection") }}"
+            method="post"
+            enctype="multipart/form-data"
+            class="row g-3 needs-validation"
+            novalidation>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="redirect_hash" value="#metadata" />
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="meta-data-name" class="col-form-label">Name</label>
+            <input type="text"
+                   class="form-control"
+                   id="meta-data-name"
+                   name="meta-data-name"
+                   required />
+            <div class="invalid-feedback">Metadata field name is required</div>
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-value" class="col-form-label">Value</label>
+            <input type="text"
+                   class="form-control"
+                   id="meta-data-value"
+                   name="meta-data-value"
+                   required />
+            <div class="invalid-feedback">Metadata field value is required</div>
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-units" class="col-form-label">Unit</label>
+            <input type="text"
+                   class="form-control"
+                   id="meta-data-units"
+                   name="meta-data-units" />
+          </div>
+          <input type="hidden"
+                 id="object-path-edit"
+                 name="collection-path"
+                 value="{{ collection.path }}" />
+          <input type="hidden"
+                 id="target-type-edit"
+                 name="target-type"
+                 value="collection" />
+          <input type="hidden"
+                 id="orig-meta-data-name"
+                 name="orig-meta-data-name"
+                 value="" />
+          <input type="hidden"
+                 id="orig-meta-data-value"
+                 name="orig-meta-data-value"
+                 value="" />
+          <input type="hidden"
+                 id="orig-meta-data-units"
+                 name="orig-meta-data-units"
+                 value="" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Update</button>
+        </div>
+      </form>
     </div>
   </div>
-  <!-- Add collection modal-->
-  <div class="modal fade"
-       id="addCollection"
-       tabindex="-1"
-       aria-labelledby="addCollectionLabel"
-       aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addCollectionLabel">Add collection</h5>
-          <button type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
-        </div>
-        <form action="{{ url_for("browse_bp.add_collection") }}"
-              method="post"
-              enctype="multipart/form-data"
-              class="row g-3 needs-validation"
-              novalidate>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="collection-name-add" class="col-form-label">Name</label>
-              <input type="text"
-                     class="form-control"
-                     id="collection-name-add"
-                     name="collection_name"
-                     required />
-              <div class="invalid-feedback">A collection name is required</div>
-            </div>
-            <input type="hidden"
-                   id="collection-path-add"
-                   name="parent_collection_path"
-                   value="{{ collection.path }}" />
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-primary" type="submit">Add</button>
-          </div>
-        </form>
+</div>
+<!-- Delete modal -->
+<div class="modal fade"
+     id="deleteMetaData"
+     tabindex="-1"
+     aria-labelledby="deleteMetaDataLabel"
+     aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteMetaDataLabel">Delete metadata</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
       </div>
+      <form action="{{ url_for("metadata_bp.delete_meta_data_collection") }}"
+            method="post"
+            enctype="multipart/form-data"
+            class="row g-3 needs-validation"
+            novalidation>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="redirect_hash" value="#metadata" />
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="meta-data-name-delete" class="col-form-label">Name</label>
+            <input type="text"
+                   class="form-control"
+                   id="meta-data-name-delete"
+                   name="meta-data-name"
+                   readonly />
+            <div class="invalid-feedback">Metadata field name is required</div>
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-value-delete" class="col-form-label">Value</label>
+            <input type="text"
+                   class="form-control"
+                   id="meta-data-value-delete"
+                   name="meta-data-value"
+                   readonly />
+            <div class="invalid-feedback">Metadata field value is required</div>
+          </div>
+          <div class="mb-3">
+            <label for="meta-data-units" class="col-form-label">Unit</label>
+            <input type="text"
+                   class="form-control"
+                   id="meta-data-units-delete"
+                   name="meta-data-units"
+                   readonly />
+          </div>
+          <input type="hidden"
+                 id="object-path-delete"
+                 name="collection-path"
+                 value="{{ collection.path }}" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-danger" type="submit">Delete</button>
+        </div>
+      </form>
     </div>
   </div>
-  
-  <div class="modal" id="confirmation-dialog" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h6 class="modal-title">Are you sure?</h6>
-          <button type="button"
-                  class="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
-        </div>
-        <form id="confirmation-form"
-              method="post"
-              action="{{ url_for("browse_bp.bulk_operation_items") }}">
-          <div class="modal-body">
-            <input type="hidden" id="action" name="action" />
-            <input type="hidden" id="destination" name="destination" />
-            <p id="confirmation-text">.</p>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">I'm sure</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </form>
+</div>
+<!-- Add collection modal-->
+<div class="modal fade"
+     id="addCollection"
+     tabindex="-1"
+     aria-labelledby="addCollectionLabel"
+     aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addCollectionLabel">Add collection</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
       </div>
+      <form action="{{ url_for("browse_bp.add_collection") }}"
+            method="post"
+            enctype="multipart/form-data"
+            class="row g-3 needs-validation"
+            novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="collection-name-add" class="col-form-label">Name</label>
+            <input type="text"
+                   class="form-control"
+                   id="collection-name-add"
+                   name="collection_name"
+                   required />
+            <div class="invalid-feedback">A collection name is required</div>
+          </div>
+          <input type="hidden"
+                 id="collection-path-add"
+                 name="parent_collection_path"
+                 value="{{ collection.path }}" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Add</button>
+        </div>
+      </form>
     </div>
   </div>
-  <!-- Delete modal -->
-  {{ dialogs.iframe_dialog('a.pipeline', header="Build information") }}
+</div>
+<div class="modal" id="confirmation-dialog" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Are you sure?</h6>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <form id="confirmation-form"
+            method="post"
+            action="{{ url_for("browse_bp.bulk_operation_items") }}">
+        <div class="modal-body">
+          <input type="hidden" id="action" name="action" />
+          <input type="hidden" id="destination" name="destination" />
+          <p id="confirmation-text">.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">I'm sure</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- Delete modal -->
+{{ dialogs.iframe_dialog('a.pipeline', header="Build information") }}
 {% endblock body %}
 {% block javascript %}
   {{ super() }}

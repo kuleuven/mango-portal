@@ -79,6 +79,53 @@ import signals
 # rudimentary code to obtain schema realm (project) from url
 
 
+def avu_to_dict(avu):
+    d = {"name": avu.name, "value": avu.value}
+    if avu.units is not None and avu.units != "analysis/tika":
+        d["units"] = avu.units
+    return d
+
+
+def get_properties_order(key, schema_labels, level=0):
+    print(schema_labels[key])
+    if schema_labels[key]["level"] != level:
+        pass
+    return (
+        key.split(".")[-1],
+        [
+            get_properties_order(k, schema_labels, level + 1)
+            for k in schema_labels[key]["properties"]
+        ]
+        if "properties" in schema_labels[key]
+        else [],
+    )
+
+
+def parse_metadata_item(metadata_item):
+    if len(metadata_item) > 1:
+        return [m.value for m in metadata_item]
+    else:
+        metadata_item = metadata_item[0]
+    if type(metadata_item) == dict:
+        instances = [
+            {
+                k.split(".")[-1]: parse_metadata_item(instance.getall(k))
+                for k in set(instance.keys())
+            }
+            for instance in metadata_item.values()
+        ]
+        return instances if len(instances) > 1 else instances[0]
+    else:
+        return metadata_item.value
+
+
+def parse_schema_metadata(schema_metadata: MultiDict):
+    return {
+        k.split(".")[-1]: parse_metadata_item(schema_metadata.getall(k))
+        for k in set(schema_metadata.keys())
+    }
+
+
 def get_realm(item: iRODSCollection | iRODSDataObject) -> str:
     realm = False
     item_path = item.path
@@ -129,9 +176,9 @@ def group_prefix_metadata_items(
                 for _i in range(len(components)):
                     if _i < 2:
                         continue
-                    composite_id = ".".join(components[:_i+1])
-                    level_units = ".".join(avu.units.split(".")[:_i-1])
-                    if _i == len(components)-1:
+                    composite_id = ".".join(components[: _i + 1])
+                    level_units = ".".join(avu.units.split(".")[: _i - 1])
+                    if _i == len(components) - 1:
                         parent.add(avu.name, avu)
                     else:
                         if composite_id not in parent:
@@ -214,10 +261,12 @@ def read_file_in_chunks(file_posix_path: str, delete_after=False):
     if delete_after:
         os.remove(file_posix_path)
 
+
 def index():
     return render_template(
         "index.html.j2",
     )
+
 
 @browse_bp.route(
     "/collection/browse", defaults={"collection": None}, strict_slashes=False
