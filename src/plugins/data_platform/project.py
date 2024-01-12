@@ -643,37 +643,29 @@ def projects_usage():
     start_date_year = int(start_date.split("-")[0])
     end_date_year = int(end_date.split("-")[0])
 
-    if start_date_year == end_date_year:
-        response = requests.get(f"{API_URL}/v1/projects/usage/{start_date_year}", headers=header)
-        response.raise_for_status()
-        projects = response.json()
-
-    # Todos for incoming years:
-    # rewrite the logic to get all projects for each response below.
-    # else:
-    #     projects = []
-    #     for date in range(end_date_year - start_date_year):
-    #         response = requests.get(f"{API_URL}/v1/projects/usage/{start_date_year+1}", headers=header)
-
     projects_dict = {}
     projects_dict["date"] = []
     projects_dict["zone"] = []
     projects_dict["project_name"] = []
     projects_dict["usage"] = []
     projects_dict["quota"] = []
-    for project in projects:
-        if project["project"]["platform"] == "irods" and project["project"]["type"] == "project":
-            for usage in project["usage"]:
-                projects_dict["date"].append(usage["date"])
-                zone_name = [
-                    "-".join(x["value"].split("-")[4:])
-                    for x in project["project"]["platform_options"]
-                    if x["key"] == "zone-jobid"
-                ][0]
-                projects_dict["zone"].append(zone_name)
-                projects_dict["project_name"].append(project["project"]["name"])
-                projects_dict["usage"].append(usage["used_size"])
-                projects_dict["quota"].append(usage["quota_size"])
+    for year in range(start_date_year, end_date_year+1):
+        response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
+        response.raise_for_status()
+        projects = response.json()
+        for project in projects:
+            if project["project"]["platform"] == "irods" and project["project"]["type"] == "project":
+                for usage in project["usage"]:
+                    projects_dict["date"].append(usage["date"])
+                    zone_name = [
+                        "-".join(x["value"].split("-")[4:])
+                        for x in project["project"]["platform_options"]
+                        if x["key"] == "zone-jobid"
+                    ][0]
+                    projects_dict["zone"].append(zone_name)
+                    projects_dict["project_name"].append(project["project"]["name"])
+                    projects_dict["usage"].append(usage["used_size"])
+                    projects_dict["quota"].append(usage["quota_size"])
 
     df = pd.DataFrame(projects_dict)
 
