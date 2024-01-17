@@ -43,8 +43,6 @@ import importlib
 from csrf import csrf
 
 from flask_bootstrap import Bootstrap5
-from lib.util import collection_tree_to_dict
-from pprint import pprint
 
 # Blueprints
 from kernel.user.user import user_bp
@@ -62,7 +60,7 @@ import version
 irods_zone_config_module = importlib.import_module(os.getenv('IRODS_ZONES_CONFIG', 'irods_zones_config.py').rstrip('.py'))
 
 import irods_session_pool
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, ServiceUnavailable
 
 import datetime
 
@@ -162,9 +160,21 @@ def handle_exception(e):
 @app.before_request
 def init_and_secure_views():
     """ """
-
+    #Always let static resources be served, eg css, js , images
     if request.endpoint in [
         "static",
+    ]:
+        return None
+    
+    # First check if there are no calamities and need to interrupt here
+    if os.path.isfile('storage/service-down.txt'):
+        message=''
+        with open('storage/service-down.txt') as f:
+            message=f.read()
+        raise ServiceUnavailable(message)
+
+
+    if request.endpoint in [
         "user_bp.login_basic",
         "data_platform_user_bp.login_openid",
         "data_platform_user_bp.login_openid_callback",
