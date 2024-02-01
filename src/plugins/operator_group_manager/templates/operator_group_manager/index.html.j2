@@ -10,7 +10,7 @@
                         <a href="{{ url_for('operator_group_manager_admin_bp.view_members', realm = realm, group = group.name) }}"
                            class="list-group-item list-group-item-action"><i class="bi bi-people"></i> {{ group.name }}</a>
                     </div>
-                    {% if group.name in protected_groups %}
+                    {% if group.name in protected_groups or not editable %}
                         <span><i class="bi bi-lock" title="Read only"></i></span>
                     {% else %}
                         {{ dialogs.confirm_delete_dialog('delete_group_'~group.id, url_for("operator_group_manager_admin_bp.remove_group",  realm=realm) , title = 'Delete this group', button_title='<i class="bi bi-trash"></i>', readonly_fields=[{'name': 'group_name', 'label': 'Group name', 'value': group.name}]) }}
