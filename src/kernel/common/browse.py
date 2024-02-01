@@ -869,7 +869,7 @@ def collection_upload_file():
 @browse_bp.route("/collection/add/subcollection", methods=["POST"])
 def add_collection():
     """ """
-    parent_collection_path = request.form["parent_collection_path"]
+    parent_collection_path = request.form["parent_collection_path"].strip()
     collection_name = request.form["collection_name"]
     # parent_collection = irods_session.collections.get(parent_collection_path)
     full_path = f"{parent_collection_path}/{collection_name}"
