@@ -576,8 +576,9 @@
                    class="form-control"
                    id="collection-name-add"
                    name="collection_name"
+                   pattern="^[^\s]+.+[^\s]+$"
                    required />
-            <div class="invalid-feedback">A collection name is required</div>
+            <div class="invalid-feedback">A collection name is required and may not contain leading or trailing whitespace</div>
           </div>
           <input type="hidden"
                  id="collection-path-add"
