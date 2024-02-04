@@ -90,7 +90,7 @@ def add_group():
             )
         )
     except Exception as e:
-        flash(f"Failed to create group {group_name} in realm {realm}: {e}", "danger")
+        flash(f"Failed to create group {group_name}: {e}", "danger")
 
     return redirect(request.referrer)
 
@@ -160,7 +160,7 @@ def create_user(group=None):
         user = operator_session.users.create_with_password(user_name, password)
     except Exception as e:
         flash(f"Failed to create {user_name}: {e}", "danger")
-    if group and user:
+    if group and user and not group == "public":
         try:
             operator_session.groups.addmember(group, user_name)
         except:
