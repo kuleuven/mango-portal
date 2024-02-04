@@ -20,12 +20,12 @@ register_module(**UI)
 
 
 def current_user_can_manage(irods_session: iRODSSession):
-    allowed_users = ['u0123318']  # debug option
+    # allowed_users = []  # possible stricter rules, get this from config or env
 
     return (
         True
         if irods_session.user.type in ["rodsadmin", "groupadmin"]
-        or irods_session.username in allowed_users
+        # and irods_session.username in allowed_users
         else False
     )
 
