@@ -1,0 +1,168 @@
+{% extends "base.html.j2" %}
+{% import "dialogs.html.j2" as dialogs %}
+{% block body %}
+    <h4>
+        User & Group manager for zone <a href="{{ url_for("basic_user_group_manager_admin_bp.basic_user_group_manager_index") }}">{{ g.irods_session.zone }}</a>
+    </h4>
+    <div class="d-flex justify-content-start">
+        <div class="p-2">
+            <h2 class="mt-3 p-2">
+                <i class="bi bi-people" title="Group"></i>
+                {{ group }}
+            </h2>
+        </div>
+        <div class="p-2">
+            <h2 class="mt-3 p-2">
+                <a href="{{ url_for("basic_user_group_manager_admin_bp.basic_user_group_manager_index") }}"><i class="bi bi-arrow-90deg-up"></i></a>
+            </h2>
+        </div>
+    </div>
+    <div class="d-flex justify-content-end mt-3 mb-3">
+        <div>
+            {{ dialogs.general_dialog("create_user_top", url_for("basic_user_group_manager_admin_bp.create_user") ,
+            title="Create New User in Group "~group, fields=[{"name": "user_name", "label": "User name","placeholder": "user name", "value": "", "pattern": "^[^\s]+.+[^\s]+$", "required": true},
+            {"name": "password", "label": "Password","placeholder": "secret", "value": "", "required": true}],
+            hidden_fields = [{"name": "group", "value": group}])
+            }}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-6">
+            <h4 class="mb-3">Current members</h4>
+            {% if members %}
+                {% if editable and (members|length> 10 or non_members|length> 10) %}
+                    <form method="post"
+                          id="remove-members-form"
+                          class="mb-2"
+                          action="{{ url_for('basic_user_group_manager_admin_bp.remove_members', group=group) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit"
+                                class="btn btn-secondary mt-3"
+                                id="remove-members-top"
+                                disabled>Remove selected users</button>
+                    </form>
+                {% endif %}
+                <div class="list-group">
+                    {% for member in members %}
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            {% if editable %}
+                                <span>
+                                    <input class="form-check-input"
+                                           form="remove-members-form"
+                                           type="checkbox"
+                                           value="{{ member.name }}"
+                                           name="members-to-remove" />
+                                {% endif %}
+                            {{ member.name }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if editable %}
+                <form method="post"
+                      id="remove-members-form"
+                      action="{{ url_for('basic_user_group_manager_admin_bp.remove_members', group=group) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit"
+                            class="btn btn-secondary mt-3"
+                            id="remove-members-bottom"
+                            disabled>Remove selected users</button>
+                </form>
+            {% endif %}
+        </div>
+        {% if editable %}
+            <div class="col-6">
+                <h4 class="mb-3">Other users</h4>
+                {% if non_members %}
+
+                {% if editable and (non_members|length > 10 or members|length > 10) %}
+                    <form method="post"
+                          id="add-members-form"
+                          class="mb-2"
+                          action="{{ url_for('basic_user_group_manager_admin_bp.add_members', group=group) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit"
+                                class="btn btn-primary mt-3"
+                                id="add-members-top"
+                                disabled>Add selected users</button>
+                    </form>
+                {% endif %}
+                    <div class="list-group">
+                        {% for member in non_members %}
+                            <div class="list-group-item d-flex justify-content-between align-items-start">
+                                <span>
+                                    <input class="form-check-input"
+                                           form="add-members-form"
+                                           type="checkbox"
+                                           value="{{ member.name }}"
+                                           name="members-to-add" />
+                                    {{ member.name }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p>No users left for adding to this group</p>
+                {% endif %}
+                {% if editable and non_members %}
+                    <form method="post"
+                          id="add-members-form"
+                          action="{{ url_for('basic_user_group_manager_admin_bp.add_members', group=group) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit"
+                                class="btn btn-primary mt-3"
+                                id="add-members-bottom"
+                                disabled>Add selected users</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    {% if editable %}
+        <div class="text-end mt-4">
+            {{ dialogs.confirm_delete_dialog('delete_group_'~group, url_for("basic_user_group_manager_admin_bp.remove_group") ,
+            title = 'Delete this group', button_title='Delete group',
+            readonly_fields=[{'name': 'group_name', 'label': 'Group name', 'value': group}],
+            hidden_fields=[{'name': 'redirect_route', 'value': url_for("basic_user_group_manager_admin_bp.basic_user_group_manager_index")}]) }}
+        </div>
+    {% endif %}
+    <script>
+    remove_checkboxes = document.getElementsByName("members-to-remove");
+    add_checkboxes = document.getElementsByName("members-to-add");
+    remove_btn_bottom = document.getElementById("remove-members-bottom")
+    add_btn_bottom = document.getElementById("add-members-bottom")
+
+    remove_btn_top = document.getElementById("remove-members-top")
+    add_btn_top = document.getElementById("add-members-top")
+
+    for (var i = 0; i < remove_checkboxes.length; i++) {
+        remove_checkboxes[i].addEventListener("click", function(e){
+            set_button_state(remove_btn_bottom, remove_checkboxes);
+            set_button_state(remove_btn_top, remove_checkboxes);
+            });
+    }
+
+    for (var i = 0; i < add_checkboxes.length; i++) {
+        add_checkboxes[i].addEventListener("click", function(e){
+            set_button_state(add_btn_bottom, add_checkboxes);
+            set_button_state(add_btn_top, add_checkboxes);
+            });
+    }
+
+    for (var i = 0; i < add_checkboxes.length; i++) {
+        add_checkboxes[i].addEventListener("click", () => set_button_state(add_btn, add_checkboxes));
+    }
+
+    function set_button_state(target_button, check_boxes) {
+        is_one_or_more_checked = false;
+        for (var i = 0; i < check_boxes.length; i++) {
+            if (check_boxes[i].checked) {
+                is_one_or_more_checked = true
+            }
+        }
+        target_button.disabled = !is_one_or_more_checked
+
+    }
+
+    </script>
+{% endblock body %}

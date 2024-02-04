@@ -39,7 +39,10 @@ MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG = "config/template_override_rules_basic.yml
 
 MANGO_ADMINS = [] # list of usernames that would be considered ManGO portal admins
 
-MANGO_PLUGIN_BLUEPRINTS = [] # 
+MANGO_PLUGIN_BLUEPRINTS = [
+   {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"},
+]
+
 
 # MANGO_MAIN_LANDING_ROUTE = {"module": "plugins.user_tantra.realm", "function": "index"}
 # MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {"module": "plugins.mango_overrides.schema_permissions", "class": "GroupBasedSchemaPermissions"}

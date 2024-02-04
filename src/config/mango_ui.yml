@@ -1,10 +1,11 @@
-MANGO_MODULE_BLUEPRINTS:
+MANGO_NAVBAR_MODULES:
   - browse_bp
   - basic_search_bp
   - metadata_schema_editor_bp
   - operator_group_manager_admin_bp
+  # - basic_user_group_manager_admin_bp
 
-MANGO_MODULE_ADMIN_BLUEPRINTS:
+MANGO_NAVBAR_ADMIN_MODULES:
   - admin_admin_bp
   - template_overrides_admin_bp
   - mango_open_search_admin_bp
