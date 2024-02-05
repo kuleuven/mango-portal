@@ -1,4 +1,6 @@
-## iRODS Python based portal
+## ManGO: an iRODS Python Client based portal
+
+> WARNING: the current state is geared towards deployments in the KU Leuven specific cloud services, see [Custom deployments](Custom-deployments.md) for your options. In the near future, the KU Leuven specifics will be entirely decoupled from the generic code base so a default installation will work with a vanilla iRODS installation 
 
 ### Installation (local development mode, Linux)
 
@@ -11,7 +13,7 @@ You need to have a valid and initialised iRODS environment for your account, the
 - tier1-pilot.irods-q.hpc.kuleuven.be
 - irods.hpc.kuleuven.be (production)
 
-The current version is developed with python 3.10, but 3.8 and 3.9 probably will work as well. See also the section on changing the python version below.
+> The current version requires python 3.10 or higher. See also the section on changing the python version below.
 
 Create a python virtual environment in the root of this repository checkout and install the required modules, for example
 
