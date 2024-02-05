@@ -199,8 +199,11 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
                                    name="{{ field['name'] }}"
                                    value="{{ field['value'] }}"
                                    placeholder="{{ field['placeholder'] }}"
+                                   {% if field['pattern'] %}pattern="{{ field['pattern'] }}"{% endif %}
                                    {% if field['readonly'] %}readonly{% endif %}
                                    {% if field['required'] %}required{% endif %}/>
+                            {% if field['required'] %}<div class="invalid-feedback">Please fill out this field</div>{% endif %}
+                            
                         {% endfor %}
                     </div>
                     <div class="modal-footer">
