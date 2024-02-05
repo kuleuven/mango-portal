@@ -13,7 +13,7 @@ UI = {
     "bootstrap_icon": "person-gear",
     "description": "Basic User/Group administration, edit operations available for rodsadmin and groupadmin users",
     "blueprint": basic_user_group_manager_admin_bp.name,
-    "index": "basic_user_group_manager_index",
+    "index": "user_group_manager_index",
 }
 
 register_module(**UI)
@@ -31,7 +31,7 @@ def current_user_can_manage(irods_session: iRODSSession):
 
 
 @basic_user_group_manager_admin_bp.route("/user_group_manager")
-def basic_user_group_manager_index():
+def user_group_manager_index():
 
     operator_session: iRODSSession = g.irods_session
     groups = [
@@ -76,7 +76,7 @@ def view_members(group):
 
 
 @basic_user_group_manager_admin_bp.route(
-    "/basic_user_group_manager/add_group", methods=["POST"]
+    "/user_group_manager/add_group", methods=["POST"]
 )
 def add_group():
     operator_session: iRODSSession = g.irods_session
@@ -96,7 +96,7 @@ def add_group():
 
 
 @basic_user_group_manager_admin_bp.route(
-    "/basic_user_group_manager/remove_group", methods=["POST", "DELETE"]
+    "/user_group_manager/remove_group", methods=["POST", "DELETE"]
 )
 def remove_group():
     """ """
@@ -116,7 +116,7 @@ def remove_group():
 
 
 @basic_user_group_manager_admin_bp.route(
-    "/basic_user_group_manager/add_members/<group>", methods=["POST"]
+    "/user_group_manager/add_members/<group>", methods=["POST"]
 )
 def add_members(group):
     """ """
@@ -131,7 +131,7 @@ def add_members(group):
 
 
 @basic_user_group_manager_admin_bp.route(
-    "/basic_user_group_manager/remove_members/<group>", methods=["POST", "DELETE"]
+    "/user_group_manager/remove_members/<group>", methods=["POST", "DELETE"]
 )
 def remove_members(group):
     """ """
@@ -146,10 +146,10 @@ def remove_members(group):
 
 
 @basic_user_group_manager_admin_bp.route(
-    "/basic_user_group_manager/create_user", methods=["POST"], defaults={"group": None}
+    "/user_group_manager/create_user", methods=["POST"], defaults={"group": None}
 )
 @basic_user_group_manager_admin_bp.route(
-    "/basic_user_group_manager/create_user/<group>", methods=["POST"]
+    "/user_group_manager/create_user/<group>", methods=["POST"]
 )
 def create_user(group=None):
     operator_session: iRODSSession = g.irods_session
@@ -170,7 +170,7 @@ def create_user(group=None):
 
 
 @basic_user_group_manager_admin_bp.route(
-    "/basic_user_group_manager/remove_user", methods=["POST", "DELETE"]
+    "/user_group_manager/remove_user", methods=["POST", "DELETE"]
 )
 def remove_user():
     operator_session: iRODSSession = g.irods_session

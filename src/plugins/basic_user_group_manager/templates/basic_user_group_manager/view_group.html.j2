@@ -2,7 +2,7 @@
 {% import "dialogs.html.j2" as dialogs %}
 {% block body %}
     <h4>
-        User & Group manager for zone <a href="{{ url_for("basic_user_group_manager_admin_bp.basic_user_group_manager_index") }}">{{ g.irods_session.zone }}</a>
+        User & Group manager for zone <a href="{{ url_for("basic_user_group_manager_admin_bp.user_group_manager_index") }}">{{ g.irods_session.zone }}</a>
     </h4>
     <div class="d-flex justify-content-start">
         <div class="p-2">
@@ -13,7 +13,7 @@
         </div>
         <div class="p-2">
             <h2 class="mt-3 p-2">
-                <a href="{{ url_for("basic_user_group_manager_admin_bp.basic_user_group_manager_index") }}"><i class="bi bi-arrow-90deg-up"></i></a>
+                <a href="{{ url_for("basic_user_group_manager_admin_bp.user_group_manager_index") }}"><i class="bi bi-arrow-90deg-up"></i></a>
             </h2>
         </div>
     </div>
@@ -123,7 +123,7 @@
             {{ dialogs.confirm_delete_dialog('delete_group_'~group, url_for("basic_user_group_manager_admin_bp.remove_group") ,
             title = 'Delete this group', button_title='Delete group',
             readonly_fields=[{'name': 'group_name', 'label': 'Group name', 'value': group}],
-            hidden_fields=[{'name': 'redirect_route', 'value': url_for("basic_user_group_manager_admin_bp.basic_user_group_manager_index")}]) }}
+            hidden_fields=[{'name': 'redirect_route', 'value': url_for("basic_user_group_manager_admin_bp.user_group_manager_index")}]) }}
         </div>
     {% endif %}
     <script>
