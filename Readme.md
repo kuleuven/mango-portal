@@ -2,18 +2,11 @@
 
 > WARNING: the current state is geared towards deployments in the KU Leuven specific cloud services, see [Custom deployments](Custom-deployments.md) for your options. In the near future, the KU Leuven specifics will be entirely decoupled from the generic code base so a default installation will work with a vanilla iRODS installation 
 
-### Installation (local development mode, Linux)
-
-You need to have a valid and initialised iRODS environment for your account, the easiest is to install the iRODS icommands and execute the instructions from the iRODS landing page on either
-- demo.irods.t.icts.kuleuven.be
-- icts.irods.t.icts.kuleuven.be
-- icts.irods.q.icts.kuleuven.be
-- icts.irods-t.hpc.kuleuven.be
-- icts.irods-q.hpc.kuleuven.be
-- tier1-pilot.irods-q.hpc.kuleuven.be
-- irods.hpc.kuleuven.be (production)
-
 > The current version requires python 3.10 or higher. See also the section on changing the python version below.
+
+### Installation (local development mode, Linux, KULeuven specific for now)
+
+You need to have a valid and initialised iRODS environment for your account, the easiest is to install the iRODS icommands and execute the instructions from the ManGO landing page for the chosen iRODS zone 
 
 Create a python virtual environment in the root of this repository checkout and install the required modules, for example
 
