@@ -2,13 +2,15 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.15.0 (development, sharing with TU Delft)[TBD]
+## Release 0.15.0 (development, sharing on github) [TBD]
 
 ## New features
 
 The main changes are related to the possibility of a generic use of the ManGO portal for other installations with third parties and is necessary to fully open source the software stack.
 
 A dedicated document is created in the file `Custom-deployments.md` which is WIP
+
+- Generic module: basic user and group management. This plugin can be activated and enables users with a rodsadmin or groupadmin role to manage users and groups
 
 In addition, changed various parts for Kafka indexing:
 
