@@ -1,2 +1,2 @@
-__version__ = "0.14.1"
-__comment__ = "Paradigm shift: virtual project logins, bug fixes and refactoring"
+__version__ = "0.15-dev"
+__comment__ = "Refactored for easier generic use by third parties"
