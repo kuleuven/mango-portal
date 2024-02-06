@@ -146,21 +146,19 @@ def remove_members(group):
 
 
 @basic_user_group_manager_admin_bp.route(
-    "/user_group_manager/create_user", methods=["POST"], defaults={"group": None}
-)
-@basic_user_group_manager_admin_bp.route(
-    "/user_group_manager/create_user/<group>", methods=["POST"]
+    "/user_group_manager/create_user", methods=["POST"]
 )
 def create_user(group=None):
     operator_session: iRODSSession = g.irods_session
     user_name = request.form.get("user_name")
     password = request.form.get("password")
+    group = request.form.get("group")
     user = None
     try:
         user = operator_session.users.create_with_password(user_name, password)
     except Exception as e:
         flash(f"Failed to create {user_name}: {e}", "danger")
-    if group and user and not group == "public":
+    if group and user and group != "public":
         try:
             operator_session.groups.addmember(group, user_name)
         except:
