@@ -17,48 +17,58 @@
             </h2>
         </div>
     </div>
-    <div class="d-flex justify-content-end mt-3 mb-3">
-        <div>
-            {{ dialogs.general_dialog("create_user_top", url_for("basic_user_group_manager_admin_bp.create_user") ,
-            title="Create New User in Group "~group, fields=[{"name": "user_name", "label": "User name","placeholder": "user name", "value": "", "pattern": "^[^\s]+.+[^\s]+$", "required": true},
-            {"name": "password", "label": "Password","placeholder": "secret", "value": "", "required": true}],
-            hidden_fields = [{"name": "group", "value": group}])
-            }}
+    {% if editable %}
+        <div class="d-flex justify-content-end mt-3 mb-3">
+            <div>
+                {{ dialogs.general_dialog("create_user_top", url_for("basic_user_group_manager_admin_bp.create_user") ,
+                title="Create New User in Group "~group, fields=[{"name": "user_name", "label": "User name","placeholder": "user name", "value": "", "pattern": "^[^\s]+.+[^\s]+$", "required": true},
+                {"name": "password", "label": "Password","placeholder": "secret", "value": "", "required": true}],
+                hidden_fields = [{"name": "group", "value": group}])
+                }}
+            </div>
         </div>
-    </div>
+    {% endif %}
     <div class="row">
         <div class="col-6">
             <h4 class="mb-3">Current members</h4>
             {% if members %}
-                {% if editable and (members|length> 10 or non_members|length> 10) %}
-                    <form method="post"
-                          id="remove-members-form"
-                          class="mb-2"
-                          action="{{ url_for('basic_user_group_manager_admin_bp.remove_members', group=group) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        <button type="submit"
-                                class="btn btn-secondary mt-3"
-                                id="remove-members-top"
-                                disabled>Remove selected users</button>
-                    </form>
+                {% if editable and not is_protected_group and (members|length> 10 or non_members|length> 10) %}
+                    <button type="submit"
+                            class="btn btn-secondary mb-3"
+                            id="remove-members-top"
+                            form="remove-members-form"
+                            disabled>Remove selected users</button>
+                {% elif is_protected_group and current_user_is_rodsadmin %}
+                    <button type="button"
+                            class="btn btn-danger mb-3"
+                            data-bs-toggle="modal"
+                            data-bs-target="#remove-users"
+                            id="remove-users-top"
+                            disabled>Remove selected users from zone {{ g.irods_session.zone }}</button>
                 {% endif %}
                 <div class="list-group">
                     {% for member in members %}
                         <div class="list-group-item d-flex justify-content-between align-items-start">
-                            {% if editable %}
-                                <span>
+                            <span>
+                                {% if editable %}
                                     <input class="form-check-input"
                                            form="remove-members-form"
                                            type="checkbox"
                                            value="{{ member.name }}"
                                            name="members-to-remove" />
+                                {% elif is_protected_group and current_user_is_rodsadmin %}
+                                    <input class="form-check-input danger"
+                                           form="form-remove-users"
+                                           type="checkbox"
+                                           value="{{ member.name }}"
+                                           name="users-to-remove" />
                                 {% endif %}
                             {{ member.name }}</span>
                         </div>
                     {% endfor %}
                 </div>
             {% endif %}
-            {% if editable %}
+            {% if editable and not is_protected_group %}
                 <form method="post"
                       id="remove-members-form"
                       action="{{ url_for('basic_user_group_manager_admin_bp.remove_members', group=group) }}">
@@ -68,25 +78,28 @@
                             id="remove-members-bottom"
                             disabled>Remove selected users</button>
                 </form>
+            {% elif is_protected_group and current_user_is_rodsadmin %}
+                <button type="button"
+                        class="btn btn-danger mt-3"
+                        id="remove-users-bottom"
+                        data-bs-toggle="modal"
+                        data-bs-target="#remove-users"
+                        disabled>Remove selected users from zone {{ g.irods_session.zone }}</button>
+                {{ dialogs.confirm_delete_dialog('remove-users', url_for("basic_user_group_manager_admin_bp.remove_users") ,
+                title = 'Delete selected users?', button_title='Delete users permanently', mode='custom') }}
             {% endif %}
         </div>
-        {% if editable %}
+        {% if editable and group not in protected_groups %}
             <div class="col-6">
                 <h4 class="mb-3">Other users</h4>
                 {% if non_members %}
-
-                {% if editable and (non_members|length > 10 or members|length > 10) %}
-                    <form method="post"
-                          id="add-members-form"
-                          class="mb-2"
-                          action="{{ url_for('basic_user_group_manager_admin_bp.add_members', group=group) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    {% if editable and (non_members|length > 10 or members|length > 10) %}
                         <button type="submit"
-                                class="btn btn-primary mt-3"
+                                form="add-members-form"
+                                class="btn btn-primary mb-3"
                                 id="add-members-top"
                                 disabled>Add selected users</button>
-                    </form>
-                {% endif %}
+                    {% endif %}
                     <div class="list-group">
                         {% for member in non_members %}
                             <div class="list-group-item d-flex justify-content-between align-items-start">
@@ -118,7 +131,7 @@
             </div>
         {% endif %}
     </div>
-    {% if editable %}
+    {% if editable and not is_protected_group %}
         <div class="text-end mt-4">
             {{ dialogs.confirm_delete_dialog('delete_group_'~group, url_for("basic_user_group_manager_admin_bp.remove_group") ,
             title = 'Delete this group', button_title='Delete group',
@@ -128,12 +141,15 @@
     {% endif %}
     <script>
     remove_checkboxes = document.getElementsByName("members-to-remove");
+    remove_user_checkboxes = document.getElementsByName("users-to-remove");
     add_checkboxes = document.getElementsByName("members-to-add");
     remove_btn_bottom = document.getElementById("remove-members-bottom")
     add_btn_bottom = document.getElementById("add-members-bottom")
+    rodsadmin_remove_users_btn_bottom = document.getElementById("remove-users-bottom")
 
     remove_btn_top = document.getElementById("remove-members-top")
     add_btn_top = document.getElementById("add-members-top")
+    rodsadmin_remove_users_btn_top  = document.getElementById("remove-users-top")
 
     for (var i = 0; i < remove_checkboxes.length; i++) {
         remove_checkboxes[i].addEventListener("click", function(e){
@@ -141,6 +157,23 @@
             set_button_state(remove_btn_top, remove_checkboxes);
             });
     }
+
+    
+    for (var i = 0; i < remove_user_checkboxes.length; i++) {
+        remove_user_checkboxes[i].addEventListener("click", function(e){
+            set_button_state(rodsadmin_remove_users_btn_bottom, remove_user_checkboxes);
+            set_button_state(rodsadmin_remove_users_btn_top, remove_user_checkboxes);
+            var user_list=[];
+            for (var i = 0; i < remove_user_checkboxes.length; i++) {
+                if (remove_user_checkboxes[i].checked) {
+                    user_list.push(remove_user_checkboxes[i].getAttribute('value'))
+                }
+            }
+            document.getElementById("body-extra-remove-users").innerHTML=user_list.join(", ");
+
+            });
+    }
+
 
     for (var i = 0; i < add_checkboxes.length; i++) {
         add_checkboxes[i].addEventListener("click", function(e){

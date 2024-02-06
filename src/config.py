@@ -50,6 +50,7 @@ MANGO_PLUGIN_BLUEPRINTS = [
     {"module": "plugins.template_overrides.admin", "blueprint": "template_overrides_admin_bp"},
     {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
     {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
+    # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
 ]
 
 

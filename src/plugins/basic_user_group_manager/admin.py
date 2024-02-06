@@ -63,6 +63,7 @@ def view_members(group):
     non_members = [member for member in all_users if member.name in non_member_names]
 
     irodsgroup = operator_session.groups.get(group)
+    protected_groups = ["public", "rodsadmin"]
 
     return render_template(
         "basic_user_group_manager/view_group.html.j2",
@@ -72,6 +73,9 @@ def view_members(group):
         all_users=all_users,
         non_members=non_members,
         editable=current_user_can_manage(operator_session),
+        is_protected_group=group in protected_groups,
+        protected_groups=["public", "rodsadmin"],
+        current_user_is_rodsadmin=True #g.irods_session.user.type == "rodsadmin",
     )
 
 
@@ -168,15 +172,19 @@ def create_user(group=None):
 
 
 @basic_user_group_manager_admin_bp.route(
-    "/user_group_manager/remove_user", methods=["POST", "DELETE"]
+    "/user_group_manager/remove_users", methods=["POST", "DELETE"]
 )
-def remove_user():
+def remove_users():
     operator_session: iRODSSession = g.irods_session
-    user_name = request.form.get("user_name")
+    user_names = request.form.getlist("users-to-remove")
     if operator_session.user.type == "rodsadmin":
-        try:
-            operator_session.users.remove(user_name)
-        except Exception as e:
-            flash(f"failed to remove user: {e}", "danger")
+        for user_name in user_names:
+            try:
+                operator_session.users.remove(user_name)
+            except Exception as e:
+                flash(f"failed to remove user: {e}", "danger")
+                break
     else:
         flash(f"You need to be rodsadmin to remove a user", "danger")
+
+    return redirect(request.referrer)
