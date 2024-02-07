@@ -2,7 +2,7 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.15.0 (development, sharing on github) [TBD]
+## Release 0.15.0 (development, sharing on github) [2024-02-07]
 
 ## New features
 
