@@ -6,6 +6,7 @@ properties([
 
 def allowed_branch_names = [
   'development': 'development',
+  'search-data-platform': 'development',
   'main': 'latest'
 ]
 

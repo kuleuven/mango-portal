@@ -1,0 +1,47 @@
+{
+    "schema_name": "experimental_raw_data",
+    "version": "1.0.0",
+    "status": "draft",
+    "properties": {
+        "user": {
+            "title": "User",
+            "type": "select",
+            "values": [
+                "ERC-3DALIGN ",
+                "FWO-PhD-ITE ",
+                "FWO-OPV ",
+                "FWO-PhD-OPV ",
+                "FWO-PhD-MXenes ",
+                "C1-ITE ",
+                "IDN-OTE ",
+                "EOS-Weyl "
+            ],
+            "multiple": false,
+            "ui": "dropdown",
+            "required": true,
+            "default": "FML"
+        },
+        "project": {
+            "title": "Project",
+            "type": "select",
+            "values": [
+                "ERC-3DALIGN ",
+                "FWO-PhD-ITE ",
+                "FWO-OPV ",
+                "FWO-PhD-OPV ",
+                "FWO-PhD-MXenes ",
+                "C1-ITE ",
+                "IDN-OTE ",
+                "EOS-Weyl "
+            ],
+            "multiple": false,
+            "ui": "dropdown",
+            "required": true,
+            "default": "ERC-3DALIGN "
+        }
+    },
+    "edited_by": "u0121930",
+    "realm": "FMolina-Lopez_Lab",
+    "title": "Experimental_raw_data",
+    "parent": ""
+}

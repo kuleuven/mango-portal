@@ -5,23 +5,31 @@
 const tbody = document.querySelector('#browseTable tbody');
 /** Selection of all the checkboxes inside the body of the table (which excludes the header!). */
 const tbody_checkboxes = tbody.querySelectorAll('input[type="checkbox"]');
+console.log(tbody_checkboxes)
 /** Small badge that shows the number of selected items if there is any. */
 const badge_counter = document.querySelector('#browseTable thead span.badge');
 /** Button ("apply") to trigger the action selected in the dropdown. */
-const go_button = document.querySelector('#collection-content button');
+const bulk_buttons = document.querySelector('div#bulk-operations');
 /** One checkbox to rule them all (it's in the header of the table). */
 const select_all = document.querySelector('#browseTable input#select_all');
 /** Custom DOM element that contains the url to call the top tree. */
 const urls = document.querySelector('bulk-links');
 //#endregion
 
+function are_dobj_selected() {
+    return [...tbody_checkboxes].filter((el) => el.checked == true && el.value.startsWith("dobj")).length > 0;
+}
 //#region Listeners
 /** Behavior of the checkbox that rules all other checkboxes. */
 select_all.addEventListener('change', () => {
     if (select_all.checked) {
         // When this checkbox is checked
         tbody_checkboxes.forEach((el) => el.checked = true); // all other checkboxes are checked
-        go_button.removeAttribute('disabled'); // the button to trigger the action is enabled
+        bulk_buttons.querySelectorAll("button").forEach((button) => {
+            if (are_dobj_selected() || ["bulk-delete", "bulk-move"].indexOf(button.id) > -1) {
+                button.removeAttribute("disabled")
+            }
+        })
         if (select_all.parentElement.querySelector('span.badge') == null) {
             // the counter badge is shown if not visible yet
             select_all.parentElement.appendChild(badge_counter);
@@ -30,7 +38,9 @@ select_all.addEventListener('change', () => {
     } else {
         // When this checkbox is unchecked
         tbody_checkboxes.forEach((el) => el.checked = false); // all other checkboxes are unchecked
-        go_button.setAttribute('disabled', ''); // the button to trigger the action is disabled
+        bulk_buttons.querySelectorAll("button").forEach((button) => {
+            button.setAttribute("disabled", "");
+        })
         select_all.parentElement.removeChild(badge_counter); // the counter badge is removed altogether
     }
 });
@@ -43,7 +53,11 @@ tbody_checkboxes.forEach((checkbox) => {
         badge_counter.innerHTML = are_checked; // update badge counter
         if (checkbox.checked) {
             // when the checkbox is checked
-            go_button.removeAttribute('disabled'); // enable actions
+            bulk_buttons.querySelectorAll("button").forEach((button) => {
+                if (are_dobj_selected() || ["bulk-delete", "bulk-move"].indexOf(button.id) > -1) {
+                    button.removeAttribute("disabled")
+                }
+            })
             // add or update badge counter
             if (are_checked == 1) {
                 select_all.parentElement.appendChild(badge_counter)
@@ -54,8 +68,12 @@ tbody_checkboxes.forEach((checkbox) => {
         } else {
             // when the checkbox is unchecked
             select_all.checked = false; // make sure that the header checkbox is unchecked
+            bulk_buttons.querySelectorAll("button").forEach((button) => {
+                if (are_checked == 0 || (!are_dobj_selected() && ["bulk-copy", "bulk-download"].indexOf(button.id) > -1)) {
+                    button.setAttribute("disabled", "")
+                }
+            })
             if (are_checked == 0) { // update button and badge if no other checkboxes are checked
-                go_button.setAttribute('disabled', '');
                 select_all.parentElement.removeChild(badge_counter);
             }
         }
@@ -63,13 +81,24 @@ tbody_checkboxes.forEach((checkbox) => {
 });
 
 //#endregion
-
 //#region Main function
-/** Function called when clicking on the 'apply' button to trigger an action (copy/move/delete/download). */
-function apply_bulk_operation() {
-    /** Option chosen in the dropdown. */
-    const selected_option = document.querySelector('#collection-content select');
 
+function bulk_download() { 
+    apply_bulk_operation("download")
+}
+function bulk_copy() {
+    apply_bulk_operation("copy")
+}
+function bulk_move() {
+    apply_bulk_operation("move")
+}
+function bulk_delete() {
+    apply_bulk_operation("delete")
+}
+
+/** Bulk operation */
+function apply_bulk_operation(action) {
+   
     /** Array of paths to apply the action upon. */
     const selected_items = [...tbody_checkboxes].filter((c) => c.checked).map((c) => c.value);
     /** Number of collections selected. */
@@ -98,21 +127,23 @@ function apply_bulk_operation() {
     /** Form within the modal. */
     const confirmation_form = confirmation_modal.querySelector('form#confirmation-form');
     // Update the form with the chosen action (copy/move/delete).
-    confirmation_form.querySelector('input#action').value = selected_option.value;
+    confirmation_form.querySelector('input#action').value = action;
     /** Text to return in the confirmation dialog */
     const confirmation_text = confirmation_form.querySelector('p#confirmation-text')
 
     confirmation_form.addEventListener("submit", ()=> { 
         modal.hide();
         tbody_checkboxes.forEach((el) => el.checked = false); // uncheck all checkboxes
-        go_button.setAttribute('disabled', ''); // the button to trigger the action is disabled
+        bulk_buttons.querySelectorAll("button").forEach((btn) => {
+btn.setAttribute('disabled', ''); // the button to trigger the action is disabled
+        })
         select_all.parentElement.removeChild(badge_counter); // the counter badge is removed altogether
         select_all.checked = false; // uncheck also the global select/unselect all
     })
 
 
     /** Final list of items to act upon: exclude collections if the action is 'copy'. */
-    const items_to_send = selected_option.value == 'copy'
+    const items_to_send = action == 'copy'
         ? selected_items.filter((c) => c.startsWith('dobj-'))
         : selected_items;
 
@@ -135,7 +166,7 @@ function apply_bulk_operation() {
 
 
     // ACT
-    if (selected_option.value == 'copy' || selected_option.value == 'move') {
+    if (action == 'copy' || action == 'move') {
         // if items will be copied or moved
         // clean the folder icons of the offcanvas (which is defined at the bottom of this script.)
         offcanvas.offcanvas.querySelectorAll('i.bi-folder-symlink-fill').forEach((i) => i.remove());
@@ -145,19 +176,19 @@ function apply_bulk_operation() {
         }
 
         /** Text of the chosen action for the dialog message. */
-        const action = selected_option.value == 'copy' ? 'copied' : 'moved';
+        const action_past = action == 'copy' ? 'copied' : 'moved';
         /** Message to provide in the confirmation dialog. */
-        const toast_message = selected_option.value == 'copy' && n_collections > 0
-            ? `${n_dobjects_printed} will be ${action} to "DESTINATION". Copying collections is not supported.`
-            : `${n_items} will be ${action} to "DESTINATION."`;
+        const toast_message = action == 'copy' && n_collections > 0
+            ? `${n_dobjects_printed} will be ${action_past} to "DESTINATION". Copying collections is not supported.`
+            : `${n_items} will be ${action_past} to "DESTINATION."`;
 
         offcanvas.toggle(); // call the offcanvas
         // link the current information to the offcanvas instance
-        offcanvas.link_data(selected_items, confirmation_text, confirmation_form, modal, selected_option.value, toast_message);
+        offcanvas.link_data(selected_items, confirmation_text, confirmation_form, modal, action, toast_message);
         // update the offcanvas
         offcanvas.update();
 
-    } else if (selected_option.value == 'download') {
+    } else if (action == 'download') {
         // delete the force-delete checkbox from the confirmation dialog if it exists
         if (del_checkbox != undefined) {
             del_checkbox.remove();

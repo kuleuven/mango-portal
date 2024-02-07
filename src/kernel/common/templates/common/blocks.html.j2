@@ -306,6 +306,76 @@
         </div>
     {% endif %}
 {% endmacro %}
+<<<<<<< Updated upstream
+=======
+{% macro download_metadata_block(object_path, export_metadata, item_type="collection", current_user_rights=[], realm="") %}
+    <div class="d-flex justify-content-end">
+        <p>{{ export_metadata }}</p>
+        {% if export_metadata|length > 1 %}
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false">Download metadata</button>
+                <ul class="dropdown-menu">
+                    {% if "schemas" in export_metadata %}
+                        <h6 class="dropdown-header">Schemas</h6>
+                        <div class="ms-3">
+                            <div class="form-check">
+                                <input type="checkbox"
+                                       class="form-check-input border-dark"
+                                       id="download-all-schemas"
+                                       name="all-schemas"
+                                       value="all-schemas"
+                                       checked>
+                                <label class="form-check-label fw-semibold" for="download-all-schemas">All schemas</label>
+                            </div>
+                        </div>
+                        {% for item in export_metadata["schemas"] %}
+                            <div class="ms-3">
+                                <div class="form-check">
+                                    <input type="checkbox"
+                                           class="form-check-input"
+                                           id="download-{{ item["name"] }}"
+                                           name="download-schema-metadata"
+                                           value="{{ item["name"] }}"
+                                           checked>
+                                    <label class="form-check-label" for="download-{{ item["name"] }}">
+                                        {{ item["data"]["title"] if "title" in item["data"] else item["name"] }}
+                                    </label>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        {% if export_metadata | length > 2 %}
+                            <li>
+                                <hr class="dropdown-divider" />
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                    {% for item in ["analysis", "other"] %}
+                        {% if export_metadata[item] | length > 0 %}
+                            <div class="ms-3">
+                                <div class="form-check">
+                                    <input type="checkbox"
+                                           class="form-check-input"
+                                           id="download-{{ item }}"
+                                           name="download-metadata"
+                                           value="{{ item }}">
+                                    <label class="form-check-label" for="download-{{ item }}">{{ item }}</label>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    <div class="dropdown-divider"></div>
+                    <a class="btn btn-primary ms-3" id="download-all-metadata" download="{{ object_path.split("/") [-1] }}.metadata.json" href="#">Download</a>
+                </ul>
+                <script>const md = {{ export_metadata | tojson }}</script>
+                <script src="{{ url_for('static', filename='dist/metadata_download.js') }}"></script>
+            </div>
+        {% endif %}
+    </div>
+{% endmacro %}
+>>>>>>> Stashed changes
 {% macro analysis_tika_block(result, consolidate=false, consolidated=[], consolidate_url='{{ url_for }}
     ', data_object_path = '', read_only = false) %}
     <h2>Inspect with Tika metadata extractor</h2>

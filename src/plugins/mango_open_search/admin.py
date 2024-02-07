@@ -23,6 +23,8 @@ from . import (
     MANGO_INDEX_THREAD_SLEEP_TIME,
     IndexingThread,
     ping_open_search_servers,
+    delete_all,
+    MANGO_OPEN_SEARCH_INDEXING_IMPLEMENTATION
 )
 from opensearchpy import client
 
@@ -79,6 +81,7 @@ def index():
         indexing_thread_status=indexing_thread.status,
         indexing_thread_health=indexing_thread.is_alive(),
         server_health=ping_open_search_servers(),
+        indexing_implementation=MANGO_OPEN_SEARCH_INDEXING_IMPLEMENTATION
     )
 
 
@@ -128,6 +131,21 @@ def refresh_indexing_thread():
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
+    if "redirect_hash" in request.values:
+        return redirect(
+            request.referrer.split("#")[0] + request.values["redirect_hash"]
+        )
+    return redirect(request.referrer)
+
+@mango_open_search_admin_bp.route(
+    "/mango-open-search/admin/delete-index", methods=["POST"]
+)
+@require_mango_portal_admin
+def clear_index():
+    delete_all()
+
+    if "redirect_route" in request.values:
+            return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:
         return redirect(
             request.referrer.split("#")[0] + request.values["redirect_hash"]

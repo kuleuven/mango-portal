@@ -3,7 +3,7 @@ Template override system:
 Collection and data object views and other template calls can be changed by overriding the corresponding
 jinja2 template based on several rules (or no real rule at all for permanent overrides)
 """
-
+from app import app
 from irods.collection import iRODSCollection
 from irods.data_object import iRODSDataObject
 import os, pathlib, yaml, collections, logging
@@ -15,9 +15,10 @@ MANGO_OVERRIDE_SOURCE_TEMPLATES = (
     "data_object_content",
     "collection_content",
 )
-MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG = os.environ.get(
-    "MANGO_RULES_CONFIG", "config/template_override_rules.yml"
-)
+with app.app_context():
+    MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG = app.config.get(
+        "MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG", "config/template_override_rules.yml"
+    )
 
 override_rule_blocks = {}
 override_rule_blocks_path = pathlib.Path(MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG)

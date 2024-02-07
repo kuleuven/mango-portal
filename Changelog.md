@@ -2,6 +2,29 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.15.0 (development, sharing on github) [2024-02-07]
+
+## New features
+
+The main changes are related to the possibility of a generic use of the ManGO portal for other installations with third parties and is necessary to fully open source the software stack.
+
+A dedicated document is created in the file `Custom-deployments.md` which is WIP
+
+- Generic module: basic user and group management. This plugin can be activated and enables users with a rodsadmin or groupadmin role to manage users and groups
+
+In addition, changed various parts for Kafka indexing:
+
+- Implementation for OpenSearch indexing must be specified, defaults to "external"
+- If this value is "internal", a local indexing thread is created and listeners configured
+- Some field definitions have changed
+- Admin indexing actions are disabled in the view template
+
+
+## Bug fixes
+
+- Fixed metadata schema version validation code to allow more than 9 versions in any part
+ 
+
 ## Release 0.14.1 [2023-08-22 (t,q,p)]
 
 ### Smaller improvements and bug fixes

@@ -52,12 +52,22 @@ const schema_infos = {};
 let schema_pattern = "[a-z][a-z0-9_\\-]*";
 
 /**
+ * Name for information of last modified schema in localStorage
+ */
+last_mod_ls = "_mgs__last_modified__";
+tab_prefixes = {
+  draft: "edit",
+  copy: "child",
+  new: "new",
+};
+
+/**
  * Empty schema to start with.
  * @type {Schema}
- * 
- * starting_schema is defined here but only to be initialized in httprequests.js 
+ *
+ * starting_schema is defined here but only to be initialized in httprequests.js
  * after the realm permissions are retrieved and a related permission check is performed
- * 
+ *
  */
 let starting_schema = new Schema("schema-editor-100", container_id, urls);
 
@@ -69,22 +79,25 @@ templates_request.retrieve();
 
 // SCHEMA_CORE_PERMISSIONS should be synced with the Python equivalent
 const SCHEMA_CORE_PERMISSIONS = {
-  "read_schema": 1 << 0,
-  "read_archived": 1 << 1,
-  "read_draft": 1 << 2,
-  "edit_draft": 1 << 3,
-  "create_draft": 1 << 4,
-  "delete_draft": 1 << 5,
-  "publish_draft": 1 << 6,
-  "create_new_schema_draft": 1 << 7,
-  "archive_schema": 1 << 8,
+  read_schema: 1 << 0,
+  read_archived: 1 << 1,
+  read_draft: 1 << 2,
+  edit_draft: 1 << 3,
+  create_draft: 1 << 4,
+  delete_draft: 1 << 5,
+  publish_draft: 1 << 6,
+  create_new_schema_draft: 1 << 7,
+  archive_schema: 1 << 8,
 };
 
 let realm_permissions = 0;
 
-function combinePermissions(permissionArray = [], from=SCHEMA_CORE_PERMISSIONS) {
+function combinePermissions(
+  permissionArray = [],
+  from = SCHEMA_CORE_PERMISSIONS
+) {
   permission = 0;
-  permissionArray.forEach(item => permission |= from[item]);
+  permissionArray.forEach((item) => (permission |= from[item]));
   return permission;
 }
 
@@ -92,28 +105,31 @@ function combinePermissions(permissionArray = [], from=SCHEMA_CORE_PERMISSIONS) 
 // SCHEMA_PERMISSIONS should be synced with the Python equivalent
 const SCHEMA_PERMISSIONS = {
   ...SCHEMA_CORE_PERMISSIONS,
-  "write": combinePermissions(
-    ["read_schema", "read_draft", "edit_draft", "create_draft", "delete_draft"]
-  ),
-  "read": combinePermissions(["read_schema", "read_archived"]),
-  "new_schema": combinePermissions(
-    [
-      "create_new_schema_draft",
-      "read_schema",
-      "read_draft",
-      "edit_draft",
-      "create_draft",
-      "delete_draft",
-      "read_archived",
-    ]
-  ),
+  write: combinePermissions([
+    "read_schema",
+    "read_draft",
+    "edit_draft",
+    "create_draft",
+    "delete_draft",
+  ]),
+  read: combinePermissions(["read_schema", "read_archived"]),
+  new_schema: combinePermissions([
+    "create_new_schema_draft",
+    "read_schema",
+    "read_draft",
+    "edit_draft",
+    "create_draft",
+    "delete_draft",
+    "read_archived",
+  ]),
 };
 
 function checkAnyCorePermissions(target, corePermissionArray = []) {
   if (target && corePermissionArray) {
     permission = 0;
-    corePermissionArray.forEach(item =>
-      permission |= SCHEMA_CORE_PERMISSIONS[item]);
+    corePermissionArray.forEach(
+      (item) => (permission |= SCHEMA_CORE_PERMISSIONS[item])
+    );
     return !!(target & permission);
   }
   return false;
@@ -122,9 +138,8 @@ function checkAnyCorePermissions(target, corePermissionArray = []) {
 function checkAllPermissions(target, permissionArray = []) {
   if (target && permissionArray) {
     permission = 0;
-    permissionArray.forEach(item =>
-      permission |= SCHEMA_PERMISSIONS[item]);
-    return ((target & permission) === permission);
+    permissionArray.forEach((item) => (permission |= SCHEMA_PERMISSIONS[item]));
+    return (target & permission) === permission;
   }
   return false;
 }
@@ -133,6 +148,4 @@ function checkAllPermissions(target, permissionArray = []) {
 // ide: use centralized id generator functions, there are a few variants across the code
 // placeholders for now
 
-function genid_tab_action_button() {
-
-}
+function genid_tab_action_button() {}

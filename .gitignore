@@ -2,11 +2,11 @@
 
 # C extensions
 *.so
-
 # pycharm
 .idea/
 .idea
-
+.boot.sh 
+*.qmd
 # other IDEs
 .spyproject
 .spyproject/
@@ -62,10 +62,8 @@ venv
 node_modules
 #Vue build files
 #src/static/dist
-# Caches
-src/storage/cache
-#Thumbnails
-src/storage/thumbnails
+# Anything in storage
+src/storage
 
 .gitignore
 .cache

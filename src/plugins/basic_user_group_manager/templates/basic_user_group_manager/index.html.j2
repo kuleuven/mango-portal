@@ -1,0 +1,42 @@
+{% extends "base.html.j2" %}
+{% import "dialogs.html.j2" as dialogs %}
+{% block body %}
+    {% if groups %}
+        <h4>User & Group manager for zone {{ g.irods_session.zone }}</h4>
+        <h2>Current groups</h2>
+        {% if editable and groups|length > 10 %}
+            <div class="d-flex align-items-center mt-3 mb-3">
+                <div>
+                    {{ dialogs.general_dialog("add_group_top", url_for("basic_user_group_manager_admin_bp.add_group"),
+                    title="Add group", fields=[{"name": "group_name", "label": "Group name","placeholder": "group name", "value": ""}])
+                    }}
+                </div>
+            </div>
+        {% endif %}
+        <ul class="list-group">
+            {% for group in groups %}
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 col-9">
+                        <a href="{{ url_for('basic_user_group_manager_admin_bp.view_members', group = group.name) }}"
+                           class="list-group-item list-group-item-action"><i class="bi bi-people"></i> {{ group.name }}</a>
+                    </div>
+                    {% if group.name in protected_groups or not editable %}
+                        <span><i class="bi bi-lock" title="Read only"></i></span>
+                    {% else %}
+                        {{ dialogs.confirm_delete_dialog('delete_group_'~group.id, url_for("basic_user_group_manager_admin_bp.remove_group") , title = 'Delete this group', button_title='<i class="bi bi-trash"></i>', readonly_fields=[{'name': 'group_name', 'label': 'Group name', 'value': group.name}]) }}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+        {% if editable %}
+            <div class="d-flex align-items-center mt-3">
+                <div>
+                    {{ dialogs.general_dialog("add_group_bottom", url_for("basic_user_group_manager_admin_bp.add_group"),
+                    title="Add group", fields=[{"name": "group_name", "label": "Group name","placeholder": "group name", "value": ""}])
+                    }}
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+    {% if not groups %}<p>No groups found for zone {{ g.iods_session.zone }}</p> {% endif %}
+{% endblock body %}

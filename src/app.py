@@ -1,4 +1,5 @@
 import logging
+import os
 
 # get the root logger and set the level to INFO to catch any start up info messages
 rootlogger = logging.getLogger()
@@ -19,13 +20,12 @@ from flask import (
 )
 # Early initialisation to avoid circulr imports from main app and its config by other modules
 app = Flask(__name__)
-app.config.from_pyfile("config.py")
+app.config.from_pyfile(os.getenv("MANGO_CONFIG","config.py"))
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 
 irods_sessions = {}
 
 from cache import cache
-import os
 import flask
 from pprint import pformat
 from flask_cors import CORS
@@ -43,8 +43,6 @@ import importlib
 from csrf import csrf
 
 from flask_bootstrap import Bootstrap5
-from lib.util import collection_tree_to_dict
-from pprint import pprint
 
 # Blueprints
 from kernel.user.user import user_bp
@@ -59,53 +57,21 @@ import platform
 import version
 
 
-from irods_zones_config import (
-    irods_zones,
-    DEFAULT_IRODS_PARAMETERS,
-    DEFAULT_SSL_PARAMETERS,
-)
+irods_zone_config_module = importlib.import_module(os.getenv('IRODS_ZONES_CONFIG', 'irods_zones_config.py').rstrip('.py'))
+
 import irods_session_pool
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, ServiceUnavailable
 
 import datetime
 
 
 print(f"Flask version {flask.__version__}")
-app.config["irods_zones"] = irods_zones
+app.config["irods_zones"] = irods_zone_config_module.irods_zones
 
 
 # set the loggin level to the configured one
 rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
 
-if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-    from plugins.mango_open_search.search import mango_open_search_bp
-    from plugins.mango_open_search.admin import mango_open_search_admin_bp
-    from plugins.mango_open_search.api import mango_open_search_api_bp
-    from plugins.mango_open_search.stats import mango_open_search_stats_bp
-
-if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-    from plugins.data_platform import update_zone_info
-
-    # if not app.config["MANGO_AUTH"] == "localdev":
-    update_zone_info(app.config["irods_zones"])
-
-    from plugins.data_platform.user import data_platform_user_bp
-    from plugins.data_platform.project import data_platform_project_bp
-    from plugins.data_platform.autocomplete import data_platform_autocomplete_bp
-
-other_plugins = [
-    plugin
-    for plugin in app.config["MANGO_ENABLE_CORE_PLUGINS"]
-    if plugin not in ["mango_open_search", "data_platform"]
-]
-if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-    from plugins.operator_group_manager.admin import operator_group_manager_admin_bp
-if "operator" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-    from plugins.operator.admin import operator_admin_bp
-if "admin" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-    from plugins.admin.admin import admin_admin_bp
-if "template_overrides" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-    from plugins.template_overrides.admin import template_overrides_admin_bp
 
 ## Allow cross origin requests for SPA/Ajax situations
 CORS(app)
@@ -121,8 +87,8 @@ bootstrap = Bootstrap5(app)
 # register csrf on the main app
 csrf.init_app(app)
 
-# Caching, make sure the filesystem dir exists
-if not os.path.exists(app.config["CACHE_DIR"]):
+# Caching, make sure the filesystem dir existsif CACHE_TYPE  is FileSystemCache 
+if app.config["CACHE_TYPE"] == "FileSystemCache" and not os.path.exists(app.config["CACHE_DIR"]):
     os.makedirs(app.config["CACHE_DIR"])
 
 cache.init_app(app)
@@ -136,59 +102,31 @@ if os.getenv("FLASK_DEBUG_TOOLBAR", "disabled").lower() == "enabled":
     toolbar = DebugToolbarExtension(app)
 
 
-# TODO: import blueprints dynamically
-
-##################
-MANGO_PLUGIN_BLUEPRINTS = [
-    {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
-    {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
-]
-
-for mango_plugin_bp in MANGO_PLUGIN_BLUEPRINTS:
-    app.register_blueprint(
-        getattr(
-            importlib.import_module(mango_plugin_bp["module"]),
-            mango_plugin_bp["blueprint"],
-        )
-    )
-##################
 
 
-# Register blueprints
+# Register core blueprints
 with app.app_context():
     app.register_blueprint(user_bp)
     app.register_blueprint(error_bp)
     app.register_blueprint(browse_bp)
     app.register_blueprint(metadata_bp)
     app.register_blueprint(basic_search_bp)
-    app.register_blueprint(admin_admin_bp)
     app.register_blueprint(metadata_schema_editor_bp)
     app.register_blueprint(metadata_schema_form_bp)
     app.register_blueprint(template_overrides_bp)
-    app.register_blueprint(template_overrides_admin_bp)
+    
 
-    if "mango_open_search" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-        app.register_blueprint(mango_open_search_bp)
-        app.register_blueprint(mango_open_search_admin_bp)
-        app.register_blueprint(mango_open_search_api_bp)
-        app.register_blueprint(mango_open_search_stats_bp)
 
-    if "data_platform" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-        app.register_blueprint(data_platform_user_bp)
-        app.register_blueprint(data_platform_project_bp)
-        app.register_blueprint(data_platform_autocomplete_bp)
+# import plugin blueprints dynamically based on the configuration
 
-    if "operator" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-        app.register_blueprint(operator_admin_bp)
-    if "operator_group_manager" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-        app.register_blueprint(operator_group_manager_admin_bp)
-    if "user_tantra" in app.config["MANGO_ENABLE_CORE_PLUGINS"]:
-        import plugins.user_tantra
+for mango_plugin_bp in app.config.get('MANGO_PLUGIN_BLUEPRINTS', []):
+    module = importlib.import_module(mango_plugin_bp["module"])
+    app.register_blueprint(getattr(module, mango_plugin_bp["blueprint"]))
 
+if app.config.get('DEBUG', False):
+    print(app.url_map)
 
 from mango_ui import admin_navbar_entries, navbar_entries
-
-#logging.info(admin_navbar_entries)
 
 
 @app.context_processor
@@ -222,9 +160,21 @@ def handle_exception(e):
 @app.before_request
 def init_and_secure_views():
     """ """
-
+    #Always let static resources be served, eg css, js , images
     if request.endpoint in [
         "static",
+    ]:
+        return None
+    
+    # First check if there are no calamities and need to interrupt here
+    if os.path.isfile('storage/service-down.txt'):
+        message=''
+        with open('storage/service-down.txt') as f:
+            message=f.read()
+        raise ServiceUnavailable(message)
+
+
+    if request.endpoint in [
         "user_bp.login_basic",
         "data_platform_user_bp.login_openid",
         "data_platform_user_bp.login_openid_callback",
@@ -240,13 +190,18 @@ def init_and_secure_views():
         "data_platform_project_bp.api_token",
         "data_platform_project_bp.add_irods_project",
         "data_platform_project_bp.add_generic_project",
+        "data_platform_project_bp.add_rdr_project",
         "data_platform_project_bp.modify_project",
+        "data_platform_project_bp.modify_project_rdr",
         "data_platform_autocomplete_bp.autocomplete_username",
         "data_platform_user_bp.local_client_retrieve_token_callback",
         "data_platform_project_bp.project_overview",
         "data_platform_project_bp.set_project_options",
         "data_platform_project_bp.projects_statistics",
         "data_platform_project_bp.projects_usage",
+        "data_platform_project_bp.project_user_search",
+        "data_platform_project_bp.rule_management",
+        "data_platform_project_bp.project_quota_change",
         "operator_admin_bp.reset_all",
     ]:
         return None
@@ -290,8 +245,8 @@ def init_and_secure_views():
         if not irods_session and "password" in session and "zone" in session:
             # try to recreate a session object,maybe the password is still valid
             try:
-                parameters = DEFAULT_IRODS_PARAMETERS.copy()
-                ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
+                parameters = irods_zone_config_module.DEFAULT_IRODS_PARAMETERS.copy()
+                ssl_settings = irods_zone_config_module.DEFAULT_SSL_PARAMETERS.copy()
                 zone = session["zone"]
                 parameters.update(app.config["irods_zones"][zone]["parameters"])
                 ssl_settings.update(app.config["irods_zones"][zone]["ssl_settings"])

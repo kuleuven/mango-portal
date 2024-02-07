@@ -7,7 +7,7 @@
 
 {% block body %}
 {% set can_edit = project['my_role'] == 'manager' or project['my_role'] == 'responsible' or admin %}
-{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-icommands': 'true', 'gdpr-data': 'false', 'enforce-quota': 'false', 'inherit-permissions': 'false', 'strict-permissions': 'false'} %}
+{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-icommands': 'true', 'enable-sftp-ingress': 'false', 'gdpr-data': 'false', 'enforce-quota': 'false', 'inherit-permissions': 'false', 'strict-permissions': 'false'} %}
 {% for opt in project['platform_options'] %}
 {% if opts.update({opt['key']: opt['value']}) %}{% endif %}
 {% endfor %}
@@ -57,9 +57,27 @@
           </tr>
           {% endif %}
           <tr>
+            <th>Project Type</th>
+            <td>
+            {{ project['type'] }}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            </td>
+          </tr>
+          <tr>
             <th>Description</th>
             <td>
             {{ project['description'] }}
+            {% if admin %}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th>Afsprakennota Code</th>
+            <td>
+            {{ project['an'] }}
             {% if admin %}
             <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
             {% endif %}
@@ -139,6 +157,18 @@
             </td>
           </tr>
           {% endif %}
+
+          {% if project['platform'].startswith("rdr") %}
+          <tr>
+            <th>S3 Bucket</th>
+            <td>
+              {{ opts['s3_bucket']|default('dataverse') }}/{{ opts['s3_prefix']|default('') }}
+              {% if admin %}
+              <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProjectRDR"><i class="bi bi-pencil"></i></a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endif %}
           <tr>
             <th>Size</th>
             <td>{{ status['used_size']|format_size }} of {{ project['quota_size']|format_size }} used
@@ -192,6 +222,10 @@
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" value="true" id="enable-icommands" name="enable-icommands" onChange="this.form.submit()" {% if opts['enable-icommands'] == "true" %}checked{% endif %} />
                 <label class="form-check-label" for="enable-icommands">Enable iCommand/PRC access</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" value="true" id="enable-sftp-ingress" name="enable-sftp-ingress" onChange="this.form.submit()" {% if opts['enable-sftp-ingress'] == "true" %}checked{% endif %} />
+                <label class="form-check-label" for="enable-sftp-ingress">Enable SFTP ingress service</label>
               </div>
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" value="true" id="strict-permissions" name="strict-permissions" onChange="this.form.submit()" {% if opts['strict-permissions'] == "true" %}checked{% endif %} />
@@ -355,6 +389,22 @@
           {% endfor %}
         </table>
         {% endif %}
+        <table class="table table-hover">
+          <tr>
+            <th>Quota Change Date</th>
+            <th>Quota</th>
+            <th>Modified by</th>
+            <th>Message</th>
+          </tr>
+          {% for log in quotalog %}
+          <tr>
+            <td class="align-middle">{{ log['date']|parse_json_date|format_date }}</td>
+            <td class="align-middle">{% if log['archived'] %}Project is archived{% else %}{{ log['quota_size']|format_size }}, {{ log['quota_inodes']|format_intword }} inodes{% endif %}</td>
+            <td class="align-middle">{{ log['modified_by'] }}</td>
+            <td class="align-middle">{{ log['message'] }}</td>
+          </tr>
+          {% endfor %}
+        </table>
         </div>
       </div>
     </div>
@@ -600,6 +650,26 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <div class="modal-body">
             <div class="mb-3">
+              <label for="type" class="col-form-label">
+                Project Type
+              </label>
+              <select
+                     class="form-select"
+                     id="type"
+                     name="type"
+                     required>
+                        <option value="project" selected>project</option>
+                        <option value="test">test</option>
+                        <option value="training">training</option>
+                        <option value="pilot">pilot</option>
+                        <option value="demo">demo</option>
+                </select>
+                <div class="invalid-feedback">
+                    A project type is required
+                </div>
+            </div>
+
+            <div class="mb-3">
               <label for="description" class="col-form-label">
                 Description
               </label>
@@ -609,6 +679,19 @@
                      value="{{ project['description'] }}" />
               <div class="invalid-feedback">
                 Description is required
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="an" class="col-form-label">
+                Afsprakennota Code
+              </label>
+              <input type="text"
+                     class="form-control"
+                     name="an"
+                     value="{{ project['an'] }}" />
+              <div class="invalid-feedback">
+                Afsprakennota Code is required
               </div>
             </div>
 
@@ -733,6 +816,76 @@
             </div>
             <input type="hidden"
                    id="project-modify"
+                   name="project"
+                   value="{{ project['name']}}"/>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modify project rdr modal -->
+  <div class="modal fade"
+       id="modifyProjectRDR"
+       tabindex="-1"
+       aria-labelledby="modifyProjectRDRLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modifyProjectRDRLabel">
+            Modify rdr project settings
+          </h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close">
+          </button>
+        </div>
+        <form action="{{ url_for('data_platform_project_bp.modify_project_rdr') }}"
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidation>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="s3_bucket" class="col-form-label">
+                S3 Bucket
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="s3_bucket"
+                     name="s3_bucket"
+                     value="{{ opts['s3_bucket'] }}" required />
+              <div class="invalid-feedback">
+                A S3 bucket name is required.
+              </div>
+            </div>
+            <div class="mb-3">
+                <label for="s3_prefix" class="col-form-label">
+                    S3 Prefix
+                </label>
+                <input type="text"
+                        class="form-control"
+                        id="s3_prefix"
+                        name="s3_prefix"
+                        value="{{ opts['s3_prefix'] }}" />
+                <div class="invalid-feedback">
+                    A S3 bucket prefix is required.
+                </div>
+            </div>
+
+            <input type="hidden"
+                   id="project-modify-rdr"
                    name="project"
                    value="{{ project['name']}}"/>
           </div>

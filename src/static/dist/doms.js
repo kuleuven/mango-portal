@@ -97,9 +97,7 @@ class Field {
       new_input.value = i;
       new_input.id = `check-${i}`;
 
-      if (active) {
-        new_input.name = field.name;
-      }
+      new_input.name = field.name;
 
       if (value) {
         let this_is_the_value = multiple ? value.indexOf(i) > -1 : value == i;
@@ -116,6 +114,55 @@ class Field {
       inner_input.appendChild(new_option);
     }
     return inner_input;
+  }
+
+  static autocomplete(field, active) {
+    const input_tag = document.createElement("input");
+    input_tag.id = `${field.schema_name}-${field.id}`;
+    input_tag.type = "search";
+
+    if (active) {
+      input_tag.name = field.name;
+      if (field.required) {
+        input_tag.setAttribute("required", "");
+      }
+    }
+
+    let value = Field.include_value(field);
+    if (value != undefined && field.constructor.name == "SelectInput") {
+      // check that the value still exists!
+      input_tag.value = value;
+    }
+    return input_tag;
+  }
+
+  static autocomplete_checkbox(text, field_name) {
+    const button = Field.quick("input", "btn-check");
+    button.name = field_name;
+    button.id = `${field_name}-${text}`;
+    button.setAttribute("value", text);
+    const button_text = Field.quick(
+      "label",
+      "btn btn-secondary p-1 shadow-sm mx-1 fw-light",
+      text
+    );
+    button_text.setAttribute("for", `${field_name}-${text}`);
+    button_text.setAttribute("style", "font-size:0.8em;");
+    const close_button = Field.quick(
+      "button",
+      "btn-close btn-close-white py-0 my-0"
+    );
+    close_button.setAttribute("aria-label", "Close");
+    close_button.setAttribute("style", "font-size:0.8em;");
+    button_text.append(close_button);
+
+    close_button.addEventListener("click", (e) => {
+      e.preventDefault();
+      button.remove();
+      button_text.remove();
+    });
+
+    return [button, button_text];
   }
 
   /**
@@ -247,6 +294,11 @@ class MovingViewer extends MovingField {
     this.div = Field.quick("div", "card border-primary viewer");
     this.div.id = form.id;
     this.body = form.viewer_input();
+    const search_input = this.body.querySelector("input[type='search']");
+    if (search_input != undefined) {
+      search_input.id = search_input.id + "-editor";
+    }
+
     // Modal called for editing the field
     let modal_id = `mod-${form.id}-${form.schema_name}-${form.schema_status}`;
     let modal = bootstrap.Modal.getOrCreateInstance(
@@ -392,6 +444,7 @@ class MovingViewer extends MovingField {
     // move the field down in the schema
     this.schema.field_ids.splice(form_index, 1);
     this.schema.field_ids.splice(form_index + 1, 0, this.idx);
+    this.schema.autosave();
   }
 
   /**
@@ -422,6 +475,7 @@ class MovingViewer extends MovingField {
     // move the field up in the schema
     this.schema.field_ids.splice(form_index, 1);
     this.schema.field_ids.splice(form_index - 1, 0, this.idx);
+    this.schema.autosave();
   }
 
   /**
@@ -468,6 +522,7 @@ class MovingViewer extends MovingField {
 
         // update the schema editor
         this.schema.toggle_saving();
+        this.schema.autosave();
 
         // if the field belongs to a composite field, show its editing modal
         if (this.parent_modal) {
@@ -511,20 +566,19 @@ class MovingChoice extends MovingField {
   /**
    * Initiate a moving field in which to define an option for a dropdown, checkbox or radio.
    * @class
-   * @param {String} label_text Text for the label of the input (e.g. "Select option").
    * @param {Number} idx Index of this field as it gets created.
    * @param {String} [value=false] Value of the input field, or 'false' if it doesn't exist.
    */
-  constructor(label_text, idx, value = false) {
+  constructor(idx, value = false) {
     super(idx);
     // set up HTMLElement
-    this.div = Field.quick("div", "blocked");
+    this.div = Field.quick("div", "blocked mt-2");
     this.div.id = `block-${idx}`;
     this.value = value;
 
     // set up sub elements
     this.sub_div = Field.quick("div", "form-field");
-    this.label = Field.labeller(label_text, `mover-${idx}`);
+    // this.label = Field.labeller(label_text, `mover-${idx}`);
     this.input_tag = this.add_input();
     this.rem = this.add_btn("rem", "trash", () => this.remove());
 
@@ -540,7 +594,7 @@ class MovingChoice extends MovingField {
     this.sub_div.appendChild(this.up); // button to move upwards
     this.sub_div.appendChild(this.down); // button to move downwards
     this.sub_div.appendChild(this.rem); // button to remove the field
-    this.div.appendChild(this.label); // label for the input field
+    // this.div.appendChild(this.label); // label for the input field
     this.div.appendChild(this.sub_div); // div with input field and buttons
   }
 
@@ -551,12 +605,14 @@ class MovingChoice extends MovingField {
   add_input() {
     let input_tag = Field.quick("input", "form-control mover");
     input_tag.id = `mover-${this.idx}`;
-    input_tag.name = `mover-${this.idx}`;
-    input_tag.setAttribute("required", ""); // it must be required (or removed if it won't be filled)
+    input_tag.name = "mover";
+    // input_tag.setAttribute("required", ""); // it must be required (or removed if it won't be filled)
 
     // if a value exists, fill it in
     if (this.value) {
       input_tag.value = this.value;
+    } else {
+      input_tag.placeholder = "Some option";
     }
     return input_tag;
   }
@@ -598,13 +654,19 @@ class MovingChoice extends MovingField {
 
     // class "blocked" is the class of this kind of divs
     // if this div went to first place
-    if (this.div.previousSibling.className !== "blocked") {
+    if (
+      this.div.previousSibling == undefined ||
+      this.div.previousSibling.className !== "blocked"
+    ) {
       this.up.setAttribute("disabled", "");
       sibling.querySelector(".up").removeAttribute("disabled");
     }
 
     // if we were in the last place
-    if (sibling.nextSibling.className !== "blocked") {
+    if (
+      sibling.nextSibling == undefined ||
+      sibling.nextSibling.className !== "blocked"
+    ) {
       this.down.removeAttribute("disabled");
       sibling.querySelector(".down").setAttribute("disabled", "");
     }
@@ -618,11 +680,17 @@ class MovingChoice extends MovingField {
    */
   static remove_div(div) {
     // if this is the last option
-    if (!div.nextSibling.classList.contains("blocked")) {
+    if (
+      div.nextSibling == undefined ||
+      !div.nextSibling.classList.contains("blocked")
+    ) {
       div.previousSibling.querySelector(".down").setAttribute("disabled", "");
     }
     // if this was the first option
-    if (!div.previousSibling.classList.contains("blocked")) {
+    if (
+      div.previousSibling == undefined ||
+      !div.previousSibling.classList.contains("blocked")
+    ) {
       div.nextSibling.querySelector(".up").setAttribute("disabled", "");
     }
 
@@ -708,7 +776,8 @@ class BasicForm {
       pattern = ".*",
       required = true,
       as_textarea = false,
-    } = {}
+    } = {},
+    add_automatically = true
   ) {
     // Create the input tag
     let input_tag = Field.quick(
@@ -749,12 +818,10 @@ class BasicForm {
     }
 
     input_div.appendChild(validator);
-
-    // Append the input to the form, before the switches if they exist, or before the divider
-    if (this.switches) {
-      this.form.insertBefore(input_div, this.switches);
+    if (add_automatically) {
+      this.add_editor(input_div);
     } else {
-      this.form.insertBefore(input_div, this.divider);
+      return input_div;
     }
   }
 
@@ -807,8 +874,8 @@ class BasicForm {
    * @param {String|Boolean} value Value of the input field in the mover, if it exists.
    * @returns {MovingChoice} Moving input field.
    */
-  add_mover(label_text, idx, value = false) {
-    let input = new MovingChoice(label_text, idx, value).div;
+  add_mover(idx, value = false) {
+    let input = new MovingChoice(idx, value).div;
 
     // if there aren't more than two fields yet, don't allow removal
     if (idx < 2) {
@@ -824,33 +891,83 @@ class BasicForm {
    * for a MultipleInput field.
    * @param {String} label_text Text for the label of the input fields (e.g. "Select option").
    * @param {Array<String|Number>} [starting_values] Initial values for the moving fields.
+   * @param {HTMLDivElement} div Div element to put the moving options on
    */
-  add_moving_options(label_text, input_field) {
+  add_moving_options(input_field, div) {
     let options = input_field.values.values;
     let has_values = options.length > 0;
     // if no options are provided, start with two
     if (!has_values) {
       options = [0, 1];
     }
+    // create and add a button to add more inputs
+    // let plus_div = Field.quick("div", "d-grid gap-2 mover mt-2");
+    let plus = Field.quick(
+      "button",
+      "btn btn-outline-primary adder mt-2",
+      "  Add option  "
+    );
+    plus.type = "button";
+    plus.id = "add-mover";
+    // define the behavior of the button when clicking
+    plus.addEventListener("click", (e) => {
+      e.preventDefault();
+      // check the maximum index of created fields
+      let current_max = Math.max(...this.option_indices);
 
+      // add a new mover with a higher index
+      let new_input = this.add_mover(current_max + 1);
+      new_input.querySelector("input.mover").addEventListener("change", () => {
+        input_field.update_default_field();
+        input_field.toggle_dropdown_switch();
+        input_field.toggle_editing_navbar("movers");
+        input_field.alert_repeated_movers(div);
+      });
+      new_input.querySelectorAll("button.mover").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          input_field.update_default_field();
+          input_field.toggle_dropdown_switch();
+          input_field.toggle_editing_navbar("movers");
+        })
+      );
+      // disable its 'down' button
+      new_input.querySelector(".down").setAttribute("disabled", "");
+
+      // add it to the form
+      div.insertBefore(new_input, plus);
+
+      // re-enable the 'down' button of the field before it
+      new_input.previousSibling
+        .querySelector(".down")
+        .removeAttribute("disabled");
+
+      // check how many fields there are
+      let existing_children = div.querySelectorAll(".blocked");
+      // if now there are three
+      if (existing_children.length == 3) {
+        existing_children.forEach((child) => {
+          child.querySelector(".rem").removeAttribute("disabled");
+        });
+      }
+    });
+    const plus_icon = Field.quick("i", "bi bi-plus-circle-fill");
+    plus_icon.setAttribute("fill", "currentColor");
+    plus_icon.setAttribute("width", "16");
+    plus.prepend(plus_icon);
     // go through each option and create a mover
     // with its value if provided
     for (let i in options) {
-      let input = this.add_mover(
-        label_text,
-        i,
-        has_values ? options[i] : false
+      let input = this.add_mover(i, has_values ? options[i] : false);
+      input.querySelector("input.mover").addEventListener("change", () => {
+        input_field.update_default_field();
+        input_field.toggle_dropdown_switch();
+      });
+      input.querySelectorAll("button.mover").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          input_field.update_default_field();
+          input_field.toggle_dropdown_switch();
+        })
       );
-      input
-        .querySelector("input.mover")
-        .addEventListener("change", () => input_field.update_default_field());
-      input
-        .querySelectorAll("button.mover")
-        .forEach((btn) =>
-          btn.addEventListener("click", () =>
-            input_field.update_default_field()
-          )
-        );
 
       // re-enable removing if there are more than two options
       if (options.length > 2) {
@@ -867,54 +984,17 @@ class BasicForm {
       }
 
       // add the field to the form, before the divider
-      this.form.insertBefore(input, this.divider);
+      div.appendChild(input);
     }
+    div.appendChild(plus);
+  }
 
-    // create and add a button to add more inputs
-    let plus_div = Field.quick("div", "d-grid gap-2 mover mt-2");
-    let plus = Field.quick("button", "btn btn-primary btn-sm", "Add option");
-    plus.type = "button";
-    plus.id = "add-mover";
-    // define the behavior of the button when clicking
-    plus.addEventListener("click", (e) => {
-      e.preventDefault();
-      // check the maximum index of created fields
-      let current_max = Math.max(...this.option_indices);
-
-      // add a new mover with a higher index
-      let new_input = this.add_mover(label_text, current_max + 1);
-      new_input
-        .querySelector("input.mover")
-        .addEventListener("change", () => input_field.update_default_field());
-      new_input
-        .querySelectorAll("button.mover")
-        .forEach((btn) =>
-          btn.addEventListener("click", () =>
-            input_field.update_default_field()
-          )
-        );
-      // disable its 'down' button
-      new_input.querySelector(".down").setAttribute("disabled", "");
-
-      // add it to the form
-      this.form.insertBefore(new_input, plus.parentNode);
-
-      // re-enable the 'down' button of the field before it
-      new_input.previousSibling
-        .querySelector(".down")
-        .removeAttribute("disabled");
-
-      // check how many fields there are
-      let existing_children = this.form.querySelectorAll(".blocked");
-      // if now there are three
-      if (existing_children.length == 3) {
-        existing_children.forEach((child) => {
-          child.querySelector(".rem").removeAttribute("disabled");
-        });
-      }
-    });
-    plus_div.appendChild(plus);
-    this.form.insertBefore(plus_div, this.divider);
+  add_editor(div, before_switches = true) {
+    if (before_switches && this.switches) {
+      this.form.insertBefore(div, this.switches);
+    } else {
+      this.form.insertBefore(div, this.divider);
+    }
   }
 
   /**
@@ -931,23 +1011,29 @@ class BasicForm {
     { required = false, repeatable = false, dropdown = false } = {}
   ) {
     // create the div for the switches
-    this.switches = Field.quick("div", "col-3 mt-2");
+    this.switches = Field.quick("div", "col-6 mt-2");
     this.switches.id = "switches-div";
-
-    // set up the switches
-    let subdiv = Field.quick("div", "form-check form-switch form-check-inline");
 
     // possible switches with their ids, text and values
     let switches = {
       required: { id: "required", text: "Required", value: required },
       repeatable: { id: "repeatable", text: "Repeatable", value: repeatable },
-      dropdown: { id: "dropdown", text: "As dropdown", value: dropdown },
+      dropdown: {
+        id: "dropdown",
+        text: `As dropdown <span class='text-danger'>(for up to ${MultipleInput.max_before_autocomplete} options)</span>`,
+        value: dropdown,
+      },
     };
 
     // only create the switches requested in switchnames, in that order
     for (let sname of switchnames) {
       // retrieve attributes
       let sw = switches[sname];
+      // set up the switches
+      let subdiv = Field.quick(
+        "div",
+        "form-check form-switch form-check-inline"
+      );
 
       // create the label
       let label = Field.quick("label", "form-check-label", sw.text);
@@ -966,10 +1052,9 @@ class BasicForm {
       // assemble
       subdiv.appendChild(label);
       subdiv.appendChild(input);
+      this.switches.appendChild(subdiv);
     }
 
-    // attach to form
-    this.switches.appendChild(subdiv);
     this.form.insertBefore(this.switches, this.divider);
   }
 
@@ -1203,13 +1288,13 @@ class Modal {
 
     // capture action button and assign action
     let action_btn = conf_modal.querySelector("button#action");
-    let new_action_btn = action_btn.cloneNode(true)
+    let new_action_btn = action_btn.cloneNode(true);
     new_action_btn.type = "button";
     new_action_btn.addEventListener("click", () => {
       action();
       modal.hide();
     });
-    action_btn.parentElement.replaceChild(new_action_btn, action_btn)
+    action_btn.parentElement.replaceChild(new_action_btn, action_btn);
 
     // capture dismiss button and attach action
     conf_modal
