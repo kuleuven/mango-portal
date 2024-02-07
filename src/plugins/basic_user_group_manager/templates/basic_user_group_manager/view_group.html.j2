@@ -50,14 +50,14 @@
                     {% for member in members %}
                         <div class="list-group-item d-flex justify-content-between align-items-start">
                             <span>
-                                {% if editable %}
+                                {% if editable and not is_protected_group %}
                                     <input class="form-check-input"
                                            form="remove-members-form"
                                            type="checkbox"
                                            value="{{ member.name }}"
                                            name="members-to-remove" />
                                 {% elif is_protected_group and current_user_is_rodsadmin %}
-                                    <input class="form-check-input danger"
+                                    <input class="form-check-input mr-3"
                                            form="form-remove-users"
                                            type="checkbox"
                                            value="{{ member.name }}"

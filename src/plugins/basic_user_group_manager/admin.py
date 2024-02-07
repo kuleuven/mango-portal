@@ -74,8 +74,8 @@ def view_members(group):
         non_members=non_members,
         editable=current_user_can_manage(operator_session),
         is_protected_group=group in protected_groups,
-        protected_groups=["public", "rodsadmin"],
-        current_user_is_rodsadmin=True #g.irods_session.user.type == "rodsadmin",
+        protected_groups=protected_groups,
+        current_user_is_rodsadmin=g.irods_session.user.type == "rodsadmin",
     )
 
 
