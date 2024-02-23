@@ -345,8 +345,8 @@ def get_basic_index_doc_for_item(
         fields["size"] = item.size
     # To be changed with PRC release >= 1.1.6
     acl_users = []
-    _permissions = irods_session.permissions.get(
-        item, report_raw_acls=True, acl_users=acl_users
+    _permissions = irods_session.acls.get(
+        item, acl_users=acl_users
     )
     acl_read_users = []
     acl_read_groups = []
