@@ -1,2 +1,2 @@
-__version__ = "0.15.0"
-__comment__ = "Refactored for easier generic use by third parties"
+__version__ = "0.16.0-dev"
+__comment__ = "PRC 2.0.0, md schema manager"

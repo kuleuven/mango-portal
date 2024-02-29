@@ -261,7 +261,8 @@
       </form>
     </p>
   </div>
-  <table class="table table-striped table-hover mt-2" id="permssions-table">
+  <table class="table table-striped table-hover mt-2 mb-3"
+         id="permssions-table">
     <thead>
       <tr>
         {# <th scope="col">Select</th> #}
@@ -278,7 +279,7 @@
           <td>{{ permission.user_name }} ({{ acl_users_dict[permission.user_name] }})</td>
           <td>{{ permission.access_name }}</td>
           <td>{{ permission.user_zone }}</td>
-          <td  class="align-middle">
+          <td class="align-middle text-end">
             {% if config['ACL_PROTECT_OWN'] and permission.access_name == 'own' and acl_counts['own'] < 2 %}
               <p title="disabled: need at least 1 owner">
                 <button type="submit"
@@ -289,63 +290,72 @@
                 </button>
               </p>
             {% elif 'own' in current_user_rights %}
-              <form method="post" id="delete-{{ permission.user_name }}"
+              <form method="post"
+                    id="delete-{{ permission.user_name }}"
                     action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <input type="hidden" name="groups" value="{{ permission.user_name }}" />
                 <input type="hidden" name="permission_type" value="null" />
                 <input type="hidden" name="redirect_hash" value="#permissions" />
-                <button type="submit" class="btn">
+                <button type="submit" class="btn" title="Remove permission">
                   <i class="bi bi-trash text-danger"></i>
                 </button>
               </form>
             {% endif %}
           </td>
           <td class="align-middle">
-          {% if 'own' in current_user_rights and ((permission.access_name == 'own' and acl_counts['own'] > 1) or permission.access_name != 'own') %}
-            <input type="checkbox" form="delete-{{ permission.user_name }}" name="recursive" id="set_recursive" value="True" checked />
-          {% endif %}
+            {% if 'own' in current_user_rights and ((permission.access_name == 'own' and acl_counts['own'] > 1) or permission.access_name != 'own') %}
+              <input type="checkbox"
+                     form="delete-{{ permission.user_name }}"
+                     name="recursive"
+                     id="set_recursive"
+                     value="True"
+                     title="Remove recursively for all  items in this collection"
+                     checked />
+            {% endif %}
           </td>
-         
         </tr>
       {% endfor %}
     </tbody>
   </table>
   {% if 'own' in current_user_rights %}
-    <form method="post"
-          action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <input type="hidden" name="redirect_hash" value="#permissions" />
-      <div class="row">
-        <div class="col">
-          <label for="permission_groups">Groups</label>
-          <select class="form-select"
-                  aria-label="Groups"
-                  name="groups"
-                  id="permission_groups">
-            {% for group in my_groups %}<option value="{{ group.name }}">{{ group.name }}</option>{% endfor %}
-          </select>
+    <div class="mt-5">
+      <form method="post"
+            class="mt-3"
+            action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="redirect_hash" value="#permissions" />
+        <div class="row">
+          <div class="col">
+            <label for="permission_groups">Groups</label>
+            <select class="form-select"
+                    aria-label="Groups"
+                    name="groups"
+                    id="permission_groups">
+              {% for group in my_groups %}<option value="{{ group.name }}">{{ group.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col">
+            <label for="permission_type">Rights</label>
+            <select class="form-select"
+                    aria-label="Groups"
+                    name="permission_type"
+                    id="permission_type">
+              <option value="own">Own</option>
+              <option value="write">Modify</option>
+              <option value="read">Read</option>
+            </select>
+          </div>
+          <div class="col">
+            <input type="checkbox" name="recursive" id="set_recursive" value="True" />
+            <label for="set_recursive">Recursive</label>
+          </div>
+          <div class="col">
+            <button type="submit" class="btn btn-primary">Apply</button>
+          </div>
         </div>
-        <div class="col">
-          <label for="permission_type">Rights</label>
-          <select class="form-select"
-                  aria-label="Groups"
-                  name="permission_type"
-                  id="permission_type">
-            <option value="own">Own</option>
-            <option value="write">Modify</option>
-            <option value="read">Read</option>
-          </select>
-        </div>
-        <div class="col">
-          <input type="checkbox" name="recursive" id="set_recursive" value="True" />
-          <label for="set_recursive">Recursive</label>
-        </div>
-        <div class="col">
-          <button type="submit" class="btn btn-primary">Apply</button>
-        </div>
-      </div>
-    </form>
+      </form>
+    </div>
   {% endif %}
   <!--{{ acl_users_dict |pprint }}-->
 </div>
