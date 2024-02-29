@@ -398,6 +398,10 @@ def get_one_irods_metadata(irods_object, meta_name):
     except Exception as e:
         return iRODSMeta(meta_name, '')
 
+@app.template_filter("os_env")
+def os_env(parameter, default=None):
+    return os.environ.get(parameter, default)
+
 # register the main landing page route dynamically
 main_landing_route = app.config.get(
     "MANGO_MAIN_LANDING_ROUTE", {"module": "kernel.common.browse", "function": "index"}
