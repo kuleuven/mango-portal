@@ -269,6 +269,7 @@
         <th scope="col">Access level</th>
         <th scope="col">Zone</th>
         <th></th>
+        <th>Recursive</th>
       </tr>
     </thead>
     <tbody>
@@ -277,7 +278,7 @@
           <td>{{ permission.user_name }} ({{ acl_users_dict[permission.user_name] }})</td>
           <td>{{ permission.access_name }}</td>
           <td>{{ permission.user_zone }}</td>
-          <td>
+          <td  class="align-middle">
             {% if config['ACL_PROTECT_OWN'] and permission.access_name == 'own' and acl_counts['own'] < 2 %}
               <p title="disabled: need at least 1 owner">
                 <button type="submit"
@@ -288,7 +289,7 @@
                 </button>
               </p>
             {% elif 'own' in current_user_rights %}
-              <form method="post"
+              <form method="post" id="delete-{{ permission.user_name }}"
                     action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <input type="hidden" name="groups" value="{{ permission.user_name }}" />
@@ -300,6 +301,12 @@
               </form>
             {% endif %}
           </td>
+          <td class="align-middle">
+          {% if 'own' in current_user_rights and ((permission.access_name == 'own' and acl_counts['own'] > 1) or permission.access_name != 'own') %}
+            <input type="checkbox" form="delete-{{ permission.user_name }}" name="recursive" id="set_recursive" value="True" checked />
+          {% endif %}
+          </td>
+         
         </tr>
       {% endfor %}
     </tbody>
