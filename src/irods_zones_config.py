@@ -9,7 +9,7 @@ API_TOKEN = os.environ.get("API_TOKEN", "")
 
 DEFAULT_IRODS_PARAMETERS = {
     "port": 1247,
-    "irods_authentication_scheme": "PAM",
+    "irods_authentication_scheme": "pam_password",
     "irods_ssl_ca_certificate_file": "",
     "irods_ssl_verify_server": "cert",
     "irods_default_resource": "default",

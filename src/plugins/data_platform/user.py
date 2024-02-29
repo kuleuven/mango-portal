@@ -44,9 +44,6 @@ def irods_connection_info(zone, username):
     ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
     parameters.update(info["irods_environment"])
 
-    if parameters["irods_authentication_scheme"] == "pam_password":
-        parameters["irods_authentication_scheme"] = "PAM"
-
     password = info["token"]
 
     return {
