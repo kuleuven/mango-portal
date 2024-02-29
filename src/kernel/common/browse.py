@@ -217,25 +217,10 @@ def group_prefix_metadata_items(
 
 # @cache.memoize(1200)
 def get_current_user_rights(current_user_name, item):
-    access = []
-    permissions = g.irods_session.permissions.get(item, report_raw_acls=False)
 
-    # group_names: workaround for non expanding user groups for data objects
-    group_names = []
-    if current_user_name in irods_session_pool.irods_user_sessions:
-        group_names = [
-            group.name
-            for group in irods_session_pool.irods_user_sessions[
-                current_user_name
-            ].my_groups
-        ]
-    for permission in permissions:
-        if (
-            current_user_name == permission.user_name
-            or permission.user_name in group_names
-        ):
-            access += [permission.access_name]
-    # pprint.pprint(access)
+    permissions = g.irods_session.acls.get(item)
+    access = [permission.access_name for permission in permissions]
+
     return access
 
 
@@ -304,7 +289,6 @@ def collection_browse(collection):
     sub_collections = current_collection.subcollections
     data_objects = current_collection.data_objects
 
-    ######################### new schema handling
     schemas = {}
     schema_manager = False
     realm = ""
@@ -315,16 +299,7 @@ def collection_browse(collection):
         logging.info(
             f"Schema manager found published schemas: {'|'.join(schemas.keys())}"
         )
-    # schema_names = schemas.keys()
-
-    # schema_files = glob.glob(get_metadata_schema_dir(g.irods_session) + "/*.json")
-    # metadata_schema_filenames = [
-    #     base_file_name
-    #     for template_file in schema_files
-    #     if (base_file_name := os.path.basename(template_file)) != "uischema.json"
-    # ]
-
-    # metadata grouping  to be moved to proper function for re-use
+    
     other = current_app.config["MANGO_NOSCHEMA_LABEL"]
     grouped_metadata = group_prefix_metadata_items(
         current_collection.metadata(timestamps=True).items(),
@@ -396,8 +371,8 @@ def collection_browse(collection):
     #         sorted_metadata[schema] = grouped_metadata[schema]
     # pprint.pprint(sorted_metadata)
     acl_users = []
-    permissions = g.irods_session.permissions.get(
-        current_collection, report_raw_acls=True, acl_users=acl_users
+    permissions = g.irods_session.acls.get(
+        current_collection, acl_users=acl_users
     )
     # print(f"Older permissions")
     # pprint.pprint(permissions)
@@ -571,8 +546,8 @@ def view_object(data_object_path):
     # see if the mime type is present in the metadata, if not
     acl_users = []
 
-    permissions = g.irods_session.permissions.get(
-        data_object, report_raw_acls=True, acl_users=acl_users
+    permissions = g.irods_session.acls.get(
+        data_object, acl_users=acl_users
     )
 
     # Workaround for a bug with report_raw_acls for data objects where every ACL is listed twice
@@ -1069,18 +1044,19 @@ def set_permissions(item_path: str):
     groups = request.form.get("groups", [])
     permission_type = request.form.get("permission_type", "null")
     recursive = True if "recursive" in request.form else False
+    print(f" Detected recursive: {recursive}")
     if not item_path.startswith("/"):
         item_path = "/" + item_path
 
     try:
         if isinstance(groups, list):
             for group in groups:
-                g.irods_session.permissions.set(
+                g.irods_session.acls.set(
                     iRODSAccess(permission_type, item_path, user_name=group),
                     recursive=recursive,
                 )
         else:
-            g.irods_session.permissions.set(
+            g.irods_session.acls.set(
                 iRODSAccess(permission_type, item_path, user_name=groups),
                 recursive=recursive,
             )
@@ -1111,9 +1087,9 @@ def set_inheritance(collection_path: str):
     if not collection_path.startswith("/"):
         collection_path = "/" + collection_path
     if "inheritance" in request.form:
-        g.irods_session.permissions.set(iRODSAccess("inherit", collection_path))
+        g.irods_session.acls.set(iRODSAccess("inherit", collection_path))
     else:
-        g.irods_session.permissions.set(iRODSAccess("noinherit", collection_path))
+        g.irods_session.acls.set(iRODSAccess("noinherit", collection_path))
 
     signals.collection_changed.send(
         current_app._get_current_object(),
