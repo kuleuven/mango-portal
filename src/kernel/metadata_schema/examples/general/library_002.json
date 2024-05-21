@@ -1,0 +1,46 @@
+{
+    "name": "contributor",
+    "data": {
+        "title": "Publication",
+        "title": "Contributor",
+        "properties": {
+            "family-name": {
+                "title": "Family name",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "required": true,
+                "help": "Family name, as described in <a href='https://schema.org/familyName'>Schema.org</a>"
+            },
+            "given-name": {
+                "title": "Given name",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "required": true,
+                "help": "Given name, as described in <a href='https://schema.org/givenName'>Schema.org</a>"
+            },
+            "type": {
+                "title": "Type",
+                "type": "select",
+                "values": [
+                    "Copyright-holder",
+                    "Editor",
+                    "Funder",
+                    "Reseracher",
+                    "Sponsor"
+                ],
+                "multiple": false,
+                "ui": "radio",
+                "help": "Different properties, as described in <a href='https://schema.org/Person'>Schema.org</a>,"
+            }
+        },
+        "type": "object",
+        "repeatable": true,
+        "help": "Person or organization, as described in <a href='https://schema.org/contributor'>Schema.org</a>"
+    },
+    "source": "<a href='https://schema.org/contributor'>Schema.org/contributor</a>",
+    "tags": [
+        "Schema.org"
+    ]
+}

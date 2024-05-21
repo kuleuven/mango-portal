@@ -28,6 +28,7 @@ from lib.util import generate_breadcrumbs
 import magic
 import os
 import glob
+from pathlib import Path
 import json
 from pprint import pprint
 import lib.util
@@ -122,9 +123,9 @@ def list_meta_data_schemas(realm):
     # permissions setting and basic check
     schemas_to_remove = []
     for schema in schemas:
-        current_user_permissions = schemas[schema][
-            "current_user_permissions"
-        ] = schema_manager.get_user_permissions_schema(g.irods_session, schema)
+        current_user_permissions = schemas[schema]["current_user_permissions"] = (
+            schema_manager.get_user_permissions_schema(g.irods_session, schema)
+        )
         if current_user_permissions == schema_manager.permission_manager.deny_all:
             schemas_to_remove.append(schema)
             continue
@@ -238,3 +239,30 @@ def archive_meta_data_schema():
         url_for("metadata_schema_editor_bp.metadata_schemas", realm=realm)
         + f"?schema_name={request.form['schema_name']}&schema_version={request.form.get('current_version', '')}"
     )
+
+
+@metadata_schema_editor_bp.route(
+    "/metadata-schema/library", methods=["GET"], defaults={"realm": "general"}
+)
+@metadata_schema_editor_bp.route("/metadata-schema/library/<realm>", methods=["GET"])
+@cache.cached(timeout=3600)
+def get_library_fields(realm):
+    field_files = [
+        x for x in Path("storage", "library", realm).iterdir() if x.suffix == ".json"
+    ]
+    if field_files:
+        field_files.sort()
+        fields = [x.read_text() for x in field_files]
+        return json.dumps(fields)
+    else:
+        return Response("error, no fields available in the library", status=404)
+
+
+@metadata_schema_editor_bp.route("/metadata-schema/library-realms", methods=["GET"])
+def get_library_realms():
+    realms = [
+        realm.parts[-1]
+        for realm in Path("storage", "library").iterdir()
+        if realm.is_dir()
+    ]
+    return json.dumps(realms)

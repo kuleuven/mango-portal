@@ -239,12 +239,11 @@ class MovingField {
    * @param {Function} [action=false] What the button must do on click. If 'false', nothing happens.
    * @returns {HTMLButtonElement} The button to be added.
    */
-  add_btn(className, symbol, action = false) {
+  add_btn(className, symbol, action = false, color = "primary") {
     // use outlines for MovingViewer and filled buttons for MovingChoice
-    let button_color =
-      this.constructor.name == "MovingViewer"
-        ? "btn-outline-primary"
-        : "btn-primary";
+    let button_color = `btn-${
+      this.constructor.name == "MovingViewer" ? "outline-" : ""
+    }${color}`;
     let btn = Field.quick("button", `btn ${button_color} mover ${className}`);
     btn.id = `${className}-${this.idx}`;
     // what should the button do on click?
@@ -573,13 +572,13 @@ class MovingChoice extends MovingField {
 
     // class "blocked" is the class of this kind of divs
     // if the other div went to first place
-    if (sibling.previousSibling.className !== "blocked") {
+    if (sibling.previousSibling == null) {
       sibling.querySelector(".up").setAttribute("disabled", "");
       this.up.removeAttribute("disabled");
     }
 
     // if this dev went to the last place
-    if (this.div.nextSibling.className !== "blocked") {
+    if (!this.div.nextSibling.classList.contains("blocked")) {
       sibling.querySelector(".down").removeAttribute("disabled");
       this.down.setAttribute("disabled", "");
     }
@@ -598,19 +597,13 @@ class MovingChoice extends MovingField {
 
     // class "blocked" is the class of this kind of divs
     // if this div went to first place
-    if (
-      this.div.previousSibling == undefined ||
-      this.div.previousSibling.className !== "blocked"
-    ) {
+    if (this.div.previousSibling == null) {
       this.up.setAttribute("disabled", "");
       sibling.querySelector(".up").removeAttribute("disabled");
     }
 
     // if we were in the last place
-    if (
-      sibling.nextSibling == undefined ||
-      sibling.nextSibling.className !== "blocked"
-    ) {
+    if (!sibling.nextSibling.classList.contains("blocked")) {
       this.down.removeAttribute("disabled");
       sibling.querySelector(".down").setAttribute("disabled", "");
     }

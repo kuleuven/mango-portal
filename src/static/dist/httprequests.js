@@ -281,6 +281,30 @@ class TemplateReader extends MangoRequest {
 }
 
 /**
+ * Class representing a request for a library fields.
+ */
+class LibraryRequest extends MangoRequest {
+  /**
+   * Get the existing library of fields
+   * @class
+   */
+  constructor() {
+    super("/metadata-schema/library");
+    this.parse_response();
+  }
+
+  /**
+   * Provide the contents of the JSON file to the schema and render into the page.
+   */
+  parse_response() {
+    this.addEventListener("load", () => {
+      let json = this.json;
+      this.library = new Library(json.map((x) => JSON.parse(x)));
+    });
+  }
+}
+
+/**
  * Class representing a request for a schema for annotation.
  * @extends MangoRequest
  */

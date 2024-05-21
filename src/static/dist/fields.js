@@ -65,6 +65,18 @@ class InputField {
     return `${this.mode}-${this.schema.prefix}-${this.id}-${this.schema.data_status}`;
   }
 
+  activate_autocomplete() {
+    return;
+  }
+
+  read_autocomplete() {
+    return;
+  }
+
+  autocomplete_selector() {
+    return undefined;
+  }
+
   /**
    * Retrieve the contents in JSON format for form submission.
    * @returns {FieldInfo} JSON representation of the contents of the field.
@@ -152,8 +164,8 @@ class InputField {
     let rep_icon = Field.quick("i", "bi bi-front px-2");
     if (this.repeatable) {
       viewer.querySelector("h5").appendChild(rep_icon);
-    } else if (viewer.querySelector("h5 .bi-front")) {
-      viewer.querySelector("h5").removeChild(rep_icon);
+    } else if (viewer.querySelector("h5").querySelector(".bi-front")) {
+      viewer.querySelector("h5").querySelector(".bi-front").remove();
     }
   }
   /**
@@ -165,9 +177,7 @@ class InputField {
     let moving_viewer = this.view();
 
     field_box.appendChild(moving_viewer.div);
-    if (this.autocomplete_id != undefined) {
-      this.activate_autocomplete(true);
-    }
+    this.activate_autocomplete();
 
     // disable/re-enable the buttons of the existing viewers
     let viewers = field_box.querySelectorAll(".viewer");
@@ -1110,7 +1120,6 @@ class TypedInput extends InputField {
       this.add_regex_field();
       const regex_input = this.get_form_input("regex");
       regex_input.addEventListener("change", () => {
-        console;
         placeholder_input.setAttribute("pattern", regex_input.value);
         default_input.setAttribute("pattern", regex_input.value);
         this.temp_values.pattern = regex_input.value;
@@ -1949,9 +1958,6 @@ class ObjectInput extends InputField {
       this.schema.wip.push(clone.id);
       clone.title = "TEMPORARY COMPOSITE FIELD";
       clone.add_to_schema();
-      console.log(this.schema.modal_id);
-      console.log(clone);
-      console.log(this.schema.fields);
       bootstrap.Modal.getOrCreateInstance(
         document.getElementById(this.schema.modal_id)
       ).hide();
@@ -2004,7 +2010,6 @@ class ObjectInput extends InputField {
     // reset the form and field
     super.reset();
     this.form_field.form.querySelectorAll(".viewer").forEach((card) => {
-      card.nextSibling.remove();
       card.remove();
     });
   }
@@ -2135,9 +2140,7 @@ class MultipleInput extends InputField {
     this.schema.field_box
       .querySelector(`#${this.id} .card-body`)
       .firstChild.replaceWith(this.viewer_input());
-    if (this.autocomplete_id != undefined) {
-      this.activate_autocomplete();
-    }
+    this.activate_autocomplete();
   }
 
   /**
@@ -2148,17 +2151,18 @@ class MultipleInput extends InputField {
   viewer_input(active = false) {
     let div = document.createElement("div");
     let form_shape;
+    let with_autocomplete = false;
 
     // get actual input field
     if (this.values.values.length > MultipleInput.max_before_autocomplete) {
       // if we have so many values we go for a search gox
       form_shape = Field.autocomplete(this, active);
-      this.autocomplete_id = form_shape.id;
       if (this.values.multiple) {
         // if many values are possible
         this.answers_div = Field.quick("div", "my-2");
         this.answers_div.id = `${this.name}-answers`;
       }
+      with_autocomplete = true;
     } else {
       form_shape =
         this.values.ui == "dropdown"
@@ -2172,7 +2176,7 @@ class MultipleInput extends InputField {
       subtitle.id = "help-" + this.id;
       div.appendChild(subtitle);
 
-      if (this.autocomplete_id || this.values.ui == "dropdown") {
+      if (with_autocomplete || this.values.ui == "dropdown") {
         form_shape.setAttribute("aria-describedby", subtitle.id);
       } else {
         form_shape.querySelectorAll("div.form-check").forEach((subdiv) => {
@@ -2208,46 +2212,63 @@ class MultipleInput extends InputField {
     );
   }
 
-  activate_autocomplete(editor = false) {
-    const viewer =
-      this.schema.viewer == undefined ? this.schema.form : this.schema.viewer;
-    const parent_selector = editor
-      ? this.schema.field_box.querySelector(`#${this.id}`)
-      : viewer.querySelector(
-          `.input-view .mini-viewer[data-field-name='${this.id}']`
-        );
-    const new_selector = parent_selector.querySelector("input[type='search']");
-    const autocomplete = new autoComplete({
-      selector: () => {
-        return new_selector;
-      },
-      placeHolder: this.default != undefined ? this.default : "Search...",
-      data: { src: this.values.values, cache: true },
-      resultsList: {
-        element: (list, data) => {
-          if (!data.results.length) {
-            const msg = Field.quick(
-              "div",
-              "no_result",
-              `<span>No results found</span>`
-            );
-            list.prepend(msg);
-          }
+  autocomplete_selector(editor = false) {
+    let parent_selector = null;
+    if (editor) {
+      if (this.schema.field_box != null) {
+        parent_selector = this.schema.field_box.querySelector(`#${this.id}`);
+      }
+    } else if (this.schema.viewer != null) {
+      parent_selector = [...this.schema.viewer.childNodes].filter(
+        (x) => x.getAttribute("data-field-name") == this.id
+      )[0];
+    }
+    return parent_selector == null
+      ? undefined
+      : parent_selector.querySelector("input[type='search']");
+  }
+
+  activate_autocomplete() {
+    [
+      this.autocomplete_selector(), // field in the form
+      this.autocomplete_selector(true), // field in the editor
+    ].forEach((this_selector) => {
+      if (this_selector == undefined) {
+        return;
+      }
+      const autocomplete = new autoComplete({
+        selector: () => {
+          return this_selector;
         },
-        noResults: true,
-        maxResults: 20,
-      },
-      resultItem: {
-        highlight: true,
-      },
+        placeHolder: this.default != undefined ? this.default : "Search...",
+        data: { src: this.values.values, cache: true },
+        resultsList: {
+          element: (list, data) => {
+            if (!data.results.length) {
+              const msg = Field.quick(
+                "div",
+                "no_result",
+                `<span>No results found</span>`
+              );
+              list.prepend(msg);
+            }
+          },
+          noResults: true,
+          maxResults: 20,
+        },
+        resultItem: {
+          highlight: true,
+        },
+      });
+      this_selector.parentElement.appendChild(this.validator_message);
     });
-    new_selector.parentElement.appendChild(this.validator_message);
   }
 
   read_autocomplete() {
-    const autocomplete_field = document.querySelector(
-      `#${this.autocomplete_id}`
-    );
+    const autocomplete_field = this.autocomplete_selector();
+    if (this.autocomplete_selector() == undefined) {
+      return undefined;
+    }
     if (this.values.multiple) {
       const answers_div = Field.quick("div", "my-2");
       autocomplete_field.parentElement.prepend(answers_div);
@@ -2284,10 +2305,10 @@ class MultipleInput extends InputField {
     this.setup_form();
 
     const nav_bar_container = Field.quick("div", "shadow p-2 rounded");
-    this.options_navbar = new NavBar(
-      `${this.schema.prefix}-${this.id}-optionstab`,
-      ["nav-pills", "nav-justified"]
-    );
+    this.options_navbar = new NavBar(`${this.editing_modal_id}-optionstab`, [
+      "nav-pills",
+      "nav-justified",
+    ]);
     this.add_moving_options();
 
     const options_as_text =
@@ -2297,7 +2318,6 @@ class MultipleInput extends InputField {
 
     this.add_textarea_options(options_as_text);
     this.add_file_options(options_as_text);
-
     nav_bar_container.appendChild(this.options_navbar.nav_bar);
     nav_bar_container.appendChild(this.options_navbar.tab_content);
     this.options_navbar.nav_bar.childNodes.forEach((nav_item) => {

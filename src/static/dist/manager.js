@@ -60,7 +60,9 @@ tab_prefixes = {
   copy: "child",
   new: "new",
 };
-
+const library_request = new LibraryRequest();
+library_request.retrieve();
+const json_input = new JsonInput();
 /**
  * Empty schema to start with.
  * @type {Schema}

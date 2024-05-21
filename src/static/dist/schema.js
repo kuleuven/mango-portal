@@ -87,10 +87,9 @@ class ComplexField {
    * Collect the Object-version of the fields into the `properties` property to save as JSON.
    */
   fields_to_json() {
-    this.properties = {};
-    this.fields.forEach((field) => {
-      this.properties[field.id] = field.json;
-    });
+    this.properties = Object.fromEntries(
+      this.fields.map((field) => [field.id, field.json])
+    );
   }
 
   add_field_box(under_button) {
@@ -141,7 +140,7 @@ class ComplexField {
    * Add new fields based on uploaded JSON file.
    * @param {FieldInfo} data JSON representation of a field.
    */
-  add_fields_from_json(data) {
+  add_fields_from_json(data, modal_id) {
     Object.keys(data).forEach((field_id) => {
       let new_field = InputField.choose_class(this, null, [
         field_id,
@@ -152,7 +151,7 @@ class ComplexField {
     });
 
     bootstrap.Modal.getOrCreateInstance(
-      document.getElementById(this.modal_id)
+      document.getElementById(modal_id)
     ).toggle();
   }
 
@@ -168,30 +167,33 @@ class ComplexField {
    * Create a modal that offers the different fields that can be added and fill it when shown.
    */
   display_options() {
+    if (this.data_status.endsWith("library")) {
+      return;
+    }
+    this.data_status = this.set_data_status(); // to make sure it's correct (but maybe this is redundant)
+    this.ls_id = `_mgs_${this.card_id}_${this.data_status}`;
+
     // create a div to fill in with the different field examples
-    let formTemp = Field.quick("div", "formContainer");
-    formTemp.id = this.data_status + "-templates";
+    let design_modal_contents = Field.quick("div", "formContainer");
+    design_modal_contents.id = this.data_status + "-templates";
 
     // create the modal and add the div
-    let form_choice_modal = new Modal(
-      this.modal_id,
-      "What form element would you like to add?"
+    let design_modal = new Modal(
+      this.modal_id + "-design",
+      "What form element would you like to create?"
     );
-    form_choice_modal.create_modal([formTemp], "lg");
+    design_modal.create_modal([design_modal_contents], "lg");
 
     // when the modal is first shown, render all the placeholder fields
-    let this_modal = document.getElementById(this.modal_id);
-    this_modal.addEventListener("show.bs.modal", () => {
-      let formTemp = this_modal.querySelector("div.formContainer");
-      let from_json_load = InputField.from_json_example(this);
-      if (formTemp.childNodes.length == 0) {
+    let design_modal_modal = document.getElementById(this.modal_id + "-design");
+    design_modal_modal.addEventListener("show.bs.modal", () => {
+      let design_modal_contents =
+        design_modal_modal.querySelector("div.formContainer");
+      if (design_modal_contents.childNodes.length == 0) {
         Object.values(this.placeholders).forEach((placeholder) => {
           placeholder.data_status = this.data_status;
-          formTemp.appendChild(placeholder.render());
+          design_modal_contents.appendChild(placeholder.render());
         });
-        formTemp.appendChild(from_json_load);
-      } else {
-        formTemp.replaceChild(from_json_load, formTemp.lastChild);
       }
     });
   }
@@ -229,14 +231,58 @@ class ComplexField {
    */
   create_button() {
     // create a div and its button
-    let div = Field.quick("div", "d-grid gap-2 adder mt-2");
-    let button = Field.quick("button", "btn btn-primary btn-sm", "Add element");
-    button.type = "button";
-    // attach button to modal
-    button.setAttribute("data-bs-toggle", "modal");
-    button.setAttribute("data-bs-target", `#${this.modal_id}`);
+    let div = Field.quick(
+      "div",
+      "d-flex justify-content-between btn-group adder mt-2 rounded-2"
+    );
+    div.setAttribute("role", "group");
+    div.setAttribute("aria-label", "Add new element");
 
-    div.appendChild(button);
+    let button_pre = Field.quick(
+      "button",
+      "btn btn-outline-primary btn-light fw-bold",
+      " Add "
+    );
+    button_pre.setAttribute("disabled", "");
+    let plus_icon = Field.quick("i", "bi bi-plus-circle-fill");
+    plus_icon.setAttribute("fill", "currentColor");
+    button_pre.prepend(plus_icon);
+    div.appendChild(button_pre);
+
+    let buttons = [
+      { id: "library", message: "Browse library", modal_id: Library.modal_id },
+      {
+        id: "design",
+        message: "Design from scratch",
+        modal_id: `${this.modal_id}-design`,
+      },
+      { id: "file", message: "Upload JSON", modal_id: JsonInput.modal_id },
+    ];
+
+    buttons.forEach((button) => {
+      let btn = Field.quick(
+        "button",
+        "btn btn-primary btn-sm fw-bold ms-1",
+        button.message
+      );
+      btn.type = "button";
+      btn.id = button.id;
+      btn.setAttribute("data-bs-toggle", "modal");
+      btn.setAttribute("data-bs-target", `#${button.modal_id}`);
+      // on click, the modal will also update `new_field_idx` based on the index of the field on top of it
+      btn.addEventListener("click", () => {
+        this.new_field_idx = div.previousSibling.classList.contains("viewer")
+          ? this.field_ids.indexOf(div.previousSibling.id) + 1
+          : 0;
+        if (button.id == "library") {
+          library_request.library.attach_schema(this);
+        } else if (button.id == "file") {
+          json_input.attach_schema(this);
+        }
+      });
+      div.appendChild(btn);
+    });
+
     return div;
   }
 
@@ -334,16 +380,14 @@ class ComplexField {
     return null;
   }
 
-  activate_autocompletes(read = false, include_editor = true) {
+  activate_autocompletes(read = false) {
     this.fields.forEach((field) => {
       if (field.type == "object") {
-        field.minischema.activate_autocompletes(read, include_editor);
-      } else if (field.autocomplete_id != undefined) {
+        field.minischema.activate_autocompletes(read);
+      } else {
         field.activate_autocomplete();
         if (read) {
           field.read_autocomplete();
-        } else if (include_editor) {
-          field.activate_autocomplete(true);
         }
       }
     });
@@ -439,7 +483,6 @@ class ObjectEditor extends ComplexField {
   }
 
   get card() {
-    console.log(this.composite.schema);
     return undefined;
   }
 
@@ -1533,15 +1576,15 @@ class SchemaForm {
     });
 
     document.getElementById(this.container).appendChild(form_div);
+    this.card = form_div;
     this.activate_autocompletes();
-    this.form = form_div;
   }
 
   activate_autocompletes() {
     this.fields.forEach((field) => {
       if (field.type == "object") {
         field.minischema.activate_autocompletes(true);
-      } else if (field.autocomplete_id != undefined) {
+      } else {
         field.activate_autocomplete();
         field.read_autocomplete();
       }
@@ -1558,7 +1601,7 @@ class SchemaForm {
     hidden_input.type = "hidden";
     hidden_input.name = "redirect_route";
     hidden_input.value = annotated_data.redirect_route[0];
-    this.form.appendChild(hidden_input);
+    this.card.appendChild(hidden_input);
 
     // exclude non-metadata keys, e.g. 'redirect_route'
     let keys = Object.keys(annotated_data).filter(
@@ -1586,7 +1629,7 @@ class SchemaForm {
       this.register_object(fid, annotated_data, this.fields[fid])
     );
 
-    SchemaForm.prepare_objects(this, annotated_data, this.form, this.prefix);
+    SchemaForm.prepare_objects(this, annotated_data, this.card, this.prefix);
   }
 
   /**
@@ -1605,7 +1648,7 @@ class SchemaForm {
   ) {
     // Start with the original prefix, but accumulate when we have nested composite fields
     prefix = prefix || this.prefix;
-    form = form || this.form;
+    form = form || this.card;
     fields = fields || this.fields;
 
     // Identify the fields that belong to this particular composite fields
@@ -1677,7 +1720,7 @@ class SchemaForm {
    */
   register_non_object(fid, annotated_data, form = null) {
     // Start with the original form, but in fields inside a composite field it will be its div.
-    form = form || this.form;
+    form = form || this.card;
 
     // Extract the data linked to this field
     let existing_values = annotated_data[fid];
@@ -1821,13 +1864,8 @@ class SchemaForm {
               const inputs = child.querySelectorAll("input,select");
               inputs.forEach((input) => {
                 input.name = `${field_data.name}__${new_unit}`;
-                if (field_data.autocomplete_id != undefined) {
-                  const new_id = `${input.id}-${new_unit}`;
-                  input.id = new_id;
-                  field_data.autocomplete_id = new_id;
-                  field_data.activate_autocomplete();
-                  field_data.read_autocomplete();
-                }
+                field_data.activate_autocomplete();
+                field_data.read_autocomplete();
               });
             } else {
               const sub_unit = new_unit + ".1";

@@ -1,0 +1,46 @@
+{
+    "name": "contact",
+    "data": {
+        "title": "Contact",
+        "properties": {
+            "family-name": {
+                "title": "Family name",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "required": true,
+                "help": "Family name, as described in <a href='https://schema.org/familyName'>Schema.org</a>"
+            },
+            "given-name": {
+                "title": "Given name",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "required": true,
+                "help": "Given name, as described in <a href='https://schema.org/givenName'>Schema.org</a>"
+            },
+            "affiliation": {
+                "title": "Affiliation",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Organization that a person is affiliated with, as described in <a href='https://schema.org/affiliation'>Schema.org</a>"
+            },
+            "email": {
+                "title": "Email",
+                "type": "email",
+                "placeholder": "",
+                "pattern": "",
+                "required": true,
+                "help": "Email address, as described in <a href='https://schema.org/email'>Schema.org</a>"
+            }
+        },
+        "type": "object",
+        "repeatable": true,
+        "help": "Point of contact, as described in <a href='https://schema.org/ContactPoint'>Schema.org</a>"
+    },
+    "source": "<a href='https://schema.org/ContactPoint'>Schema.org/ContactPoint</a>",
+    "tags": [
+        "Schema.org"
+    ]
+}
