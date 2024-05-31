@@ -462,7 +462,14 @@ def view_object(data_object_path):
     MIME_TYPE_ATTRIBUTE_NAME = f"{current_app.config['MANGO_PREFIX']}.mime_type"
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
-    data_object: iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
+    try:
+        data_object: iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
+    except:
+        flash(f"Cannot access {data_object_path}, redirecting to its parent", "warning")
+        p = Path(data_object_path)
+        collection = str(p.parent)
+        return redirect(url_for("browse_bp.collection_browse", collection=collection))
+
     current_user_rights = get_current_user_rights(g.irods_session, data_object)
 
     # meta_data_items = data_object.metadata.items()
