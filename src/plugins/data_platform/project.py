@@ -617,6 +617,7 @@ def projects_statistics():
             "zone_name": zone_name,
             "project_name": project["project"]["name"],
             "project_type": project["project"]["type"],
+            "project_status": "Archived" if project["project"]["archived"] == True else "Active",
             "usage_total": convert_bytes_to_GB(
                 [x["used_size"] for x in project["usage"]][-1]
             ),
