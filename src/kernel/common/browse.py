@@ -1088,16 +1088,19 @@ def set_permissions(item_path: str):
                 recursive=recursive,
             )
     except Exception as e:
-        print(e)
-        abort(500, "failed to set permissions")
-
-    signals.permissions_changed.send(
-        current_app._get_current_object(),
-        irods_session=g.irods_session,
-        item_path=item_path,
-        recursive=recursive,
-    )
-    flash(f"Permissions changed for {item_path}", "success")
+        if e.args == (-370000,):
+            flash(f"Non-privileged users cannot execute this operation!", "warning")
+        else:
+            print(e)
+            abort(500, "failed to set permissions")
+    else:
+        signals.permissions_changed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            item_path=item_path,
+            recursive=recursive,
+        )
+        flash(f"Permissions changed for {item_path}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
