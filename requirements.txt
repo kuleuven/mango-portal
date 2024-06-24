@@ -55,7 +55,7 @@ pyjwkest==1.4.2
 PyJWT==2.8.0
 python-dateutil==2.8.2
 python-dotenv==1.0.0
-python-irodsclient==2.0.0
+python-irodsclient==2.0.1
 python-magic==0.4.27
 python-slugify==8.0.1
 pytz==2023.3.post1
@@ -75,7 +75,7 @@ urllib3==2.1.0
 waitress==2.1.2
 wcwidth==0.2.13
 webencodings==0.5.1
-Werkzeug==3.0.1
+Werkzeug==3.0.3
 WTForms==3.1.2
 xmlrunner==1.7.7
 zipp==3.17.0
