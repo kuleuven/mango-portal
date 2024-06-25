@@ -205,7 +205,7 @@
                      aria-labelledby="pills-{{ schema }}-tab">
                     {% if schema in schema_labels and grouped_metadata[schema].get("mgs."~ schema ~".__version__", False) %}
                         <p class="text-end fst-italic">
-                            Schema version: {{ grouped_metadata[schema].get("mgs."~ schema ~".__version__") .value }}
+                            Schema version: {{ grouped_metadata[schema].get("mgs."~ schema ~".__version__").value }}
                         </p>
                         {% for name, info in schema_labels[schema].items() %}
                             {% if info['level'] == 0 %}
@@ -367,7 +367,7 @@
                         {% endif %}
                     {% endfor %}
                     <div class="dropdown-divider"></div>
-                    <a class="btn btn-primary ms-3" id="download-all-metadata" download="{{ object_path.split("/") [-1] }}.metadata.json" href="#">Download</a>
+                    <a class="btn btn-primary ms-3" id="download-all-metadata" download="{{ object_path.split("/")[-1] }}.metadata.json" href="#">Download</a>
                 </ul>
                 <script>const md = {{ export_metadata | tojson }}</script>
                 <script src="{{ url_for('static', filename='dist/metadata_download.js') }}"></script>

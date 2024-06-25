@@ -191,7 +191,7 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
                             <label for="{{ dialog_id + field['name'] }}" class="col-form-label">
                                 {{ field['label'] if field['label'] else field['name']|capitalize }}
                             </label>
-                            <input type="text"
+                            <input type={% if field['type'] %}"{{ field['type'] }}" {% else %}"text"{% endif %}
                                    class="form-control"
                                    id="{{ dialog_id + field['name'] }}"
                                    name="{{ field['name'] }}"

@@ -44,9 +44,6 @@ def irods_connection_info(zone, username):
     ssl_settings = DEFAULT_SSL_PARAMETERS.copy()
     parameters.update(info["irods_environment"])
 
-    if parameters["irods_authentication_scheme"] == "pam_password":
-        parameters["irods_authentication_scheme"] = "PAM"
-
     password = info["token"]
 
     return {
@@ -238,7 +235,7 @@ def connection_info_modal(zone):
 
         setup_json={
             'linux': json.dumps(info['irods_environment'], indent=4),
-            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
+            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
         }
 
     if "-hpc-" in jobid:
@@ -280,7 +277,7 @@ def connection_info():
 
         setup_json={
             'linux': json.dumps(info['irods_environment'], indent=4),
-            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': 'PAM', 'irods_authentication_uid': 1000}, indent=4),
+            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
         }
 
     if "-hpc-" in jobid:

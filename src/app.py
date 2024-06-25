@@ -189,6 +189,7 @@ def init_and_secure_views():
         "data_platform_project_bp.deploy_project",
         "data_platform_project_bp.api_token",
         "data_platform_project_bp.add_irods_project",
+        "data_platform_project_bp.add_cold_project",
         "data_platform_project_bp.add_generic_project",
         "data_platform_project_bp.add_rdr_project",
         "data_platform_project_bp.modify_project",
@@ -398,6 +399,10 @@ def get_one_irods_metadata(irods_object, meta_name):
     except Exception as e:
         return iRODSMeta(meta_name, '')
 
+@app.template_filter("os_env")
+def os_env(parameter, default=None):
+    return os.environ.get(parameter, default)
+
 # register the main landing page route dynamically
 main_landing_route = app.config.get(
     "MANGO_MAIN_LANDING_ROUTE", {"module": "kernel.common.browse", "function": "index"}
@@ -408,6 +413,6 @@ main_landing_route_module = importlib.import_module(
 )
 
 app.add_url_rule(
-    "/", view_func=getattr(main_landing_route_module, main_landing_route["function"])
+    "/", endpoint = "index", view_func=getattr(main_landing_route_module, main_landing_route["function"])
 )
 

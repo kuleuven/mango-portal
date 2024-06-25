@@ -128,7 +128,7 @@
         </table>
     {% endif %}
     {% if index_stats %}
-        <div class="card mt-5 w-50">
+        <div class="card mt-5">
             <div class="card-body">
                 <h4>Search index stats (across all zones)</h4>
                 <table class="table table-striped">
@@ -141,19 +141,29 @@
                     <tbody>
                         <tr>
                             <td>Index name</td>
-                            <th>{{ MANGO_OPEN_SEARCH_INDEX_NAME }}</th>
+                            <th>{{ MANGO_OPEN_SEARCH_INDEX_NAME }} ({{ reported_index_name }})</th>
                         </tr>
+                        
                         <tr>
                             <td>Number of documents</td>
-                            <th>{{ index_stats.indices[MANGO_OPEN_SEARCH_INDEX_NAME].total.docs.count }}</th>
+                            <th>{{ index_stats.indices[reported_index_name].primaries.docs.count }}</th>
                         </tr>
                         <tr>
                             <td>Index size</td>
-                            <th>{{ index_stats.indices[MANGO_OPEN_SEARCH_INDEX_NAME].total.store.size_in_bytes | filesizeformat }}</th>
+                            <th>{{ index_stats.indices[reported_index_name].primaries.store.size_in_bytes | filesizeformat }}</th>
                         </tr>
                         <tr>
                             <td>Total queries since start</td>
-                            <th>{{ index_stats.indices[MANGO_OPEN_SEARCH_INDEX_NAME].total.search.query_total }}</th>
+                            <th>{{ index_stats.indices[reported_index_name].primaries.search.query_total }}</th>
+                        </tr>
+                        <tr>
+                            <td>Average query time (ms)</td>
+                            <th>{{ (index_stats.indices[reported_index_name].primaries.search.query_time_in_millis / index_stats.indices[reported_index_name].primaries.search.query_total)|int }}</th>
+                        </tr>
+
+                        <tr>
+                            <td>Shards</td>
+                            <th>{{ index_stats["_shards"]["total"] }}</th>
                         </tr>
                     </tbody>
                 </table>

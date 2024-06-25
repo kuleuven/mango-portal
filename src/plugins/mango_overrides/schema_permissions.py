@@ -1,5 +1,4 @@
 # Requires: user_tantra plugin
-import plugins.user_tantra
 
 from kernel.metadata_schema import BaseSchemaPermissionsManager
 from irods.session import iRODSSession

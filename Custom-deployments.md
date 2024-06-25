@@ -4,7 +4,9 @@ The ManGO portal can be deployed for vanilla iRODS installations by not enabling
 
 Furthermore, there are extension points and configuration options to fully customize the experience for specific requirements and custom plugins.
 
-The main parameter for the overall configuration can be set via an environt variable `MANGO_CONFIG`. If this is not set, the application will try to read from the default `config.py`
+The main parameter for the overall configuration can be set via an environment variable `MANGO_CONFIG`. If this is not set, the application will try to read from the default `config.py`.
+
+> See also some [notes](#notes-when-using-irods_demo-in-a-local-setup) when using a default/demo setup of iRODS 
 
 ## Plugins and activation
 
@@ -45,15 +47,19 @@ The parameters are mainly for authentication, but some extra parameters are avai
     "splash_image": "portal2.jpg",
 ```
 
-A correct configuration is mandatory for the default login mode when using the generic portal server startup through `src/run_waitress_generic.sh`.  `irods_zones_config_minimal.py` can be used as a stareting point to add your own zones zonfiguration.
+A correct configuration is mandatory for the default login mode when using the generic portal server startup through `src/run_waitress_generic.sh`.  `irods_zones_config_minimal.py` can be used as a starting point to add your own zones configuration.
 
 ## Authentication
 
-Authentication is possible for generic installations in development mode or by using the standard iRODS authentication. The main environment parameter that configures the authentication method is `MANGO_AUTH`
+Authentication is possible for generic installations in development mode or by using the standard iRODS authentication. The main environment parameter that configures the authentication method is `MANGO_AUTH`.
 
 ### Local development mode
 
-When specifyng `MANGO_AUTH=localdev` either as an environment variable or by configuration in `MANGO_CONFIG`, the zone and session parameters are read from `~/.irods/irods_environment.json` and a login using those local credentials is performed automatically. The provided startup script `src/run_waitress_generic_local.sh` has this configuration
+When specifyng `MANGO_AUTH=localdev` either as an environment variable or by configuration in `MANGO_CONFIG`, the zone and session parameters are read from `~/.irods/irods_environment.json` and a login using those local credentials is performed automatically. 
+
+For a vanilla iRODS installation like the official irods_demo docker setup [https://github.com/irods/irods_demo/](https://github.com/irods/irods_demo/), the defult authentication method should be set to `MANGO_AUTH=login`.
+
+The provided startup script `src/run_waitress_generic_local.sh` has this configuration and is actually suited to be used out of the box against a irods_demo docker setup. 
 
 ### Basic authentication
 
@@ -73,15 +79,20 @@ To be written
 
 ## Main landing page
 
-The main landing page is also available for custom override via the `MANGO_CONFIG` parameter `MANGO_MAIN_LANDING_ROUTE`
+The main landing page is also available for custom override via the `MANGO_CONFIG` parameter `MANGO_MAIN_LANDING_ROUTE`.
 
-Below is an example that overrides the main langing page (a splash image by default) with a custom route from a plugin. The default is the function `index` from `kernel.common.browse` which just displays a spash image and the main sidebar menu.
+Below is an example that overrides the main landing page (a splash image by default) with a custom route from a plugin. The default is the function `index` from `kernel.common.browse` which just displays a spash image and the main sidebar menu.
 
 ```python
 MANGO_MAIN_LANDING_ROUTE = {
     "module": "plugins.user_tantra.realm", 
     "function": "index"
 }
+```
+
+In order to have the collection view as default, you can use 
+```python
+MANGO_MAIN_LANDING_ROUTE = {"module": "kernel.common.browse", "function": "collection_browse"}
 ```
 
 ## Template overrides
@@ -116,7 +127,7 @@ realm_powered_side_bar:
 
 ## Registering custom plugins and UI customisation
 
-Besides the plugin blueprint registration described earlier, custom plugins can register a sidebar menu entry, either for the regular user pages or the admin section (or both)
+Besides the plugin blueprint registration described earlier, custom plugins can register a sidebar menu entry, either for the regular user pages or the admin section (or both).
 
 This can be accomplished as follows (example from the kernel/common blue print) for the regular user sidebar:
 
@@ -150,7 +161,7 @@ ADMIN_UI = {
 
 ## Admin pages
 
-The admin pages (if any) are only accessible for a set of explicitely defined iRODS user acounts
+The admin pages (if any) are only accessible for a set of explicitly defined iRODS user accounts:
 
 ```python
 MANGO_ADMINS = ['rods', 'u0123318'] # list of usernames that would be considered ManGO portal admins
@@ -164,4 +175,36 @@ For the ManGO portal, the tika URL needs to be specified in `MANGO_CONFIG` with 
 
 ```python
 TIKA_URL = os.environ.get("TIKA_URL", "http://localhost:9998/")
+```
+
+## Notes when using irods_demo in a local setup
+
+When using the irods_demo docker setup together with the generic mango portal config locally (say Linux/WSL on your laptop), there are some attention points:
+
+### Exposing port 1247 and more for a localhost ManGO portal deployment
+
+By default ports 1247, 1248, 20000 range are not exposed to localhost. This is because of the way docker compose works. You can alter the file `docker-compose.yml` in the service definition of `irods-catalog-provider` and add the ports explicitly. Also, a fixed hostname for the container is a better option than configuring your host's /etc/hosts
+
+```yaml
+    irods-catalog-provider:
+        build:
+            context: irods_catalog_provider
+        ports:
+            - "1247:1247"
+            - "1248:1248"
+            - "20000-20199:20000-20199"
+        hostname: irods_demo
+```
+
+### Only rodsadmin can login
+
+By default, a vanilla iRODS Zone does not grant the group `public` with read access to the collections `/tempZone/home` and `/tempZone/trash/home`.
+
+You should grant read access as a rodsadmin in the ManGO portal for the `public` group or by using iCommands:
+
+```bash
+ichmod read public /tempZone
+ichmod read public /tempZone/home
+ichmod read public /tempZone/trash
+ichmod read public /tempZone/trash/home
 ```

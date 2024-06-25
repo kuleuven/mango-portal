@@ -223,8 +223,6 @@ class TemplatesRequest extends MangoRequest {
           localstorage_timestamp == undefined ||
           current_schema_timestamp > localstorage_timestamp
         ) {
-          console.log("current schema wins");
-          console.log(current_schema);
           new bootstrap.Collapse(`#${current_schema}-schemas`).show();
           let trigger = document.querySelector(
             `#nav-tab-${current_schema} button`

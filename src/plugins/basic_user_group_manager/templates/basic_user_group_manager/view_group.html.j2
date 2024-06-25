@@ -22,7 +22,7 @@
             <div>
                 {{ dialogs.general_dialog("create_user_top", url_for("basic_user_group_manager_admin_bp.create_user") ,
                 title="Create New User in Group "~group, fields=[{"name": "user_name", "label": "User name","placeholder": "user name", "value": "", "pattern": "^[^\s]+.+[^\s]+$", "required": true},
-                {"name": "password", "label": "Password","placeholder": "secret", "value": "", "required": true}],
+                {"name": "password", "type": "password", "label": "Password","placeholder": "secret", "value": "", "required": true}],
                 hidden_fields = [{"name": "group", "value": group}])
                 }}
             </div>

@@ -100,8 +100,10 @@ def get_collection_size(collection: iRODSCollection):
     return {"total_size": total_size, "num_data_objects": num_data_objects}
 
 
+### Workaround for a bug if current user is not an explicit owner, atomic operations will fail for
+## irods versions <= (4,2,11)
 def current_user_is_naked_owner(irods_session: iRODSSession, catalog_item):
-    permissions = irods_session.permissions.get(catalog_item, report_raw_acls=True)
+    permissions = irods_session.acls.get(catalog_item)
     for permission in permissions:
         if (
             irods_session.username == permission.user_name
@@ -121,18 +123,18 @@ def mimic_atomic_operations(
             catalog_item.metadata.add(avu_operation.avu)
 
 
-# Workaround for a bug if current user is not an explicit owner, atomic operations fail in PRC 1.1.5
 def execute_atomic_operations(
     irods_session: iRODSSession,
     catalog_item: iRODSDataObject | iRODSCollection,
     avu_operations,
 ):
-    if current_user_is_naked_owner(irods_session, catalog_item):
+    if irods_session.server_version > (4,2,11) or current_user_is_naked_owner(irods_session, catalog_item):
         catalog_item.metadata.apply_atomic_operations(*avu_operations)
     else:
         mimic_atomic_operations(catalog_item, avu_operations)
 
-
+### end workaround atomic operations
+        
 def get_type_for_path(irods_session: iRODSSession, item_path: str):
     try:
         _ = irods_session.collections.get(item_path)

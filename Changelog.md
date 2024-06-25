@@ -2,9 +2,21 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.15.0 (development, sharing on github) [2024-02-07]
+## Release 0.16.0 (development ) [TBD]
 
-## New features
+### New features
+
+- Recursive delete option for permissions on collections
+- Metadata schema manager: more friendly editing of complex fields
+- Updated PRC to 2.0.0
+
+### Bug fixes
+
+- refactored removed permissions calls into acls  
+
+## Release 0.15.0 (development, production) [development: since sept 2023, production: 2024-02-07]
+
+### New features
 
 The main changes are related to the possibility of a generic use of the ManGO portal for other installations with third parties and is necessary to fully open source the software stack.
 
@@ -20,7 +32,7 @@ In addition, changed various parts for Kafka indexing:
 - Admin indexing actions are disabled in the view template
 
 
-## Bug fixes
+### Bug fixes
 
 - Fixed metadata schema version validation code to allow more than 9 versions in any part
  

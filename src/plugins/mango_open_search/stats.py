@@ -15,7 +15,7 @@ from flask import (
 )
 
 from plugins.operator import get_zone_operator_session
-
+from pprint import pp
 from . import (
     # add_index_job,
     get_open_search_client,
@@ -55,9 +55,23 @@ def index():
 
     # @cache.cache.memoize(60)
     def get_index_stats(index_name):
-        return open_search_client.indices.stats(index=index_name)
+        try: 
+            return open_search_client.indices.stats(index=index_name)
+        except Exception as e:
+            return False
+        
+    pp(open_search_client.info())
 
     index_stats = get_index_stats(MANGO_OPEN_SEARCH_INDEX_NAME)
+
+    pp(index_stats)
+    
+    if index_stats:
+        reported_index_name = list(index_stats["indices"].keys())[0]
+    else:
+        reported_index_name = MANGO_OPEN_SEARCH_INDEX_NAME
+
+
     collection_stats = None
 
     @cache.cache.memoize(30)
@@ -180,4 +194,5 @@ def index():
         available_collection_paths=get_available_collection_paths(operator_session),
         collection_stats=collection_stats,
         collection_path=collection_path,
+        reported_index_name=reported_index_name,
     )
