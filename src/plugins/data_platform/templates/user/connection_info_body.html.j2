@@ -152,12 +152,12 @@
           print(coll.id)</code></pre>
       -->
       </div>
-      <div class="tab-pane container active p-1" id="rirods">
+      <div class="tab-pane container p-1" id="rirods">
         <p style="margin-top: 10px">
           Run the snippet below in an interactive session in R:
           <pre>
       library(rirods)
-      create_irods("{{ info["irods_environment"]["irods_host"] }}/irods-http-api/0.2.0", overwrite=TRUE)
+      create_irods("https://{{ info["irods_environment"]["irods_host"] }}/irods-http-api/0.2.0", overwrite=TRUE)
       iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}")
       # or alternatively:
       # iauth("{{ info['irods_environment']['irods_user_name'] }}") # and provide the password when prompted
