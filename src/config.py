@@ -66,4 +66,11 @@ MANGO_ADMINS = [
 ]
 
 MANGO_MAIN_LANDING_ROUTE = {"module": "plugins.user_tantra.realm", "function": "index"}
-MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {"module": "plugins.mango_overrides.schema_permissions", "class": "GroupBasedSchemaPermissions"}
+MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {
+    "module": "plugins.mango_overrides.schema_permissions",
+    "class": "GroupBasedSchemaPermissions",
+}
+
+MANGO_ERROR_MESSAGES = [
+    {"args": (-370000,), "text": "Only privileged users may modify permissions."}
+]

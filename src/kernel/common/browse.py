@@ -56,6 +56,7 @@ import tarfile
 
 from kernel.metadata_schema import get_schema_manager
 from kernel.template_overrides import get_template_override_manager
+from kernel.common.error import flash_error
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
@@ -463,7 +464,9 @@ def view_object(data_object_path):
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
     try:
-        data_object: iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
+        data_object: iRODSDataObject = g.irods_session.data_objects.get(
+            data_object_path
+        )
     except:
         flash(f"Cannot access {data_object_path}, redirecting to its parent", "warning")
         p = Path(data_object_path)
@@ -1088,11 +1091,7 @@ def set_permissions(item_path: str):
                 recursive=recursive,
             )
     except Exception as e:
-        if e.args == (-370000,):
-            flash(f"Non-privileged users cannot execute this operation!", "warning")
-        else:
-            print(e)
-            abort(500, "failed to set permissions")
+        flash_error(e, "warning", "Error: Permissions could not be changed.")
     else:
         signals.permissions_changed.send(
             current_app._get_current_object(),
