@@ -1,46 +1,53 @@
-    {% if 'irods_environment' in info %}
-    <p>
-        You can use the information below to connect to the ManGO platform through various clients.
-    </p>
-
-    <ul class="nav nav-pills">
-      <li class="nav-item">
-        <a class="nav-link active" data-bs-toggle="pill" href="#password">Login data</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="pill" href="#linux">iCommands on Linux</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="pill" href="#windows">Python Client on Windows</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="pill" href="#sftp">SFTP Client</a>
-      </li>
-    </ul>
-
-    <div class="tab-content">
-      <div class="tab-pane container active p-1" id="password">
-          <dl class="mx-auto ml-20 mt-3">
-          <dt>Hostname</dt>
-          <dd>{{ info['irods_environment']['irods_host'] }}</dd>
-          <dt>Port</dt>
-          <dd>{{ info['irods_environment']['irods_port'] }}</dd>
-          <dt>Zone</dt>
-          <dd>{{ info['irods_environment']['irods_zone_name'] }}</dd>
-          <dt>Username</dt>
-          <dd>{{ info['irods_environment']['irods_user_name'] }}</dd>
-          <dt>Password</dt>
-          <dd>
-            <pre>{{ info['token'] }}</pre>
-          </dd>
-        </dl>
-        <p>
-          The provided password is valid until {{ info['expiration']|format_timestamp }}, refresh the page to get a
-          new password.
-        </p>
-      </div>
-      <div class="tab-pane container fade p-1" id="linux">
-        {% if 'hpc-irods-setup-zone' in info %}
+{% if 'irods_environment' in info %}
+  <p>You can use the information below to connect to the ManGO platform through various clients.</p>
+  <ul class="nav nav-pills">
+    <li class="nav-item">
+      <a class="nav-link active" data-bs-toggle="pill" href="#password">Login data</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="pill" href="#linux">iCommands on Linux</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="pill" href="#windows">Python Client on Windows</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="pill" href="#sftp">SFTP Client</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="pill" href="#rirods">rirods</a>
+    </li>
+  </ul>
+  <div class="tab-content">
+    <div class="tab-pane container active p-1" id="password">
+      <dl class="mx-auto ml-20 mt-3">
+        <dt>Hostname</dt>
+        <dd>
+          {{ info['irods_environment']['irods_host'] }}
+        </dd>
+        <dt>Port</dt>
+        <dd>
+          {{ info['irods_environment']['irods_port'] }}
+        </dd>
+        <dt>Zone</dt>
+        <dd>
+          {{ info['irods_environment']['irods_zone_name'] }}
+        </dd>
+        <dt>Username</dt>
+        <dd>
+          {{ info['irods_environment']['irods_user_name'] }}
+        </dd>
+        <dt>Password</dt>
+        <dd>
+          <pre>{{ info['token'] }}</pre>
+        </dd>
+      </dl>
+      <p>
+        The provided password is valid until {{ info['expiration']|format_timestamp }}, refresh the page to get a
+        new password.
+      </p>
+    </div>
+    <div class="tab-pane container fade p-1" id="linux">
+      {% if 'hpc-irods-setup-zone' in info %}
         <p class="mt-3">
           On the HPC tier1 or tier2 clusters in Leuven, run the snippet below to
           configure an irods client. The irods session itself will last for a
@@ -49,31 +56,41 @@
         <pre><code>irods-setup --zone {{ info['hpc-irods-setup-zone'] }} | bash</code></pre>
         <p>
           From other HPC clusters in flanders, you can run
-          <code
-            >ssh login.hpc.kuleuven.be irods-setup --zone
-            {{ info['hpc-irods-setup-zone'] }} | bash</code
-          >. If this command through ssh does not work, please run it without
-          <code>| bash</code> to troubleshoot.
-        </p>
-        <p>
-          Alternatively, you can copy paste the snippet below to configure an irods client under Linux.
-          The irods session is valid {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}for one week{% else %}until {{ info['expiration']|format_timestamp }}{% endif %}.
-        </p>
-      {% else %}
-        <p class="mt-3">
-          Run the snippet below to configure an irods client under Linux. The
-          irods session is valid {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}for one week{% else %}until {{ info['expiration']|format_timestamp }}{% endif %}.
-        </p>
-      {% endif %}
-<pre><code>mkdir -p ~/.irods
-cat > ~/.irods/irods_environment.json <<'EOF'
-{{ setup_json['linux'] }}
-EOF
-{% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' -%}
-iinit -h | grep Version | grep -v -q 4.2. || sed -i 's/"irods_authentication_scheme": "pam_password"/"irods_authentication_scheme": "PAM"/' ~/.irods/irods_environment.json
-{% endif -%}
-echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}--ttl 168{% endif %} >/dev/null && echo You are now authenticated to irods.
-</code></pre>
+          <code>ssh login.hpc.kuleuven.be irods-setup --zone
+            {{ info['hpc-irods-setup-zone'] }} | bash</code>. If this command through ssh does not work, please run it without
+            <code>| bash</code> to troubleshoot.
+          </p>
+          <p>
+            Alternatively, you can copy paste the snippet below to configure an irods client under Linux.
+            The irods session is valid
+            {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
+              for one week
+            {% else %}
+              until {{ info['expiration']|format_timestamp }}
+            {% endif %}
+            .
+          </p>
+        {% else %}
+          <p class="mt-3">
+            Run the snippet below to configure an irods client under Linux. The
+            irods session is valid
+            {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
+              for one week
+            {% else %}
+              until {{ info['expiration']|format_timestamp }}
+            {% endif %}
+            .
+          </p>
+        {% endif %}
+        <pre><code>mkdir -p ~/.irods
+      cat > ~/.irods/irods_environment.json <<'EOF'
+      {{ setup_json['linux'] }}
+      EOF
+      {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' -%}
+      iinit -h | grep Version | grep -v -q 4.2. || sed -i 's/"irods_authentication_scheme": "pam_password"/"irods_authentication_scheme": "PAM"/' ~/.irods/irods_environment.json
+      {% endif -%}
+      echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}--ttl 168{% endif %} >/dev/null && echo You are now authenticated to irods.
+      </code></pre>
       </div>
       <div class="tab-pane container fade p-1" id="windows">
         <p style="margin-top: 10px">
@@ -82,43 +99,43 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
           that you installed the <code>python-irodsclient</code>. It will write
           the irods environment file and a password file.
           {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
-          The validity period of the password depends on server configuration
-          and the version of python-irodsclient. For version 1.0.0, this is 60 hours,
-          for version 2.0.0 only 2 minutes.
+            The validity period of the password depends on server configuration
+            and the version of python-irodsclient. For version 1.0.0, this is 60 hours,
+            for version 2.0.0 only 2 minutes.
           {% else %}
-          The written password file will be valid until {{ info['expiration']|format_timestamp }}.
+            The written password file will be valid until {{ info['expiration']|format_timestamp }}.
           {% endif %}
         </p>
-<pre><code>config = """
-{{ setup_json['windows'] }}
-"""
-password = "{{ info['token'] }}"
+        <pre><code>config = """
+      {{ setup_json['windows'] }}
+      """
+      password = "{{ info['token'] }}"
 
-import os, os.path, irods
-from irods.session import iRODSSession
-from irods.password_obfuscation import encode
+      import os, os.path, irods
+      from irods.session import iRODSSession
+      from irods.password_obfuscation import encode
 
-if irods.__version__.startswith(("1.", "0.")):
-  print("You are using an outdated version of the python irods client. Please update to 2.0.0 as soon as possible")
-{%- if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
-  config = config.replace("pam_password", "PAM")
-{%- endif %}
+      if irods.__version__.startswith(("1.", "0.")):
+        print("You are using an outdated version of the python irods client. Please update to 2.0.0 as soon as possible")
+      {%- if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
+        config = config.replace("pam_password", "PAM")
+      {%- endif %}
 
-def put(file, contents):
-  os.makedirs(os.path.dirname(file), exist_ok=True)
-  with open(file, "w") as f:
-    f.write(contents)
+      def put(file, contents):
+        os.makedirs(os.path.dirname(file), exist_ok=True)
+        with open(file, "w") as f:
+          f.write(contents)
 
-env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
-put(env_file, config)
-{% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' -%}
-with iRODSSession(irods_env_file=env_file, password=password) as session:
-  put(iRODSSession.get_irods_password_file(), encode(session.pam_pw_negotiated[0], uid=1000))
-{% else -%}
-put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
-{% endif -%}
-</code></pre>
-      <!--
+      env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
+      put(env_file, config)
+      {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' -%}
+      with iRODSSession(irods_env_file=env_file, password=password) as session:
+        put(iRODSSession.get_irods_password_file(), encode(session.pam_pw_negotiated[0], uid=1000))
+      {% else -%}
+        put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
+      {% endif -%}
+      </code></pre>
+        <!--
       <p>See below how to get started with the python client.</p>
 
       <h6>Get started with python</h6>
@@ -126,14 +143,27 @@ put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
         Inside any python environment, such as anaconda or jupyter notebook, on
         Linux or Windows, run the following snippet and adjust it to get started:
       </p>
-<pre><code>import os, os.path
-from irods.session import iRODSSession
-env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
-with iRODSSession(irods_env_file=env_file) as session:
-    # Do something
-    coll = session.collections.get("/{{ info['irods_environment']['irods_zone_name'] }}/home/{{ info['irods_environment']['irods_user_name'] }}")
-    print(coll.id)</code></pre>
+      <pre><code>import os, os.path
+      from irods.session import iRODSSession
+      env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
+      with iRODSSession(irods_env_file=env_file) as session:
+          # Do something
+          coll = session.collections.get("/{{ info['irods_environment']['irods_zone_name'] }}/home/{{ info['irods_environment']['irods_user_name'] }}")
+          print(coll.id)</code></pre>
       -->
+      </div>
+      <div class="tab-pane container active p-1" id="rirods">
+        <p style="margin-top: 10px">
+          Run the snippet below in an interactive session in R:
+          <pre>
+      library(rirods)
+      create_irods("{{ info["irods_environment"]["irods_host"] }}/irods-http-api/0.2.0", overwrite=TRUE)
+      iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}")
+      # or alternatively:
+      # iauth("{{ info['irods_environment']['irods_user_name'] }}") # and provide the password when prompted
+      </pre>
+          The written password file will be valid until {{ info['expiration']|format_timestamp }}.
+        </p>
       </div>
       <div class="tab-pane container fade p-1" id="sftp">
         <p style="margin-top: 10px">
@@ -141,32 +171,38 @@ with iRODSSession(irods_env_file=env_file) as session:
           It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
         </p>
         <ol>
-
-        {% if '-hpc-' in jobid %}
-          <li>
-            You need to run an <code>ssh-agent</code> capable of handling SSH certificates.<br />
-            For Windows, <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">Pageant 0.78</a> or above can be used.
-            For Linux, the standard OpenSSH agent will work.
-          </li>
-          <li>
-            Connect with e.g. Putty to <code>firewall.vscentrum.be</code> with agent forwarding enabled.
-            After having successfully connected, an SSH certificate should be injected in your forwarded agent.
-          </li>
-        {% else %}
-          <li>
-            Install <a href="https://admin.kuleuven.be/icts/services/ssh-cert">certagent or kmk</a> on your local machine
-            and use it to retrieve an SSH certificate.
-          </li>
-        {% endif %}
+          {% if '-hpc-' in jobid %}
+            <li>
+              You need to run an <code>ssh-agent</code> capable of handling SSH certificates.
+              <br />
+              For Windows, <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">Pageant 0.78</a> or above can be used.
+              For Linux, the standard OpenSSH agent will work.
+            </li>
+            <li>
+              Connect with e.g. Putty to <code>firewall.vscentrum.be</code> with agent forwarding enabled.
+              After having successfully connected, an SSH certificate should be injected in your forwarded agent.
+            </li>
+          {% else %}
+            <li>
+              Install <a href="https://admin.kuleuven.be/icts/services/ssh-cert">certagent or kmk</a> on your local machine
+              and use it to retrieve an SSH certificate.
+            </li>
+          {% endif %}
           <li>
             Open FileZilla or WinSCP, and connect using the following information:
             <dl class="mx-auto ml-20 mt-3">
               <dt>Hostname</dt>
-              <dd>{{ sftp_host }}</dd>
+              <dd>
+                {{ sftp_host }}
+              </dd>
               <dt>Port</dt>
-              <dd>22</dd>
+              <dd>
+                22
+              </dd>
               <dt>Username</dt>
-              <dd>{{ info['irods_environment']['irods_user_name'] }}</dd>
+              <dd>
+                {{ info['irods_environment']['irods_user_name'] }}
+              </dd>
               <dt>Password</dt>
               <dd>
                 Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
@@ -177,43 +213,49 @@ with iRODSSession(irods_env_file=env_file) as session:
         </ol>
       </div>
     {% else %}
-    <p style="margin-top: 10px">
-      You can use SFTP to connect to iRODS and use programs such as Filezilla, WinSCP or <code>lftp</code>.
-      It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
-    </p>
-    <ol>
-
-    {% if '-hpc-' in jobid %}
-      <li>
-        You need to run an <code>ssh-agent</code> capable of handling SSH certificates.<br />
-        For Windows, <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">Pageant 0.78</a> or above can be used.
-        For Linux, the standard OpenSSH agent will work.
-      </li>
-      <li>
-        Connect with e.g. Putty to <code>firewall.vscentrum.be</code> with agent forwarding enabled.
-        After having successfully connected, an SSH certificate should be injected in your forwarded agent.
-      </li>
-    {% else %}
-      <li>
-        Install <a href="https://ceifdoc.icts.kuleuven.be/lnx/tools/sshcerts/">certagent or kmk</a> on your local machine
-        and use it to retrieve an SSH certificate.
-      </li>
-    {% endif %}
-      <li>
-        Open FileZilla or WinSCP, and connect using the following information:
-        <dl class="mx-auto ml-20 mt-3">
-          <dt>Hostname</dt>
-          <dd>{{ sftp_host }}</dd>
-          <dt>Port</dt>
-          <dd>22</dd>
-          <dt>Username</dt>
-          <dd>{{ session.openid_session.user_info.preferred_username }}</dd>
-          <dt>Password</dt>
-          <dd>
-            Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
-          </dd>
-        </dl>
-        Or use <code>lftp -u {{ session.openid_session.user_info.preferred_username }}, sftp://{{ sftp_host }}</code>.
-      </li>
-    </ol>
+      <p style="margin-top: 10px">
+        You can use SFTP to connect to iRODS and use programs such as Filezilla, WinSCP or <code>lftp</code>.
+        It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
+      </p>
+      <ol>
+        {% if '-hpc-' in jobid %}
+          <li>
+            You need to run an <code>ssh-agent</code> capable of handling SSH certificates.
+            <br />
+            For Windows, <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">Pageant 0.78</a> or above can be used.
+            For Linux, the standard OpenSSH agent will work.
+          </li>
+          <li>
+            Connect with e.g. Putty to <code>firewall.vscentrum.be</code> with agent forwarding enabled.
+            After having successfully connected, an SSH certificate should be injected in your forwarded agent.
+          </li>
+        {% else %}
+          <li>
+            Install <a href="https://ceifdoc.icts.kuleuven.be/lnx/tools/sshcerts/">certagent or kmk</a> on your local machine
+            and use it to retrieve an SSH certificate.
+          </li>
+        {% endif %}
+        <li>
+          Open FileZilla or WinSCP, and connect using the following information:
+          <dl class="mx-auto ml-20 mt-3">
+            <dt>Hostname</dt>
+            <dd>
+              {{ sftp_host }}
+            </dd>
+            <dt>Port</dt>
+            <dd>
+              22
+            </dd>
+            <dt>Username</dt>
+            <dd>
+              {{ session.openid_session.user_info.preferred_username }}
+            </dd>
+            <dt>Password</dt>
+            <dd>
+              Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
+            </dd>
+          </dl>
+          Or use <code>lftp -u {{ session.openid_session.user_info.preferred_username }}, sftp://{{ sftp_host }}</code>.
+        </li>
+      </ol>
     {% endif %}
