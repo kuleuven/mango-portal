@@ -106,7 +106,7 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
             The written password file will be valid until {{ info['expiration']|format_timestamp }}.
           {% endif %}
         </p>
-<pre><code>config = """
+<pre class="ml-2"><code>config = """
 {{ setup_json['windows'] }}
 """
 password = "{{ info['token'] }}"
@@ -155,7 +155,7 @@ put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
       <div class="tab-pane container p-1" id="rirods">
         <p style="margin-top: 10px">
           Run the snippet below in an interactive session in R:
-<pre>
+<pre class="ml-2">
 library(rirods)
 create_irods("https://{{ info["irods_environment"]["irods_host"] }}/irods-http-api/0.2.0", overwrite=TRUE)
 iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}")
