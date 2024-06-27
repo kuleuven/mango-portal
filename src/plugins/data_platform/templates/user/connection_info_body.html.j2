@@ -83,13 +83,13 @@
           </p>
         {% endif %}
         <pre><code>mkdir -p ~/.irods
-      cat > ~/.irods/irods_environment.json <<'EOF'
-      {{ setup_json['linux'] }}
-      EOF
-      {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' -%}
-      iinit -h | grep Version | grep -v -q 4.2. || sed -i 's/"irods_authentication_scheme": "pam_password"/"irods_authentication_scheme": "PAM"/' ~/.irods/irods_environment.json
-      {% endif -%}
-      echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}--ttl 168{% endif %} >/dev/null && echo You are now authenticated to irods.
+cat > ~/.irods/irods_environment.json <<'EOF'
+{{ setup_json['linux'] }}
+EOF
+{% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' -%}
+iinit -h | grep Version | grep -v -q 4.2. || sed -i 's/"irods_authentication_scheme": "pam_password"/"irods_authentication_scheme": "PAM"/' ~/.irods/irods_environment.json
+{% endif -%}
+echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}--ttl 168{% endif %} >/dev/null && echo You are now authenticated to irods.
       </code></pre>
       </div>
       <div class="tab-pane container fade p-1" id="windows">
