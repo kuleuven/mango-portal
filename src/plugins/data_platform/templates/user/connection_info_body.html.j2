@@ -82,7 +82,7 @@
             .
           </p>
         {% endif %}
-        <pre class="ms-2"><code>mkdir -p ~/.irods
+        <pre class="ms-2"><code  class="user-select-all">mkdir -p ~/.irods
 cat > ~/.irods/irods_environment.json <<'EOF'
 {{ setup_json['linux'] }}
 EOF
@@ -106,7 +106,7 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
             The written password file will be valid until {{ info['expiration']|format_timestamp }}.
           {% endif %}
         </p>
-<pre class="ms-2"><code>config = """
+<pre class="ms-2"><code class="user-select-all">config = """
 {{ setup_json['windows'] }}
 """
 password = "{{ info['token'] }}"
@@ -116,7 +116,7 @@ from irods.session import iRODSSession
 from irods.password_obfuscation import encode
 
 if irods.__version__.startswith(("1.", "0.")):
-print("You are using an outdated version of the python irods client. Please update to 2.0.0 as soon as possible")
+  print("You are using an outdated version of the python irods client. Please update to 2.0.0 as soon as possible")
 {%- if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
 config = config.replace("pam_password", "PAM")
 {%- endif %}
@@ -155,7 +155,7 @@ put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
       <div class="tab-pane container p-1" id="rirods">
         <p style="margin-top: 10px">
           Run the snippet below in an interactive session in R:
-<pre class="ms-2">
+<pre class="ms-2 user-select-all">
 library(rirods)
 create_irods("https://{{ info["irods_environment"]["irods_host"] }}/irods-http-api/0.2.0", overwrite=TRUE)
 iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}")
