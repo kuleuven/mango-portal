@@ -122,9 +122,9 @@ config = config.replace("pam_password", "PAM")
 {%- endif %}
 
 def put(file, contents):
-os.makedirs(os.path.dirname(file), exist_ok=True)
-with open(file, "w") as f:
-  f.write(contents)
+  os.makedirs(os.path.dirname(file), exist_ok=True)
+  with open(file, "w") as f:
+    f.write(contents)
 
 env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
 put(env_file, config)
