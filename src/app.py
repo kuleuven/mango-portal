@@ -404,6 +404,10 @@ def get_one_irods_metadata(irods_object, meta_name):
 def os_env(parameter, default=None):
     return os.environ.get(parameter, default)
 
+@app.template_filter("b64encode")
+def b64encode(string):
+    return base64.b64encode(string.encode("utf-8")).decode()
+
 # register the main landing page route dynamically
 main_landing_route = app.config.get(
     "MANGO_MAIN_LANDING_ROUTE", {"module": "kernel.common.browse", "function": "index"}
