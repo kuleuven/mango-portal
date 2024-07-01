@@ -37,7 +37,7 @@ def flash_error(e, category="error", default_message=None):
     """
     # TODO add logic for different kinds of errors
     for mapping in current_app.config["MANGO_ERROR_MESSAGES"]:
-        if e.args == mapping["args"]:
+        if e.args[0] == mapping["args"][0]:
             flash(mapping["text"], category)
             break
     message = (

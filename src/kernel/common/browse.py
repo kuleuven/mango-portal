@@ -1091,7 +1091,7 @@ def set_permissions(item_path: str):
                 recursive=recursive,
             )
     except Exception as e:
-        flash_error(e, "warning", "Error: Permissions could not be changed.")
+        flash_error(e, "warning")
     else:
         signals.permissions_changed.send(
             current_app._get_current_object(),
