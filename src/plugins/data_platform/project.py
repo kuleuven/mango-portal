@@ -688,6 +688,14 @@ def get_next_month(year_month: str):
         return f"{year}-{int(month)+1:02d}"
 
 
+def to_csv(grouped_data, y_axis):
+    dataframes = [
+        pd.DataFrame({"zone": gd["name"], "month": gd["x"], y_axis: gd["y"]} )
+        for gd in grouped_data
+    ]
+    return pd.concat(dataframes).to_csv(index=False)
+
+
 @data_platform_project_bp.route("/data-platform/statistics/usage", methods=["GET", "POST"])
 @openid_login_required
 @csrf.exempt
@@ -755,6 +763,8 @@ def projects_usage():
         for source_name, data in df.groupby("zone")
     ]
 
+    bytes_csv_usage_data = to_csv(usage_plot, "bytes")
+
     quota_plot = [
         summarize(
             source_name,
@@ -769,6 +779,7 @@ def projects_usage():
     return render_template(
         "project/projects_usage.html.j2",
         usage_plot=usage_plot,
+        bytes_csv_usage_data=bytes_csv_usage_data,
         quota_plot=quota_plot,
         filters=filters,
     )
