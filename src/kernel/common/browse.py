@@ -1439,15 +1439,16 @@ def bulk_operation_items():
 @browse_bp.route("/item/rename", methods=["POST"])
 def rename_item():
     redirect_route = request.referrer
+    print(redirect_route)
 
     if "item_path" not in request.form or "new_name" not in request.form:
         flash_error("missing_parameters")
-        redirect(redirect_route)
+        return redirect(redirect_route)
 
     new_name = request.form["new_name"]
     if re.search(r"/", new_name):
         flash_error("illegal_characters")
-        redirect(redirect_route)
+        return redirect(redirect_route)
 
     item_path = iRODSPath(request.form["item_path"])
     new_path = iRODSPath(*item_path.split("/")[:-1], new_name)

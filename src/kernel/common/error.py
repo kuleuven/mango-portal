@@ -35,13 +35,13 @@ def flash_error(e, category="danger", default_message=None):
         category: A category for the flash message if relevant
         default_message: A message to print if it is not included in the mapping
     """
-    # TODO add logic for different kinds of errors
-    for mapping in current_app.config["MANGO_ERROR_MESSAGES"]:
-        e_code = e if type(e) == str else e.args[0]
-        if e_code == mapping["code"]:
-            flash(mapping["text"], category)
-            break
-    message = (
-        f"Unexpected {e=}, {type(e)=}" if default_message is None else default_message
-    )
-    flash(message, category)
+    e_code = e if type(e) == str else str(e.args[0])
+    try:
+        flash(current_app.config["MANGO_ERROR_MESSAGES"][e_code], category)
+    except KeyError:
+        message = (
+            f"Unexpected {e=}, {type(e)=}"
+            if default_message is None
+            else default_message
+        )
+        flash(message, category)

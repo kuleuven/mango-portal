@@ -91,11 +91,8 @@ MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {
     "class": "GroupBasedSchemaPermissions",
 }
 
-MANGO_ERROR_MESSAGES = [
-    {"code": -370000, "text": "You are not allowed to perform this acction."},
-    {"code": "missing_paramenters", "text": "Required parameters are missing"},
-    {
-        "code": "illegal_characters",
-        "text": "Illegal characters have been used: request rejected.",
-    },
-]
+MANGO_ERROR_MESSAGES = {
+    "-370000": "You are not allowed to perform this action.",
+    "missing_paramenters": "Required parameters are missing",
+    "illegal_characters": "Illegal characters have been used: request rejected.",
+}
