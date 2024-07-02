@@ -18,9 +18,10 @@ from flask import (
     session,
     current_app,
 )
+
 # Early initialisation to avoid circulr imports from main app and its config by other modules
 app = Flask(__name__)
-app.config.from_pyfile(os.getenv("MANGO_CONFIG","config.py"))
+app.config.from_pyfile(os.getenv("MANGO_CONFIG", "config.py"))
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 
 irods_sessions = {}

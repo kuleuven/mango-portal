@@ -23,7 +23,7 @@ def error_internalserver(e):
     return render_template("503.html.j2", e=e)
 
 
-def flash_error(e, category="error", default_message=None):
+def flash_error(e, category="danger", default_message=None):
     """Handle errors, not always throwing errors.
 
     Check the type of error and if it matches some condition in a hash and act
@@ -37,7 +37,8 @@ def flash_error(e, category="error", default_message=None):
     """
     # TODO add logic for different kinds of errors
     for mapping in current_app.config["MANGO_ERROR_MESSAGES"]:
-        if e.args[0] == mapping["args"][0]:
+        e_code = e if type(e) == str else e.args[0]
+        if e_code == mapping["code"]:
             flash(mapping["text"], category)
             break
     message = (

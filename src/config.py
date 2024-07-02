@@ -92,5 +92,10 @@ MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {
 }
 
 MANGO_ERROR_MESSAGES = [
-    {"args": -370000, "text": "You are not allowed to perform this acction."}
+    {"code": -370000, "text": "You are not allowed to perform this acction."},
+    {"code": "missing_paramenters", "text": "Required parameters are missing"},
+    {
+        "code": "illegal_characters",
+        "text": "Illegal characters have been used: request rejected.",
+    },
 ]
