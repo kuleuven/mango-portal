@@ -1439,7 +1439,6 @@ def bulk_operation_items():
 @browse_bp.route("/item/rename", methods=["POST"])
 def rename_item():
     redirect_route = request.referrer
-    print(redirect_route)
 
     if "item_path" not in request.form or "new_name" not in request.form:
         flash_error("missing_parameters")
