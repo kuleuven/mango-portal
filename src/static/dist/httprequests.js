@@ -168,7 +168,12 @@ class TemplatesRequest extends MangoRequest {
         )}$)${schema_pattern})$`;
         document
           .querySelectorAll('input[name="schema_name"]')
-          .forEach((input) => input.setAttribute("pattern", schema_pattern));
+          .forEach((input) => {
+            input.setAttribute("pattern", schema_pattern);
+            input.nextSibling.nextSibling.innerHTML = validation_text + ` Existing schema IDs are: ${existing_names.join(
+              ", "
+            )}.`;
+          });
       }
 
       // but first, if the starting schema was being edited, focus on that
@@ -184,23 +189,46 @@ class TemplatesRequest extends MangoRequest {
         const { timestamp, schema_name, schema_version, ls_id } = JSON.parse(
           localStorage.getItem(last_mod_ls)
         );
-        const available_versions = schema_name in schemas && [
-          ...schemas[schema_name].published,
-          ...schemas[schema_name].draft,
-        ];
-        if (available_versions.indexOf(schema_version) > -1) {
+        console.log(schema_name);
+        const schema_group_name = schema_name.match(/^(.+?)(-copy)?$/)[1];
+
+        // check if this is a temp version of a saved draft
+        const is_saved_draft =
+          schema_group_name in schemas &&
+          schemas[schema_group_name].draft.indexOf(schema_version) > -1;
+        // check if this is a temp draft from a published version
+        console.log(schema_version);
+        const previous_version = `${parseInt(schema_version.split(".")[0]) - 1
+          }.0.0`;
+        const is_unsaved_draft =
+          schema_group_name in schemas &&
+          schemas[schema_group_name].draft.length == 0 &&
+          schemas[schema_group_name].published[0] == previous_version;
+        // check if this is a temp draft for a copy of a published version
+        const is_temp_copy =
+          schema_version == "1.0.0" &&
+          schema_group_name in schemas &&
+          schemas[schema_group_name].published.length > 0;
+
+        if (is_saved_draft || is_unsaved_draft || is_temp_copy) {
           if (
             starting_schema_timestamp == undefined ||
             timestamp > starting_schema_timestamp
           ) {
             localstorage_timestamp = timestamp;
-            new bootstrap.Collapse(`#${schema_name}-schemas`).show();
+            new bootstrap.Collapse(`#${schema_group_name}-schemas`).show();
             let trigger = document.querySelector(
-              `#nav-tab-${schema_name} button`
+              `#nav-tab-${schema_group_name} button`
             );
             bootstrap.Tab.getOrCreateInstance(trigger).show();
+            const version_to_show = is_saved_draft
+              ? schema_version
+              : schemas[schema_group_name].published[0];
             let version_trigger = document.querySelector(
-              `button#v${schema_version.replaceAll(".", "")}-tab-${schema_name}`
+              `button#v${version_to_show.replaceAll(
+                ".",
+                ""
+              )}-tab-${schema_group_name}`
             );
             bootstrap.Tab.getOrCreateInstance(version_trigger).show();
             // focused on the editor automatically if there is temporary data in the editor

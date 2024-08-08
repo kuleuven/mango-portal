@@ -37,16 +37,18 @@ class InputField {
    * Initialize a new Field in a (mini-)schema.
    * @class
    * @param {String} schema_name Name of the schema that the field is attached to, for form identification purposes.
-   * @param {String} [data_status=draft] Status of the schema version that the field is attached to, for form identification purposes.
    */
-  constructor(schema, data_status = null) {
+  constructor() {
     // Strings for the example
     this.description = "";
     this.dummy_title = "Informative label";
 
+    this.id = InputField.validate_random_id(InputField.make_id());
+    field_ids.push(this.id);
+
     // Attributes to limit some behavior
     this.mode = "add";
-    this.is_duplicate = false;
+    // this.is_duplicate = false;
 
     // Info about the field contents
     this.required = false;
@@ -54,23 +56,40 @@ class InputField {
     this.values = {};
     this.help = "";
     this.help_is_custom = false;
+  }
 
+  attach_schema(schema) {
     // Schema information
     this.schema = schema;
-    this.data_status = data_status == null ? schema.data_status : data_status;
     this.id_regex = schema.field_id_regex;
   }
 
-  get editing_modal_id() {
-    return `${this.mode}-${this.schema.prefix}-${this.id}-${this.schema.data_status}`;
+  static make_id() {
+    return "f" + Math.random().toString(36).substring(2);
+  }
+
+  static validate_random_id(random_id) {
+    while (field_ids.indexOf(random_id) > -1) {
+      random_id = InputField.make_id();
+    }
+    return random_id;
+  }
+
+
+  get_form_div(key) {
+    return this.form_field.form.querySelector(`#div-${this.get_domel_id(key)}`);
+  }
+
+  get_form_input(key) {
+    return this.form_field.form.querySelector(`input#${this.get_domel_id(key)}`);
   }
 
   activate_autocomplete() {
-    return;
+    return null;
   }
 
   read_autocomplete() {
-    return;
+    return null;
   }
 
   autocomplete_selector() {
@@ -155,7 +174,9 @@ class InputField {
     this.schema.toggle_saving();
 
     // Identify the form with MovingViewers and the MovingViewer itself
-    const viewer = this.schema.field_box.querySelector(`#${this.id}`);
+    const viewer = this.schema.field_box.querySelector(
+      "#" + this.get_domel_id("viewer")
+    );
 
     // Update the title of the MovingViewer
     viewer.querySelector("h5").innerHTML = this.required
@@ -206,240 +227,6 @@ class InputField {
       }
     }
   }
-  /**
-   * Process the data from a JSON file with fields and add an event to the 'Load' button to add them to a schema.
-   * @param {HTMLDivElement} json_div Box with messages and text for loading fields from JSON.
-   * @param {String} data The result of reading the JSON file.
-   * @param {Schema} schema Schema to which the fields would be added.
-   */
-  static verify_json_data(json_div, data, schema) {
-    let json_example = json_div.querySelector("pre"); // verbatim section that shows the JSON contents
-    let json_summary = json_div.querySelector("#load-summary"); // box where success/warning/error message will show up
-    let json_summary_color = [...json_summary.classList].filter((x) =>
-      x.startsWith("text-bg-")
-    )[0];
-    let load_button = json_div.querySelector("button"); // button to load from JSON
-    let new_button = Field.quick(
-      "button",
-      "btn btn-success",
-      "<strong>Load from JSON</strong>"
-    );
-    new_button.setAttribute("disabled", "");
-    json_div.replaceChild(new_button, load_button); // reset the button in case many files are checked before loading
-
-    try {
-      // see if the JSON can be parsed at all
-      let new_fields = JSON.parse(data);
-      if (new_fields.constructor.name == "Object") {
-        // if it's a JSON and has the correct type
-        if (
-          !Object.values(new_fields).every(
-            (f) => f.constructor.name == "Object"
-          ) && // not all eelemnts are objects
-          "properties" in new_fields // it has a properties attribute
-        ) {
-          new_fields = new_fields.properties;
-        }
-
-        let errors = [],
-          warnings = [];
-        let errors_field = "",
-          warnings_field = "";
-        let original_fields = Object.keys(new_fields).length;
-
-        // go through each field in the object and validate it
-        for (let field of Object.entries(new_fields)) {
-          const { messages: new_msg, ok: new_ok } = InputField.validate_class(
-            field[1]
-          );
-          if (!new_ok) {
-            // if the field is not valid at all
-            delete new_fields[field[0]];
-            errors.push(
-              `<p class="text-danger fw-bold m-0">The field '${field[0]}' was deleted because it was not in order.</p>`
-            );
-            errors = [...errors, ...new_msg];
-          } else {
-            let field_name = field[0];
-            while (schema.field_ids.indexOf(field_name) > -1) {
-              field_name = field_name + "-new";
-            }
-            // if the name already exists (and was therefore changed)
-            if (field[0] != field_name) {
-              new_fields[field_name] = { ...field[1] };
-              delete new_fields[field[0]];
-              warnings.push(
-                `<p class="text-warning fw-bold m-0">The field '${field[0]}' was renamed to '${field_name}' because '${field[0]}' already exists, and moved to the end.</p>`
-              );
-            }
-            if (new_msg.length > 0) {
-              warnings.push(
-                `<p class="text-warning fw-bold m-0">The field '${field_name}' was modified.</p>`
-              );
-              warnings = [...warnings, ...new_msg];
-            }
-          }
-        }
-
-        // write up a box with error messages if there are any (=fields that were discarded)
-        if (errors.length > 0) {
-          let errors_list = errors
-            .map((x) => (x.startsWith("<") ? x : `<p class="m-0">${x}</p>`))
-            .join("");
-          errors_field = `<div class="border border-danger px-2 mb-2"><h4 class="text-danger">Errors</h4>${errors_list}</div>`;
-        }
-
-        // write up a box with warnings if there are any (=fields that were only modified)
-        if (warnings.length > 0) {
-          let warnings_list = warnings
-            .map((x) => (x.startsWith("<") ? x : `<p class="m-0">${x}</p>`))
-            .join("");
-          warnings_field = `<div class="border border-warning px-2 mb-2"><h4 class="text-warning">Warnings</h4>${warnings_list}</div>`;
-        }
-        let final_fields = Object.keys(new_fields).length;
-
-        // prepare the new contents for the <pre> box
-        let text_fields = {
-          errors: errors_field,
-          warnings: warnings_field,
-          text: JSON.stringify(new_fields, null, "  "),
-        };
-
-        if (final_fields == 0) {
-          // if all fields were invalid
-          json_summary.classList.replace(json_summary_color, "text-bg-danger");
-          json_summary.innerHTML =
-            "<strong>ERROR</strong>: The contents of this file are not correct!";
-          text_fields.text = JSON.stringify(JSON.parse(data), null, "  ");
-        } else {
-          // it is possible to load something
-          new_button.addEventListener("click", () =>
-            schema.add_fields_from_json(new_fields)
-          );
-          new_button.removeAttribute("disabled", "");
-          if (final_fields < original_fields) {
-            // some fields were invalid
-            json_summary.classList.replace(
-              json_summary_color,
-              "text-bg-warning"
-            );
-            json_summary.innerHTML =
-              "<strong>WARNING</strong>: Some fields were removed because they were not appropriate, but the rest can be uploaded.";
-          } else {
-            json_summary.classList.replace(
-              json_summary_color,
-              "text-bg-success"
-            );
-            json_summary.innerHTML =
-              "<strong>SUCCESS!</strong> This file is correct and the fields can be read!";
-          }
-        }
-        json_example.innerHTML = Object.values(text_fields).join("");
-      } else {
-        // the JSON was valid but not an object
-        json_summary.classList.replace(json_summary_color, "text-bg-danger");
-        json_summary.innerHTML =
-          "<strong>ERROR</strong>: The uploaded JSON is not an object.";
-        json_example.innerHTML = JSON.stringify(new_fields, null, "  ");
-      }
-    } catch (e) {
-      // there was some error
-      json_summary.classList.replace(json_summary_color, "text-bg-danger");
-      if (e instanceof SyntaxError) {
-        // the problem is invalid JSON
-        json_summary.innerHTML =
-          "<strong>ERROR</strong>: The uploaded file is not valid JSON.";
-        json_example.innerHTML = data;
-      } else {
-        // there was something else
-        json_summary.innerHTML = "<strong>UNEXPECTED ERROR</strong>";
-        json_example.innerHTML = e;
-      }
-    }
-  }
-
-  /**
-   * Create an example with a button to load new fields from JSON.
-   * @returns {HTMLDivElement} Box with button to activate a modal and load fields from JSON.
-   */
-  static from_json_example(schema) {
-    let input_id = `choose-json-${schema.name}-${schema.data_status}`;
-    const reader = new FileReader();
-    reader.onload = () => {
-      InputField.verify_json_data(json_div, reader.result, schema);
-    };
-
-    let json_div = Field.quick("div", "ex my-2");
-    let explanation = Field.quick(
-      "p",
-      "fst-italic",
-      "Extract fields form a JSON file with fields or with a full schema (only the fields will be uploaded!)."
-    );
-    let button = Field.quick(
-      "button",
-      "btn btn-outline-primary",
-      "<strong>Load from JSON</strong>"
-    );
-    button.setAttribute("disabled", "");
-    let label = Field.quick(
-      "label",
-      "form-label",
-      "Choose a file or drag and drop into the field below."
-    );
-    label.setAttribute("for", input_id);
-    let input = Field.quick("input", "form-control");
-    input.id = input_id;
-    input.type = "file";
-    input.setAttribute("accept", ".json");
-    input.addEventListener("change", (e) => {
-      reader.readAsText(e.target.files[0]);
-    });
-
-    let json_summary = Field.quick(
-      "p",
-      "text-bg-secondary p-2 mt-2 rounded",
-      "No file has been uploaded yet."
-    );
-    json_summary.id = "load-summary";
-
-    json_div.appendChild(button);
-    json_div.appendChild(document.createElement("br"));
-    json_div.appendChild(explanation);
-    json_div.appendChild(label);
-    json_div.appendChild(input);
-    json_div.appendChild(json_summary);
-
-    // Example with drag-and-drop
-    let json_example = Field.quick("pre", "border p-1 bg-light");
-    let example = {
-      field_id: {
-        title: "Informative label",
-        type: "select",
-        ui: "radio",
-        values: ["one", "two", "three"],
-        multiple: false,
-      },
-    };
-    json_example.setAttribute(
-      "style",
-      "width:700px; white-space: pre-wrap;margin-top:1em;"
-    );
-    json_example.innerHTML = JSON.stringify(example, null, "  ");
-    json_example.addEventListener("dragover", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
-    });
-    json_example.addEventListener("drop", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      reader.readAsText(e.dataTransfer.files[0]);
-    });
-    json_div.appendChild(json_example);
-    let from_json = InputField.example_box(json_div);
-    from_json.id = "from_json_container";
-    return from_json;
-  }
 
   /**
    * Generate an example of the field for illustration.
@@ -460,7 +247,7 @@ class InputField {
    * Create a field to set up a description / help text for the field.
    */
   add_help_field() {
-    this.form_field.add_input("Description", `${this.id}-help`, {
+    this.form_field.add_input("Description", this.get_domel_id("help"), {
       description:
         "Text to show as a description / help text for a field, like this text.",
       required: false,
@@ -468,7 +255,9 @@ class InputField {
       value: this.help,
       placeholder: "Helpful description",
     });
-    let help = this.form_field.form.querySelector(`textarea#${this.id}-help`);
+    let help = this.form_field.form.querySelector(
+      `textarea#${this.get_domel_id("help")}`
+    );
     help.addEventListener("change", () => {
       this.help_is_custom = true;
       this.update_help();
@@ -479,10 +268,19 @@ class InputField {
     return "";
   }
 
+  get_domel_id(domel) {
+    // domel = dom element (normally form fields)
+    // examples: 'name', 'title', 'default', 'placeholder'
+    // but also: 'viewer', 'editor'
+    return `${this.id}-${domel}`;
+  }
+
   update_help() {
     if (!this.help_is_custom && this.form_field) {
       this.help = this.default_help;
-      let help_field = this.form_field.form.querySelector(`#${this.id}-help`);
+      let help_field = this.form_field.form.querySelector(
+        `#${this.get_domel_id("help")}`
+      );
       if (help_field != undefined) {
         help_field.value = this.help;
       }
@@ -526,7 +324,7 @@ class InputField {
     let id_regex_template =
       "^(?<start>.+)(?<before>!|\\|)(?<match>\\^__FIELDID__\\$)(?<after>\\||\\))(?<end>.+$)";
     let regex_match = regex.match(
-      new RegExp(id_regex_template.replace("__FIELDID__", this.id), "u")
+      new RegExp(id_regex_template.replace("__FIELDID__", this.name), "u")
     );
     if (regex_match == undefined) {
       return regex;
@@ -549,13 +347,14 @@ class InputField {
   update_id_regex(new_regex) {
     this.id_regex = this.remove_id_from_regex(new_regex);
     if (this.form_field != undefined) {
-      this.form_field.form.querySelector(`#${this.id}-id`).pattern =
-        this.id_regex;
+      this.form_field.form.querySelector(
+        `#${this.get_domel_id("name")}`
+      ).pattern = this.id_regex;
     }
   }
 
   /**
-   * Initalize a form to edit the field and add the components at the beginning of the form.
+   * Initialize a form to edit the field and add the components at the beginning of the form.
    */
   setup_form() {
     // create a new form
@@ -564,21 +363,21 @@ class InputField {
     // add an input field to provide the ID of the field
     this.form_field.add_input(
       `ID for ${this.form_type} (underlying label)`,
-      `${this.id}-id`,
+      this.get_domel_id("name"),
       {
-        description:
-          "Use lowercase or numbers, no spaces, no special characters other than '_'.",
-        value: this.field_id,
-        validation_message:
-          "This field is compulsory. Use only lowercase, numbers, and '_'. Existing names cannot be reused.",
+        description: description_text,
+        value: this.name,
+        validation_message: validation_text,
         pattern: this.id_regex,
       }
     );
 
+    console.log("check: " + this.id_regex) // TO DO: Use for displaying existing field names.
+
     // add an input field to provide the title of the field
     this.form_field.add_input(
       `Label for ${this.form_type} (display name)`,
-      `${this.id}-label`,
+      this.get_domel_id("title"),
       {
         description: "This is what an user will see when inserting metadata.",
         value: this.title,
@@ -628,10 +427,7 @@ class InputField {
 
     // define the behavior of the 'required' switch
     if (requirable) {
-      let req_input = this.form_field.form.querySelector(
-        `#${this.id}-required`
-      );
-
+      let req_input = this.get_form_input("required")
       // if it's a simple field with a checkbox
       if (this.type == "checkbox") {
         req_input.setAttribute("disabled", "");
@@ -646,7 +442,9 @@ class InputField {
 
     // define the behavior of the 'dropdown' switch
     if (dropdownable) {
-      let dd_input = this.form_field.form.querySelector(`#${this.id}-dropdown`);
+      let dd_input = this.form_field.form.querySelector(
+        `#${this.get_domel_id("dropdown")}`
+      );
       dd_input.addEventListener("change", () => {
         this.values.ui =
           this.values.ui == "dropdown" ? this.dropdown_alt : "dropdown";
@@ -656,9 +454,7 @@ class InputField {
       });
     } else {
       // define the behavior of the 'repeatable' switch
-      let rep_input = this.form_field.form.querySelector(
-        `#${this.id}-repeatable`
-      );
+      let rep_input = this.get_form_input("repeatable");
       if (this.type == "checkbox") {
         rep_input.setAttribute("disabled", "");
       }
@@ -672,9 +468,7 @@ class InputField {
 
     // add a button to confirm the changes
     this.form_field.add_action_button(
-      this.mode == "add"
-        ? `Add to ${this.schema.is_composite ? "composite field" : "schema"}`
-        : "Update",
+      this.mode == "add" ? "Add" : "Update",
       "add"
     );
   }
@@ -683,7 +477,7 @@ class InputField {
     this.create_form();
     // create the modal
     let edit_modal = new Modal(
-      this.editing_modal_id,
+      this.get_domel_id("editor"),
       `${this.mode == "add" ? "Add" : "Edit"} ${this.button_title}`
     );
 
@@ -692,7 +486,7 @@ class InputField {
     edit_modal.create_modal([form], "lg");
 
     // capture modal for manipulation
-    let modal_dom = document.getElementById(this.editing_modal_id);
+    let modal_dom = document.getElementById(this.get_domel_id("editor"));
     this.modal = bootstrap.Modal.getOrCreateInstance(modal_dom);
 
     // define behavior on form submission
@@ -717,17 +511,6 @@ class InputField {
           // recreate the updated (probably cleaned) form
           modal_dom.querySelector(".modal-body").appendChild(form);
 
-          // if the new field is completely new or has changed ID
-          if (clone.editing_modal_id != this.editing_modal_id) {
-            // fill the new field's modal with its form
-            let clone_modal_dom = document.getElementById(
-              clone.editing_modal_id
-            );
-            let clone_form = clone.form_field.form;
-            clone_modal_dom
-              .querySelector(".modal-body")
-              .appendChild(clone_form);
-          }
         }
       },
       false
@@ -742,7 +525,7 @@ class InputField {
   }
 
   delete_modal() {
-    let modal = document.getElementById(this.editing_modal_id);
+    let modal = document.getElementById(this.get_domel_id("editor"));
     if (modal != null) {
       modal.remove();
     }
@@ -753,40 +536,34 @@ class InputField {
    * @returns {HTMLDivElement} Element that contains an illustration example and a button to activate an editor modal.
    */
   render() {
-    this.id = `${this.form_type}_temp`;
+    this.name = `${this.form_type}_temp`;
 
     // create the form to design the field and the modal that will host it
     this.create_editor();
 
-    // create the button that triggers the modal
-    let new_button = Field.quick(
-      "button",
-      "btn btn-primary choice-button",
-      this.button_title
-    );
-    new_button.setAttribute("data-bs-toggle", "modal");
-    new_button.setAttribute("data-bs-target", "#" + this.editing_modal_id);
-
     // append everything to a div
-    let new_form = InputField.example_box(new_button);
-    new_form.appendChild(this.create_example());
-
-    return new_form;
+    return this.create_example();
   }
 
-  /**
-   * Create a box for the options to create new fields.
-   *
-   * @param {HTMLElement} button Content for the box.
-   * @returns {HTMLDivElement} Element containing a button to activate a modal or example.
-   */
-  static example_box(button) {
-    // append everything to a div
-    let new_form = Field.quick("div", "shadow border rounded p-4 mb-3");
-    new_form.appendChild(button);
+  setup_rendering_button(button, parent_modal) {
+    button.setAttribute("data-bs-toggle", "modal");
+    button.setAttribute("data-bs-target", "#" + this.get_domel_id("editor"));
 
-    return new_form;
   }
+
+  // /**
+  //  * Create a box for the options to create new fields.
+  //  *
+  //  * @param {HTMLElement} button Content for the box.
+  //  * @returns {HTMLDivElement} Element containing a button to activate a modal or example.
+  //  */
+  // static example_box(button) {
+  //   // append everything to a div
+  //   let new_form = Field.quick("div", "shadow border rounded p-4 mb-3");
+  //   new_form.appendChild(button);
+
+  //   return new_form;
+  // }
 
   /**
    * Create or update an input field and update the Schema it belongs to.
@@ -795,94 +572,36 @@ class InputField {
    * @returns {InputField} Updated version of the input field.
    */
   register_fields() {
-    // retrieve data from the form
-    let data = new FormData(this.form_field.form);
-    let old_id = this.id;
-    let new_id = data.get(`${this.id}-id`).trim();
-    // capture the 'default' value if relevant
-    if (this.required) {
-      let default_value = data.get(`${this.id}-default`);
-      if (default_value) {
-        this.default = default_value.trim();
-      }
-    }
-    let help = data.get(`${this.id}-help`);
-    this.help = help.trim();
+    let target = this.mode == "mod" ? this : this.clone(); // TODO check if it makes sense
+    target.attach_schema(this.schema);
+    target.recover_fields(this); // update the field
 
-    // if we are updating an existing field without changing the ID
-    if (old_id == new_id) {
-      this.title = data.get(`${this.id}-label`).trim();
-      this.recover_fields(
-        this.id,
-        this.options_navbar ? this.temp_options : data
-      ); // update the field
-      this.update_field(); // update the schema
-      return this;
-    } else if (this.mode == "mod") {
-      this.new_name = new_id;
+    if (this.mode == "mod") {
+      target.update_field(); // update the schema
       return this;
     } else {
-      // if we are creating a new field altogether
-      // create a new field with the same type
-      let clone = this.clone(new_id, data.get(`${this.id}-label`).trim());
-      clone.recover_fields(
-        this.id,
-        this.options_navbar ? this.temp_options : data
-      );
-
       // bring the current form, editor and contents to their original values
       this.reset();
 
       // set the mode of the new field, create form and modal that hosts the form
-      clone.create_editor();
-      clone.add_to_schema();
+      target.create_editor();
+      target.add_to_schema();
 
       // register new field in the schema
-      return clone;
+      return target;
     }
-  }
-
-  set new_name(new_name) {
-    const card = this.schema.field_box.querySelector(`#${this.id}`);
-    function update_element_id(el, this_id) {
-      const { pre, pos } = el.id.match(
-        `(?<pre>[a-z_-]+-)?(?<id>${this_id})(?<pos>-[a-z_-]+)?`
-      ).groups;
-      if (!(pre == undefined && pos == undefined)) {
-        el.id = `${pre || ""}${new_name}${pos || ""}`;
-      }
-    }
-    card.querySelectorAll(`[id*="${this.id}"]`).forEach((el) => {
-      update_element_id(el, this.id);
-    });
-    card.id = new_name;
-    if (this.constructor.name != "ObjectInput") {
-      const modal = document.getElementById(this.editing_modal_id);
-      modal.querySelectorAll(`[id*="${this.id}"]`).forEach((el) => {
-        update_element_id(el, this.id);
-      });
-    }
-    this.id = new_name;
   }
 
   /**
    *
-   * @param {String} new_id ID for the clone.
-   * @param {String} title User-facing label of the clone, retrieved from the form
    * @returns {InputField} A new field with data from the form, to be added to the schema.
    */
-  clone(new_id, title) {
-    let clone = new this.constructor(this.schema);
-    // id as it will show in the "ID" field of the form
-    clone.field_id = new_id;
-    clone.id = new_id;
-    clone.id_regex = this.id_regex;
-
-    // transfer the form
-    clone.form_field = this.form_field;
+  clone(add_suffix = false) {
+    let clone = new this.constructor();
 
     // register the main info
-    clone.title = title;
+    clone.name = this.name + (add_suffix ? "-new" : "");
+    clone.title = this.title;
     clone.required = this.required;
     clone.repeatable = this.repeatable;
     clone.default = this.default;
@@ -890,6 +609,7 @@ class InputField {
     clone.help_is_custom = this.help_is_custom;
     clone.values = { ...this.values };
     clone.mode = "mod";
+
     return clone;
   }
 
@@ -898,8 +618,23 @@ class InputField {
    * Implemented within each subclass, except for `ObjectInput`.
    * @param {FormData} data Contents of the editing form of the field.
    */
-  recover_fields(id, data) {
-    return;
+  recover_fields(original_field) {
+    let data = new FormData(original_field.form_field.form);
+    this.name = data.get(original_field.get_domel_id("name")).trim();
+    this.title = data.get(original_field.get_domel_id("title")).trim();
+    this.required = original_field.required;
+    // capture the 'default' value if relevant
+    if (this.required) {
+      let default_value = data.get(original_field.get_domel_id("default"));
+      if (default_value) {
+        this.default = default_value.trim();
+      }
+    }
+    let help = data.get(original_field.get_domel_id("help"));
+    if (help) {
+      this.help = help.trim();
+    }
+    return original_field.options_navbar ? original_field.temp_options : data;
   }
 
   /**
@@ -926,31 +661,27 @@ class InputField {
    * Select and instantiate the right class depending on the value of the JSON-originated date.
    * @static
    * @param {String} schema_name Name of the schema the field is attached to, for DOM ID purposes.
-   * @param {String} data_status Status of the schema version the field is attached to, for DOM ID purposes.
    * @param {String} id ID of the field to create.
    * @param {FieldInfo} data Contents of the field to create.
    * @returns {InputField} The right input field with the data from the FieldInfo object.
    */
-  static choose_class(schema, data_status = null, [id, data] = []) {
+  static choose_class([name, data] = []) {
     let new_field;
-    data_status = data_status == null ? schema.data_status : data_status;
 
     // if the type is 'object', create a composite field
     if (data.type == "object") {
-      new_field = new ObjectInput(schema, data_status);
+      new_field = new ObjectInput();
     } else if (data.type == "select") {
       // if the type is 'select', create a multiple-value or single-value multiple choice, depending on the value of 'multiple'
       new_field = data.multiple
-        ? new CheckboxInput(schema, data_status)
-        : new SelectInput(schema, data_status);
+        ? new CheckboxInput()
+        : new SelectInput();
     } else {
       // the other remaining option is the single field
-      new_field = new TypedInput(schema, data_status);
+      new_field = new TypedInput();
     }
     // fill in the basic information not present in the FieldInfo object
-    new_field.field_id = id;
-    new_field.id = id;
-
+    new_field.name = name;
     new_field.mode = "mod";
 
     // read the FieldInfo object to retrieve and register the data
@@ -1010,8 +741,8 @@ class TypedInput extends InputField {
    * Initialize a new single field in a (mini-)schema.
    * @class
    */
-  constructor(schema, data_status = null) {
-    super(schema, data_status);
+  constructor() {
+    super();
     this.type = "text";
     this.values = { placeholder: "", pattern: "" };
     this.temp_values = {
@@ -1075,17 +806,10 @@ class TypedInput extends InputField {
   update_field() {
     super.update_field();
     this.schema.field_box
-      .querySelector(`#${this.id} .card-body`)
+      .querySelector(`#${this.get_domel_id("viewer")} .card-body`)
       .firstChild.replaceWith(this.viewer_input());
   }
 
-  get_form_div(key) {
-    return this.form_field.form.querySelector(`#div-${this.id}-${key}`);
-  }
-
-  get_form_input(key) {
-    return this.form_field.form.querySelector(`input#${this.id}-${key}`);
-  }
 
   toggle_placeholder() {
     if (TypedInput.types_with_placeholder.indexOf(this.temp_values.type) > -1) {
@@ -1161,7 +885,7 @@ class TypedInput extends InputField {
     // (because the numeric type has just been selected via the dropdown)
     if (!this.get_form_input("min")) {
       // add input field for the minimum value
-      this.form_field.add_input("Minimum", `${this.id}-min`, {
+      this.form_field.add_input("Minimum", this.get_domel_id("min"), {
         placeholder: "0",
         value: this.values.minimum ? this.values.minimum : false, // value if it exists
         validation_message:
@@ -1169,7 +893,7 @@ class TypedInput extends InputField {
         required: false,
       });
 
-      this.form_field.add_input("Maximum", `${this.id}-max`, {
+      this.form_field.add_input("Maximum", this.get_domel_id("max"), {
         placeholder: "100",
         value: this.values.maximum ? this.values.maximum : false, // value if it exists
         validation_message:
@@ -1323,8 +1047,8 @@ class TypedInput extends InputField {
         ? " " + this.print_range() // specify the range
         : this.temp_values.pattern != undefined && // if it has a pattern
           this.temp_values.pattern.length > 0
-        ? ` fully matching /${this.temp_values.pattern}/` // specify the pattern
-        : "";
+          ? ` fully matching /${this.temp_values.pattern}/` // specify the pattern
+          : "";
     return `Input type: ${this.temp_values.type}${par_text}`;
   }
 
@@ -1345,26 +1069,19 @@ class TypedInput extends InputField {
    */
   add_placeholder_field() {
     // if the field does not exist yet (it may have been removed for textarea and checkbox)
-    if (
-      this.form_field.form.querySelector(`#div-${this.id}-placeholder`) ==
-      undefined
-    ) {
-      this.form_field.add_input("Placeholder", `${this.id}-placeholder`, {
+    if (this.get_form_div("placeholder") == undefined) {
+      this.form_field.add_input("Placeholder", this.get_domel_id("placeholder"), {
         description: "Example of a value for this field.",
         value: this.values.placeholder,
         required: false,
       });
-      let placeholder_div = this.form_field.form.querySelector(
-        `div#div-${this.id}-placeholder`
+      let placeholder_div = this.get_form_div("placeholder");
+      let divider = this.form_field.form.querySelector(
+        `hr#${this.get_domel_id("divider")}`
       );
-      let divider = this.form_field.form.querySelector(`hr#${this.id}-divider`);
       if (divider.nextSibling != placeholder_div) {
         this.form_field.form.insertBefore(placeholder_div, divider.nextSibling);
       }
-    } else {
-      this.form_field.form.querySelector(
-        `#div-${this.id}-placeholder input`
-      ).value = "";
     }
   }
 
@@ -1373,23 +1090,17 @@ class TypedInput extends InputField {
    */
   add_regex_field() {
     // if the field does not exist yet (it may have been removed for textarea and checkbox)
-    if (
-      this.form_field.form.querySelector(`#div-${this.id}-regex`) == undefined
-    ) {
+    if (this.get_form_div("regex") == undefined) {
       const regex_input_docs =
         "https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/pattern#constraint_validation";
       const regex_explanation = `A regular expression to use in validation: the <a href="${regex_input_docs}">match has to be complete, not partial</a>.`;
-      this.form_field.add_input("Regex pattern", `${this.id}-regex`, {
+      this.form_field.add_input("Regex pattern", this.get_domel_id("regex"), {
         description: regex_explanation,
         value: this.values.pattern,
         required: false,
       });
-      let regex_div = this.form_field.form.querySelector(
-        `div#div-${this.id}-regex`
-      );
-      let placeholder_div = this.form_field.form.querySelector(
-        `div#div-${this.id}-placeholder`
-      );
+      let regex_div = this.get_form_div("regex");
+      let placeholder_div = this.get_form_div("placeholder");
       if (placeholder_div.nextSibling != regex_div) {
         this.form_field.form.insertBefore(
           regex_div,
@@ -1404,10 +1115,8 @@ class TypedInput extends InputField {
    */
   add_default_field() {
     // if the field does not exist yet (it may have been removed for textarea and checkbox)
-    if (
-      this.form_field.form.querySelector(`#div-${this.id}-default`) == undefined
-    ) {
-      this.form_field.add_input("Default value", `${this.id}-default`, {
+    if (this.get_form_div("default")) {
+      this.form_field.add_input("Default value", this.get_domel_id("default"), {
         description:
           "Default value for this field: only valid if the field is required.",
         value: this.default,
@@ -1429,7 +1138,7 @@ class TypedInput extends InputField {
 
     // set up input field description as subtitle or as input-description
     let subtitle = Field.quick("div", "form-text mt-0 mb-1", this.help);
-    subtitle.id = "help-" + this.id;
+    subtitle.id = this.get_domel_id("help");
 
     // define input shape
     let input;
@@ -1444,13 +1153,13 @@ class TypedInput extends InputField {
       let input_input = Field.quick("input", "form-check-input");
       input_input.type = "checkbox";
       input_input.value = true;
-      input_input.id = "check-" + this.id;
+      input_input.id = this.get_domel_id("check");
       let input_label = Field.quick(
         "label",
         "form-check-label visually-hidden",
         "Check if true."
       );
-      input_label.setAttribute("for", "check-" + this.id);
+      input_label.setAttribute("for", this.get_domel_id("check"));
       input.appendChild(input_input);
       input.appendChild(input_label);
     } else {
@@ -1515,8 +1224,8 @@ class TypedInput extends InputField {
         input.type == "number"
           ? " " + this.print_range() // if it's a number, message about the range
           : this.values.pattern != undefined && this.values.pattern.length > 0 // otherwise if there is a regex pattern...
-          ? ` matching the regular expression /^${this.values.pattern}$/`
-          : "";
+            ? ` matching the regular expression /^${this.values.pattern}$/`
+            : "";
       const validator_message = Field.quick(
         "div",
         "invalid-feedback",
@@ -1538,22 +1247,20 @@ class TypedInput extends InputField {
     // add the dropdown for the possible options
     this.form_field.add_select(
       "Input type",
-      `${this.id}-format`,
+      this.get_domel_id("format"),
       TypedInput.text_options,
       this.type
     );
 
     // when selecting from the dropdown, adapt the contents of the form
-    const format_select = this.form_field.form.querySelector(
-      `#${this.id}-format`
-    );
+    const format_select = this.form_field.form.querySelector("#" + this.get_domel_id("format"));
     format_select.addEventListener("change", () => {
       this.temp_values.type = format_select.value;
       this.manage_format();
     });
 
     let divider = document.createElement("hr");
-    divider.id = this.id + "-divider";
+    divider.id = this.get_domel_id("divider");
     let last_element = this.form_field.switches
       ? this.form_field.switches
       : this.form_field.divider;
@@ -1572,8 +1279,8 @@ class TypedInput extends InputField {
    * @param {String} title User-facing label of the clone, retrieved from the form
    * @returns {InputField} A new field with data from the form, to be added to the schema.
    */
-  clone(new_id, title) {
-    let clone = super.clone(new_id, title);
+  clone(add_suffix = false) {
+    let clone = super.clone(add_suffix);
     clone.type = this.type;
     clone.temp_values = { ...this.temp_values };
     return clone;
@@ -1583,26 +1290,27 @@ class TypedInput extends InputField {
    * Read the form used to edit the field and register the values (on submission).
    * @param {FormData} data Contents of the editing form of the field.
    */
-  recover_fields(id, data) {
+  recover_fields(field) {
+    const data = super.recover_fields(field);
     // capture type
-    this.type = data.get(`${id}-format`).trim();
+    this.type = data.get(field.get_domel_id("format"));
 
     // capture minimum and maximum values if relevant
     if ((this.type === "integer") | (this.type == "float")) {
-      let minimum = data.get(`${id}-min`);
-      let maximum = data.get(`${id}-max`);
+      let minimum = data.get(field.get_domel_id("min"));
+      let maximum = data.get(field.get_domel_id("max"));
       if (minimum) this.values.minimum = minimum.trim();
       if (maximum) this.values.maximum = maximum.trim();
     }
 
     if (TypedInput.types_with_placeholder.indexOf(this.type) > -1) {
-      let placeholder = data.get(`${id}-placeholder`);
-      if (placeholder) this.values.placeholder = placeholder.trim();
+      let placeholder = data.get(field.get_domel_id("placeholder"));
+      this.values.placeholder = placeholder.trim();
     } else {
       this.values.placeholder = "";
     }
     if (TypedInput.types_with_regex.indexOf(this.type) > -1) {
-      let pattern = data.get(`${id}-regex`);
+      let pattern = data.get(field.get_domel_id("regex"));
       if (pattern != undefined) this.values.pattern = pattern.trim();
     } else {
       this.values.pattern = "";
@@ -1615,15 +1323,15 @@ class TypedInput extends InputField {
   reset() {
     let form = this.form_field.form;
     // remove the min and max fields if they exist
-    if (form.querySelector(`#div-${this.id}-min`) != undefined) {
-      form.removeChild(document.getElementById(`div-${this.id}-min`));
-      form.removeChild(document.getElementById(`div-${this.id}-max`));
+    if (this.get_form_div("max") != null) {
+      this.get_form_div("max").remove();
+      this.get_form_div("min").remove();
     }
-    if (form.querySelector(`#div-${this.id}-placeholder`) != undefined) {
-      form.querySelector(`#${this.id}-placeholder`).type = "text";
+    if (this.get_form_div("placeholder") != null) {
+      this.get_form_input("placeholder").type = "text";
     }
-    if (form.querySelector(`#div-${this.id}-default`) != undefined) {
-      form.querySelector(`#${this.id}-default`).type = "text";
+    if (this.get_form_div("default") != undefined) {
+      this.get_form_input("default").type = "text";
     }
     this.values = { placeholder: "", pattern: "" };
     this.temp_values = {
@@ -1781,22 +1489,11 @@ class TypedInput extends InputField {
  * @property {FieldInfo} json_source Contents coming from a JSON file, used to fill in the `editor`.
  */
 class ObjectInput extends InputField {
-  /**
-   * Initialize a new Field in a (mini-)schema.
-   * @class
-   */
-  constructor(schema, data_status = null) {
-    super(schema, data_status);
-  }
 
   form_type = "object";
   button_title = "Composite field";
   description =
     "This can contain any combination of the previous form elements.<br>";
-
-  get editing_modal_id() {
-    return `form-${this.schema.prefix}-${this.id}`;
-  }
 
   /**
    * Create and link a mini-schema (ObjectEditor) to contain the subfields.
@@ -1806,8 +1503,16 @@ class ObjectInput extends InputField {
     if (this.minischema == undefined) {
       this.minischema = new ObjectEditor(this);
     }
-    // Start up the editor (offering subfield options)
-    this.minischema.display_options();
+    // Assign the id of the modal as the hook of the editor
+    this.minischema.card_id = this.get_domel_id("editor");
+    this.minischema.name = this.name;
+    // if there is existing data, fill in the editor
+    if (this.json_source != undefined) {
+      this.minischema.from_json(this.json_source);
+    }
+    if (this.schema) {
+      this.minischema.prefix = this.schema.prefixed;
+    }
   }
 
   /**
@@ -1825,9 +1530,9 @@ class ObjectInput extends InputField {
       type: "object",
     };
 
-    if (this.required) json.required = this.required;
-    if (this.repeatable) json.repeatable = this.repeatable;
-    if (this.help) json.help = this.help;
+    json.required = this.required;
+    json.repeatable = this.repeatable;
+    json.help = this.help;
 
     return json;
   }
@@ -1849,9 +1554,8 @@ class ObjectInput extends InputField {
   }
 
   get default_help() {
-    return `Nested form with ${
-      this.minischema ? this.minischema.fields.length : " "
-    }subfields that go together.`;
+    return `Nested form with ${this.minischema ? this.minischema.fields.length : " "
+      }subfields that go together.`;
   }
 
   /**
@@ -1918,6 +1622,7 @@ class ObjectInput extends InputField {
   //  */
   create_editor() {
     this.create_form();
+    this.minischema.fields.forEach((field) => field.view_field());
     // this.view_field();
 
     const form = this.form_field.form;
@@ -1934,71 +1639,44 @@ class ObjectInput extends InputField {
       }
     });
 
-    // Assign the id of the modal as the hook of the editor
-    this.minischema.card_id = this.editing_modal_id;
-    // if there is existing data, fill in the editor
-    if (this.json_source != undefined) {
-      this.minischema.from_json(this.json_source, this.id);
-      this.minischema.fields.forEach((field) => field.view_field());
-    }
+  }
+
+  attach_schema(schema) {
+    super.attach_schema(schema);
+
   }
 
   render() {
-    const clone = new ObjectInput(this.schema);
-    clone.id = `i${this.schema.empty_composite_idx}ctemp`;
-    this.schema.empty_composite_idx += 1;
-    this.schema.add_wip(clone.id);
-    clone.create_editor();
-    let new_button = Field.quick(
-      "button",
-      "btn btn-primary choice-button",
-      this.button_title
-    );
-    new_button.addEventListener("click", () => {
-      this.schema.wip.push(clone.id);
+    return this.create_example();
+  }
+
+  setup_rendering_button(button, parent_modal) {
+
+    button.addEventListener("click", () => {
+      const clone = new ObjectInput();
+      clone.attach_schema(this.schema);
+      clone.create_editor();
+      clone.name = "composite-temp";
       clone.title = "TEMPORARY COMPOSITE FIELD";
       clone.add_to_schema();
-      bootstrap.Modal.getOrCreateInstance(
-        document.getElementById(this.schema.modal_id)
-      ).hide();
+      parent_modal.hide();
     });
-
-    let new_form = InputField.example_box(new_button);
-    new_form.appendChild(this.create_example());
-
-    return new_form;
   }
 
   register_fields() {
-    // retrieve data from the form
-    let data = new FormData(this.form_field.form);
-    let old_id = this.id;
-    let new_id = data.get(`${this.id}-id`).trim();
-    // capture the 'default' value if relevant
-    let help = data.get(`${this.id}-help`);
-    this.help = help.trim();
-
-    // if we are updating an existing field without changing the ID
-    this.title = data.get(`${this.id}-label`).trim();
+    this.recover_fields(this);
     this.form_field.form.parentElement.parentElement.querySelector(
       ".card-header h5"
     ).innerHTML = this.title;
-    this.recover_fields(this.id, data); // update the field
-
-    if (old_id == new_id) {
-      this.update_field(); // update the schema
-    } else {
-      this.new_name = new_id;
-      this.minischema.new_name = new_id;
-    }
+    this.minischema.prefix = this.schema.prefixed;
+    this.minischema.name = this.name;;
   }
 
   update_field() {
     super.update_field();
-    const form = this.form_field.form;
-    form.querySelector(`input#${this.id}-label`).value = this.title;
-    form.querySelector(`input#${this.id}-repeatable`).value = this.repeatable;
-    form.querySelector(`textarea#${this.id}-help`).value = this.help
+    this.get_form_input("title").value = this.title;
+    this.get_form_input("repeatable") = this.repeatable;
+    document.querySelector(`textarea#${this.get_domel_id("help")}`).value = this.help
       ? this.help
       : "";
   }
@@ -2103,8 +1781,8 @@ class MultipleInput extends InputField {
    * Initialize a new MultipleInput Field in a (mini-)schema.
    * @class
    */
-  constructor(schema, data_status = null) {
-    super(schema, data_status);
+  constructor() {
+    super();
     this.type = "select";
     this.values.values = [];
   }
@@ -2130,15 +1808,14 @@ class MultipleInput extends InputField {
   }
 
   get default_help() {
-    return `Choose ${this.values.multiple ? "at least " : ""}one of ${
-      this.temp_options.length
-    } options.`;
+    return `Choose ${this.values.multiple ? "at least " : ""}one of ${this.temp_options.length
+      } options.`;
   }
 
   update_field() {
     super.update_field();
     this.schema.field_box
-      .querySelector(`#${this.id} .card-body`)
+      .querySelector(`#${this.get_domel_id("viewer")} .card-body`)
       .firstChild.replaceWith(this.viewer_input());
     this.activate_autocomplete();
   }
@@ -2160,7 +1837,7 @@ class MultipleInput extends InputField {
       if (this.values.multiple) {
         // if many values are possible
         this.answers_div = Field.quick("div", "my-2");
-        this.answers_div.id = `${this.name}-answers`;
+        this.answers_div.id = `${this.get_domel_id("answers")}`;
       }
       with_autocomplete = true;
     } else {
@@ -2173,7 +1850,7 @@ class MultipleInput extends InputField {
     // create description
     if (this.help) {
       let subtitle = Field.quick("div", "form-text mt-0 mb-1", this.help);
-      subtitle.id = "help-" + this.id;
+      subtitle.id = this.get_domel_id("help");
       div.appendChild(subtitle);
 
       if (with_autocomplete || this.values.ui == "dropdown") {
@@ -2206,67 +1883,51 @@ class MultipleInput extends InputField {
     return Field.quick(
       "div",
       "invalid-feedback",
-      `${is_required_msg}Please provide ${
-        this.values.multiple ? "at least " : ""
+      `${is_required_msg}Please provide ${this.values.multiple ? "at least " : ""
       }one of the accepted options.`
     );
   }
 
-  autocomplete_selector(editor = false) {
-    let parent_selector = null;
-    if (editor) {
-      if (this.schema.field_box != null) {
-        parent_selector = this.schema.field_box.querySelector(`#${this.id}`);
-      }
-    } else if (this.schema.viewer != null) {
-      parent_selector = [...this.schema.viewer.childNodes].filter(
-        (x) => x.getAttribute("data-field-name") == this.id
-      )[0];
-    }
-    return parent_selector == null
-      ? undefined
-      : parent_selector.querySelector("input[type='search']");
+  get autocomplete_selector() {
+    return document.getElementById(this.get_domel_id("search"));
   }
 
   activate_autocomplete() {
-    [
-      this.autocomplete_selector(), // field in the form
-      this.autocomplete_selector(true), // field in the editor
-    ].forEach((this_selector) => {
-      if (this_selector == undefined) {
-        return;
-      }
-      const autocomplete = new autoComplete({
-        selector: () => {
-          return this_selector;
+    if (this.autocomplete_selector == null) {
+      return undefined;
+    }
+    const autocomplete = new autoComplete({
+      selector: () => {
+        return this.autocomplete_selector;
+      },
+      placeHolder: this.default != undefined ? this.default : "Search...",
+      data: { src: this.values.values, cache: true },
+      resultsList: {
+        element: (list, data) => {
+          if (!data.results.length) {
+            const msg = Field.quick(
+              "div",
+              "no_result",
+              `<span>No results found</span>`
+            );
+            list.prepend(msg);
+          }
         },
-        placeHolder: this.default != undefined ? this.default : "Search...",
-        data: { src: this.values.values, cache: true },
-        resultsList: {
-          element: (list, data) => {
-            if (!data.results.length) {
-              const msg = Field.quick(
-                "div",
-                "no_result",
-                `<span>No results found</span>`
-              );
-              list.prepend(msg);
-            }
-          },
-          noResults: true,
-          maxResults: 20,
-        },
-        resultItem: {
-          highlight: true,
-        },
-      });
-      this_selector.parentElement.appendChild(this.validator_message);
+        noResults: true,
+        maxResults: 20,
+      },
+      resultItem: {
+        highlight: true,
+      },
     });
+    this.autocomplete_selector.parentElement.appendChild(this.validator_message);
+
   }
 
   read_autocomplete() {
-    const autocomplete_field = this.autocomplete_selector();
-    if (this.autocomplete_selector() == undefined) {
+    const autocomplete_field = this.autocomplete_selector;
+
+    if (this.autocomplete_selector == undefined) {
       return undefined;
     }
     if (this.values.multiple) {
@@ -2305,7 +1966,7 @@ class MultipleInput extends InputField {
     this.setup_form();
 
     const nav_bar_container = Field.quick("div", "shadow p-2 rounded");
-    this.options_navbar = new NavBar(`${this.editing_modal_id}-optionstab`, [
+    this.options_navbar = new NavBar(this.get_domel_id("optionstab"), [
       "nav-pills",
       "nav-justified",
     ]);
@@ -2323,8 +1984,9 @@ class MultipleInput extends InputField {
     this.options_navbar.nav_bar.childNodes.forEach((nav_item) => {
       nav_item.querySelector("button").addEventListener("shown.bs.tab", () => {
         if (
-          this.form_field.form.querySelector(`select#${this.id}-default`) !==
-          undefined
+          this.form_field.form.querySelector(
+            `select#${this.get_domel_id("default")}`
+          ) !== undefined
         ) {
           this.relevant_id = nav_item.querySelector("button").id.split("-")[0];
           this.update_default_field();
@@ -2354,6 +2016,7 @@ class MultipleInput extends InputField {
       input.addEventListener("change", () => {
         this.toggle_editing_navbar("movers");
         this.toggle_dropdown_switch();
+        this.update_default_field();
         this.update_help();
         this.alert_repeated_movers(moving_div);
       });
@@ -2361,9 +2024,13 @@ class MultipleInput extends InputField {
     moving_div.querySelectorAll("button.rem").forEach((input) => {
       input.addEventListener("click", () => {
         this.toggle_dropdown_switch();
-        this.update_default_field();
         this.update_help();
         this.alert_repeated_movers(moving_div);
+      });
+    });
+    moving_div.querySelectorAll("button.mover").forEach((input) => {
+      input.addEventListener("click", () => {
+        this.update_default_field();
       });
     });
   }
@@ -2436,6 +2103,7 @@ class MultipleInput extends InputField {
         msg_row.remove();
 
         this.toggle_dropdown_switch();
+        this.update_default_field();
         this.update_help();
       });
       col_right.appendChild(btn);
@@ -2453,7 +2121,7 @@ class MultipleInput extends InputField {
     const description = "Type or paste your options, one per line.";
     const textarea_div = this.form_field.add_input(
       "Type options",
-      `${this.id}-typed`,
+      this.get_domel_id("typed"),
       {
         description: description,
         required: false,
@@ -2497,7 +2165,7 @@ class MultipleInput extends InputField {
     };
 
     let file_div = Field.quick("div", "ex my-2");
-    const file_input_id = `${this.schema.prefix}-${this.id}-optionsfile`;
+    const file_input_id = this.get_domel_id("optionsfile");
 
     let label = Field.quick(
       "label",
@@ -2602,6 +2270,10 @@ class MultipleInput extends InputField {
           );
           this.listen_to_movers(active_tab.querySelector(".mover-container"));
         }
+
+        this.toggle_dropdown_switch();
+        this.update_default_field();
+        this.update_help();
       });
       col_right.appendChild(btn);
 
@@ -2655,12 +2327,13 @@ class MultipleInput extends InputField {
    * Read the form used to edit the field and register the values (on submission).
    * @param {FormData} data Contents of the editing form of the field.
    */
-  recover_fields(id, data) {
+  recover_fields(field) {
+    const data = super.recover_fields(field);
     // reset whatever values existing
     this.values.values = data.map((x) => x.trim()).filter((x) => x.length > 0);
 
     // if the form in the modal already exists
-    if (this.options_navbar) {
+    if (this.form_field) {
       if (!this.relevant_id.startsWith("textarea")) {
         this.options_navbar.tab_content.querySelector("textarea").value =
           this.values.values.join("\n");
@@ -2683,23 +2356,26 @@ class MultipleInput extends InputField {
         this.options_navbar.tab_content.querySelector("pre").innerHTML =
           values_as_text;
       }
-    }
 
-    let default_field = this.form_field.form.querySelector(`#${id}-default`);
-    if (default_field !== null) {
-      let selected = default_field.querySelector("option[selected]");
-      let selected_value = selected == null ? null : selected.value.trim();
-      default_field.querySelectorAll("option").forEach((x) => x.remove());
-      for (let val of this.values.values) {
-        let new_option = document.createElement("option");
-        new_option.value = val;
-        new_option.innerHTML = val;
-        if (selected_value != null && val == selected_value) {
-          new_option.setAttribute("selected", "");
+
+      let default_field = this.form_field.form.querySelector(`select#${this.get_domel_id("default")}`);
+      if (default_field !== null) {
+        let selected = default_field.querySelector("option[selected]");
+        let selected_value = selected == null ? null : selected.value.trim();
+        default_field.querySelectorAll("option").forEach((x) => x.remove());
+        for (let val of this.values.values) {
+          let new_option = document.createElement("option");
+          new_option.value = val;
+          new_option.innerHTML = val;
+          if (selected_value != null && val == selected_value) {
+            new_option.setAttribute("selected", "");
+          }
+          default_field.appendChild(new_option);
         }
-        default_field.appendChild(new_option);
       }
     }
+
+
   }
 
   update_default_field() {
@@ -2869,8 +2545,8 @@ class SelectInput extends MultipleInput {
    * Initialize a new SelectInput Field in a (mini-)schema.
    * @class
    */
-  constructor(schema, data_status = null) {
-    super(schema, data_status);
+  constructor() {
+    super();
     this.values.multiple = false;
     this.values.ui = "radio";
   }
@@ -2888,7 +2564,7 @@ class SelectInput extends MultipleInput {
     if (typeof this.values.values == "object") {
       this.form_field.add_select(
         "Default value (if field is required)",
-        `${this.id}-default`,
+        this.get_domel_id("default"),
         this.values.values,
         this.default
       );
@@ -2897,7 +2573,7 @@ class SelectInput extends MultipleInput {
 
   update_default_field() {
     let default_field = this.form_field.form.querySelector(
-      `select#${this.id}-default`
+      `select#${this.get_domel_id("default")}`
     );
     if (typeof this.temp_options == "string") {
       default_field.setAttribute("disabled", "");
@@ -2991,10 +2667,9 @@ class CheckboxInput extends MultipleInput {
    * Initialize a new CheckboxInput Field in a (mini-)schema.
    * @class
    * @param {String} schema_name Name of the schema that the field is attached to, for form identification purposes.
-   * @param {String} [data_status=draft] Status of the schema version that the field is attached to, for form identification purposes.
    */
-  constructor(schema, data_status = null) {
-    super(schema, data_status);
+  constructor() {
+    super();
     this.values.multiple = true;
     this.values.ui = "checkbox";
   }

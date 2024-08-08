@@ -118,7 +118,7 @@ class Field {
 
   static autocomplete(field, active) {
     const input_tag = document.createElement("input");
-    input_tag.id = `${field.schema.name}-${field.data_status}-${field.id}`;
+    input_tag.id = field.get_domel_id("search");
     input_tag.type = "search";
 
     if (active) {
@@ -221,7 +221,7 @@ class MovingField {
    * @abstract
    */
   move_up() {
-    return;
+    return null;
   }
 
   /**
@@ -229,7 +229,7 @@ class MovingField {
    * @abstract
    */
   move_down() {
-    return;
+    return null;
   }
 
   /**
@@ -241,11 +241,10 @@ class MovingField {
    */
   add_btn(className, symbol, action = false, color = "primary") {
     // use outlines for MovingViewer and filled buttons for MovingChoice
-    let button_color = `btn-${
-      this.constructor.name == "MovingViewer" ? "outline-" : ""
-    }${color}`;
+    let button_color = `btn-${this.constructor.name == "MovingViewer" ? "outline-" : ""
+      }${color}`;
     let btn = Field.quick("button", `btn ${button_color} mover ${className}`);
-    btn.id = `${className}-${this.idx}`;
+    btn.id = `${this.idx}-${className}`;
     // what should the button do on click?
     if (action) {
       btn.addEventListener("click", (e) => {
@@ -282,16 +281,18 @@ class MovingViewer extends MovingField {
    * @param {InputField} form Field to be edited.
    * @param {ComplexField} schema Schema or mini-schema of a composite field to which the field belongs.
    */
-  constructor(form) {
-    super(form.id);
-    this.is_composite = form.constructor.name == "ObjectInput";
-    this.title = form.required ? form.title + "*" : form.title;
-    this.repeatable = form.repeatable;
+  constructor(field) {
+    super(field.id);
+    this.is_composite = field.constructor.name == "ObjectInput";
+    this.title = field.required ? field.title + "*" : field.title;
+    this.repeatable = field.repeatable;
 
     // div element
     this.div = Field.quick("div", "card border-primary viewer");
-    this.div.id = form.id;
-    this.body = this.is_composite ? form.form_field.form : form.viewer_input();
+    this.div.id = field.get_domel_id("viewer");
+    this.body = this.is_composite
+      ? field.form_field.form
+      : field.viewer_input();
     const search_input = this.body.querySelector("input[type='search']");
     if (search_input != undefined) {
       search_input.id = search_input.id + "-editor";
@@ -299,26 +300,18 @@ class MovingViewer extends MovingField {
 
     // more buttons
     this.rem = this.add_btn("rem", "trash", () => this.remove());
-    this.copy = this.add_btn("copy", "front", () => this.duplicate(form));
+    this.copy = this.add_btn("copy", "front", () => this.duplicate(field));
     // Modal called for editing the field
     if (!this.is_composite) {
       let modal = bootstrap.Modal.getOrCreateInstance(
-        document.getElementById(form.editing_modal_id)
+        document.getElementById(field.get_domel_id("editor"))
       );
       this.edit = this.add_btn("edit", "pencil", () => modal.toggle());
-    }
-    // aesthetics when a field has just been duplicated
-    if (form.is_duplicate) {
-      this.copy.setAttribute("disabled", "");
-      // this.edit.classList.replace('btn-outline-primary', 'btn-primary');
-      if (this.edit) {
-        this.edit.classList.add("shadow");
-      }
     }
 
     // bring everything together
     this.assemble();
-    this.schema = form.schema;
+    this.schema = field.schema;
   }
 
   get position() {
@@ -331,16 +324,10 @@ class MovingViewer extends MovingField {
    * The duplicate itself cannot be copied (the button is disabled) and the "edit" button is highlighted.
    * @param {InputField} form Field to duplicate / copy / clone.
    */
-  duplicate(form) {
-    // keep track of how many copies have been made, for temp-ID purposes
-    if (form.copies) {
-      form.copies += 1;
-    } else {
-      form.copies = 1;
-    }
-
+  duplicate(field) {
     // Transfer values of the original field to the copy
-    const clone = form.clone(`${form.id}-copy${form.copies}`, form.title);
+    const clone = field.clone(true);
+    clone.attach_schema(field.schema);
     // Create the form and the modal corresponding to the clone field
     clone.create_editor();
     // Add the cloned field to the (mini-)schema it belongs to
@@ -348,11 +335,9 @@ class MovingViewer extends MovingField {
 
     // Transfer the mini-schema if the field is composite
     if (this.is_composite) {
-      form.minischema.fields.forEach((field) => {
-        const miniclone = field.clone(field.id, field.title);
-        miniclone.schema = clone.minischema;
-        miniclone.data_status = clone.minischema.data_status;
-        miniclone.id_regex = clone.minischema.field_id_regex;
+      field.minischema.fields.forEach((subfield) => {
+        const miniclone = subfield.clone();
+        miniclone.attach_schema(clone.minischema);
         miniclone.create_editor();
         miniclone.add_to_schema();
       });
@@ -673,7 +658,7 @@ class BasicForm {
   constructor(id) {
     // create the form itself
     this.form = Field.quick("form", "m-3 needs-validation");
-    this.form.id = `form-${id}`;
+    this.form.id = `${id}-form`;
     this.form.setAttribute("novalidate", "");
 
     // if this form edits a multiple-choice field, we have to keep track of the moving input fields
@@ -699,7 +684,7 @@ class BasicForm {
    * @param {String} [placeholder="Some text"] A placeholder for the input field.
    * @param {String|Boolean} [value=false] Value to fill into the input field, if it exists.
    * @param {String} [validation_message="This field is compulsory"] Message to show when the input field does not fulfill the validation criteria on form submission.
-   * @param {String} [pattenr=".*"] A regular expression that the (text) input field must match to be accepted on submission.
+   * @param {String} [pattern=".*"] A regular expression that the (text) input field must match to be accepted on submission.
    * @param {Boolean} [required=true] Whether the input field should be required.
    */
   add_input(
@@ -1046,7 +1031,7 @@ class SchemaDraftForm extends BasicForm {
    */
   constructor(schema) {
     // initialize a BasicForm
-    super(`${schema.card_id}-${schema.data_status}`);
+    super(`${schema.card_id}`);
 
     // add action and method attributes for submission
     this.form.setAttribute("action", schema.urls.new);

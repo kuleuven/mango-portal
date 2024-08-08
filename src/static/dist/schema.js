@@ -1,9 +1,6 @@
 /**
  * Master class to represent schemas and mini-schemas. Only the child classes are actually instantiated.
- * @property {String} modal_id ID of the modal through which a new input field can be chosen.
- * @property {String} initial_name Placeholder name for DOM element IDs.
  * @property {String} title User-facing label of the schema (or composite field).
- * @property {String} data_status Derived status used for IDs of DOM elements, e.g. 'new', 'copy', 'draft'...
  * @property {Object<String,InputField>} placeholders Collection of empty fields to start creating.
  * @property {TypedInput} placeholders.typed Placeholder for a simple field.
  * @property {SelectInput} placeholders.select Placeholder for a single-value multiple-choice field.
@@ -18,24 +15,11 @@ class ComplexField {
    * Initialize a Schema, mini-schema for a composite field or dummy mini-schema for illustrating a composite field.
    * @class
    * @param {String} name Initial name of the schema, for IDs of the DOM elements.
-   * @param {String} data_status Derived status used in IDs of DOM elements.
    */
-  constructor(name, data_status = "draft") {
+  constructor(name) {
     // properties of the schema itself
-    this.initial_name = name;
-
-    if (!String(data_status).endsWith("undefined")) {
-      this.data_status = data_status;
-    }
     this.field_id_regex = "[a-zA-Z0-9_\\-]+";
-
-    // Placeholder fields to start with
-    this.placeholders = {
-      typed: new TypedInput(this),
-      select: new SelectInput(this),
-      checkbox: new CheckboxInput(this),
-      object: new ObjectInput(this),
-    };
+    this.name = name;
 
     // initial state before adding any fields
     this.fields = [];
@@ -45,12 +29,8 @@ class ComplexField {
 
   is_composite = false;
 
-  get prefix() {
-    return `mgs__${this.name}`;
-  }
-
-  get modal_id() {
-    return `m-${this.prefix}-${this.data_status}`;
+  get prefixed() {
+    return `${this.prefix || prefix}.${this.name}`;
   }
 
   get field_ids() {
@@ -74,13 +54,10 @@ class ComplexField {
   }
 
   update_field_id_regex() {
-    this.field_id_regex = `^((?!^${this.field_ids.join(
-      "$|^"
-    )}$)[a-z0-9_\\-]+)+$`;
+    this.field_id_regex = `^((?!^${this.fields
+      .map((x) => x.name)
+      .join("$|^")}$)[a-zA-Z0-9_\\-]+)+$`;
     this.fields.forEach((field) => field.update_id_regex(this.field_id_regex));
-    Object.keys(this.placeholders).forEach((key) => {
-      this.placeholders[key].update_id_regex(this.field_id_regex);
-    });
   }
 
   /**
@@ -88,7 +65,7 @@ class ComplexField {
    */
   fields_to_json() {
     this.properties = Object.fromEntries(
-      this.fields.map((field) => [field.id, field.json])
+      this.fields.map((field) => [field.name, field.json])
     );
   }
 
@@ -104,36 +81,31 @@ class ComplexField {
    * Capture data from the JSON representation of a schema.
    * @param {SchemaContents} data JSON representation of a schema
    */
-  from_json(data, id = null) {
+  from_json(data) {
     // The ID of the schema is coded as `schema_name` for the schemas
-    this.name = id == null ? data.schema_name : id;
     this.title = data.title;
     this.status = data.status; // only relevant for Schema class
-    this.data_status = this.set_data_status();
-    if (!this.data_status.startsWith("object")) {
-      this.ls_id = `_mgs_${this.card_id}_${this.data_status}`;
-    }
-    if (this.ls_id != undefined && this.ls_id in localStorage) {
+    if (
+      this.status == "draft" &&
+      this.ls_id != undefined &&
+      this.ls_id in localStorage
+    ) {
       let schema_from_ls = JSON.parse(localStorage.getItem(this.ls_id));
-      this.properties_from_json(schema_from_ls);
+      this.properties_from_json(schema_from_ls.properties);
       this.wip = schema_from_ls.wip;
     } else {
-      this.properties_from_json(data);
+      this.properties_from_json(data.properties);
     }
   }
 
-  properties_from_json(data) {
-    const is_manager = !this.data_status.endsWith("undefined");
-    Object.entries(data.properties).forEach((field) => {
-      let new_field = InputField.choose_class(this, null, field);
-      if (is_manager) {
-        new_field.create_editor();
-      }
+  properties_from_json(properties) {
+    Object.entries(properties).forEach((field) => {
+      let new_field = InputField.choose_class(field);
+      new_field.attach_schema(this);
+      new_field.create_editor();
       this.fields.push(new_field);
     });
-    if (is_manager) {
-      this.update_field_id_regex();
-    }
+    this.update_field_id_regex();
   }
 
   /**
@@ -142,10 +114,8 @@ class ComplexField {
    */
   add_fields_from_json(data, modal_id) {
     Object.keys(data).forEach((field_id) => {
-      let new_field = InputField.choose_class(this, null, [
-        field_id,
-        data[field_id],
-      ]);
+      let new_field = InputField.choose_class([field_id, data[field_id]]);
+      new_field.attach_schema(this);
       new_field.create_editor();
       new_field.add_to_schema();
     });
@@ -153,49 +123,6 @@ class ComplexField {
     bootstrap.Modal.getOrCreateInstance(
       document.getElementById(modal_id)
     ).toggle();
-  }
-
-  /**
-   * Compute the `data_status` property based on the status of the version.
-   * @returns {String}
-   */
-  set_data_status() {
-    return;
-  }
-
-  /**
-   * Create a modal that offers the different fields that can be added and fill it when shown.
-   */
-  display_options() {
-    if (this.data_status.endsWith("library")) {
-      return;
-    }
-    this.data_status = this.set_data_status(); // to make sure it's correct (but maybe this is redundant)
-    this.ls_id = `_mgs_${this.card_id}_${this.data_status}`;
-
-    // create a div to fill in with the different field examples
-    let design_modal_contents = Field.quick("div", "formContainer");
-    design_modal_contents.id = this.data_status + "-templates";
-
-    // create the modal and add the div
-    let design_modal = new Modal(
-      this.modal_id + "-design",
-      "What form element would you like to create?"
-    );
-    design_modal.create_modal([design_modal_contents], "lg");
-
-    // when the modal is first shown, render all the placeholder fields
-    let design_modal_modal = document.getElementById(this.modal_id + "-design");
-    design_modal_modal.addEventListener("show.bs.modal", () => {
-      let design_modal_contents =
-        design_modal_modal.querySelector("div.formContainer");
-      if (design_modal_contents.childNodes.length == 0) {
-        Object.values(this.placeholders).forEach((placeholder) => {
-          placeholder.data_status = this.data_status;
-          design_modal_contents.appendChild(placeholder.render());
-        });
-      }
-    });
   }
 
   /**
@@ -207,7 +134,7 @@ class ComplexField {
     let form = this.form_div;
 
     // Check if any field is a duplicate
-    const has_duplicates = this.fields.some((field) => field.is_duplicate);
+    const has_duplicates = this.fields.some((field) => field.is_duplicate); // not gonna happen
     const has_wip_composites = this.fields.some(
       (field) => field.minischema && field.minischema.wip.length > 0
     );
@@ -249,37 +176,20 @@ class ComplexField {
     button_pre.prepend(plus_icon);
     div.appendChild(button_pre);
 
-    let buttons = [
-      { id: "library", message: "Browse library", modal_id: Library.modal_id },
-      {
-        id: "design",
-        message: "Design from scratch",
-        modal_id: `${this.modal_id}-design`,
-      },
-      { id: "file", message: "Upload JSON", modal_id: JsonInput.modal_id },
-    ];
+    let input_methods = [library_request.library, designer, json_input];
 
-    buttons.forEach((button) => {
+    input_methods.forEach((im) => {
       let btn = Field.quick(
         "button",
         "btn btn-primary btn-sm fw-bold ms-1",
-        button.message
+        im.message
       );
       btn.type = "button";
-      btn.id = button.id;
+      btn.id = im.name;
       btn.setAttribute("data-bs-toggle", "modal");
-      btn.setAttribute("data-bs-target", `#${button.modal_id}`);
+      btn.setAttribute("data-bs-target", `#${im.modal_id}`);
       // on click, the modal will also update `new_field_idx` based on the index of the field on top of it
-      btn.addEventListener("click", () => {
-        this.new_field_idx = div.previousSibling.classList.contains("viewer")
-          ? this.field_ids.indexOf(div.previousSibling.id) + 1
-          : 0;
-        if (button.id == "library") {
-          library_request.library.attach_schema(this);
-        } else if (button.id == "file") {
-          json_input.attach_schema(this);
-        }
-      });
+      btn.addEventListener("click", () => im.attach_schema(this));
       div.appendChild(btn);
     });
 
@@ -298,7 +208,7 @@ class ComplexField {
       this.name = "schema-editor"; // then the name should be 'schema-editor'
     } else if (this.parent) {
       // if this is the clone of another schema
-      this.name = this.parent.match(/(.+)-\d+\.\d\.\d/)[1]; // get the name of the parent (no versions)
+      this.name = this.parent.match(/(.+)-\d+\.\d\.\d/)[1] + "-copy"; // get the name of the parent (no versions)
     }
   }
 
@@ -319,7 +229,6 @@ class ComplexField {
         : Field.quick("div", "input-view");
 
     // go through each of the fields
-    // QUESTION should the code inside the forEach be defined in the InputField classes?
     schema.fields.forEach((field) => {
       div.appendChild(ComplexField.add_field_viewer(field, active));
     });
@@ -330,7 +239,7 @@ class ComplexField {
   static add_field_viewer(subfield, active = false) {
     // create a div for the input field
     let small_div = Field.quick("div", "mini-viewer");
-    small_div.setAttribute("data-field-name", subfield.id);
+    small_div.setAttribute("data-field-name", subfield.name);
     let label;
 
     // special box and label if the field is a composite field
@@ -411,7 +320,6 @@ class DummyObject extends ComplexField {
     // Initialize the basics - all we care about is actually the viewer
     let schema_name = "example";
     super(schema_name, schema_name);
-    delete this.placeholders;
 
     // Create a simple field of type 'text' for illustration
     let name = new TypedInput(schema_name);
@@ -438,10 +346,8 @@ class DummyObject extends ComplexField {
 
 /**
  * Class for mini-schemas connected to a composite field.
- * `data_status` always starts with 'object', followed by the `data_status`
  * of the schema that the composite field belongs to.
  * @extends ComplexField
- * @property {String} parent_status `data_status` of the (mini-)schema the composite field belongs to.
  * @property {String} form_id ID of the editing form of the composite field this is linked to.
  * @property {String} card_id ID of the editing modal of the composite field this is linked to. Assigned by `ObjectInput.create_editor()`.
  */
@@ -451,11 +357,7 @@ class ObjectEditor extends ComplexField {
    * @param {ObjectInput} parent Composite field this mini-schema is linked to.
    */
   constructor(parent) {
-    const parent_status = String(parent.data_status);
-    super(
-      parent.id,
-      `${parent_status.startsWith("object") ? "" : "object-"}${parent_status}`
-    );
+    super(parent.id);
     this.composite = parent;
     if (this.composite.form_field != undefined) {
       this.form_div = this.composite.form_field.form;
@@ -464,22 +366,9 @@ class ObjectEditor extends ComplexField {
 
   is_composite = true;
 
-  get prefix() {
-    return `${this.composite.schema.prefix}-${this.composite.id}`;
-  }
-
   reset_wip() {
     this.wip = [];
     this.toggle_saving();
-  }
-  /**
-   * Obtain the data_status of the mini-schema.
-   * @returns {String} Derived status as used in IDs for DOM elements.
-   */
-  set_data_status() {
-    return String(this.composite.data_status).endsWith("undefined")
-      ? "undefined"
-      : this.data_status;
   }
 
   get card() {
@@ -502,23 +391,6 @@ class ObjectEditor extends ComplexField {
         .setAttribute("disabled", "");
     }
     this.composite.schema.toggle_saving();
-  }
-
-  set new_name(name) {
-    const current_ids = Object.fromEntries(
-      this.fields.map((field) => [field.id, field.editing_modal_id])
-    );
-    this.name = name;
-    this.composite.id = name;
-    const new_ids = Object.fromEntries(
-      this.fields.map((field) => [field.id, field.editing_modal_id])
-    );
-    this.fields.forEach((field) => {
-      const old_modal = document.getElementById(current_ids[field.id]);
-      if (old_modal != null) {
-        old_modal.id = new_ids[field.id];
-      }
-    });
   }
 }
 
@@ -547,19 +419,18 @@ class Schema extends ComplexField {
    * @param {String} container_id ID of the parent DIV.
    * @param {UrlsList} urls Collection of URLs and other information obtained from the server side.
    * @param {String} [version=1.0.0] Version number of this version of the schema.
-   * @param {String} [data_status=draft] Derived status used for IDs of DOM elements.
    */
-  constructor(
-    card_id,
-    container_id,
-    urls,
-    version = "1.0.0",
-    data_status = "draft"
-  ) {
-    super(card_id, data_status);
-    this.card_id = card_id;
-    this.ls_id = `_mgs_${this.card_id}_${this.data_status}`;
-    this.name = card_id.match(/^(.*)-\d+\d\d$/)[1];
+  constructor(card_id, container_id, urls, version = "1.0.0") {
+    const card_id_match = card_id.match(/^(.*)-(\d+\d+\d+)(-copy)?$/);
+    const clean_card_id = `${card_id_match[1]}-${card_id_match[2]}`;
+    super(clean_card_id);
+    this.card_id = clean_card_id;
+    this.name =
+      card_id_match[3] == undefined
+        ? card_id_match[1]
+        : card_id_match[1] + card_id_match[3];
+    this.ls_id = `_mgs_${card_id}`;
+    this.prefix = prefix;
     this.version = version;
     this.container = container_id;
     this.urls = urls;
@@ -575,44 +446,24 @@ class Schema extends ComplexField {
   from_json(data) {
     this.saved_json = data;
     super.from_json(data);
-    this.create_editor();
 
     // retrieve schema-specific information
     this.name = data.schema_name;
     this.version = data.version;
     this.parent = data.parent;
-  }
 
-  /**
-   * Obtain the data_status of the schema.
-   * This is used in the IDs of DOM elements related to editing a schema.
-   * - 'new' indicates a new draft from a published version.
-   * - 'draft' indicates a new schema from scratch or an existing draft version.
-   * - 'copy' indicates a clone of a published version (before it has been saved as draft).
-   * @returns {String} Derived status as used in IDs for DOM elements.
-   */
-  set_data_status() {
-    if (this.status == "published") {
-      return "new";
-    } else if (this.origin == undefined) {
-      return "draft";
-    } else {
-      return "copy";
-    }
+    this.create_editor();
   }
 
   /**
    * Create the editing form and option-display for a new schema to design from scratch.
    */
   create_creator() {
-    this.status = "draft";
-
     if (this.ls_id in localStorage && this.fields.length == 0) {
       let schema_from_ls = JSON.parse(localStorage.getItem(this.ls_id));
-      this.properties_from_json(schema_from_ls);
+      this.properties_from_json(schema_from_ls.properties);
     }
-    // Create modal that shows the possible fields to add
-    this.display_options();
+    this.status = "draft";
 
     // Create the form to assign ID and label and add fields
     this.create_editor();
@@ -643,16 +494,15 @@ class Schema extends ComplexField {
   create_editor() {
     // define if this is the first draft of a schema and it has never been saved
     let is_new =
-      this.data_status == "copy" || this.card_id.startsWith("schema-editor");
+      this.name.endsWith("copy") || this.card_id.startsWith("schema-editor");
 
     // create and add an input field for the ID (or 'name')
     this.form.add_input("Schema ID", this.card_id + "-name", {
       placeholder: "schema-name",
-      validation_message:
-        "This field is compulsory, please only use lower case letters or numbers, '_' and '-'. Existing IDs cannot be reused.",
+      validation_message: validation_text,
       pattern: schema_pattern,
       description: is_new
-        ? "This cannot be changed after the draft is saved."
+        ? "This cannot be changed after the draft is saved." + " " + description_text
         : false,
     });
     const name_input = this.form.form.querySelector(`#${this.card_id}-name`);
@@ -676,10 +526,9 @@ class Schema extends ComplexField {
       this.temp_title = title_input.value;
       this.add_wip(".title");
     });
-
     if (this.ls_id in localStorage) {
       let ls_data = JSON.parse(localStorage.getItem(this.ls_id));
-      if (is_new) {
+      if (is_new && "name" in ls_data) {
         name_input.value = this.temp_name = ls_data.name;
       }
       if ("title" in ls_data && ls_data.title !== undefined) {
@@ -714,9 +563,9 @@ class Schema extends ComplexField {
       } else {
         // trigger confirmation message, which also has its hidden fields
         let second_sentence =
-          this.data_status != "copy" &&
-          schemas[this.name] &&
-          schemas[this.name].published.length > 0
+          !this.card_id.endsWith("-copy") &&
+            schemas[this.name] &&
+            schemas[this.name].published.length > 0
             ? ` Version ${schemas[this.name].published[0]} will be archived.`
             : "";
         let starting_data = {
@@ -746,7 +595,7 @@ class Schema extends ComplexField {
       name_input.setAttribute("readonly", ""); // name cannot be changed if a version has been saved
       if (
         schemas[this.name].published.length +
-          schemas[this.name].archived.length >
+        schemas[this.name].archived.length >
         0
       ) {
         title_input.setAttribute("readonly", ""); // title cannot be changed if there is a published or archived version in history
@@ -767,38 +616,42 @@ class Schema extends ComplexField {
    */
   from_parent(parent) {
     this.parent = `${parent.name}-${parent.version}`; // register name and version of the parent
-    this.initial_name = `${parent.name}-new`;
-    this.status = "draft"; // start as draft (but data_status will be 'copy')
+    this.status = "draft";
     this.origin = {
       json: { ...parent.properties },
     };
+    if (this.ls_id != undefined && this.ls_id in localStorage) {
+      let schema_from_ls = JSON.parse(localStorage.getItem(this.ls_id));
+      this.properties_from_json(schema_from_ls.properties);
+      this.wip = schema_from_ls.wip;
+    } else {
+      this.properties_from_json(parent.properties);
+    }
+    this.create_editor(); // create form
     this.nav_bar = parent.nav_bar;
-    // go through each existing field and clone it
-    Object.entries(parent.properties).forEach((entry) => {
-      let new_field = InputField.choose_class(this, "child", entry);
-      new_field.create_editor();
-      this.fields.push(new_field);
-    });
   }
 
   /**
    * For published versions: create a clone/child as base for a new schema.
    */
   setup_copy() {
-    // get the object-version of the current fields
-    this.fields_to_json();
-
     // initialize a new schema and transfer the contents
     this.child = new Schema(
-      this.card_id,
+      this.card_id + "-copy",
       this.container,
       this.urls,
-      "1.0.0",
-      "copy"
+      "1.0.0"
     );
-    this.child.create_editor(); // create form
 
     this.child.from_parent(this);
+    this.nav_bar_btn_ids["create_new_schema_draft"] = this.nav_bar.add_item(
+      tab_prefixes["copy"],
+      "Copy to new schema"
+    ); // add to tabs
+    this.nav_bar.add_tab_content(tab_prefixes["copy"], this.child.form.form); // add form to tab
+    if (this.child.ls_id in localStorage) {
+      this.child.offer_reset_ls();
+    }
   }
 
   prepare_json_download() {
@@ -826,11 +679,11 @@ class Schema extends ComplexField {
     full_link.addEventListener(
       "click",
       (e) =>
-        (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(
-          this.saved_json,
-          null,
-          "  "
-        )}`)
+      (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(
+        this.saved_json,
+        null,
+        "  "
+      )}`)
     );
     for_download_full.appendChild(full_link);
 
@@ -855,11 +708,11 @@ class Schema extends ComplexField {
     fields_link.addEventListener(
       "click",
       (e) =>
-        (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(
-          to_download,
-          null,
-          "  "
-        )}`)
+      (e.target.href = `data:text/json;charset=utf-8,${JSON.stringify(
+        to_download,
+        null,
+        "  "
+      )}`)
     );
     for_download_full.appendChild(fields_link);
 
@@ -881,14 +734,14 @@ class Schema extends ComplexField {
 
     // checkboxes to select fields
     let field_checkboxes = Field.quick("div", "border rounded p-2 mb-1");
-    this.field_ids.forEach((field) => {
+    this.fields.forEach((field) => {
       let field_div = Field.quick("div", "form-check form-check-inline");
 
       let input = Field.quick("input", "form-check-input");
       input.type = "checkbox";
-      input.id = `download-${field}`;
-      input.value = field;
-      input.setAttribute("aria-label", `select-${field}`);
+      input.id = `download-${field.name}`;
+      input.value = field.name;
+      input.setAttribute("aria-label", `select-${field.name}`);
       input.setAttribute("checked", "");
       input.addEventListener("change", () => {
         let selected = [
@@ -925,9 +778,9 @@ class Schema extends ComplexField {
       let label = Field.quick(
         "label",
         "form-check-label font-monospace",
-        field
+        field.name
       );
-      label.setAttribute("for", `download-${field}`);
+      label.setAttribute("for", `download-${field.name}`);
       field_div.appendChild(input);
       field_div.appendChild(label);
       field_checkboxes.appendChild(field_div);
@@ -991,9 +844,6 @@ class Schema extends ComplexField {
         "Edit"
       );
 
-      // create the modal to show the options for new fields
-      this.display_options();
-
       // fill in the name and titles
       this.form.form.querySelector('[name="schema_name"]').value = this.name; // id
       if (
@@ -1030,21 +880,18 @@ class Schema extends ComplexField {
         }
       );
     } else if (this.status == "published") {
-      // create modal and form for a new draft
+      // get the object-version of the current fields
+      this.fields_to_json();
+
+      // create a form for a new draft
       // checks also for the existence of a draft version
-      this.draft_from_publish();
+      // only if there are no existing drafts
+      if (schemas[this.name].draft.length == 0) {
+        this.setup_draft();
+      }
 
       // initalize a new schema as child/clone and create its modal and form
       this.setup_copy();
-      this.child.display_options(); // create field-choice modal
-      this.nav_bar_btn_ids["create_new_schema_draft"] = this.nav_bar.add_item(
-        tab_prefixes["copy"],
-        "Copy to new schema"
-      ); // add to tabs
-      this.nav_bar.add_tab_content(tab_prefixes["copy"], this.child.form.form); // add form to tab
-      if (this.child.ls_id in localStorage) {
-        this.child.offer_reset_ls();
-      }
 
       // add a json view
       this.prepare_json_download();
@@ -1069,25 +916,42 @@ class Schema extends ComplexField {
     }
   }
 
+  setup_draft() {
+    this.nav_bar_btn_ids["create_draft"] = this.nav_bar.add_item(
+      tab_prefixes["new"],
+      "New (draft) version",
+      false,
+      1
+    ); // create tab
+
+    let incremented_major = parseInt(this.version.split(".")[0]) + 1;
+    this.temp = new Schema(
+      this.card_id,
+      this.container,
+      this.urls,
+      `${incremented_major}.0.0`
+    );
+    schemas[this.name].draft = this.temp.draft_from_publish(this);
+    // this.nav_bar.add_tab_content(tab_prefixes["new"], this.temp.form.form);
+  }
+
   /**
    * Set up an editor for a draft from a published version
    */
-  draft_from_publish() {
-    // only if there are no existing drafts
-    if (schemas[this.name].draft.length == 0) {
-      this.display_options(); // create field-choice modal
-      this.nav_bar_btn_ids["create_draft"] = this.nav_bar.add_item(
-        tab_prefixes["new"],
-        "New (draft) version",
-        false,
-        1
-      ); // create tab
-
-      // fill in name and title
-      this.form.form.querySelector('[name="schema_name"]').value = this.name; // id
-      this.form.form.querySelector('[name="title"]').value = this.title; // label
-
-      this.nav_bar.add_tab_content(tab_prefixes["new"], this.form.form); // add form to tab
+  draft_from_publish(previous_version) {
+    this.from_json({
+      schema_name: previous_version.name,
+      title: previous_version.title,
+      status: "draft",
+      version: this.version,
+      properties: { ...previous_version.properties },
+    });
+    this.nav_bar = previous_version.nav_bar; // fill in name and title
+    this.form.form.querySelector('[name="schema_name"]').value = this.name; // id
+    this.form.form.querySelector('[name="title"]').value = this.title; // label
+    this.nav_bar.add_tab_content(tab_prefixes["new"], this.form.form); // add form to tab
+    if (this.ls_id in localStorage) {
+      this.offer_reset_ls();
     }
   }
 
@@ -1115,7 +979,7 @@ class Schema extends ComplexField {
       }
     });
 
-    if (this.ls_id in localStorage) {
+    if (this.status == "draft" && this.ls_id in localStorage) {
       let schema_from_ls = JSON.parse(localStorage.getItem(this.ls_id));
       if (
         this.latest_saved == undefined ||
@@ -1144,6 +1008,9 @@ class Schema extends ComplexField {
 
     if (this.status == "published") {
       this.child.fields.forEach((field) => field.view_field());
+      if (this.temp) {
+        this.temp.fields.forEach((field) => field.view_field());
+      }
     }
 
     if (last_mod_ls in localStorage) {
@@ -1171,11 +1038,6 @@ class Schema extends ComplexField {
     // update the status
     let status = action == "publish" ? "published" : "draft";
 
-    // if this is a new version from an existing published one, increment the versio number
-    if (this.data_status == "new") {
-      let incremented_major = parseInt(this.version.split(".")[0]) + 1;
-      this.version = `${incremented_major}.0.0`;
-    }
     this.name = this.form.form.querySelector('[name="schema_name"]').value;
     this.title = this.form.form.querySelector('[name="title"]').value;
 
@@ -1221,7 +1083,7 @@ class Schema extends ComplexField {
       wip: this.wip,
     };
     if (
-      this.data_status == "copy" ||
+      this.card_id.endsWith("copy") ||
       this.card_id.startsWith("schema-editor")
     ) {
       to_save.name = this.temp_name ? this.temp_name : this.name;
@@ -1238,9 +1100,7 @@ class Schema extends ComplexField {
           timestamp: Date.now() / 1000,
           schema_name: this.name,
           schema_version: this.version,
-          editing_tab: `#${tab_prefixes[this.data_status]}-tab-${
-            this.nav_bar.id
-          }`,
+          editing_tab: this.editing_tab,
         })
       );
     }
@@ -1248,7 +1108,8 @@ class Schema extends ComplexField {
 
   offer_reset_ls() {
     const is_new =
-      this.data_status == "copy" || this.card_id.startsWith("schema-editor");
+      this.card_id.endsWith("-copy") ||
+      this.card_id.startsWith("schema-editor");
 
     const msg_row = Field.quick(
       "div",
@@ -1404,7 +1265,9 @@ class SchemaGroup {
       this.urls,
       version.version
     );
-    schema.latest_saved = this.latest_saved;
+    if (version.status == "draft") {
+      schema.latest_saved = this.latest_saved;
+    }
     schema.loaded = false;
     const accordion = nav_bar.tab_content.parentElement.parentElement;
 
@@ -1461,459 +1324,5 @@ class SchemaGroup {
       `${SchemaGroup.badge_url}-${status}-${SchemaGroup.status_colors[status]}`
     );
     return [version_badge, status_badge];
-  }
-}
-
-/**
- * Class for a published version of a schema to be used when applying metadata.
- * @property {String} name Name of the schema.
- * @property {String} title User-facing label/title of the schema.
- * @property {String} container_id ID of the DIV to which the form will be attached.
- * @property {String} prefix Prefix of the metadata attribute names, e.g. `msg.book`.
- * @property {String} realm Name of the realm to which the schema belongs.
- * @property {String} version Version number of the current schema version.
- * @property {String} parent Name of the schema this schema was cloned from, if relevant. (Not implemented)
- * @property {Object<String,InputField>} fields Collection of fields that constitute this schema.
- * @property {HTMLFormElement} form Form used to implement the metadata annotation.
- */
-class SchemaForm {
-  /**
-   * Create a form to apply metadata from a schema.
-   * @param {SchemaInfo} json Contents of the JSON file on which the schema is stored.
-   * @param {String} container_id ID of the DIV to which the form will be attached.
-   * @param {String} prefix Prefix of the metadata attribute names, e.g. `msg.book`.
-   */
-  constructor(json, container_id, prefix) {
-    // retrieve properties from the JSON contents
-    this.name = json.schema_name;
-    this.title = json.title;
-    this.realm = json.realm;
-    this.version = json.version;
-    this.parent = json.parent;
-
-    this.container = container_id;
-    this.prefix = prefix;
-
-    // create the form and add the fields
-    this.from_json(json.properties);
-  }
-
-  get field_ids() {
-    return this.fields.map((field) => field.id);
-  }
-
-  /**
-   * Create the form with all its fields.
-   * @param {Object<String,FieldInfo>} schema_json Collection of Object-versions of fields.
-   */
-  from_json(schema_json) {
-    function expand_composites(composite_field) {
-      composite_field.minischema = new ObjectEditor(composite_field);
-      composite_field.minischema.from_json(composite_field.json_source);
-      composite_field.minischema.fields.forEach((subfield) => {
-        if (subfield.form_type == "object") {
-          expand_composites(subfield);
-        }
-      });
-    }
-    // Go through each field in the JSON file and create its InputField
-    this.fields = Object.entries(schema_json).map((entry) => {
-      let new_field = InputField.choose_class(this, null, entry);
-      if (new_field.form_type == "object") {
-        expand_composites(new_field);
-      }
-      return new_field;
-    });
-
-    // Create names with the flattened ids, even inside objects
-    SchemaForm.flatten_object(this, this.prefix);
-
-    // Create the form, enabled for annotation
-    let form_div = ComplexField.create_viewer(this, true);
-
-    // Add a title to the form
-    let title = document.createElement("h3");
-    title.innerHTML = `<small class="text-muted">Metadata schema:</small> ${this.title} ${this.version}`;
-    document.getElementById(this.container).appendChild(title);
-
-    // Retrieve information from the URL and add it to the form as hidden fields
-    const url = new URL(window.location.href);
-    const url_params = url.searchParams;
-    let version_name = `${prefix}.__version__`;
-    for (let item of [
-      "item_type",
-      "object_path",
-      "schema",
-      "realm",
-      version_name,
-    ]) {
-      let hidden_input = document.createElement("input");
-      hidden_input.type = "hidden";
-      hidden_input.name = item;
-      hidden_input.value =
-        item == version_name ? this.version : url_params.get(item);
-      form_div.appendChild(hidden_input);
-    }
-
-    // Create a row for the submission button
-    let submitting_row = Field.quick("div", "row border-top pt-2");
-    let submitter = Field.quick("button", "btn btn-primary", "Save metadata");
-    submitter.type = "submit";
-    submitting_row.appendChild(submitter);
-    form_div.appendChild(submitting_row);
-
-    // Add attributes to the form so it submits directly
-    form_div.setAttribute("action", post_url);
-    form_div.setAttribute("method", "POST");
-    form_div.setAttribute("novalidate", "");
-    // Include BS5 validation
-    form_div.addEventListener("submit", (e) => {
-      if (!form_div.checkValidity()) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      form_div.classList.add("was-validated");
-    });
-
-    document.getElementById(this.container).appendChild(form_div);
-    this.card = form_div;
-    this.activate_autocompletes();
-  }
-
-  activate_autocompletes() {
-    this.fields.forEach((field) => {
-      if (field.type == "object") {
-        field.minischema.activate_autocompletes(true);
-      } else {
-        field.activate_autocomplete();
-        field.read_autocomplete();
-      }
-    });
-  }
-
-  /**
-   * Fill in the form with existing metadata.
-   * @param {Object<String,String[]>} annotated_data Key-value pairs with the existing metadata.
-   */
-  add_annotation(annotated_data) {
-    // add a hidden field with the value of 'redirect_route
-    let hidden_input = document.createElement("input");
-    hidden_input.type = "hidden";
-    hidden_input.name = "redirect_route";
-    hidden_input.value = annotated_data.redirect_route[0];
-    this.card.appendChild(hidden_input);
-
-    // exclude non-metadata keys, e.g. 'redirect_route'
-    let keys = Object.keys(annotated_data).filter(
-      (x) => x.startsWith(this.prefix) && !x.endsWith("__version__")
-    );
-    const top_level_names = this.field_ids.map((x) => `${this.prefix}.${x}`);
-
-    // extract fields that are not in composite fields and register them
-    let non_objects = keys.filter(
-      (fid) =>
-        typeof annotated_data[fid][0] != "object" &&
-        top_level_names.indexOf(fid) > -1
-    );
-    non_objects.forEach((fid) => this.register_non_object(fid, annotated_data));
-
-    // extract fields that are in composite fields
-    let objs = keys.filter(
-      (fid) =>
-        typeof annotated_data[fid][0] == "object" &&
-        top_level_names.indexOf(fid) > -1
-    );
-    // identify the unique composite fields
-    // go through each composite field and register its subfields
-    objs.forEach((fid) =>
-      this.register_object(fid, annotated_data, this.fields[fid])
-    );
-
-    SchemaForm.prepare_objects(this, annotated_data, this.card, this.prefix);
-  }
-
-  /**
-   * Retrieve the annotated data corresponding to fields inside a given composite field.
-   * @param {String} obj Flattened ID of the composite field.
-   * @param {Object<String,String[]>} annotated_data Key-value pairs with the existing metadata.
-   * @param {String} prefix Prefix common to all these fields.
-   * @param {HTMLFormElement|HTMLDivElement} form Form or div element inside which we can find the input field to fill in.
-   */
-  register_object(
-    obj,
-    annotated_data,
-    fields = null,
-    prefix = null,
-    form = null
-  ) {
-    // Start with the original prefix, but accumulate when we have nested composite fields
-    prefix = prefix || this.prefix;
-    form = form || this.card;
-    fields = fields || this.fields;
-
-    // Identify the fields that belong to this particular composite fields
-    let existing_values = annotated_data[obj];
-    let raw_name = obj.match(`${prefix}.(?<field>[^\.]+)`).groups.field;
-    let minischema = fields.filter((f) => f.id == raw_name)[0].minischema;
-    let top_level_names = minischema.field_ids.map((x) => `${obj}.${x}`);
-    let first_unit =
-      "__unit__" in existing_values[0]
-        ? String(existing_values[0].__unit__[0])
-        : "1";
-    let first_viewer = [...form.childNodes].filter(
-      (child) =>
-        child.classList.contains("mini-viewer") &&
-        child.getAttribute("data-field-name") == raw_name
-    )[0];
-    first_viewer.setAttribute("data-composite-unit", first_unit);
-    first_viewer.querySelectorAll("[name]").forEach((subfield) => {
-      if (subfield.name.split(".").length == obj.split(".").length + 1) {
-        subfield.name = `${subfield.name.split("__")[0]}__${first_unit}`;
-      }
-    });
-    if (existing_values.length > 1) {
-      for (let i = 0; i < existing_values.length - 1; i++) {
-        first_viewer.querySelector("h5 button").click();
-      }
-    } else if (!("__unit__" in existing_values[0])) {
-      existing_values[0]["__unit__"] = ["1"];
-    }
-    existing_values.forEach((object) => {
-      let unit = object.__unit__[0];
-      let viewer = [...form.childNodes]
-        .filter(
-          (child) =>
-            child.classList.contains("mini-viewer") &&
-            child.getAttribute("data-field-name") == raw_name &&
-            child.getAttribute("data-composite-unit") == String(unit)
-        )[0]
-        .querySelector("div.input-view");
-
-      // Extract the fields that are not inside nested composite fields and register them
-      let not_nested = Object.keys(object).filter(
-        (fid) =>
-          typeof object[fid][0] != "object" &&
-          fid != "__unit__" &&
-          top_level_names.indexOf(fid) > -1
-      );
-      not_nested.forEach((fid) => {
-        this.register_non_object(fid, object, viewer);
-      });
-
-      // Extract the fields that are inside nested composite fields
-      let nested = Object.keys(object).filter(
-        (fid) =>
-          typeof object[fid][0] == "object" && top_level_names.indexOf(fid) > -1
-      );
-      // Go through each nested composite field and register its subfields, with an accumulated prefix
-      nested.forEach((fid) =>
-        this.register_object(fid, object, minischema.fields, obj, viewer)
-      );
-    });
-  }
-
-  /**
-   * Register the annotated value of a specific (non composite) field.
-   * @param {String} fid Flattened ID of the field to fill in.
-   * @param {Object<String,String[]>} annotated_data Key-value pairs with the existing metadata.
-   * @param {HTMLFormElement|HTMLDivElement} form Form or div element inside which we can find the input field to fill in.
-   */
-  register_non_object(fid, annotated_data, form = null) {
-    // Start with the original form, but in fields inside a composite field it will be its div.
-    form = form || this.card;
-
-    // Extract the data linked to this field
-    let existing_values = annotated_data[fid];
-    let input_name =
-      "__unit__" in annotated_data ? `${fid}__${annotated_data.__unit__}` : fid;
-
-    // Identify checkboxes as cases where there are multiple input fields with the same name in the form
-    // (this is only for multiple-value multiple-choice fields)
-    let is_checkbox =
-      [...form.querySelectorAll(`[name="${input_name}"]`)].filter((x) =>
-        x.classList.contains("form-check-input")
-      ).length > 0;
-
-    // if we indeed have multiple-value multiple-choice
-    if (is_checkbox) {
-      form.querySelectorAll(`[name="${input_name}"]`).forEach((chk) => {
-        if (existing_values.indexOf(chk.value) > -1)
-          chk.setAttribute("checked", "");
-      });
-    } else if (existing_values.length == 1) {
-      // if there is only one value for this field
-      form.querySelector(`[name="${input_name}"]`).value = existing_values[0];
-    } else {
-      // if the field has been duplicated
-      // go through each of the values and repeat the input field with its corresponding value
-      let first_input = form.querySelector(
-        `[data-field-name="${fid.split(".").pop()}"]`
-      );
-      const answers = first_input.querySelector("div[id$='answers']");
-      if (answers != null) {
-        for (let value of existing_values) {
-          const [pill, label] = Field.autocomplete_checkbox(value, input_name);
-          answers.appendChild(pill);
-          answers.appendChild(label);
-        }
-      } else {
-        for (let i = 0; i < existing_values.length - 1; i++) {
-          first_input.querySelector("label button").click();
-        }
-        form.querySelectorAll(`[name="${input_name}"]`).forEach((input, i) => {
-          input.value = existing_values[i];
-        });
-      }
-    }
-  }
-
-  static prepare_objects(
-    object_editor,
-    annotated_data,
-    form,
-    prefix,
-    unit = 1
-  ) {
-    object_editor.fields
-      .filter((field) => field.type == "object")
-      .forEach((field) => {
-        const fid = field.id;
-        let viewer = form.querySelector(
-          `div.mini-viewer[data-field-name="${fid}"]`
-        );
-        viewer.setAttribute("data-composite-unit", String(unit));
-        let sub_schema = field.minischema;
-        let empty_simple_subfields = sub_schema.fields.filter((subfield) => {
-          let not_object = subfield.type != "object";
-          let is_not_annotated = !(`${prefix}.${fid}` in annotated_data);
-          return not_object && is_not_annotated;
-        });
-        empty_simple_subfields.forEach((subfield) => {
-          let flattened_name = `${prefix}.${fid}.${subfield.id}`;
-          viewer
-            .querySelectorAll(`[name="${flattened_name}"]`)
-            .forEach((child) => (child.name = `${flattened_name}__${unit}`));
-        });
-        SchemaForm.prepare_objects(
-          sub_schema,
-          annotated_data,
-          viewer,
-          `${prefix}.${fid}`,
-          `${unit}.1`
-        );
-      });
-  }
-
-  static field_replicator(field, small_div, active) {
-    let icon = Field.quick("i", "bi bi-front px-2");
-    // for annotation, create a button
-    let button = Field.quick("button", "btn btn-outline-dark p-0 mx-2");
-    button.type = "button";
-
-    // behavior when the 'repeat' button is clicked
-    button.addEventListener("click", () => {
-      // clone the div of the field, but instead of the 'repeat' button make a 'remove' button
-      let clone = ComplexField.add_field_viewer(field, active);
-      let clone_button = clone.querySelector("button i.bi-front").parentElement;
-      let new_button = Field.quick("button", "btn btn-outline-dark p-0 mx-2");
-      new_button.type = "button";
-      let new_icon = Field.quick("i", "bi bi-trash px-2");
-      new_button.appendChild(new_icon);
-      new_button.addEventListener("click", () => {
-        clone.remove();
-      });
-      clone_button.parentElement.replaceChild(new_button, clone_button);
-
-      let existing_siblings = [...small_div.parentElement.childNodes].filter(
-        (child) =>
-          child.getAttribute("data-field-name") ==
-          small_div.getAttribute("data-field-name")
-      );
-      let last_sibling = existing_siblings[existing_siblings.length - 1];
-      if (last_sibling.nextSibling == undefined) {
-        last_sibling.parentElement.appendChild(clone);
-      } else {
-        last_sibling.parentElement.insertBefore(
-          clone,
-          last_sibling.nextSibling
-        );
-      }
-
-      if (field.type == "object") {
-        let current_unit = small_div.getAttribute("data-composite-unit");
-        let split_unit = current_unit.split(".");
-        let existing_unit_suffixes = existing_siblings
-          .map((child) =>
-            parseInt(child.getAttribute("data-composite-unit").split(".").pop())
-          )
-          .sort();
-        let largest_suffix = existing_unit_suffixes.pop();
-        split_unit.pop();
-        split_unit.push(String(largest_suffix + 1));
-        let new_unit = split_unit.join(".");
-        clone.setAttribute("data-composite-unit", new_unit);
-        // add the cloned div after the last one of its kind
-
-        function update_children_names(composite_field, subform, new_unit) {
-          const direct_children = [
-            ...subform.querySelector("div.input-view").childNodes,
-          ];
-          direct_children.forEach((child, i) => {
-            const field_data = composite_field.minischema.fields[i];
-            if (field_data.type != "object") {
-              const inputs = child.querySelectorAll("input,select");
-              inputs.forEach((input) => {
-                input.name = `${field_data.name}__${new_unit}`;
-                field_data.activate_autocomplete();
-                field_data.read_autocomplete();
-              });
-            } else {
-              const sub_unit = new_unit + ".1";
-              child.setAttribute("data-composite-unit", sub_unit);
-              update_children_names(field_data, child, sub_unit);
-            }
-          });
-        }
-        update_children_names(field, clone, new_unit);
-
-        let inner_repeatables = [...clone.childNodes]
-          .filter((subfield) => subfield.classList.contains("mini-viewer"))
-          .filter((subfield) => subfield.querySelector("button i.bi-front"));
-        // NOTE this is not good at dealing with nested composite fields yet!
-        inner_repeatables.forEach((subfield) => {
-          let subfield_data =
-            field.minischema.fields[subfield.getAttribute("data-field-name")];
-          let old_button =
-            subfield.querySelector("button i.bi-front").parentElement;
-          let new_button = SchemaForm.field_replicator(subfield_data, subfield);
-          subfield.querySelector("label").replaceChild(new_button, old_button);
-        });
-      } else {
-        let old_name = small_div.querySelector("[name]").name;
-        clone.querySelector("[name]").name = old_name;
-      }
-    });
-    button.appendChild(icon);
-    return button;
-  }
-
-  /**
-   * Recursive function that assigns a `name` property to each field with the flattened id.
-   * @static
-   * @param {SchemaForm|ObjectEditor} object_editor Schema or mini-schema for a composite field.
-   * @param {String} flattened_id Prefix to be added to the id of a field.
-   */
-  static flatten_object(object_editor, flattened_id) {
-    object_editor.fields.forEach((field) => {
-      // flatten the id
-      let subfield_flattened = `${flattened_id}.${field.id}`;
-      // if the field is composite, apply this to each field inside
-      if (field.constructor.name == "ObjectInput") {
-        SchemaForm.flatten_object(field.minischema, subfield_flattened);
-      } else {
-        // assign the flattened id as a name
-        field.name = subfield_flattened;
-      }
-    });
   }
 }
