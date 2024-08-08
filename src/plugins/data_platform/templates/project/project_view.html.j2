@@ -182,7 +182,7 @@
           <tr>
             <th>Inodes</th>
             <td>{{ status['used_inodes']|format_intword }} of {{ project['quota_inodes']|format_intword }} inodes used
-            {% if project['platform'] == 'irods' %}
+            {% if project['platform'].startswith("irods") %}
             ({{ status['platform_info']['object_count'] }} objects, 
             {{ status['platform_info']['coll_count'] }} collections, 
             {{ status['platform_info']['meta_count'] }} metadata records) 
@@ -219,6 +219,8 @@
                 <input class="form-check-input" type="checkbox" role="switch" value="true" id="enable-icommands" name="enable-icommands" onChange="this.form.submit()" {% if opts['enable-icommands'] == "true" %}checked{% endif %} />
                 <label class="form-check-label" for="enable-icommands">Enable iCommand/PRC access</label>
               </div>
+              {% endif %}
+              {% if project['platform'] == "irods" %}
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" value="true" id="enable-sftp-ingress" name="enable-sftp-ingress" onChange="this.form.submit()" {% if opts['enable-sftp-ingress'] == "true" %}checked{% endif %} />
                 <label class="form-check-label" for="enable-sftp-ingress">Enable SFTP ingress service</label>

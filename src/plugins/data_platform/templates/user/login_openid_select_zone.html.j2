@@ -166,6 +166,10 @@
                     Add iRODS project
                 </button>
 
+                <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addColdProject">
+                    Add Cold project
+                </button>
+
                 <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addGenericProject">
                     Add globus share
                 </button>
@@ -258,6 +262,95 @@
                 </div>
                 </div>
 
+
+                <div class="mb-3">
+                <label for="zone" class="col-form-label">
+                    Zone
+                </label>
+                <select
+                     class="form-select"
+                     id="zone"
+                     name="zone"
+                     required>
+                  {% for zone in config['irods_zones'] %}
+                  <option value="{{ config['irods_zones'][zone]['jobid'] }}">{{ zone }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">
+                    An irods zone is required
+                </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+                </button>
+                <button class="btn btn-primary" type="submit">
+                Add
+                </button>
+            </div>
+            </form>
+        </div>
+        </div>
+    </div>
+
+    <div class="modal fade"
+        id="addColdProject"
+        tabindex="-1"
+        aria-labelledby="addColdProjectLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="addColdProjectLabel">
+                Add cold project
+            </h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
+            </button>
+            </div>
+            <form action="{{ url_for('data_platform_project_bp.add_cold_project') }}"
+                method="post"
+                enctype="multipart/form-data"
+                class="row g-3 needs-validation"
+                novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="modal-body">
+                <div class="mb-3">
+                <label for="name" class="col-form-label">
+                    Project name
+                </label>
+                <input type="text"
+                        class="form-control"
+                        id="name"
+                        name="name"
+                        required pattern="^[a-zA-Z0-9-_]*$" />
+                <div class="invalid-feedback">
+                    A valid project name is required. It may consist of <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>-</code> and <code>_</code> only.
+                </div>
+                </div>
+
+                <div class="mb-3">
+                <label for="type" class="col-form-label">
+                    Project Type
+                </label>
+                <select
+                     class="form-select"
+                     id="type"
+                     name="type"
+                     required>
+                        <option value="project" selected>project</option>
+                        <option value="test">test</option>
+                        <option value="training">training</option>
+                        <option value="pilot">pilot</option>
+                        <option value="demo">demo</option>
+                </select>
+                <div class="invalid-feedback">
+                    A project type is required
+                </div>
+                </div>
 
                 <div class="mb-3">
                 <label for="zone" class="col-form-label">

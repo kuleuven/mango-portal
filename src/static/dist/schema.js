@@ -1829,6 +1829,15 @@ class SchemaForm {
           child.getAttribute("data-field-name") ==
           small_div.getAttribute("data-field-name")
       );
+      let last_sibling = existing_siblings[existing_siblings.length - 1];
+      if (last_sibling.nextSibling == undefined) {
+        last_sibling.parentElement.appendChild(clone);
+      } else {
+        last_sibling.parentElement.insertBefore(
+          clone,
+          last_sibling.nextSibling
+        );
+      }
 
       if (field.type == "object") {
         let current_unit = small_div.getAttribute("data-composite-unit");
@@ -1844,15 +1853,6 @@ class SchemaForm {
         let new_unit = split_unit.join(".");
         clone.setAttribute("data-composite-unit", new_unit);
         // add the cloned div after the last one of its kind
-        let last_sibling = existing_siblings[existing_siblings.length - 1];
-        if (last_sibling.nextSibling == undefined) {
-          last_sibling.parentElement.appendChild(clone);
-        } else {
-          last_sibling.parentElement.insertBefore(
-            clone,
-            last_sibling.nextSibling
-          );
-        }
 
         function update_children_names(composite_field, subform, new_unit) {
           const direct_children = [

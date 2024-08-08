@@ -17,12 +17,15 @@ from kernel.template_overrides import get_template_override_manager
 
 import irods_session_pool
 import logging
+import importlib
+import os
 
-from irods_zones_config import (
-    irods_zones,
-    DEFAULT_IRODS_PARAMETERS,
-    DEFAULT_SSL_PARAMETERS,
-)
+
+irods_zone_config_module = importlib.import_module(os.getenv('IRODS_ZONES_CONFIG', 'irods_zones_config.py').rstrip('.py'))
+
+irods_zones = irods_zone_config_module.irods_zones
+DEFAULT_IRODS_PARAMETERS = irods_zone_config_module.DEFAULT_IRODS_PARAMETERS
+DEFAULT_SSL_PARAMETERS = irods_zone_config_module.DEFAULT_SSL_PARAMETERS
 
 user_bp = Blueprint(
     "user_bp", __name__, static_folder="static/user", template_folder="templates"

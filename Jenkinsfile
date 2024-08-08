@@ -24,6 +24,9 @@ if (publish) {
     tier = deploy_tier[env.BRANCH_NAME]
   }
 }
+
+sonarScanner {}
+
 buildDockerImage {
   namespace = 'foz'
   imageName = 'mango'

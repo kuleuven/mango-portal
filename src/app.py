@@ -18,9 +18,10 @@ from flask import (
     session,
     current_app,
 )
+
 # Early initialisation to avoid circulr imports from main app and its config by other modules
 app = Flask(__name__)
-app.config.from_pyfile(os.getenv("MANGO_CONFIG","config.py"))
+app.config.from_pyfile(os.getenv("MANGO_CONFIG", "config.py"))
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 
 irods_sessions = {}
@@ -189,6 +190,7 @@ def init_and_secure_views():
         "data_platform_project_bp.deploy_project",
         "data_platform_project_bp.api_token",
         "data_platform_project_bp.add_irods_project",
+        "data_platform_project_bp.add_cold_project",
         "data_platform_project_bp.add_generic_project",
         "data_platform_project_bp.add_rdr_project",
         "data_platform_project_bp.modify_project",
@@ -412,6 +414,6 @@ main_landing_route_module = importlib.import_module(
 )
 
 app.add_url_rule(
-    "/", view_func=getattr(main_landing_route_module, main_landing_route["function"])
+    "/", endpoint = "index", view_func=getattr(main_landing_route_module, main_landing_route["function"])
 )
 

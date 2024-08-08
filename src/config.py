@@ -33,21 +33,41 @@ USER_MAX_HOME_SIZE = 100 * 10**6  # 100MB
 MANGO_GLOBAL_SEARCH_ACTION = "mango_open_search_bp.zone_search"
 HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
 
-   
 
 MANGO_PLUGIN_BLUEPRINTS = [
     # {"module": "", "blueprint": ""},
     {"module": "plugins.mango_open_search.search", "blueprint": "mango_open_search_bp"},
-    {"module": "plugins.mango_open_search.admin", "blueprint": "mango_open_search_admin_bp"},
-    {"module": "plugins.mango_open_search.api", "blueprint": "mango_open_search_api_bp"},
-    {"module": "plugins.mango_open_search.stats", "blueprint": "mango_open_search_stats_bp"},
+    {
+        "module": "plugins.mango_open_search.admin",
+        "blueprint": "mango_open_search_admin_bp",
+    },
+    {
+        "module": "plugins.mango_open_search.api",
+        "blueprint": "mango_open_search_api_bp",
+    },
+    {
+        "module": "plugins.mango_open_search.stats",
+        "blueprint": "mango_open_search_stats_bp",
+    },
     {"module": "plugins.data_platform.user", "blueprint": "data_platform_user_bp"},
-    {"module": "plugins.data_platform.project", "blueprint": "data_platform_project_bp"},
-    {"module": "plugins.data_platform.autocomplete", "blueprint": "data_platform_autocomplete_bp"},
-    {"module": "plugins.operator_group_manager.admin", "blueprint": "operator_group_manager_admin_bp"},
+    {
+        "module": "plugins.data_platform.project",
+        "blueprint": "data_platform_project_bp",
+    },
+    {
+        "module": "plugins.data_platform.autocomplete",
+        "blueprint": "data_platform_autocomplete_bp",
+    },
+    {
+        "module": "plugins.operator_group_manager.admin",
+        "blueprint": "operator_group_manager_admin_bp",
+    },
     {"module": "plugins.operator.admin", "blueprint": "operator_admin_bp"},
     {"module": "plugins.admin.admin", "blueprint": "admin_admin_bp"},
-    {"module": "plugins.template_overrides.admin", "blueprint": "template_overrides_admin_bp"},
+    {
+        "module": "plugins.template_overrides.admin",
+        "blueprint": "template_overrides_admin_bp",
+    },
     {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
     {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
     # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
@@ -66,4 +86,13 @@ MANGO_ADMINS = [
 ]
 
 MANGO_MAIN_LANDING_ROUTE = {"module": "plugins.user_tantra.realm", "function": "index"}
-MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {"module": "plugins.mango_overrides.schema_permissions", "class": "GroupBasedSchemaPermissions"}
+MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {
+    "module": "plugins.mango_overrides.schema_permissions",
+    "class": "GroupBasedSchemaPermissions",
+}
+
+MANGO_ERROR_MESSAGES = {
+    "-370000": "You are not allowed to perform this action.",
+    "missing_paramenters": "Required parameters are missing",
+    "illegal_characters": "Illegal characters have been used: request rejected.",
+}

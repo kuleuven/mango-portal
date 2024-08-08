@@ -429,6 +429,48 @@ def add_irods_project():
 
     return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
+@data_platform_project_bp.route("/data-platform/projects/add/cold", methods=["POST"])
+@openid_login_required
+def add_cold_project():
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    id = request.form.get("name")
+
+    response = requests.get(f"{API_URL}/v1/projects/{id}", headers=header)
+
+    if response.status_code == 200:
+        flash(f"Project {id} already exists! Please determine another project name.", "warning")
+        return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
+    if response.status_code == 410:
+        flash(f"Project {id} already existed and now is in the 'removed' status! Please determine another project name.", "warning")
+        return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
+    if response.status_code == 400:
+        flash(f"Project {id} name contains invalid characters or is too long! Please control your project name.", "warning")
+        return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
+    if response.status_code != 404:
+        response.raise_for_status()
+
+    response = requests.put(
+        f"{API_URL}/v1/projects/{id}",
+        headers=header,
+        json={
+            "type": request.form.get("type"),
+            "platform": "irods-cold",
+            "platform_options": [
+                {
+                    "key": "zone-jobid",
+                    "value": request.form.get("zone"),
+                },
+            ],
+        },
+    )
+    response.raise_for_status()
+    flash(response.json()["message"], "success")
+
+    project_changed.send(current_app._get_current_object())
+
+    return redirect(url_for("data_platform_project_bp.project", project_name=id))
 
 @data_platform_project_bp.route("/data-platform/projects/add/generic", methods=["POST"])
 @openid_login_required
@@ -575,6 +617,7 @@ def projects_statistics():
             "zone_name": zone_name,
             "project_name": project["project"]["name"],
             "project_type": project["project"]["type"],
+            "project_status": "Archived" if project["project"]["archived"] == True else "Active",
             "usage_total": convert_bytes_to_GB(
                 [x["used_size"] for x in project["usage"]][-1]
             ),
