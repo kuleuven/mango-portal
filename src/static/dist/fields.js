@@ -372,8 +372,6 @@ class InputField {
       }
     );
 
-    console.log("check: " + this.id_regex) // TO DO: Use for displaying existing field names.
-
     // add an input field to provide the title of the field
     this.form_field.add_input(
       `Label for ${this.form_type} (display name)`,

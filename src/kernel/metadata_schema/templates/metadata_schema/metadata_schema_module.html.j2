@@ -6,9 +6,9 @@
             <h4>Please choose a realm from the list below</h4>
             <div class="list-group realms">
                 {% for realm in realms %}
-                    <a href="{{ url_for('metadata_schema_editor_bp.metadata_schemas', realm=realm)}}"
+                    <a href="{{ url_for('metadata_schema_editor_bp.metadata_schemas', realm=realm) }}"
                        class="list-group-item">
-                        {% if (realm| regex_match("vsc\d{5}$|(r|u|b|x|s)\d{7}$"))%}
+                        {% if (realm| regex_match("vsc\d{5}$|(r|u|b|x|s)\d{7}$")) %}
                             <i class="bi bi-person"></i>&nbsp;
                         {% else %}
                             <i class="bi bi-box"></i>&nbsp;
@@ -21,12 +21,12 @@
             <div id="metadata_template_list_container">
                 {% set blueprint = "metadata_schema_editor_bp" %}
                 {% set mdt = "meta_data_template" %}
-                <url-list new="{{ url_for('{}.save_schema'.format(blueprint)) }}" list="{{ url_for('{}.list_meta_data_schemas'.format(blueprint)) }}" delete="{{ url_for('{}.delete_meta_data_schema'.format(blueprint)) }}" archive="{{ url_for('{}.archive_meta_data_schema'.format(blueprint)) }}" realm="{{ realm }}" schema-name="{{ schema_name }}", schema-version="{{ schema_version }}"></url-list>
-                {% for file in ['doms', 'fields', 'schema', 'httprequests', 'manager'] %}
+                <url-list new="{{ url_for('{}.save_schema'.format(blueprint) ) }}" list="{{ url_for('{}.list_meta_data_schemas'.format(blueprint) ) }}" delete="{{ url_for('{}.delete_meta_data_schema'.format(blueprint) ) }}" archive="{{ url_for('{}.archive_meta_data_schema'.format(blueprint) ) }}" realm="{{ realm }}" schema-name="{{ schema_name }}", schema-version="{{ schema_version }}"></url-list>
+                {% for file in ['doms', 'input_methods', 'fields', 'schema', 'httprequests', 'manager'] %}
                     <script src="{{url_for('static', filename='dist/{}.js'.format(file))}}"></script>
                 {% endfor %}
                 <link href="{{ url_for('static', filename='dist/mdschema.css') }}"
-                      rel="stylesheet"/>
+                      rel="stylesheet" />
             </div>
             <div class="modal" id="confirmation-dialog" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered">
