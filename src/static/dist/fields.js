@@ -1673,7 +1673,7 @@ class ObjectInput extends InputField {
   update_field() {
     super.update_field();
     this.get_form_input("title").value = this.title;
-    this.get_form_input("repeatable") = this.repeatable;
+    this.get_form_input("repeatable").value = this.repeatable;
     document.querySelector(`textarea#${this.get_domel_id("help")}`).value = this.help
       ? this.help
       : "";
