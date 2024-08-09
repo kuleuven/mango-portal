@@ -1,0 +1,69 @@
+{
+    "name": "author",
+    "data": {
+        "title": "Author",
+        "properties": {
+            "family-name": {
+                "title": "Family name",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "required": true,
+                "help": "Family name, as described in <a href='https://schema.org/familyName'>Schema.org</a>"
+            },
+            "given-name": {
+                "title": "Given name",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "required": true,
+                "help": "Given name, as described in <a href='https://schema.org/givenName'>Schema.org</a>"
+            },
+            "affiliation": {
+                "title": "Affiliation",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Organization that a person is affiliated with, as described in <a href='https://schema.org/affiliation'>Schema.org</a>"
+            },
+            "email": {
+                "title": "Email",
+                "type": "email",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Email address, as described in <a href='https://schema.org/email'>Schema.org</a>"
+            },
+            "identifier-scheme": {
+                "title": "Identifier scheme",
+                "type": "select",
+                "values": [
+                    "ORCID",
+                    "ResearcherID",
+                    "ISNI",
+                    "LCNA",
+                    "VIAF",
+                    "GND",
+                    "DAI",
+                    "ScopusID"
+                ],
+                "multiple": false,
+                "ui": "radio",
+                "help": "A DataCite property"
+            },
+            "identifier": {
+                "title": "Identifier",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Unique identifier, according to various schemes, as described in <a href='https://schema.org/identifier'>Schema.org</a>"
+            }
+        },
+        "type": "object",
+        "repeatable": true,
+        "help": "Person or organisation, as described in <a href='https://schema.org/author'>Schema.org</a>"
+    },
+    "source": "<a href='https://schema.org/author'>Schema.org/author</a>",
+    "tags": [
+        "Schema.org"
+    ]
+}
