@@ -1,0 +1,43 @@
+{
+    "name": "research-project",
+    "data": {
+        "title": "Research project",
+        "properties": {
+            "identifier": {
+                "title": "Project code",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Project code, as described in <a href='https://schema.org/identifier'>Schema.org</a>"
+            },
+            "name": {
+                "title": "Project name",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "required": true,
+                "help": "Project name, as described in <a href='https://schema.org/name'>Schema.org</a>"
+            },
+            "description": {
+                "title": "Description",
+                "type": "textarea",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Project description, as described in <a href='https://schema.org/description'>Schema.org</a>"
+            },
+            "funder": {
+                "title": "Funder",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Funder, as described in <a href='https://schema.org/funder'>Schema.org</a>"
+            }
+        },
+        "type": "object",
+        "help": "Research project, as described in <a href='https://schema.org/ResearchProject'>Schema.org</a>"
+    },
+    "source": "<a href='https://schema.org/ResearchProject'>Schema.org/ResearchProject</a>",
+    "tags": [
+        "Schema.org"
+    ]
+}

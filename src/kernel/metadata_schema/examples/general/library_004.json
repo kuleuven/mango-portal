@@ -1,0 +1,29 @@
+{
+    "name": "software",
+    "data": {
+        "title": "Software",
+        "properties": {
+            "name": {
+                "title": "Name",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Software name, as described in <a href='https://schema.org/name'>Schema.org</a>"
+            },
+            "softwareVersion": {
+                "title": "Version",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Software version, as described in <a href='https://schema.org/softwareVersion'>Schema.org</a>"
+            }
+        },
+        "type": "object",
+        "repeatable": true,
+        "help": "Software application, as described in <a href='https://schema.org/SoftwareApplication'>Schema.org</a>"
+    },
+    "source": "<a href='https://schema.org/SoftwareApplication'>Schema.org/SoftwareApplication</a>",
+    "tags": [
+        "Schema.org"
+    ]
+}

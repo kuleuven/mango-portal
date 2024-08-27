@@ -441,7 +441,7 @@ class TreeElement {
         }
         // Define variables for the radio input based on the information retrieved from the server
         this.path = path;
-        this.id = path.replaceAll('/', '-').replaceAll(" ", "__");
+        this.id = path.replace(/^[^a-zA-Z]+|[^\w:.-]+/g, "_");
         this.value = path;
         this.name = name;
         // Create radio input and its label

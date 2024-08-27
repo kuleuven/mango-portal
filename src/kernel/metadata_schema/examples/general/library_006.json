@@ -1,0 +1,53 @@
+{
+    "name": "observation",
+    "data": {
+        "title": "Observation",
+        "properties": {
+            "measurementTechnique": {
+                "title": "Measurement technique",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "repeatable": true,
+                "help": "A technique, method or technology used in an Observation, Statistical variable, or Dataset, as described in <a href='https://schema.org/measurementTechnique'>Schema.org</a>"
+            },
+            "observationDate": {
+                "title": "Observation date",
+                "type": "datetime-local",
+                "placeholder": "",
+                "pattern": "",
+                "help": "Date of an observation, as described in <a href='https://schema.org/observationDate'>Schema.org</a>"
+            },
+            "variableMeasured": {
+                "title": "Variable measured",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "repeatable": true,
+                "help": "Variables included in a dataset, as described in <a href='https://schema.org/variableMeasured'>Schema.org</a>"
+            },
+            "unitText": {
+                "title": "Unit text",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "repeatable": true,
+                "help": "Unit of measurement as text, as described in <a href='https://schema.org/unitText'>Schema.org</a>"
+            },
+            "unitCode": {
+                "title": "Unit code",
+                "type": "text",
+                "placeholder": "",
+                "pattern": "",
+                "repeatable": true,
+                "help": "Unit of measurement as code, as described in <a href='https://schema.org/unitCode'>Schema.org</a>"
+            }
+        },
+        "type": "object",
+        "help": "Observation, as described in <a href='https://schema.org/Observation'>Schema.org</a>"
+    },
+    "source": "<a href='https://schema.org/Observation'>Schema.org/Observation</a>",
+    "tags": [
+        "Schema.org"
+    ]
+}

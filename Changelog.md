@@ -2,7 +2,16 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.16.0 (development ) [TBD]
+## Release 0.17.0 (development, quality)     [2024-08-27]
+
+### New features
+
+Mainly metadata schema manager:
+
+- Library of (complex) fields
+- UI improvements and polishing
+
+## Release 0.16.0 (development, production ) [2024-06-26]
 
 ### New features
 

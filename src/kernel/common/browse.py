@@ -56,6 +56,7 @@ import tarfile
 
 from kernel.metadata_schema import get_schema_manager
 from kernel.template_overrides import get_template_override_manager
+from kernel.common.error import flash_error
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
@@ -373,6 +374,10 @@ def collection_browse(collection=None):
                     else:
                         logging.info(f"No labels found for {schema}")
                 except Exception as e:
+                    flash_error(
+                        e,
+                        default_message=f"Encountered error loading schema {schema} for fetching labels {e}",
+                    )
                     logging.info(
                         f"Encountered error loading schema {schema} for fetching labels {e}"
                     )
@@ -463,7 +468,9 @@ def view_object(data_object_path):
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
     try:
-        data_object: iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
+        data_object: iRODSDataObject = g.irods_session.data_objects.get(
+            data_object_path
+        )
     except:
         flash(f"Cannot access {data_object_path}, redirecting to its parent", "warning")
         p = Path(data_object_path)
@@ -1088,16 +1095,15 @@ def set_permissions(item_path: str):
                 recursive=recursive,
             )
     except Exception as e:
-        print(e)
-        abort(500, "failed to set permissions")
-
-    signals.permissions_changed.send(
-        current_app._get_current_object(),
-        irods_session=g.irods_session,
-        item_path=item_path,
-        recursive=recursive,
-    )
-    flash(f"Permissions changed for {item_path}", "success")
+        flash_error(e, "warning")
+    else:
+        signals.permissions_changed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            item_path=item_path,
+            recursive=recursive,
+        )
+        flash(f"Permissions changed for {item_path}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -1432,18 +1438,20 @@ def bulk_operation_items():
 
 @browse_bp.route("/item/rename", methods=["POST"])
 def rename_item():
+    redirect_route = request.referrer
+
     if "item_path" not in request.form or "new_name" not in request.form:
-        abort(400, "Required parameters are missing")
+        flash_error("missing_parameters")
+        return redirect(redirect_route)
 
     new_name = request.form["new_name"]
     if re.search(r"/", new_name):
-        abort(400, f"Illegal characters in new name {new_name}")
+        flash_error("illegal_characters")
+        return redirect(redirect_route)
 
     item_path = iRODSPath(request.form["item_path"])
     new_path = iRODSPath(*item_path.split("/")[:-1], new_name)
     irods_session: iRODSSession = g.irods_session
-
-    redirect_route = request.referrer
 
     if item_path == new_path:
         flash("The name has not changed", "danger")
