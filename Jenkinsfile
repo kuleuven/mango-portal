@@ -12,7 +12,7 @@ def allowed_branch_names = [
 
 def deploy_tier = [
   'development': 'test',
-  'main': 'production',
+  'main': 'quality',
 ]
 
 def publish = allowed_branch_names.containsKey(env.BRANCH_NAME)
