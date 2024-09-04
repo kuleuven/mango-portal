@@ -36,7 +36,7 @@ buildDockerImage {
 
 if (tier!="") {
   stage("Deploy") {
-     build job: '/team-faciliteiten-voor-onderzoek/gitea/mango-portal/deploy/', wait: true, parameters: [
+     build job: '/team-faciliteiten-voor-onderzoek/gitea/nomadjobs/mango-portal/', wait: true, parameters: [
      [$class: 'StringParameterValue', name: 'Tier', value: tier]
      ]
   }
