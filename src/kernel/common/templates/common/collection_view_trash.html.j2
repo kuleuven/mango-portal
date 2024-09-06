@@ -193,6 +193,9 @@
        value="{{data_object.path}}"></td> #}
               <td>
                 <i class="bi bi-file-earmark fs-4"></i><span> <a href="{{ url_for('browse_bp.view_object', data_object_path=data_object.path.lstrip('/'))}}">{{ data_object.name }}</a></span>
+                {% if data_object.comments %}
+                  {{ data_object.comments|bleach_clean(tags=["i", "span", "a"], attributes=["class", "href", "title"]) |safe }}
+                {% endif %}
               </td>
               <td>
                 <!--{{ data_object.__dict__ }}-->{{ data_object.owner_name }}

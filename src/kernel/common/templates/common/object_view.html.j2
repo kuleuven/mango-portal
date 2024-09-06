@@ -127,7 +127,7 @@
               <i class="bi bi-file-earmark-x text-danger"></i>
             {% endif %}
             {% if data_object.comments %}
-              {{ data_object.comments|bleach_clean(tags=["i", "span", "a"], attributes=["class", "href"]) |safe }}
+              {{ data_object.comments|bleach_clean(tags=["i", "span", "a"], attributes=["class", "href", "title"]) |safe }}
             {% endif %}
           </td>
         </tr>
