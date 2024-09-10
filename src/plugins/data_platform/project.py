@@ -258,7 +258,6 @@ def set_project_options():
     if project["platform"].startswith("irods"):
         options += [
             "sftp-openfile",
-            "enable-icommands",
             "enable-sftp-ingress",
             "enforce-quota",
             "inherit-permissions",
