@@ -226,17 +226,16 @@ def connection_info_modal(zone):
     info = {}
     setup_json = {}
 
-    if response.status_code != 403:
-        response.raise_for_status()
+    response.raise_for_status()
 
-        info = response.json()
+    info = response.json()
 
-        info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
-        setup_json={
-            'linux': json.dumps(info['irods_environment'], indent=4),
-            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
-        }
+    setup_json={
+        'linux': json.dumps(info['irods_environment'], indent=4),
+        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
+    }
 
     if "-hpc-" in jobid:
         # icts-p-hpc-irods-instance
@@ -268,17 +267,16 @@ def connection_info():
     info = {}
     setup_json = {}
 
-    if response.status_code != 403:
-        response.raise_for_status()
+    response.raise_for_status()
 
-        info = response.json()
+    info = response.json()
 
-        info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
-        setup_json={
-            'linux': json.dumps(info['irods_environment'], indent=4),
-            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
-        }
+    setup_json={
+        'linux': json.dumps(info['irods_environment'], indent=4),
+        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
+    }
 
     if "-hpc-" in jobid:
         # icts-p-hpc-irods-instance
