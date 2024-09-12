@@ -644,7 +644,7 @@ def projects_statistics():
     )
 
 
-def summarize(number_of_zones: str, source_name: str, data: pd.DataFrame, y_axis: str, group_index: int, hovertemplate=""):
+def summarize(number_of_zones: int, source_name: str, data: pd.DataFrame, y_axis: str, group_index: int, hovertemplate=""):
     def get_color(i):
         colors = distinctipy.get_colors(number_of_zones, rng=number_of_zones, pastel_factor=0.8)
         hex_colors = [distinctipy.get_hex(color) for color in colors]
@@ -715,7 +715,7 @@ def projects_usage():
                     projects_dict["quota"].append(usage["quota_size"])
 
     df = pd.DataFrame(projects_dict)
-    number_of_zones = len(list(set(projects_dict["zone"])))
+    number_of_zones = len(df.zone.unique())
     filters = {
         "start_date": start_date,
         "end_date": end_date,
