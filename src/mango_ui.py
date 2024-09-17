@@ -20,6 +20,34 @@ class MangoModule:
     index: str = "index"
 
 
+@dataclass(kw_only=True)
+class TabInfo:
+    """Class for building the tabs in collection and data object views"""
+
+    id: str
+    title: str
+    template: str
+
+
+object_view_tabs = [
+    TabInfo(
+        id="system",
+        title="System properties",
+        template="object_system_properties.html.j2",
+    ),
+    TabInfo(id="metadata", title="Metadata", template="object_metadata.html.j2"),
+    TabInfo(
+        id="permissions", title="Permissions", template="object_permissions.html.j2"
+    ),
+    TabInfo(id="preview", title="Preview", template="object_preview.html.j2"),
+    TabInfo(
+        id="analysis",
+        title="Metadata inspection and extraction",
+        template="object_analysis.html.j2",
+    ),
+]
+
+
 def register_module(**kwargs):
     global navbar_entries, mango_ui_cfg
     navbar_entries[kwargs["blueprint"]] = MangoModule(**kwargs)
@@ -29,6 +57,11 @@ def register_module(**kwargs):
         for enabled_module in mango_ui_cfg["MANGO_NAVBAR_MODULES"]
         if enabled_module in navbar_entries
     }
+
+
+def register_object_view_tab(**kwargs):
+    """The dictionary should have 'id', 'title' and 'template' keys."""
+    object_view_tabs.append(TabInfo(**kwargs))
 
 
 def register_module_admin(**kwargs):

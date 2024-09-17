@@ -1,0 +1,10 @@
+{% if data_object.name.lower().endswith(config["DATA_OBJECT_PREVIEW_ALLOWED_SUFFIXES"]) %}
+    <div class="row">
+        <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path) }}"
+             class="w-50"
+             style="object-fit: contain"
+             alt="preview image" />
+    </div>
+{% else %}
+    <p>Preview not possible for this type</p>
+{% endif %}
