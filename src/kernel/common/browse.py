@@ -56,6 +56,7 @@ import tarfile
 
 from kernel.metadata_schema import get_schema_manager
 from kernel.template_overrides import get_template_override_manager
+from kernel.common.error import flash_error
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
@@ -217,11 +218,28 @@ def group_prefix_metadata_items(
     return grouped_metadata
 
 
+# TODO fix me, this has changed after PRC2.0.0
 # @cache.memoize(1200)
-def get_current_user_rights(current_user_name, item):
+def get_current_user_rights(
+    irods_session: iRODSSession, item: iRODSDataObject | iRODSCollection
+) -> list:
 
-    permissions = g.irods_session.acls.get(item)
-    access = [permission.access_name for permission in permissions]
+    item_acls = irods_session.acls.get(item, report_raw_acls=True)
+    access = [
+        item_acl.access_name
+        for item_acl in item_acls
+        if item_acl.user_name == irods_session.username
+    ]
+    access.extend(
+        [
+            item_acl.access_name
+            for item_acl in item_acls
+            if (
+                item_acl.user_type == "rodsgroup"
+                and item_acl.user_name in irods_session.my_group_names
+            )
+        ]
+    )
 
     return access
 
@@ -250,8 +268,13 @@ def read_file_in_chunks(file_posix_path: str, delete_after=False):
 
 
 def index():
+    view_template = get_template_override_manager(
+        g.irods_session.zone
+    ).get_template_for_catalog_item(
+        g.irods_session.collections.get(f"/{g.irods_session.zone}"), "index.html.j2"
+    )
     return render_template(
-        "index.html.j2",
+        view_template,
     )
 
 
@@ -259,7 +282,7 @@ def index():
     "/collection/browse", defaults={"collection": None}, strict_slashes=False
 )
 @browse_bp.route("/collection/browse/<path:collection>")
-def collection_browse(collection):
+def collection_browse(collection=None):
     """returns the list of objects and subcollections for the given
     collection.
 
@@ -351,6 +374,10 @@ def collection_browse(collection):
                     else:
                         logging.info(f"No labels found for {schema}")
                 except Exception as e:
+                    flash_error(
+                        e,
+                        default_message=f"Encountered error loading schema {schema} for fetching labels {e}",
+                    )
                     logging.info(
                         f"Encountered error loading schema {schema} for fetching labels {e}"
                     )
@@ -428,7 +455,7 @@ def collection_browse(collection):
         my_groups=my_groups,
         metadata_objects=metadata_objects,
         current_user_rights=get_current_user_rights(
-            g.irods_session.username, current_collection
+            g.irods_session, current_collection
         ),
         user_trash_path=user_trash_path,
     )
@@ -440,8 +467,17 @@ def view_object(data_object_path):
     MIME_TYPE_ATTRIBUTE_NAME = f"{current_app.config['MANGO_PREFIX']}.mime_type"
     if not data_object_path.startswith("/"):
         data_object_path = "/" + data_object_path
-    data_object: iRODSDataObject = g.irods_session.data_objects.get(data_object_path)
-    current_user_rights = get_current_user_rights(g.irods_session.username, data_object)
+    try:
+        data_object: iRODSDataObject = g.irods_session.data_objects.get(
+            data_object_path
+        )
+    except:
+        flash(f"Cannot access {data_object_path}, redirecting to its parent", "warning")
+        p = Path(data_object_path)
+        collection = str(p.parent)
+        return redirect(url_for("browse_bp.collection_browse", collection=collection))
+
+    current_user_rights = get_current_user_rights(g.irods_session, data_object)
 
     # meta_data_items = data_object.metadata.items()
     # if MIME_TYPE_ATTRIBUTE_NAME not in [item.name for item in meta_data_items]:
@@ -1060,16 +1096,15 @@ def set_permissions(item_path: str):
                 recursive=recursive,
             )
     except Exception as e:
-        print(e)
-        abort(500, "failed to set permissions")
-
-    signals.permissions_changed.send(
-        current_app._get_current_object(),
-        irods_session=g.irods_session,
-        item_path=item_path,
-        recursive=recursive,
-    )
-    flash(f"Permissions changed for {item_path}", "success")
+        flash_error(e, "warning")
+    else:
+        signals.permissions_changed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            item_path=item_path,
+            recursive=recursive,
+        )
+        flash(f"Permissions changed for {item_path}", "success")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -1404,18 +1439,20 @@ def bulk_operation_items():
 
 @browse_bp.route("/item/rename", methods=["POST"])
 def rename_item():
+    redirect_route = request.referrer
+
     if "item_path" not in request.form or "new_name" not in request.form:
-        abort(400, "Required parameters are missing")
+        flash_error("missing_parameters")
+        return redirect(redirect_route)
 
     new_name = request.form["new_name"]
     if re.search(r"/", new_name):
-        abort(400, f"Illegal characters in new name {new_name}")
+        flash_error("illegal_characters")
+        return redirect(redirect_route)
 
     item_path = iRODSPath(request.form["item_path"])
     new_path = iRODSPath(*item_path.split("/")[:-1], new_name)
     irods_session: iRODSSession = g.irods_session
-
-    redirect_route = request.referrer
 
     if item_path == new_path:
         flash("The name has not changed", "danger")
