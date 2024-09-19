@@ -60,7 +60,7 @@ from kernel.common.error import flash_error
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
-from mango_ui import register_module
+from mango_ui import register_module, object_view_tabs
 
 UI = {
     "title": "Collections",
@@ -654,6 +654,7 @@ def view_object(data_object_path):
         tika_result=tika_result,
         consolidated_names=consolidated_analysis_metadata_names,
         current_user_rights=current_user_rights,
+        tabs=object_view_tabs,
     )
 
 
