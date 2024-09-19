@@ -150,3 +150,34 @@ def btoa(x):
 
 def atob(x):
     return base64.b64decode(x)
+
+
+### two utility functions that typically are used to map iRODS avu metadata
+# into a nested dict. The dict is passed by reference
+# it does not work for ManGO repeated composite fields as it will
+# dissect them into the same lists
+
+def safely_add_to_dict(regular_dict: dict, key, value):
+    # simple multidict like behaviour for multivalued fields 
+    if key in regular_dict:
+        if type(regular_dict[key]) == list:
+            regular_dict[key].append(value)
+        elif (existing_value := regular_dict[key]) is not None:
+            regular_dict[key] = [existing_value, value]
+        else: # basically None value
+            regular_dict[key] = value
+    else:
+        regular_dict[key] = value
+
+# a namespaced_string with dots is expanded into a nested dict
+def unflatten_namespace_into_dict(
+    target_dict: dict, namespaced_string: str, value=None
+) -> dict:
+    if "." in namespaced_string:
+        lead_key, rest = namespaced_string.split(".", 1)
+        if lead_key not in target_dict:
+            target_dict[lead_key] ={}
+        unflatten_namespace_into_dict(target_dict[lead_key], rest, value)
+    else:
+        safely_add_to_dict(target_dict, namespaced_string, value)
+        
