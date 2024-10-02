@@ -75,7 +75,7 @@ rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
 
 
 ## Allow cross origin requests for SPA/Ajax situations
-CORS(app)
+CORS(app, supports_credentials=True)
 
 
 mango_server_info = {"server_start": datetime.datetime.now()}
