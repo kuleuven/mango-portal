@@ -821,7 +821,7 @@ def delete_data_object():
 
 
 
-@browse_bp.route("/collection/upload/stream/<collection>", methods=["POST", "PUT"])
+@browse_bp.route("/collection/upload/stream/<path:collection>", methods=["POST", "PUT"])
 @csrf.exempt
 def collection_upload_stream(collection: str):
     collection = unquote(collection)
