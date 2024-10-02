@@ -11,6 +11,7 @@ from flask import (
     abort,
     stream_with_context,
     Response,
+    make_response,
     request,
     flash,
 )
@@ -818,26 +819,42 @@ def delete_data_object():
     return redirect(request.referrer)
 
 
-# Blueprint common
-# @browse_bp.route("/collection/upload/file", methods=["POST"])
-# def collection_upload_file():
-#     """
-#     """
-
-#     collection = request.form["collection"]
-#     print(f"Requested upload file for collection {collection}")
-#     f = request.files["newfile"]
-#     filename = "/tmp/" + f.filename
-#     f.save(filename)
-
-#     current_collection = g.irods_session.collections.get(collection)
-#     irods_session.data_objects.put(filename, collection + "/" + f.filename)
-#     os.unlink(filename)
-
-# return redirect(request.referrer)
 
 
-@browse_bp.route("/collection/upload/file", methods=["POST"])
+@browse_bp.route("/collection/upload/stream/<path:collection>", methods=["POST", "PUT"])
+@csrf.exempt
+def collection_upload_stream(collection:str):
+    collection = unquote(collection)
+    logging.info(f"Request for file upload {collection}")
+    
+    if not collection.startswith("/"):
+        collection = "/" + collection
+        
+    if filename := request.headers.get("filename", None):
+        logging.info(f"Request to upload file {filename}")
+        def do_upload():
+            irods_session : iRODSSession = g.irods_session
+            data_object = irods_session.data_objects.create(f"{collection}/{filename}", force=True)
+            with data_object.open(mode="w") as do_handle:
+                total_bytes = 0
+                start = time.perf_counter()
+                while True:
+                    CHUNK_SIZE = 4*1024*1024
+                    chunk = request.stream.read(CHUNK_SIZE)
+                    actual_chunk_length = len(chunk)
+                    total_bytes += actual_chunk_length
+                    if actual_chunk_length == 0:
+                        break
+                    do_handle.write(chunk)
+                delta = time.perf_counter() - start
+                logging.info(f"Wrote in total {total_bytes} bytes to irods in {delta} secs or {total_bytes/delta} bytes per second")
+            return {}
+        return do_upload()
+    else:
+        logging.info(f"No file name present")
+        return make_response(flask.jsonify({"message": "missing filename"}), 400)
+
+@browse_bp.route("/collection/upload/file", methods=["POST", "PUT"])
 def collection_upload_file():
     """ """
     MANGO_STORAGE_BASE_PATH = Path("storage")

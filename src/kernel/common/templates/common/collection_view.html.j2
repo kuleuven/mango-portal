@@ -3,10 +3,12 @@
 {% import "dialogs.html.j2" as dialogs %}
 {% block head %}
   {{ super() }}
-  <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
-  <link rel="stylesheet"
-        href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css"
-        type="text/css" />
+  <script src="https://unpkg.com/@deltablot/dropzone@7/dist/dropzone-min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/@deltablot/dropzone@7/dist/dropzone.css"
+  type="text/css"
+/>
   <style>
       /* dropzone multi file upload css override*/
       .dropzone .dz-preview .dz-progress {
@@ -79,11 +81,10 @@
                 data-bs-toggle="collapse"
                 data-bs-target="#multi-upload-form">Upload files ...</button>
         <div id="multi-upload-form" class="collapse">
-          <form action="{{ url_for("browse_bp.collection_upload_file") }}"
+          <form action="{{ url_for("browse_bp.collection_upload_stream", collection=collection.path) }}"
                 class="dropzone rounded"
                 id="mango-dropzone">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <input type="hidden" name="collection" value="{{ collection.path }}" />
+            {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /> #}
           </form>
           <button class="btn btn-primary mt-2 float-end" id="submit-all">Start uploading all files</button>
         </div>
@@ -772,14 +773,23 @@ hash && document.querySelector('a[href="'+hash+'"]').click()
 Dropzone.options.mangoDropzone = {
 
     autoProcessQueue: false,
+    parallelUploads: 3,
     addRemoveLinks: true,
     maxFilesize: 5120,
+    binaryBody: true,
+    method: "put",
     dictDefaultMessage: "Click or drag files (max 5GiB each) to upload here. When your selection is ready, click the buttton below to start the upload.",
     init: function () {
       var submitButton = document.querySelector("#submit-all")
+
       ourDropzone =  this;
       submitButton.addEventListener("click", function() {
         ourDropzone.processQueue();
+      });
+      
+      this.on("sending", function(file, xhr, formData) {
+        // add filename header since we changed to binary streaming 
+        xhr.setRequestHeader("filename", file.upload.filename)
       });
       // if there are more than the parallel uploads parameter, ensure that all get uploaded
       this.on("processing", function() { ourDropzone.options.autoProcessQueue = true; });
@@ -789,7 +799,6 @@ Dropzone.options.mangoDropzone = {
       });
     }
   };
-//Dropzone.discover(); // from version 6 (using version 5.x)
-
+Dropzone.discover(); 
   </script>
 {% endblock javascript %}
