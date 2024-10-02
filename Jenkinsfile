@@ -30,7 +30,7 @@ node() {
   checkout scm 
   dir('custom-packages') {
     sh 'git clone https://gitea.icts.kuleuven.be/foz/mangoflow-custom-tasks.git'
-    sh 'git clone https://https://gitea.icts.kuleuven.be/foz/mango-flow.git'
+    sh 'git clone https://gitea.icts.kuleuven.be/foz/mango-flow.git'
   }
   sh 'find custom-packages'
 
