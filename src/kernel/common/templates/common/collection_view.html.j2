@@ -81,6 +81,7 @@
                 data-bs-toggle="collapse"
                 data-bs-target="#multi-upload-form">Upload files ...</button>
         <div id="multi-upload-form" class="collapse">
+
           <form action="{{ url_for("browse_bp.collection_upload_stream", collection=collection.path[1:]) }}"
                 method="post"
                 class="dropzone rounded"
