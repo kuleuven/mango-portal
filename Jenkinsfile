@@ -6,7 +6,8 @@ properties([
 
 def allowed_branch_names = [
   'development': 'development',
-  'search-data-platform': 'development',
+  'mango_flow': 'development',
+  'devops-image-build-refactor': 'development',
   'main': 'latest'
 ]
 
@@ -24,16 +25,25 @@ if (publish) {
     tier = deploy_tier[env.BRANCH_NAME]
   }
 }
+node() {
+  deleteDir()
+  checkout scm 
+  dir('custom-packages') {
+    sh 'git clone https://gitea.icts.kuleuven.be/foz/mangoflow-custom-tasks.git'
+    sh 'git clone https://gitea.icts.kuleuven.be/foz/mangoflow-custom-tasks.git'
+  }
+  sh 'find custom-packages'
 
-sonarScanner {}
 
-buildDockerImage {
-  namespace = 'foz'
-  imageName = 'mango'
-  imageTag = tag
-  noPublish = !publish
+  sonarScanner {}
+
+  buildDockerImage {
+    namespace = 'foz'
+    imageName = 'mango'
+    imageTag = tag
+    noPublish = !publish
+  }
 }
-
 if (tier!="") {
   stage("Deploy") {
      build job: '/team-faciliteiten-voor-onderzoek/gitea/nomadjobs/mango-portal/', wait: true, parameters: [
