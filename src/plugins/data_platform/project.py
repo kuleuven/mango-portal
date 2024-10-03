@@ -5,6 +5,7 @@ import pandas as pd
 import pytz
 import time
 from datetime import datetime
+from distinctipy import distinctipy
 from irods.session import iRODSSession
 from irods.models import RuleExec
 from flask import (
@@ -643,21 +644,11 @@ def projects_statistics():
     )
 
 
-def summarize(source_name: str, data: pd.DataFrame, y_axis: str, group_index: int, hovertemplate=""):
+def summarize(number_of_zones: int, source_name: str, data: pd.DataFrame, y_axis: str, group_index: int, hovertemplate=""):
     def get_color(i):
-        color_mapping = [
-            '#4e79a7',
-            '#f28e2c',
-            '#e15759',
-            '#76b7b2',
-            '#59a14f',
-            '#edc949',
-            '#af7aa1',
-            '#ff9da7',
-            '#9c755f',
-            '#bab0ab'
-        ]
-        return color_mapping[i]
+        colors = distinctipy.get_colors(number_of_zones, rng=number_of_zones, pastel_factor=0.8)
+        hex_colors = [distinctipy.get_hex(color) for color in colors]
+        return hex_colors[i]
 
     grouped_data = data.groupby("date")
     if y_axis == "usage":
@@ -724,7 +715,7 @@ def projects_usage():
                     projects_dict["quota"].append(usage["quota_size"])
 
     df = pd.DataFrame(projects_dict)
-
+    number_of_zones = len(df.zone.unique())
     filters = {
         "start_date": start_date,
         "end_date": end_date,
@@ -745,6 +736,7 @@ def projects_usage():
 
     usage_plot = [
         summarize(
+            number_of_zones,
             source_name,
             data,
             "usage",
@@ -756,6 +748,7 @@ def projects_usage():
 
     quota_plot = [
         summarize(
+            number_of_zones,
             source_name,
             data,
             "quota",
