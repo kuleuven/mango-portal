@@ -39,7 +39,7 @@ node() {
   sh 'cp -rf custom-packages/mango-flow/src/mango_flow src/plugins'
   // followed by the custom tasks
   sh 'cp -rf custom-packages/mangoflow-custom-tasks/src/fogcoa_validation.py src/plugins/mango_flow/tasks'
-
+  sh 'find src/plugins'
   // static analysis
   sonarScanner {}
 
