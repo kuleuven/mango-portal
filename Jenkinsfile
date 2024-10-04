@@ -38,7 +38,7 @@ node() {
   // copy first the relevant portion of mango_flow
   sh 'cp -rf custom-packages/mango-flow/src/mango_flow src/plugins'
   // followed by the custom tasks
-  sh 'cp -rf custom-packages/mangoflow-custom-tasks/src/* src/plugins/mango_flow/tasks'
+  sh 'cp -rf custom-packages/mangoflow-custom-tasks/src/fogcoa_validation.py src/plugins/mango_flow/tasks'
 
   // static analysis
   sonarScanner {}
