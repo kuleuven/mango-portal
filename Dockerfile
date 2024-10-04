@@ -1,6 +1,6 @@
 FROM python:3.10
 WORKDIR /app
-COPY requirements.txt /app/
+COPY requirements-mango-flow.txt requirements.txt
 RUN apt-get update && apt-get -y upgrade && apt-get -y install poppler-utils nano vim
 RUN pip install -r requirements.txt
 RUN echo "Europe/Brussels" > /etc/timezone && rm /etc/localtime && dpkg-reconfigure -f noninteractive tzdata
