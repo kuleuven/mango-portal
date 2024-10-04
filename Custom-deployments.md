@@ -6,7 +6,7 @@ Furthermore, there are extension points and configuration options to fully custo
 
 The main parameter for the overall configuration can be set via an environment variable `MANGO_CONFIG`. If this is not set, the application will try to read from the default `config.py`.
 
-> See also some [notes](#notes-when-using-irods_demo-in-a-local-setup) when using a default/demo setup of iRODS 
+> See also some [notes](#notes-when-using-irods_demo-in-a-local-setup) when using a default/demo setup of iRODS
 
 ## Plugins and activation
 

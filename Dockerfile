@@ -10,3 +10,4 @@ ENV spOption="ManGO_portal"
 COPY src  /app/
 EXPOSE 80
 ENTRYPOINT ["/usr/local/bin/python", "waitress_serve.py"]
+CMD ["python", "waitress_serve.py"]

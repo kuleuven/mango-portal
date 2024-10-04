@@ -26,15 +26,21 @@ if (publish) {
   }
 }
 node() {
-  deleteDir()
-  checkout scm 
+  deleteDir() // start from a clean sheet
+  checkout scm // check out the base repo
+  // now fetch the extra repos we want to include
   dir('custom-packages') {
     sh 'git clone https://gitea.icts.kuleuven.be/foz/mangoflow-custom-tasks.git'
     sh 'git clone https://gitea.icts.kuleuven.be/foz/mango-flow.git'
   }
+  // just for logging purposes
   sh 'find custom-packages'
+  // copy first the relevant portion of mango_flow
+  sh 'cp -rf custom-packages/mango-flow/src/mango_flow src/plugins'
+  // followed by the custom tasks
+  sh 'cp -rf mango-flow-custom-tasks/src/* src/plugins/mango_flow/tasks'
 
-
+  // static analysis
   sonarScanner {}
 
   buildDockerImage {
