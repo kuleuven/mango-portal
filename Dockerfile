@@ -8,5 +8,6 @@ ARG TIKA_URL=http://localhost:9998/
 ENV TIKA_URL=$TIKA_URL
 ENV spOption="ManGO_portal"
 COPY src  /app/
+COPY unstash /app/unstash
 EXPOSE 80
 CMD ["python", "waitress_serve.py"]

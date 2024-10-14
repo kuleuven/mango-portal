@@ -48,6 +48,8 @@ node() {
     imageName = 'mango'
     imageTag = tag
     noPublish = !publish
+    stash = '{name: "mango_flow", include: "src/plugins/mango_flow/**/*"}'
+    unstash = 'mango_flow'
   }
 }
 if (tier!="") {
