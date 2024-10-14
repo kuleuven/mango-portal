@@ -40,6 +40,8 @@ node() {
   // followed by the custom tasks
   sh 'cp -rf custom-packages/mangoflow-custom-tasks/src/fogcoa_validation.py src/plugins/mango_flow/tasks'
   sh 'find src/plugins'
+  stash name: 'mango_flow', includes: 'src/plugins/mango_flow/**/*'
+
   // static analysis
   sonarScanner {}
 
@@ -48,7 +50,6 @@ node() {
     imageName = 'mango'
     imageTag = tag
     noPublish = !publish
-    stash = '{name: "mango_flow", include: "src/plugins/mango_flow/**/*"}'
     unstash = 'mango_flow'
   }
 }
