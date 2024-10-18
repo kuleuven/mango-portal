@@ -37,6 +37,13 @@ openid_providers = {
         "issuer_url": "https://auth.vscentrum.be",
         "auto_pick_on_host": "mango.vscentrum.be",
     },
+    "eduteams": {
+        "label": "My AccessID",
+        "client_id": os.environ.get("EDUTEAMS_CLIENT_ID", ""),
+        "secret": os.environ.get("EDUTEAMS_SECRET", ""),
+        "issuer_url": os.environ.get("EDUTEAMS_ISSUER_URL", ""),
+        "auto_pick_on_host": "",
+    }
 }
 
 openid_clients = {}
