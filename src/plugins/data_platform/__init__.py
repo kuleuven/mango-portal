@@ -93,7 +93,7 @@ def openid_login_required(func):
     if session['data_platform_token'] is None:
         return redirect(url_for('data_platform_user_bp.entitlement_required'))
 
-    update_zone_info(current_app.config['irods_zones'], session['data_platform_token'])
+    update_zone_info(current_app.config['irods_zones'], session['data_platform_token']['token'])
 
     return func(*args, **kwargs)
   
