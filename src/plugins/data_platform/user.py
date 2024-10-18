@@ -195,6 +195,15 @@ def logout_openid():
 
     return render_template('user/logout_openid.html.j2')
 
+@data_platform_user_bp.route('/user/entitlement_required', methods=["GET"])
+def entitlement_required():
+    if 'openid_session' not in session:
+        return redirect(url_for("data_platform_user_bp.login_openid"))
+
+    s = Session(session['openid_session'])
+
+    return render_template('user/entitlement_required.html.j2', provider=s.provider, name=s.name, email=s.email, username=s.username)
+
 @data_platform_user_bp.route('/user/openid/drop_permissions', methods=["GET"])
 @openid_login_required
 def drop_permissions():

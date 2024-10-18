@@ -85,6 +85,16 @@ def openid_login_required(func):
         session['openid_redirect'] = request.full_path
         return redirect(url_for("data_platform_user_bp.login_openid"))
 
+    # We try to acquire a data platform token
+    # It is stored in the Session object, but not in session['openid_session'],
+    # and we'll refresh it in each subsequent request
+    session['data_platform_token'] = s.data_platform_token()
+
+    if session['data_platform_token'] is None:
+        return redirect(url_for('data_platform_user_bp.entitlement_required'))
+
+    update_zone_info(current_app.config['irods_zones'], session['data_platform_token'])
+
     return func(*args, **kwargs)
   
   return inner
@@ -127,11 +137,7 @@ def update_zone_info(irods_zones, token=API_TOKEN):
 
 
 def current_user_api_token():
-    payload = Session(session['openid_session']).data_platform_token()
-    
-    update_zone_info(current_app.config['irods_zones'], payload["token"])
-
-    return payload["token"], payload["permissions"]
+    return session['data_platform_token']["token"], session['data_platform_token']["permissions"]
 
 def current_user_projects():
     # Retrieve projects
@@ -186,6 +192,9 @@ class Session(dict):
 
     @property
     def username(self):
+        if 'preferred_username' not in self['user_info']:
+            return self['subject']
+
         return self['user_info']['preferred_username']
     
     @property
@@ -205,6 +214,10 @@ class Session(dict):
     @property
     def jwt_token(self):
         return self['jwt_token']
+
+    @property
+    def provider(self):
+        return self['provider']
 
     def valid(self):
         if 'expiry' not in self:
@@ -286,15 +299,15 @@ class Session(dict):
         if user_info['sub'] != id_token['sub']:
             flash('The \'sub\' of userinfo does not match \'sub\' of ID Token.', category='danger')
             return self
-        
-        self['user_info'] = user_info._dict
 
+        self['user_info'] = user_info._dict
         self['jwt_token'] = token_resp['id_token_jwt']
         self['access_token'] = token_resp['access_token']
         self['refresh_token'] = None
         if 'refresh_token' in token_resp:
             self['refresh_token'] = token_resp['refresh_token']
         self['expiry'] = token_resp['id_token']['exp']
+        self['subject'] = token_resp['id_token']['sub']
 
         return self
     
@@ -325,15 +338,17 @@ class Session(dict):
                 "drop_permissions": drop and not impersonate,
             },
         )
-        response.raise_for_status()
 
+        if response.status_code == 402:
+            return None
+
+        response.raise_for_status()
         payload = response.json()
 
         if not impersonate:
             return payload
         
         header = {"Authorization": "Bearer " + payload["token"]}
-
         response = requests.post(
             f"{API_URL}/v1/token",
             json={
@@ -343,8 +358,11 @@ class Session(dict):
             },
             headers=header,
         )
-        response.raise_for_status()
 
+        if response.status_code == 402:
+            return None
+
+        response.raise_for_status()
         payload = response.json()
 
         return payload
