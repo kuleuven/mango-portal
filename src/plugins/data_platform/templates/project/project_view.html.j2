@@ -791,7 +791,8 @@
               <input type="number"
                      class="form-control"
                      name="quota_size"
-                     value="{{ project['quota_size'] }}" />
+                     value="{{ project['quota_size'] }}"
+                     id="modifyQuotaSize" />
               <div class="invalid-feedback">
                 Value for size quota is required
               </div>
@@ -800,10 +801,21 @@
               <label for="description" class="col-form-label">
                 Max Inodes
               </label>
-              <input type="number"
+
+              <div class="input-group">
+                <button type="button" class="btn btn-secondary btn-sm" id="modifyQuotaCompute">Compute</button>
+                <input type="number"
                      class="form-control"
                      name="quota_inodes"
-                     value="{{ project['quota_inodes'] }}" />
+                     value="{{ project['quota_inodes'] }}" min="1"
+                     id="modifyQuotaInodes" />
+                <script>
+                  document.getElementById('modifyQuotaCompute').addEventListener('click', function (event) {
+                    var size = document.getElementById('modifyQuotaSize').value
+                    document.getElementById('modifyQuotaInodes').value = Math.round(Math.pow(2, Math.log(size / 1000000000000) / Math.log(10)) * 1000000)
+                  });
+                </script>
+              </div>
               <div class="invalid-feedback">
                 Value for inodes quota is required
               </div>
