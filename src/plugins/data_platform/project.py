@@ -199,7 +199,7 @@ def modify_project():
 
     elif "quota_inodes" in request.form:
         data = {
-            "quota_inodes": int(request.form.get("quota_inodes") * 1000000000000),
+            "quota_inodes": int(float(request.form.get("quota_inodes")) * 1000000000000),
             "quota_size": int(request.form.get("quota_size")),
         }
 
