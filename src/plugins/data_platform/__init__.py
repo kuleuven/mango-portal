@@ -348,6 +348,8 @@ class Session(dict):
             f"{API_URL}/v1/token/exchange",
             json={
                 "id_token": self.jwt_token,
+                "access_token": self['access_token'],
+                "user_info": self['user_info'],
                 "drop_permissions": drop and not impersonate,
             },
         )
