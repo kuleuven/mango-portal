@@ -299,7 +299,7 @@ class Session(dict):
         self['user_info'] = user_info._dict
 
         if 'preferred_username' not in self['user_info']:
-            self['user_info']['preferred_username'] = self['subject']
+            self['user_info']['preferred_username'] = token_resp['id_token']['sub']
 
         self['jwt_token'] = token_resp['id_token_jwt']
         self['access_token'] = token_resp['access_token']
