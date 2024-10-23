@@ -331,10 +331,14 @@ class Session(dict):
         self['impersonate'] = True
 
     def has_entitlement(self):
-        # TODO: check for "urn:geant:eduteams.org:service:eduteams-acc:group:ku-leuven:services:mango#acc.eduteams.org"
-        print(self['user_info'])
+        if self['provider'] != "eduteams":
+            return True
 
-        return True
+        # TODO: check for assurance - implies MFA
+        #if "https://refeds.org/assurance/IAP/medium" not in self['user_info']['eduperson_assurance']:
+        #    return False
+
+        return "urn:geant:eduteams.org:service:eduteams-acc:group:ku-leuven:services:mango#acc.eduteams.org" in self['user_info']['eduperson_entitlement']
 
     def data_platform_token(self):
         drop = 'drop_permissions' in self
