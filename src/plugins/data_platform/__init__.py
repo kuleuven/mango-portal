@@ -29,6 +29,7 @@ openid_providers = {
         "secret": os.environ.get("OIDC_SECRET", ""),
         "issuer_url": os.environ.get("OIDC_ISSUER_URL", ""),
         "auto_pick_on_host": "mango.kuleuven.be",
+        "scopes": ["openid"],
     },
     "vsc": {
         "label": "VSC",
@@ -36,6 +37,7 @@ openid_providers = {
         "secret": "blub",
         "issuer_url": "https://auth.vscentrum.be",
         "auto_pick_on_host": "mango.vscentrum.be",
+        "scopes": ["openid"],
     },
     "eduteams": {
         "label": "My AccessID",
@@ -43,6 +45,7 @@ openid_providers = {
         "secret": os.environ.get("EDUTEAMS_SECRET", ""),
         "issuer_url": os.environ.get("EDUTEAMS_ISSUER_URL", ""),
         "auto_pick_on_host": "",
+        "scopes": ["openid", "profile", "aarc"],
     }
 }
 
@@ -258,7 +261,7 @@ class Session(dict):
         session["openid_nonce"] = rndstr()
         args = {
             "response_type": "code",
-            "scope": ["openid"],
+            "scope": openid_providers[self["provider"]]["scopes"],
             "nonce": session["openid_nonce"],
             "redirect_uri": self.redirect_uri,
             "state": session["openid_state"]
