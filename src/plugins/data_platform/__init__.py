@@ -191,9 +191,6 @@ class Session(dict):
 
     @property
     def username(self):
-        if 'preferred_username' not in self['user_info']:
-            return self['subject']
-
         return self['user_info']['preferred_username']
     
     @property
@@ -300,6 +297,10 @@ class Session(dict):
             return self
 
         self['user_info'] = user_info._dict
+
+        if 'preferred_username' not in self['user_info']:
+            self['user_info']['preferred_username'] = self['subject']
+
         self['jwt_token'] = token_resp['id_token_jwt']
         self['access_token'] = token_resp['access_token']
         self['refresh_token'] = None
@@ -329,7 +330,7 @@ class Session(dict):
     def has_entitlement(self):
         # TODO: check for "urn:geant:eduteams.org:service:eduteams-acc:group:ku-leuven:services:mango#acc.eduteams.org"
         print(self['user_info'])
-        
+
         return True
 
     def data_platform_token(self):
