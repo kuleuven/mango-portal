@@ -84,16 +84,9 @@ def openid_login_required(func):
     if not s.valid():
         session['openid_redirect'] = request.full_path
         return redirect(url_for("data_platform_user_bp.login_openid"))
-
-    # We try to acquire a data platform token
-    # It is stored in the Session object, but not in session['openid_session'],
-    # and we'll refresh it in each subsequent request
-    session['data_platform_token'] = s.data_platform_token()
-
-    if session['data_platform_token'] is None:
+    
+    if not s.has_entitlement():
         return redirect(url_for('data_platform_user_bp.entitlement_required'))
-
-    update_zone_info(current_app.config['irods_zones'], session['data_platform_token']['token'])
 
     return func(*args, **kwargs)
   
@@ -137,7 +130,13 @@ def update_zone_info(irods_zones, token=API_TOKEN):
 
 
 def current_user_api_token():
-    return session['data_platform_token']["token"], session['data_platform_token']["permissions"]
+    s = Session(session['openid_session'])
+
+    data_platform_token = s.data_platform_token()       
+
+    update_zone_info(current_app.config['irods_zones'], data_platform_token['token'])
+    
+    return data_platform_token["token"], data_platform_token["permissions"]
 
 def current_user_projects():
     # Retrieve projects
@@ -327,6 +326,12 @@ class Session(dict):
         self['user_info']['name'] = self['orig_user_info']['name'] + " (impersonating " + username + ")"
         self['impersonate'] = True
 
+    def has_entitlement(self):
+        # TODO: check for "urn:geant:eduteams.org:service:eduteams-acc:group:ku-leuven:services:mango#acc.eduteams.org"
+        print(self['user_info'])
+        
+        return True
+
     def data_platform_token(self):
         drop = 'drop_permissions' in self
         impersonate = 'impersonate' in self
@@ -338,9 +343,6 @@ class Session(dict):
                 "drop_permissions": drop and not impersonate,
             },
         )
-
-        if response.status_code == 402:
-            return None
 
         response.raise_for_status()
         payload = response.json()
@@ -358,9 +360,6 @@ class Session(dict):
             },
             headers=header,
         )
-
-        if response.status_code == 402:
-            return None
 
         response.raise_for_status()
         payload = response.json()
