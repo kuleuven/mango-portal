@@ -319,7 +319,7 @@ def local_client_retrieve_token_callback():
         response = requests.post(
             f"{API_URL}/v1/token/exchange",
             json={
-                "id_token": Session(session['openid_session']).jwt_token,
+                "access_token": Session(session['openid_session']).access_token,
                 "drop_permissions": True,
             },
         )

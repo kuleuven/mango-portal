@@ -211,8 +211,8 @@ class Session(dict):
         return self['user_info']['email']
     
     @property
-    def jwt_token(self):
-        return self['jwt_token']
+    def access_token(self):
+        return self['access_token']
 
     @property
     def provider(self):
@@ -245,7 +245,6 @@ class Session(dict):
             token=Token(resp={'refresh_token': self['refresh_token']}),
         )
 
-        self['jwt_token'] = token_resp['id_token_jwt']
         self['access_token'] = token_resp['access_token']
         self['refresh_token'] = None
         if 'refresh_token' in token_resp:
@@ -304,7 +303,6 @@ class Session(dict):
         if 'preferred_username' not in self['user_info']:
             self['user_info']['preferred_username'] = token_resp['id_token']['sub']
 
-        self['jwt_token'] = token_resp['id_token_jwt']
         self['access_token'] = token_resp['access_token']
         self['refresh_token'] = None
         if 'refresh_token' in token_resp:
@@ -347,8 +345,7 @@ class Session(dict):
         response = requests.post(
             f"{API_URL}/v1/token/exchange",
             json={
-                "id_token": self.jwt_token,
-                "access_token": self['access_token'],
+                "access_token": self.access_token,
                 "drop_permissions": drop and not impersonate,
             },
         )
