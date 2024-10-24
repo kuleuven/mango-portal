@@ -786,12 +786,19 @@
           <div class="modal-body">
             <div class="mb-3">
               <label for="description" class="col-form-label">
-                Max Size (bytes)
+                Max Size
               </label>
-              <input type="number"
-                     class="form-control"
-                     name="quota_size"
-                     value="{{ project['quota_size'] }}" />
+              <div class="input-group">
+                <input type="number"
+                      class="form-control"
+                      name="quota_size"
+                      value="{{ project['quota_size'] / 1000000000000.0 }}"
+                      id="modifyQuotaSize"
+                      min="0.001"
+                      step="any" />
+                <span class="input-group-text">TiB</span>
+              </div>
+
               <div class="invalid-feedback">
                 Value for size quota is required
               </div>
@@ -800,10 +807,21 @@
               <label for="description" class="col-form-label">
                 Max Inodes
               </label>
-              <input type="number"
+
+              <div class="input-group">
+                <button type="button" class="btn btn-secondary btn-sm" id="modifyQuotaCompute">Compute</button>
+                <input type="number"
                      class="form-control"
                      name="quota_inodes"
-                     value="{{ project['quota_inodes'] }}" />
+                     value="{{ project['quota_inodes'] }}" min="1"
+                     id="modifyQuotaInodes" />
+                <script>
+                  document.getElementById('modifyQuotaCompute').addEventListener('click', function (event) {
+                    var size = document.getElementById('modifyQuotaSize').value
+                    document.getElementById('modifyQuotaInodes').value = Math.round(Math.pow(2, Math.log(size) / Math.log(10)) * 1000000)
+                  });
+                </script>
+              </div>
               <div class="invalid-feedback">
                 Value for inodes quota is required
               </div>

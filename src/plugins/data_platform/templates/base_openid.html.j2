@@ -118,4 +118,7 @@
     </div>
   </div>
 {% endif %}
+{% if session.openid_session %}
+<!-- {{ session.openid_session.user_info }} -->
+{% endif %}
 {% endblock footer %}
