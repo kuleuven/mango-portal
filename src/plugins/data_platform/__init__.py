@@ -29,7 +29,7 @@ openid_providers = {
         "secret": os.environ.get("OIDC_SECRET", ""),
         "issuer_url": os.environ.get("OIDC_ISSUER_URL", ""),
         "auto_pick_on_host": "mango.kuleuven.be",
-        "scopes": ["openid"],
+        "scopes": ["openid", "eduPersonEntitlement"],
     },
     "vsc": {
         "label": "VSC",
