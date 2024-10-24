@@ -88,8 +88,14 @@ def openid_login_required(func):
         session['openid_redirect'] = request.full_path
         return redirect(url_for("data_platform_user_bp.login_openid"))
     
-    if not s.has_entitlement():
+    # Try to get data platform token, if this retuns None, the user is not entitled to use the data platform api
+    g.data_platform_token = s.data_platform_token()
+
+    if g.data_platform_token is None:
         return redirect(url_for('data_platform_user_bp.entitlement_required'))
+
+    # Update the irods zone information
+    update_zone_info(current_app.config['irods_zones'], g.data_platform_token['token'])
 
     return func(*args, **kwargs)
   
@@ -133,13 +139,7 @@ def update_zone_info(irods_zones, token=API_TOKEN):
 
 
 def current_user_api_token():
-    s = Session(session['openid_session'])
-
-    data_platform_token = s.data_platform_token()       
-
-    update_zone_info(current_app.config['irods_zones'], data_platform_token['token'])
-    
-    return data_platform_token["token"], data_platform_token["permissions"]
+    return g.data_platform_token["token"], g.data_platform_token["permissions"]
 
 def current_user_projects():
     # Retrieve projects
@@ -328,16 +328,6 @@ class Session(dict):
         self['user_info']['name'] = self['orig_user_info']['name'] + " (impersonating " + username + ")"
         self['impersonate'] = True
 
-    def has_entitlement(self):
-        if self['provider'] != "eduteams":
-            return True
-
-        # TODO: check for assurance - implies MFA
-        #if "https://refeds.org/assurance/IAP/medium" not in self['user_info']['eduperson_assurance']:
-        #    return False
-
-        return "urn:geant:eduteams.org:service:eduteams-acc:group:ku-leuven:services:mango#acc.eduteams.org" in self['user_info']['eduperson_entitlement']
-
     def data_platform_token(self):
         drop = 'drop_permissions' in self
         impersonate = 'impersonate' in self
@@ -349,6 +339,9 @@ class Session(dict):
                 "drop_permissions": drop and not impersonate,
             },
         )
+
+        if response.status_code == 402:
+            return None
 
         response.raise_for_status()
         payload = response.json()
