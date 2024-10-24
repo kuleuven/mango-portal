@@ -93,6 +93,11 @@ def openid_login_required(func):
 
     if g.data_platform_token is None:
         return redirect(url_for('data_platform_user_bp.entitlement_required'))
+    
+    # If oidc did not provide a preferred_username, use the generated username by the data platform api
+    if s.username is None:
+        s.set_preferred_username(g.data_platform_token['username'])
+        session['openid_session'] = dict(s)
 
     # Update the irods zone information
     update_zone_info(current_app.config['irods_zones'], g.data_platform_token['token'])
@@ -194,6 +199,9 @@ class Session(dict):
 
     @property
     def username(self):
+        if 'preferred_username' not in self['user_info']:
+            return None
+        
         return self['user_info']['preferred_username']
     
     @property
@@ -299,10 +307,6 @@ class Session(dict):
             return self
 
         self['user_info'] = user_info._dict
-
-        if 'preferred_username' not in self['user_info']:
-            self['user_info']['preferred_username'] = token_resp['id_token']['sub']
-
         self['access_token'] = token_resp['access_token']
         self['refresh_token'] = None
         if 'refresh_token' in token_resp:
@@ -327,6 +331,9 @@ class Session(dict):
         self['user_info']['preferred_username'] = username
         self['user_info']['name'] = self['orig_user_info']['name'] + " (impersonating " + username + ")"
         self['impersonate'] = True
+
+    def set_preferred_username(self, username):
+        self['user_info']['preferred_username'] = username
 
     def data_platform_token(self):
         drop = 'drop_permissions' in self
