@@ -151,8 +151,6 @@ class SchemaForm {
     hidden_input.value = annotated_data.redirect_route[0];
     this.card.appendChild(hidden_input);
     this.annotated_data = annotated_data;
-    console.log(this.annotated_data);
-
     this.fields.forEach((field) => {
       if (field.name in this.annotated_data) {
         field.type == "object"
@@ -176,6 +174,9 @@ class SchemaForm {
     annotated_data = annotated_data || this.annotated_data;
     const fid = field.name;
 
+
+
+
     // Extract the data linked to this field
     let existing_values = annotated_data[fid];
     let input_name =
@@ -185,6 +186,19 @@ class SchemaForm {
     // (this is only for multiple-value multiple-choice fields)
 
     let first_input = form.querySelector(`[data-field-name="${fid}"]`);
+
+
+
+    let myInput = form.querySelector(`[name="${fid}"]`);
+    if (myInput.getAttribute("type") == "datetime-local") {
+      //check if datetime contains decimal seconds
+        let myDate = new Date(existing_values[0])
+        if (myDate.getMilliseconds() != 0) {
+          existing_values[0] = myDate.toISOString().slice(0, -1); //slice Z for timezone
+        }   
+       myInput.setAttribute("step", "any");
+    }
+
     // if we have multiple-value multiple-choice
     if (
       field.type == "select" &&
@@ -238,6 +252,9 @@ class SchemaForm {
     } // compatibility with pre-unit versions
 
     let first_unit = String(existing_values[0].__unit__[0]);
+
+
+
 
     // identify the piece of form in which annotation will be added
     let first_viewer = [...form.childNodes].filter(
