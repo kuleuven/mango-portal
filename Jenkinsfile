@@ -6,7 +6,8 @@ properties([
 
 def allowed_branch_names = [
   'development': 'development',
-  'search-data-platform': 'development',
+  'mango_flow': 'development',
+  'devops-image-build-refactor': 'development',
   'main': 'latest'
 ]
 
@@ -25,15 +26,39 @@ if (publish) {
   }
 }
 
-sonarScanner {}
-
-buildDockerImage {
-  namespace = 'foz'
-  imageName = 'mango'
-  imageTag = tag
-  noPublish = !publish
+// default for branche of extra packes from git(ea) repos: development
+extraPackageBranch = 'development'
+if ( env.BRANCH_NAME == 'main' ) {
+  extraPackageBranch = 'main'
 }
 
+node() {
+  deleteDir() // start from a clean sheet
+  checkout scm // check out the base repo
+  // now fetch the extra repos we want to include
+  dir('extra-packages') {
+    sh "git clone --single-branch -b ${extraPackageBranch} https://gitea.icts.kuleuven.be/foz/mangoflow-custom-tasks.git"
+    sh "git clone --single-branch -b ${extraPackageBranch} https://gitea.icts.kuleuven.be/foz/mango-flow.git"
+    sh "git clone --single-branch -b ${extraPackageBranch} https://gitea.icts.kuleuven.be/foz/mango-audit.git"
+  }
+  sh 'cp -rf extra-packages/mango-flow/src/mango_flow src/plugins'
+  sh 'cp -rf extra-packages/mango-audit/src/mango_audit src/plugins'
+  // followed by the custom tasks
+  sh 'cp -rf extra-packages/mangoflow-custom-tasks/src/fogcoa_validation.py src/plugins/mango_flow/tasks'
+  sh 'find src/plugins'
+  stash name: 'mango_flow', includes: 'src/plugins/**/*'
+
+  // static analysis
+  sonarScanner {}
+
+  buildDockerImage {
+    namespace = 'foz'
+    imageName = 'mango'
+    imageTag = tag
+    noPublish = !publish
+    unstash = 'mango_flow'
+  }
+}
 if (tier!="") {
   stage("Deploy") {
      build job: '/team-faciliteiten-voor-onderzoek/gitea/nomadjobs/mango-portal/', wait: true, parameters: [
