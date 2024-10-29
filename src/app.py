@@ -164,6 +164,8 @@ def init_and_secure_views():
     #Always let static resources be served, eg css, js , images
     if request.endpoint in [
         "static",
+        "mango_flow_admin_bp.static",
+        "mango_audit_bp.static",
     ]:
         return None
     
