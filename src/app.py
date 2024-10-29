@@ -206,6 +206,8 @@ def init_and_secure_views():
         "data_platform_project_bp.rule_management",
         "data_platform_project_bp.project_quota_change",
         "operator_admin_bp.reset_all",
+        "mango_audit_bp.get_general_audit",
+        "mango_audit_history_bp.get_history_data",
     ]:
         return None
 
