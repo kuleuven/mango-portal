@@ -85,6 +85,7 @@ MANGO_ADMINS = [
     "u0079275",
     "u0056780",
     "u0031305",
+    "u0125288",
 ]
 
 MANGO_MAIN_LANDING_ROUTE = {"module": "plugins.user_tantra.realm", "function": "index"}
