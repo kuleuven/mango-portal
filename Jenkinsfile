@@ -40,13 +40,14 @@ node() {
     sh "git clone --single-branch -b ${extraPackageBranch} https://gitea.icts.kuleuven.be/foz/mangoflow-custom-tasks.git"
     sh "git clone --single-branch -b ${extraPackageBranch} https://gitea.icts.kuleuven.be/foz/mango-flow.git"
     sh "git clone --single-branch -b ${extraPackageBranch} https://gitea.icts.kuleuven.be/foz/mango-audit.git"
+    sh "git clone --single-branch -b ${extraPackageBranch} https://gitea.icts.kuleuven.be/foz/mango-opensearch.git"
   }
   sh 'cp -rf extra-packages/mango-flow/src/mango_flow src/plugins'
   sh 'cp -rf extra-packages/mango-audit/src/mango_audit src/plugins'
   // followed by the custom tasks
   sh 'cp -rf extra-packages/mangoflow-custom-tasks/src/fogcoa_validation.py src/plugins/mango_flow/tasks'
   sh 'find src/plugins'
-  stash name: 'mango_flow', includes: 'src/plugins/**/*'
+  stash name: 'mango_plugins', includes: 'src/plugins/**/*'
 
   // static analysis
   sonarScanner {}
@@ -56,7 +57,7 @@ node() {
     imageName = 'mango'
     imageTag = tag
     noPublish = !publish
-    unstash = 'mango_flow'
+    unstash = 'mango_plugins'
   }
 }
 if (tier!="") {
