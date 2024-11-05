@@ -189,15 +189,17 @@ class SchemaForm {
 
 
 
-    let myInput = form.querySelector(`[name="${fid}"]`);
-    if (myInput.getAttribute("type") == "datetime-local") {
-      //check if datetime contains decimal seconds
-        let myDate = new Date(existing_values[0])
-        if (myDate.getMilliseconds() != 0) {
-          existing_values[0] = myDate.toISOString().slice(0, -1); //slice Z for timezone
-        }   
-       myInput.setAttribute("step", "any");
+    function check_date(input, index) {
+      let myDate = new Date(existing_values[index])
+      if (myDate.getMilliseconds() != 0) {
+        existing_values[index] = myDate.toISOString().slice(0, -1); //slice Z for timezone
+      }   
+      input.setAttribute("step", "any")
+      //return (input, value)
+
     }
+
+
 
     // if we have multiple-value multiple-choice
     if (
@@ -221,7 +223,13 @@ class SchemaForm {
       }
     } else if (existing_values.length == 1) {
       // if there is only one value for this field
-      form.querySelector(`[name="${input_name}"]`).value = existing_values[0];
+        //fix datetime if necessary 
+      let input =  form.querySelector(`[name="${input_name}"]`)
+      if (field.type === "datetime-local") {
+        check_date(input, 0)
+      }
+      input.value = existing_values[0];
+
     } else {
       // if the field has been duplicated
       // go through each of the values and repeat the input field with its corresponding value
@@ -229,6 +237,11 @@ class SchemaForm {
         first_input.querySelector("label button").click();
       }
       form.querySelectorAll(`[name="${input_name}"]`).forEach((input, i) => {
+        //check datetime and fix 
+        if(field.type === "datetime-local")
+          {
+          check_date(input, i)
+        }
         input.value = existing_values[i];
       });
     }
