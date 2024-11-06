@@ -44,6 +44,7 @@ node() {
   }
   sh 'cp -rf extra-packages/mango-flow/src/mango_flow src/plugins'
   sh 'cp -rf extra-packages/mango-audit/src/mango_audit src/plugins'
+  sh 'cp -rf extra-packages/mango-opensearch/src/mango_open_search src/plugins'
   // followed by the custom tasks
   sh 'cp -rf extra-packages/mangoflow-custom-tasks/src/fogcoa_validation.py src/plugins/mango_flow/tasks'
   sh 'find src/plugins'
