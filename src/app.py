@@ -280,6 +280,8 @@ def init_and_secure_views():
             g.mango_server_info = mango_server_info
             return None
         else:
+            session["redirect_after_login"] = request.url
+            print(f"Request url before login {request.url}")
             return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
 
 

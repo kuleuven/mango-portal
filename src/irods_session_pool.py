@@ -16,7 +16,7 @@ from flask import session, current_app
 irods_user_sessions = {}
 irods_node_logins = []
 
-SESSION_TTL = 60 * 30  # 30 minutes
+SESSION_TTL = 60 * 10  # 30 minutes
 
 class iRODSUserSession(iRODSSession):
     def __init__(self, irods_session: iRODSSession, openid_user_name = None, openid_user_email = None):

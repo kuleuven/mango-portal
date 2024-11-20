@@ -179,8 +179,9 @@ def login_openid_select_zone():
     collection = request.form.get('collection')
     if collection:
         return redirect(url_for('browse_bp.collection_browse', collection=collection.lstrip('/')))
-
-    return redirect(url_for('index'))
+    
+    redirect_after_login = session.get("redirect_after_login", url_for('index'))
+    return redirect(redirect_after_login)
 
 @data_platform_user_bp.route('/user/logout_openid', methods=["GET"])
 def logout_openid():
