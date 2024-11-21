@@ -13,6 +13,7 @@ DEFAULT_IRODS_PARAMETERS = {
     "irods_ssl_ca_certificate_file": "",
     "irods_ssl_verify_server": "cert",
     "irods_default_resource": "default",
+    "refresh_time": (60*60)
 }
 
 ssl_context = ssl.create_default_context(
