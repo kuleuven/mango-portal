@@ -165,7 +165,7 @@ def login_openid_select_zone():
         session['password'] = password
         session['zone'] = irods_session.zone
 
-        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now(), 'user_name': user_name} ]
+        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now(), 'user_name': getattr(irods_session, "openid_user_name", user_name)} ]
         logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
 
     except Exception as e:
@@ -179,8 +179,10 @@ def login_openid_select_zone():
     collection = request.form.get('collection')
     if collection:
         return redirect(url_for('browse_bp.collection_browse', collection=collection.lstrip('/')))
+    
+    redirect_after_login = session.pop("redirect_after_login", url_for('index'))
 
-    return redirect(url_for('index'))
+    return redirect(redirect_after_login)
 
 @data_platform_user_bp.route('/user/logout_openid', methods=["GET"])
 def logout_openid():
