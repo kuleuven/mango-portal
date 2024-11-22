@@ -32,6 +32,13 @@
                         value="{{ filters['to_date'] }}" pattern="20[12][0-9]-(0[0-9]|1[12])">
                 </div>
             </form>
+            <div class="mb-3">
+                <hr>
+                <div class="d-grid gap-2"><a class="btn block-btn btn-primary"
+                        href="data:text/plain;charset=utf-8;base64,{{ bytes_csv_usage_data | b64encode }}"
+                        download="{{ filters['from_date'] }}-{{ filters['to_date']}}-mango-usage.csv"><i
+                        class="bi bi-download"></i> Download CSV</a></div>
+            </div>
         </div>
         <div class="col-9">
             <div class="d-flex flex-row justify-content-evenly flex-wrap">

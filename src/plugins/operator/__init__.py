@@ -27,32 +27,35 @@ def get_operator_session_params_via_api(zone: str):
     response.raise_for_status()
     return response.json()
 
-def is_zone_operator_session_valid(zone : str) -> bool:
+def is_zone_operator_session_valid(key : str) -> bool:
     global zone_operator_sessions
     if (
-        zone in zone_operator_sessions
-        and zone_operator_sessions[zone].expiration > datetime.datetime.now()
+        key in zone_operator_sessions
+        and zone_operator_sessions[key].expiration > datetime.datetime.now()
     ):
         # check if the session can access the zone collection
         try:
-            operator_session : iRODSSession = zone_operator_sessions[zone]
-            zone_home=operator_session.collections.get(f"/{zone}")
+            operator_session : iRODSSession = zone_operator_sessions[key]
+            zone_home=operator_session.collections.get(f"/{operator_session.zone}")
         except Exception as e:
-            del zone_operator_sessions[zone]
+            del zone_operator_sessions[key]
             return False
         return True
     return False
 
 
 
-def get_zone_operator_session(zone: str) -> iRODSSession:
+def get_zone_operator_session(zone: str, client_user : str = None) -> iRODSSession:
     global zone_operator_sessions
-    if is_zone_operator_session_valid(zone):
-        return zone_operator_sessions[zone]
+    key = f"{zone}_{client_user}" if client_user else zone
+    if is_zone_operator_session_valid(key):
+        return zone_operator_sessions[key]
     # so not valid
     # use the API to get login parameters and create a session
     session_parameters = get_operator_session_params_via_api(zone)
-    logging.info(f"Requested operator info for zone {zone}")
+    if client_user:
+        session_parameters["irods_environment"]["client_user"] = client_user
+    logging.info(f"Requested operator info for {key}")
     try:
         irods_session = iRODSSession(
             **session_parameters["irods_environment"],
@@ -64,17 +67,17 @@ def get_zone_operator_session(zone: str) -> iRODSSession:
         irods_session.expiration = parse(
             session_parameters["expiration"], ignoretz=True
         ) - datetime.timedelta(minutes=20)
-        zone_operator_sessions[zone] = irods_session
-        return zone_operator_sessions[zone]
+        zone_operator_sessions[key] = irods_session
+        return zone_operator_sessions[key]
     except:
-        logging.warn(f"Failed getting operator session for zone {zone}")
+        logging.warn(f"Failed getting operator session for zone {key}")
         return None
 
 
-def remove_zone_operator_session(zone: str):
+def remove_zone_operator_session(key: str):
     global zone_operator_sessions
-    if zone in zone_operator_sessions:
-        del zone_operator_sessions[zone]
+    if key in zone_operator_sessions:
+        del zone_operator_sessions[key]
         return True
     return False
 
@@ -99,9 +102,9 @@ class OperatorSessionCleanupThread(Thread):
             if self.stopped():
                 return
             logging.info(f"Checking {len(zone_operator_sessions)} operator sessions")
-            for zone in zone_operator_sessions.keys():
-                if not is_zone_operator_session_valid(zone):
-                    logging.info(f"Removed invalid zone operator session for zone {zone}")
+            for key in zone_operator_sessions.keys():
+                if not is_zone_operator_session_valid(key):
+                    logging.info(f"Removed invalid zone operator session for {key}")
             time.sleep(120)
 
 cleanup_old_sessions_thread = OperatorSessionCleanupThread()

@@ -29,6 +29,7 @@ openid_providers = {
         "secret": os.environ.get("OIDC_SECRET", ""),
         "issuer_url": os.environ.get("OIDC_ISSUER_URL", ""),
         "auto_pick_on_host": "mango.kuleuven.be",
+        "scopes": ["openid", "eduPersonEntitlement"],
     },
     "vsc": {
         "label": "VSC",
@@ -36,7 +37,16 @@ openid_providers = {
         "secret": "blub",
         "issuer_url": "https://auth.vscentrum.be",
         "auto_pick_on_host": "mango.vscentrum.be",
+        "scopes": ["openid"],
     },
+    "eduteams": {
+        "label": "My AccessID",
+        "client_id": os.environ.get("EDUTEAMS_CLIENT_ID", ""),
+        "secret": os.environ.get("EDUTEAMS_SECRET", ""),
+        "issuer_url": os.environ.get("EDUTEAMS_ISSUER_URL", ""),
+        "auto_pick_on_host": "",
+        "scopes": ["openid", "profile", "aarc"],
+    }
 }
 
 openid_clients = {}
@@ -77,6 +87,20 @@ def openid_login_required(func):
     if not s.valid():
         session['openid_redirect'] = request.full_path
         return redirect(url_for("data_platform_user_bp.login_openid"))
+    
+    # Try to get data platform token, if this retuns None, the user is not entitled to use the data platform api
+    g.data_platform_token = s.data_platform_token()
+
+    if g.data_platform_token is None:
+        return redirect(url_for('data_platform_user_bp.entitlement_required'))
+    
+    # If oidc did not provide a preferred_username, use the generated username by the data platform api
+    if s.username is None:
+        s.set_preferred_username(g.data_platform_token['username'])
+        session['openid_session'] = dict(s)
+
+    # Update the irods zone information
+    update_zone_info(current_app.config['irods_zones'], g.data_platform_token['token'])
 
     return func(*args, **kwargs)
   
@@ -120,11 +144,7 @@ def update_zone_info(irods_zones, token=API_TOKEN):
 
 
 def current_user_api_token():
-    payload = Session(session['openid_session']).data_platform_token()
-    
-    update_zone_info(current_app.config['irods_zones'], payload["token"])
-
-    return payload["token"], payload["permissions"]
+    return g.data_platform_token["token"], g.data_platform_token["permissions"]
 
 def current_user_projects():
     # Retrieve projects
@@ -179,6 +199,9 @@ class Session(dict):
 
     @property
     def username(self):
+        if 'preferred_username' not in self['user_info']:
+            return None
+        
         return self['user_info']['preferred_username']
     
     @property
@@ -196,8 +219,12 @@ class Session(dict):
         return self['user_info']['email']
     
     @property
-    def jwt_token(self):
-        return self['jwt_token']
+    def access_token(self):
+        return self['access_token']
+
+    @property
+    def provider(self):
+        return self['provider']
 
     def valid(self):
         if 'expiry' not in self:
@@ -226,7 +253,6 @@ class Session(dict):
             token=Token(resp={'refresh_token': self['refresh_token']}),
         )
 
-        self['jwt_token'] = token_resp['id_token_jwt']
         self['access_token'] = token_resp['access_token']
         self['refresh_token'] = None
         if 'refresh_token' in token_resp:
@@ -242,7 +268,7 @@ class Session(dict):
         session["openid_nonce"] = rndstr()
         args = {
             "response_type": "code",
-            "scope": ["openid"],
+            "scope": openid_providers[self["provider"]]["scopes"],
             "nonce": session["openid_nonce"],
             "redirect_uri": self.redirect_uri,
             "state": session["openid_state"]
@@ -279,15 +305,14 @@ class Session(dict):
         if user_info['sub'] != id_token['sub']:
             flash('The \'sub\' of userinfo does not match \'sub\' of ID Token.', category='danger')
             return self
-        
-        self['user_info'] = user_info._dict
 
-        self['jwt_token'] = token_resp['id_token_jwt']
+        self['user_info'] = user_info._dict
         self['access_token'] = token_resp['access_token']
         self['refresh_token'] = None
         if 'refresh_token' in token_resp:
             self['refresh_token'] = token_resp['refresh_token']
         self['expiry'] = token_resp['id_token']['exp']
+        self['subject'] = token_resp['id_token']['sub']
 
         return self
     
@@ -307,6 +332,9 @@ class Session(dict):
         self['user_info']['name'] = self['orig_user_info']['name'] + " (impersonating " + username + ")"
         self['impersonate'] = True
 
+    def set_preferred_username(self, username):
+        self['user_info']['preferred_username'] = username
+
     def data_platform_token(self):
         drop = 'drop_permissions' in self
         impersonate = 'impersonate' in self
@@ -314,19 +342,21 @@ class Session(dict):
         response = requests.post(
             f"{API_URL}/v1/token/exchange",
             json={
-                "id_token": self.jwt_token,
+                "access_token": self.access_token,
                 "drop_permissions": drop and not impersonate,
             },
         )
-        response.raise_for_status()
 
+        if response.status_code == 402:
+            return None
+
+        response.raise_for_status()
         payload = response.json()
 
         if not impersonate:
             return payload
         
         header = {"Authorization": "Bearer " + payload["token"]}
-
         response = requests.post(
             f"{API_URL}/v1/token",
             json={
@@ -336,8 +366,8 @@ class Session(dict):
             },
             headers=header,
         )
-        response.raise_for_status()
 
+        response.raise_for_status()
         payload = response.json()
 
         return payload

@@ -165,7 +165,7 @@ def login_openid_select_zone():
         session['password'] = password
         session['zone'] = irods_session.zone
 
-        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now(), 'user_name': user_name} ]
+        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now(), 'user_name': getattr(irods_session, "openid_user_name", user_name)} ]
         logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
 
     except Exception as e:
@@ -179,8 +179,10 @@ def login_openid_select_zone():
     collection = request.form.get('collection')
     if collection:
         return redirect(url_for('browse_bp.collection_browse', collection=collection.lstrip('/')))
+    
+    redirect_after_login = session.pop("redirect_after_login", url_for('index'))
 
-    return redirect(url_for('index'))
+    return redirect(redirect_after_login)
 
 @data_platform_user_bp.route('/user/logout_openid', methods=["GET"])
 def logout_openid():
@@ -194,6 +196,15 @@ def logout_openid():
         del session['userid']
 
     return render_template('user/logout_openid.html.j2')
+
+@data_platform_user_bp.route('/user/entitlement_required', methods=["GET"])
+def entitlement_required():
+    if 'openid_session' not in session:
+        return redirect(url_for("data_platform_user_bp.login_openid"))
+
+    s = Session(session['openid_session'])
+
+    return render_template('user/entitlement_required.html.j2', provider=s.provider, name=s.name, email=s.email, username=s.username)
 
 @data_platform_user_bp.route('/user/openid/drop_permissions', methods=["GET"])
 @openid_login_required
@@ -226,17 +237,16 @@ def connection_info_modal(zone):
     info = {}
     setup_json = {}
 
-    if response.status_code != 403:
-        response.raise_for_status()
+    response.raise_for_status()
 
-        info = response.json()
+    info = response.json()
 
-        info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
-        setup_json={
-            'linux': json.dumps(info['irods_environment'], indent=4),
-            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
-        }
+    setup_json={
+        'linux': json.dumps(info['irods_environment'], indent=4),
+        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
+    }
 
     if "-hpc-" in jobid:
         # icts-p-hpc-irods-instance
@@ -268,17 +278,16 @@ def connection_info():
     info = {}
     setup_json = {}
 
-    if response.status_code != 403:
-        response.raise_for_status()
+    response.raise_for_status()
 
-        info = response.json()
+    info = response.json()
 
-        info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
 
-        setup_json={
-            'linux': json.dumps(info['irods_environment'], indent=4),
-            'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
-        }
+    setup_json={
+        'linux': json.dumps(info['irods_environment'], indent=4),
+        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
+    }
 
     if "-hpc-" in jobid:
         # icts-p-hpc-irods-instance
@@ -312,7 +321,7 @@ def local_client_retrieve_token_callback():
         response = requests.post(
             f"{API_URL}/v1/token/exchange",
             json={
-                "id_token": Session(session['openid_session']).jwt_token,
+                "access_token": Session(session['openid_session']).access_token,
                 "drop_permissions": True,
             },
         )

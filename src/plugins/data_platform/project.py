@@ -5,6 +5,7 @@ import pandas as pd
 import pytz
 import time
 from datetime import datetime
+from distinctipy import distinctipy
 from irods.session import iRODSSession
 from irods.models import RuleExec
 from flask import (
@@ -199,7 +200,7 @@ def modify_project():
     elif "quota_inodes" in request.form:
         data = {
             "quota_inodes": int(request.form.get("quota_inodes")),
-            "quota_size": int(request.form.get("quota_size")),
+            "quota_size": round(float(request.form.get("quota_size")) *1000000000000),
         }
 
     response = requests.patch(
@@ -258,7 +259,6 @@ def set_project_options():
     if project["platform"].startswith("irods"):
         options += [
             "sftp-openfile",
-            "enable-icommands",
             "enable-sftp-ingress",
             "enforce-quota",
             "inherit-permissions",
@@ -644,21 +644,11 @@ def projects_statistics():
     )
 
 
-def summarize(source_name: str, data: pd.DataFrame, y_axis: str, group_index: int, hovertemplate=""):
+def summarize(number_of_zones: int, source_name: str, data: pd.DataFrame, y_axis: str, group_index: int, hovertemplate=""):
     def get_color(i):
-        color_mapping = [
-            '#4e79a7',
-            '#f28e2c',
-            '#e15759',
-            '#76b7b2',
-            '#59a14f',
-            '#edc949',
-            '#af7aa1',
-            '#ff9da7',
-            '#9c755f',
-            '#bab0ab'
-        ]
-        return color_mapping[i]
+        colors = distinctipy.get_colors(number_of_zones, rng=number_of_zones, pastel_factor=0.8)
+        hex_colors = [distinctipy.get_hex(color) for color in colors]
+        return hex_colors[i]
 
     grouped_data = data.groupby("date")
     if y_axis == "usage":
@@ -686,6 +676,14 @@ def get_next_month(year_month: str):
         return f"{int(year)+1}-01"
     else:
         return f"{year}-{int(month)+1:02d}"
+
+
+def to_csv(grouped_data, y_axis):
+    dataframes = [
+        pd.DataFrame({"zone": gd["name"], "month": gd["x"], y_axis: gd["y"]} )
+        for gd in grouped_data
+    ]
+    return pd.concat(dataframes).to_csv(index=False)
 
 
 @data_platform_project_bp.route("/data-platform/statistics/usage", methods=["GET", "POST"])
@@ -725,7 +723,7 @@ def projects_usage():
                     projects_dict["quota"].append(usage["quota_size"])
 
     df = pd.DataFrame(projects_dict)
-
+    number_of_zones = len(df.zone.unique())
     filters = {
         "start_date": start_date,
         "end_date": end_date,
@@ -746,6 +744,7 @@ def projects_usage():
 
     usage_plot = [
         summarize(
+            number_of_zones,
             source_name,
             data,
             "usage",
@@ -755,8 +754,11 @@ def projects_usage():
         for source_name, data in df.groupby("zone")
     ]
 
+    bytes_csv_usage_data = to_csv(usage_plot, "bytes")
+
     quota_plot = [
         summarize(
+            number_of_zones,
             source_name,
             data,
             "quota",
@@ -769,6 +771,7 @@ def projects_usage():
     return render_template(
         "project/projects_usage.html.j2",
         usage_plot=usage_plot,
+        bytes_csv_usage_data=bytes_csv_usage_data,
         quota_plot=quota_plot,
         filters=filters,
     )

@@ -1,0 +1,43 @@
+{% if tika_result %}
+    {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata') , data_object_path=data_object.path, read_only = not(current_user_rights | intersection(own_or_write))) }}
+{% endif %}
+<div class="row">
+    {% if data_object.size < 200000000 %}
+        <form class="row row-cols-lg-auto g-3 align-items-center mt-3 mb-3 text-end"
+              method="get"
+              action="{{ url_for('browse_bp.ask_tika', data_object_path=data_object.path) }}">
+            {% if data_object.name.endswith(('.jpg','.jpeg','.png', '.tif', '.tiff', '.gif')) %}
+                <div class="col-12">
+                    <input class="form-check-input text-end"
+                           type="checkbox"
+                           value="true"
+                           id="tika-ocr"
+                           name="do-tika-ocr" />
+                    <label class="form-check-label" for="tika-ocr">Perform OCR on the image to extract text</label>
+                </div>
+            {% endif %}
+            {% if tika_result %}
+                <div class="col-12">
+                    <input class="form-check-input"
+                           type="hidden"
+                           value="true"
+                           id="tika-skip-cache"
+                           name="skip-tika-cache" />
+                </div>
+            {% endif %}
+            <div class="col-12">
+                <input type="hidden" name="redirect_hash" value="#analysis" />
+                <button type="submit" class="btn btn-primary text-end">
+                    {% if tika_result %}
+                        Refresh inspection with Tika
+                    {% else %}
+                        Inspect with Tika
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    {% else %}
+        {# file is really too large #}
+        <p>Sorry, this file is too large to perform an ad hoc analysis</p>
+    {% endif %}
+</div>

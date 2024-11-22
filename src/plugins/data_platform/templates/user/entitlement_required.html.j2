@@ -1,0 +1,12 @@
+{% extends "base_openid.html.j2" %}
+{% block body %}
+    <h3>Login to Mango, your Active Data Repository</h3>
+    <p class="mt-4">Welcome {{ name }}.</p>
+    <p>It appears that your account {{ username }} registered with e-mail address {{ email }} does not have the required entitlement to use ManGO.</p>
+    {% if provider == "eduteams" %}
+    <p>Please fill out the <a href="https://mms.acc.eduteams.org/fed/registrar/?vo=ku-leuven&amp;group=services%3Amango">form to request access</a>.</p>
+    {% else %}
+    <p>Please contact the support staff for more information.</p>
+    {% endif %}
+    <a href="{{ url_for('data_platform_user_bp.login_openid') }}" class="btn btn-primary">Try log in again</a>
+{% endblock body %}

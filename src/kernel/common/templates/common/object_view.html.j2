@@ -36,195 +36,27 @@
     </div>
   </div>
   <ul class="nav nav-tabs mb-4" id="object_tab" role="tablist">
-    <li class="nav-item" role="presentation">
-      <a class="nav-link active"
-         href="#system"
-         id="system-tab"
-         data-bs-toggle="tab"
-         data-bs-target="#system"
-         type="button"
-         role="tab"
-         aria-controls="home"
-         aria-selected="true">System properties</a>
-    </li>
-    <li class="nav-item" role="presentation">
-      <a class="nav-link"
-         href="#metadata"
-         id="meta-data-tab"
-         data-bs-toggle="tab"
-         data-bs-target="#meta-data"
-         type="button"
-         role="tab"
-         aria-controls="meta-data"
-         aria-selected="false">Metadata</a>
-    </li>
-    <li class="nav-item" role="presentation">
-      <a class="nav-link"
-         href="#permissions"
-         id="permissions-tab"
-         data-bs-toggle="tab"
-         data-bs-target="#item-permissions"
-         type="button"
-         role="tab"
-         aria-controls="collection-permissions"
-         aria-selected="false">Permissions</a>
-    </li>
-    <li class="nav-item" role="presentation">
-      <a class="nav-link"
-         href="#preview"
-         id="preview-tab"
-         data-bs-toggle="tab"
-         data-bs-target="#preview"
-         type="button"
-         role="tab"
-         aria-controls="preview"
-         aria-selected="false">Preview</a>
-    </li>
-    <li class="nav-item" role="presentation">
-      <a class="nav-link"
-         href="#analysis"
-         id="analysis-tab"
-         data-bs-toggle="tab"
-         data-bs-target="#item-analysis"
-         type="button"
-         role="tab"
-         aria-controls="analysis"
-         aria-selected="false">Metadata inspection and extraction</a>
-    </li>
+    {% for tab in tabs %}
+      <li class="nav-item" role="presentation">
+        <a class="nav-link {% if loop.first %}active{% endif %}"
+           href="#{{ tab.id }}"
+           id="{{ tab.id }}-tab"
+           data-bs-toggle="tab"
+           data-bs-target="#{{ tab.id }}"
+           type="button"
+           role="tab"
+           aria-controls="home"
+           aria-selected="true">{{ tab.title }}</a>
+      </li>
+    {% endfor %}
   </ul>
   <div class="tab-content" id="myTabContent">
-    <div class="tab-pane fade show active"
-         id="system"
-         role="tabpanel"
-         aria-labelledby="system-tab">
-      <table class="table table-striped table-hover">
-        <tr>
-          <th>Owner</th>
-          <td>{{ data_object.owner_name }}</td>
-        </tr>
-        <tr>
-          <th>Created</th>
-          <td>{{ data_object.create_time | localize_datetime }}</td>
-        </tr>
-        <tr>
-          <th>Modified</th>
-          <td>{{ data_object.modify_time | localize_datetime }}</td>
-        </tr>
-        <tr>
-          <th>Size</th>
-          <td>{{ data_object.size | filesizeformat }}</td>
-        </tr>
-        <tr>
-          <th>Internal id</th>
-          <td>{{ data_object.id }}</td>
-        </tr>
-        <tr>
-          <th>Status</th>
-          <td>
-            {% if data_object.replicas[-1] and ((data_object.replicas[-1].status | int)  == 1) %}
-              <i class="bi bi-file-earmark-check text-success"></i>
-            {% else %}
-              <i class="bi bi-file-earmark-x text-danger"></i>
-            {% endif %}
-            {% if data_object.comments %}
-              {{ data_object.comments|bleach_clean(tags=["i", "span", "a"], attributes=["class", "href"]) |safe }}
-            {% endif %}
-          </td>
-        </tr>
-        <tr>
-          <th>SHA256 Checksum</th>
-          <td>
-            <code>{{ data_object.checksum | irods_to_sha256_checksum }}</code>
-          </td>
-        </tr>
-        {# <tr>
-          <th>Replica number</th>
-          <td>{{ data_object.replica_number }}</td>
-        </tr> #}
-      </table>
-      {% if 'own' in current_user_rights %}
-        <div class="row mt-5">
-          <div class="col">
-            <button type="button"
-                    class="btn btn-danger float-end"
-                    data-bs-toggle="modal"
-                    data-bs-target="#delete_object">Delete Data Object</button>
-          </div>
-        </div>
-        {{ dialogs.confirm_delete_dialog('delete_object', url_for('browse_bp.delete_data_object') , title='Are you sure you want to delete?', mode="listen-many", readonly_fields = [{'name' : 'data_object_path', 'value': data_object.path, 'label': 'Object Path'}], hidden_fields=[{'name':'redirect_route', 'value': url_for('browse_bp.collection_browse', collection=data_object.collection.path)}], modal_class="modal-xl" ) }}
-      {% endif %}
-    </div>
-    <div class="tab-pane fade"
-         id="meta-data"
-         role="tabpanel"
-         aria-labelledby="meta-data-tab">
-      {{ block_macros.metadata_block(data_object.id, data_object.path.lstrip("/") , grouped_metadata, schemas, schema_labels,
-      readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="data_object", current_user_rights=current_user_rights, realm=realm)}}
-    </div>
-    <div class="tab-pane" id="item-permissions">
-      {{ block_macros.permission_block(data_object.path.lstrip("/") , permissions, acl_users_dict, acl_counts, my_groups=my_groups, current_user_rights=current_user_rights) }}
-    </div>
-    <div class="tab-pane fade"
-         id="preview"
-         role="tabpanel"
-         aria-labelledby="preview-tab">
-      {# to be moved to its own server side handler + template to include #}
-      {% if data_object.name.lower().endswith(config["DATA_OBJECT_PREVIEW_ALLOWED_SUFFIXES"]) %}
-        <div class="row">
-          <img src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path) }}"
-               class="w-50"
-               style="object-fit: contain"
-               alt="preview image" />
-        </div>
-      {% else %}
-        <p>Preview not possible for this type</p>
-      {% endif %}
-    </div>
-    <div class="tab-pane" id="item-analysis">
-      {% if tika_result %}
-        {{ block_macros.analysis_tika_block(tika_result, consolidate=true, consolidated=consolidated_names, consolidate_url=url_for('metadata_bp.add_tika_metadata') , data_object_path=data_object.path, read_only = not(current_user_rights | intersection(own_or_write))) }}
-      {% endif %}
-      <div class="row">
-        {% if data_object.size < 200000000 %}
-          <form class="row row-cols-lg-auto g-3 align-items-center mt-3 mb-3 text-end"
-                method="get"
-                action="{{ url_for('browse_bp.ask_tika', data_object_path=data_object.path) }}">
-            {% if data_object.name.endswith(('.jpg','.jpeg','.png', '.tif', '.tiff', '.gif')) %}
-              <div class="col-12">
-                <input class="form-check-input text-end"
-                       type="checkbox"
-                       value="true"
-                       id="tika-ocr"
-                       name="do-tika-ocr" />
-                <label class="form-check-label" for="tika-ocr">Perform OCR on the image to extract text</label>
-              </div>
-            {% endif %}
-            {% if tika_result %}
-              <div class="col-12">
-                <input class="form-check-input"
-                       type="hidden"
-                       value="true"
-                       id="tika-skip-cache"
-                       name="skip-tika-cache" />
-              </div>
-            {% endif %}
-            <div class="col-12">
-              <input type="hidden" name="redirect_hash" value="#analysis" />
-              <button type="submit" class="btn btn-primary text-end">
-                {% if tika_result %}
-                  Refresh inspection with Tika
-                {% else %}
-                  Inspect with Tika
-                {% endif %}
-              </button>
-            </div>
-          </form>
-        {% else %}
-          {# file is really too large #}
-          <p>Sorry, this file is too large to perform an ad hoc analysis</p>
-        {% endif %}
-      </div>
-    </div>
+    {% for tab in tabs %}
+      <div class="tab-pane fade show {% if loop.first %}active{% endif %}"
+           id="{{ tab.id }}"
+           role="tabpanel"
+           aria-labelledby="{{ tab.id }}-tab">{% include tab.template %}</div>
+    {% endfor %}
   </div>
   <!-- edit metadata modal -->
   <div class="modal fade"
@@ -505,5 +337,7 @@ deleteMetaData.addEventListener('show.bs.modal', function (event) {
 // open the active tab if specified by simulating a click() :)
 var hash = window.location.hash;
 hash && document.querySelector('a[href="'+hash+'"]').click()
+
+
   </script>
 {% endblock javascript %}

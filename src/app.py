@@ -58,7 +58,9 @@ import platform
 import version
 
 
-irods_zone_config_module = importlib.import_module(os.getenv('IRODS_ZONES_CONFIG', 'irods_zones_config.py').rstrip('.py'))
+irods_zone_config_module = importlib.import_module(
+    os.getenv("IRODS_ZONES_CONFIG", "irods_zones_config.py").rstrip(".py")
+)
 
 import irods_session_pool
 from werkzeug.exceptions import HTTPException, ServiceUnavailable
@@ -75,7 +77,7 @@ rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
 
 
 ## Allow cross origin requests for SPA/Ajax situations
-CORS(app)
+CORS(app, supports_credentials=True)
 
 
 mango_server_info = {"server_start": datetime.datetime.now()}
@@ -88,8 +90,10 @@ bootstrap = Bootstrap5(app)
 # register csrf on the main app
 csrf.init_app(app)
 
-# Caching, make sure the filesystem dir existsif CACHE_TYPE  is FileSystemCache 
-if app.config["CACHE_TYPE"] == "FileSystemCache" and not os.path.exists(app.config["CACHE_DIR"]):
+# Caching, make sure the filesystem dir existsif CACHE_TYPE  is FileSystemCache
+if app.config["CACHE_TYPE"] == "FileSystemCache" and not os.path.exists(
+    app.config["CACHE_DIR"]
+):
     os.makedirs(app.config["CACHE_DIR"])
 
 cache.init_app(app)
@@ -103,8 +107,6 @@ if os.getenv("FLASK_DEBUG_TOOLBAR", "disabled").lower() == "enabled":
     toolbar = DebugToolbarExtension(app)
 
 
-
-
 # Register core blueprints
 with app.app_context():
     app.register_blueprint(user_bp)
@@ -115,16 +117,15 @@ with app.app_context():
     app.register_blueprint(metadata_schema_editor_bp)
     app.register_blueprint(metadata_schema_form_bp)
     app.register_blueprint(template_overrides_bp)
-    
 
 
 # import plugin blueprints dynamically based on the configuration
 
-for mango_plugin_bp in app.config.get('MANGO_PLUGIN_BLUEPRINTS', []):
+for mango_plugin_bp in app.config.get("MANGO_PLUGIN_BLUEPRINTS", []):
     module = importlib.import_module(mango_plugin_bp["module"])
     app.register_blueprint(getattr(module, mango_plugin_bp["blueprint"]))
 
-if app.config.get('DEBUG', False):
+if app.config.get("DEBUG", False):
     print(app.url_map)
 
 from mango_ui import admin_navbar_entries, navbar_entries
@@ -161,26 +162,29 @@ def handle_exception(e):
 @app.before_request
 def init_and_secure_views():
     """ """
-    #Always let static resources be served, eg css, js , images
+    # Always let static resources be served, eg css, js , images
     if request.endpoint in [
         "static",
+        "mango_flow_admin_bp.static",
+        "mango_audit_bp.static",
     ]:
         return None
-    
+
     # First check if there are no calamities and need to interrupt here
-    if os.path.isfile('storage/service-down.txt'):
-        message=''
-        with open('storage/service-down.txt') as f:
-            message=f.read()
+    if os.path.isfile("storage/service-down.txt"):
+        message = ""
+        with open("storage/service-down.txt") as f:
+            message = f.read()
         raise ServiceUnavailable(message)
 
-
+    # Needs to go into its own config, stripping extensions out
     if request.endpoint in [
         "user_bp.login_basic",
         "data_platform_user_bp.login_openid",
         "data_platform_user_bp.login_openid_callback",
         "data_platform_user_bp.login_openid_select_zone",
         "data_platform_user_bp.logout_openid",
+        "data_platform_user_bp.entitlement_required",
         "data_platform_user_bp.connection_info_modal",
         "data_platform_user_bp.drop_permissions",
         "data_platform_user_bp.impersonate",
@@ -205,6 +209,8 @@ def init_and_secure_views():
         "data_platform_project_bp.rule_management",
         "data_platform_project_bp.project_quota_change",
         "operator_admin_bp.reset_all",
+        "mango_audit_bp.get_general_audit",
+        "mango_audit_history_bp.get_history_data",
     ]:
         return None
 
@@ -244,27 +250,6 @@ def init_and_secure_views():
             print(f"No user id in session, need auth")
         if "userid" in session:
             irods_session = irods_session_pool.get_irods_session(session["userid"])
-        if not irods_session and "password" in session and "zone" in session:
-            # try to recreate a session object,maybe the password is still valid
-            try:
-                parameters = irods_zone_config_module.DEFAULT_IRODS_PARAMETERS.copy()
-                ssl_settings = irods_zone_config_module.DEFAULT_SSL_PARAMETERS.copy()
-                zone = session["zone"]
-                parameters.update(app.config["irods_zones"][zone]["parameters"])
-                ssl_settings.update(app.config["irods_zones"][zone]["ssl_settings"])
-                irods_session = iRODSSession(
-                    user=session["userid"],
-                    password=session["password"],
-                    **parameters,
-                    **ssl_settings,
-                )
-                irods_session.collections.get(f"/{irods_session.zone}/home")
-                irods_session_pool.add_irods_session(session["userid"], irods_session)
-            except:
-                irods_session = None
-                # note we'll leave the session['zone'] parameter for use a hint in the login form
-                session.pop("userid", default=None)
-                session.pop("password", default=None)
 
         if irods_session:
             g.irods_session = irods_session
@@ -275,6 +260,9 @@ def init_and_secure_views():
             g.mango_server_info = mango_server_info
             return None
         else:
+            # save the request url which may come from a bookmark or a page that was iopen longer than the irods session lifetime
+            session["redirect_after_login"] = request.url
+            print(f"Request url before login {request.url}")
             return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
 
 
@@ -392,17 +380,25 @@ def irods_to_sha256_checksum(irods_checksum):
 
     return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode("utf-8")
 
+
 @app.template_filter("get_one_irods_metadata")
 def get_one_irods_metadata(irods_object, meta_name):
     try:
         avu = irods_object.metadata.get_one(meta_name)
         return avu
     except Exception as e:
-        return iRODSMeta(meta_name, '')
+        return iRODSMeta(meta_name, "")
+
 
 @app.template_filter("os_env")
 def os_env(parameter, default=None):
     return os.environ.get(parameter, default)
+
+
+@app.template_filter("b64encode")
+def b64encode(string):
+    return base64.b64encode(string.encode("utf-8")).decode()
+
 
 # register the main landing page route dynamically
 main_landing_route = app.config.get(
@@ -414,6 +410,7 @@ main_landing_route_module = importlib.import_module(
 )
 
 app.add_url_rule(
-    "/", endpoint = "index", view_func=getattr(main_landing_route_module, main_landing_route["function"])
+    "/",
+    endpoint="index",
+    view_func=getattr(main_landing_route_module, main_landing_route["function"]),
 )
-
