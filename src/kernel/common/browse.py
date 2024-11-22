@@ -61,7 +61,12 @@ from kernel.common.error import flash_error
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
-from mango_ui import register_module, object_view_tabs
+from mango_ui import (
+    register_module,
+    object_view_tabs,
+    collection_view_tabs,
+    collection_extra_tabs,
+)
 
 UI = {
     "title": "Collections",
@@ -459,6 +464,8 @@ def collection_browse(collection=None):
             g.irods_session, current_collection
         ),
         user_trash_path=user_trash_path,
+        tabs=collection_view_tabs,
+        extra_tabs=collection_extra_tabs,
     )
 
 
@@ -817,8 +824,6 @@ def delete_data_object():
             request.referrer.split("#")[0] + request.values["redirect_hash"]
         )
     return redirect(request.referrer)
-
-
 
 
 @browse_bp.route("/collection/upload/stream/<path:collection>", methods=["POST", "PUT"])
