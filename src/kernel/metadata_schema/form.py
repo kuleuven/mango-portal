@@ -173,10 +173,7 @@ def edit_schema_metadata_for_item():
     
     convert_to_multi_dict(catalog_item.metadata.items(), form_values)
     
-    # values_json = json.dumps(form_values.to_dict(flat=False), indent = 2)
-
-    # with open(f"/tmp/{catalog_item.id}.metadata.json", "w") as mdfile:
-    #     mdfile.write(values_json)
+    values_json = json.dumps(form_values.to_dict(flat=False), indent = 2)
 
     form_values.add("redirect_route", request.referrer + "#metadata")
 
