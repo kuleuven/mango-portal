@@ -88,7 +88,8 @@ def get_schema_prefix(schema_identifier=False, schema_filename=False):
     if schema_filename:
         return f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{get_schema_prefix_from_filename(schema_filename)}"
 
-def convert_to_multi_dict(metadata_items, multidict : MultiDict, unit_level=1):
+
+def convert_to_multi_dict(metadata_items, multidict: MultiDict, unit_level=1):
     """
     Converts a list of iRODS metadata items into a nested multidict structure
     """
@@ -101,9 +102,11 @@ def convert_to_multi_dict(metadata_items, multidict : MultiDict, unit_level=1):
     composite_fields = set(
         (
             ".".join(meta_data_item.name.split(".")[:name_length]),
-            ".".join(meta_data_item.units.split(".")[:unit_level])
-            if meta_data_item.units
-            else None,
+            (
+                ".".join(meta_data_item.units.split(".")[:unit_level])
+                if meta_data_item.units
+                else None
+            ),
         )
         for meta_data_item in metadata_items
         if len(meta_data_item.name.split(".")) > name_length
@@ -130,6 +133,7 @@ def convert_to_multi_dict(metadata_items, multidict : MultiDict, unit_level=1):
             ]
         convert_to_multi_dict(composite_items, subdict, unit_level + 1)
         multidict.add(composite_name, subdict.to_dict(flat=False))
+
 
 @metadata_schema_form_bp.route("/metadata-schema/edit", methods=["POST", "GET"])
 @csrf.exempt
@@ -170,12 +174,13 @@ def edit_schema_metadata_for_item():
     setattr(catalog_item, "item_type", item_type)
 
     form_values = MultiDict()
-    
-    convert_to_multi_dict(catalog_item.metadata.items(), form_values)
-    
-    values_json = json.dumps(form_values.to_dict(flat=False), indent = 2)
 
+    convert_to_multi_dict(catalog_item.metadata.items(), form_values)
     form_values.add("redirect_route", request.referrer + "#metadata")
+    values_json = json.dumps(form_values.to_dict(flat=False), indent=2)
+
+    # with open(f"/tmp/{catalog_item.id}.metadata.json", "w") as mdfile:
+    #     mdfile.write(values_json)
 
     if request.method == "GET":
         return render_template(
