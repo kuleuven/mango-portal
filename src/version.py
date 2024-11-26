@@ -1,2 +1,2 @@
-__version__ = "0.18.0"
-__comment__ = "PRC 2.2.0, various bug fixes"
+__version__ = "0.18.1"
+__comment__ = "Hot fix schema based metadata editing"
