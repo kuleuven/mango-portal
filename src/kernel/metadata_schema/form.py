@@ -140,8 +140,6 @@ def convert_to_multi_dict(metadata_items, multidict: MultiDict, unit_level=1):
 def edit_schema_metadata_for_item():
     """ """
     _parameters = request.values.to_dict()
-    print(request.method)
-    print(request.values)
 
     item_type = _parameters["item_type"]
     object_path = _parameters["object_path"]
@@ -178,16 +176,11 @@ def edit_schema_metadata_for_item():
     form_values = MultiDict()
 
     convert_to_multi_dict(catalog_item.metadata.items(), form_values)
-<<<<<<< HEAD
     form_values.add("redirect_route", request.referrer + "#metadata")
     values_json = json.dumps(form_values.to_dict(flat=False), indent=2)
 
     # with open(f"/tmp/{catalog_item.id}.metadata.json", "w") as mdfile:
     #     mdfile.write(values_json)
-=======
-    
-    values_json = json.dumps(form_values.to_dict(flat=False), indent = 2)
->>>>>>> development
 
     if request.method == "GET":
         return render_template(
@@ -204,7 +197,6 @@ def edit_schema_metadata_for_item():
 
         # remove all relevant attributes for this schema
         # remove operations:
-        print(request.values)
         avu_operation_list = []
         for meta_data_item in catalog_item.metadata.items():
             if meta_data_item.name.startswith(prefix):
