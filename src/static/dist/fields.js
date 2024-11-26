@@ -1933,9 +1933,11 @@ class MultipleInput extends InputField {
       autocomplete_field.parentElement.prepend(answers_div);
       autocomplete_field.removeAttribute("name");
       autocomplete_field.addEventListener("selection", (event) => {
+        const composite_parent = autocomplete_field.closest("[data-composite-unit]");
+        const input_name = composite_parent == null ? this.name : `${this.name}__${composite_parent.getAttribute("data-composite-unit")}`;
         const [pill, label] = Field.autocomplete_checkbox(
           event.detail.selection.value,
-          this.name
+          input_name
         );
         answers_div.appendChild(pill);
         answers_div.appendChild(label);
