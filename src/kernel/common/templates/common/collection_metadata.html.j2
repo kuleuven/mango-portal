@@ -1,0 +1,206 @@
+{{ block_macros.metadata_block(collection.id, collection.path.lstrip("/") , grouped_metadata, schemas, schema_labels, readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="collection", current_user_rights=current_user_rights, realm=realm) }}
+<!-- Add meta data modal -->
+<div class="modal fade"
+     id="addMetaData"
+     tabindex="-1"
+     aria-labelledby="addMetaDataLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMetaDataLabel">Add metadata</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for("metadata_bp.add_meta_data_collection") }}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="row g-3 needs-validation"
+                  novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="hidden" name="redirect_hash" value="#metadata" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="meta-data-name-add" class="col-form-label">Name</label>
+                        <input type="text"
+                               class="form-control"
+                               id="meta-data-name-add"
+                               name="meta-data-name"
+                               required />
+                        <div class="invalid-feedback">Name is required for metadata items</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="meta-data-value-add" class="col-form-label">Value</label>
+                        <input type="text"
+                               class="form-control"
+                               id="meta-data-value-add"
+                               name="meta-data-value"
+                               required />
+                        <div class="invalid-feedback">A value is required for metadata items</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="meta-data-units-add" class="col-form-label">Unit</label>
+                        <input type="text"
+                               class="form-control"
+                               id="meta-data-units-add"
+                               name="meta-data-units" />
+                        <div class="valid-feedback">A unit is not required for metadata</div>
+                    </div>
+                    <input type="hidden"
+                           id="collection-path-add"
+                           name="collection-path"
+                           value="{{ collection.path }}" />
+                    <input type="hidden"
+                           id="target-type-add"
+                           name="target-type"
+                           value="collection" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" type="submit">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!--Edit meta data nodal -->
+<div class="modal fade"
+     id="editMetaData"
+     tabindex="-1"
+     aria-labelledby="editMetaDataLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editMetaDataLabel">Update metadata</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for("metadata_bp.edit_meta_data_collection") }}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="row g-3 needs-validation"
+                  novalidation>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="hidden" name="redirect_hash" value="#metadata" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="meta-data-name" class="col-form-label">Name</label>
+                        <input type="text"
+                               class="form-control"
+                               id="meta-data-name"
+                               name="meta-data-name"
+                               required />
+                        <div class="invalid-feedback">Metadata field name is required</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="meta-data-value" class="col-form-label">Value</label>
+                        <input type="text"
+                               class="form-control"
+                               id="meta-data-value"
+                               name="meta-data-value"
+                               required />
+                        <div class="invalid-feedback">Metadata field value is required</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="meta-data-units" class="col-form-label">Unit</label>
+                        <input type="text"
+                               class="form-control"
+                               id="meta-data-units"
+                               name="meta-data-units" />
+                    </div>
+                    <input type="hidden"
+                           id="object-path-edit"
+                           name="collection-path"
+                           value="{{ collection.path }}" />
+                    <input type="hidden"
+                           id="target-type-edit"
+                           name="target-type"
+                           value="collection" />
+                    <input type="hidden"
+                           id="orig-meta-data-name"
+                           name="orig-meta-data-name"
+                           value="" />
+                    <input type="hidden"
+                           id="orig-meta-data-value"
+                           name="orig-meta-data-value"
+                           value="" />
+                    <input type="hidden"
+                           id="orig-meta-data-units"
+                           name="orig-meta-data-units"
+                           value="" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" type="submit">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Delete modal -->
+<div class="modal fade"
+     id="deleteMetaData"
+     tabindex="-1"
+     aria-labelledby="deleteMetaDataLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteMetaDataLabel">Delete metadata</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for("metadata_bp.delete_meta_data_collection") }}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="row g-3 needs-validation"
+                  novalidation>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="hidden" name="redirect_hash" value="#metadata" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="meta-data-name-delete" class="col-form-label">Name</label>
+                        <input type="text"
+                               class="form-control"
+                               id="meta-data-name-delete"
+                               name="meta-data-name"
+                               readonly />
+                        <div class="invalid-feedback">Metadata field name is required</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="meta-data-value-delete" class="col-form-label">Value</label>
+                        <input type="text"
+                               class="form-control"
+                               id="meta-data-value-delete"
+                               name="meta-data-value"
+                               readonly />
+                        <div class="invalid-feedback">Metadata field value is required</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="meta-data-units" class="col-form-label">Unit</label>
+                        <input type="text"
+                               class="form-control"
+                               id="meta-data-units-delete"
+                               name="meta-data-units"
+                               readonly />
+                    </div>
+                    <input type="hidden"
+                           id="object-path-delete"
+                           name="collection-path"
+                           value="{{ collection.path }}" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-danger" type="submit">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

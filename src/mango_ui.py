@@ -47,6 +47,17 @@ object_view_tabs = [
     ),
 ]
 
+collection_view_tabs = [
+    TabInfo(id="content", title="Content", template="collection_content.html.j2"),
+    TabInfo(
+        id="permissions", title="Permissions", template="collection_permissions.html.j2"
+    ),
+    TabInfo(id="metadata", title="Metadata", template="collection_metadata.html.j2"),
+    TabInfo(id="extra", title="Extra", template="collection_extra.html.j2"),
+]
+
+collection_extra_tabs = []
+
 
 def register_module(**kwargs):
     global navbar_entries, mango_ui_cfg
@@ -62,6 +73,11 @@ def register_module(**kwargs):
 def register_object_view_tab(**kwargs):
     """The dictionary should have 'id', 'title' and 'template' keys."""
     object_view_tabs.append(TabInfo(**kwargs))
+
+
+def register_collection_extra_tab(**kwargs):
+    """The dictionary should have 'id', 'title' and 'template' keys."""
+    collection_extra_tabs.append(TabInfo(**kwargs))
 
 
 def register_module_admin(**kwargs):

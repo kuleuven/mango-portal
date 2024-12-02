@@ -1,0 +1,27 @@
+{% if extra_tabs %}
+    <ul class="nav nav-tabs mb-4" id="collection_extra_tab" role="tablist">
+        {% for tab in extra_tabs %}
+            <li class="nav-item" role="presentation">
+                <a class="nav-link {% if loop.first %}active{% endif %}"
+                   href="#{{ tab.id }}"
+                   id="{{ tab.id }}-tab"
+                   data-bs-toggle="tab"
+                   data-bs-target="#{{ tab.id }}"
+                   type="button"
+                   role="tab"
+                   aria-controls="home"
+                   aria-selected="true">{{ tab.title }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+    <div class="tab-content" id="collection_extra_content">
+        {% for tab in extra_tabs %}
+            <div class="tab-pane fade show {% if loop.first %}active{% endif %}"
+                 id="{{ tab.id }}"
+                 role="tabpanel"
+                 aria-labelledby="{{ tab.id }}-tab">{% include tab.template %}</div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>Nothing to see here!</p>
+{% endif %}
