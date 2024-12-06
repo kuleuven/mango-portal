@@ -1149,17 +1149,17 @@ def set_inheritance(collection_path: str):
     """ """
     if not collection_path.startswith("/"):
         collection_path = "/" + collection_path
-    if "inheritance" in request.form:
-        g.irods_session.acls.set(iRODSAccess("inherit", collection_path))
-    else:
-        g.irods_session.acls.set(iRODSAccess("noinherit", collection_path))
-
-    signals.collection_changed.send(
-        current_app._get_current_object(),
-        irods_session=g.irods_session,
-        collection_path=collection_path,
-    )
-    flash(f"Inheritance updated for {collection_path}", "success")
+    inherit_value = "inherit" if "inheritance" in request.form else "noinherit"
+    try:
+        g.irods_session.acls.set(iRODSAccess(inherit_value, collection_path))
+        signals.collection_changed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            collection_path=collection_path,
+        )
+        flash(f"Inheritance updated for {collection_path}", "success")
+    except Exception as e:
+        flash_error(e, "warning")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
