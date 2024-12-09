@@ -81,7 +81,7 @@ pyparsing==3.2.0
 pytest==8.3.4
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
-python-irodsclient @ git+ssh://git@gitea.icts.kuleuven.be/foz/python-irodsclient.git@c8246c51291258c79e64032c97c4176c9ca66b6b
+python-irodsclient @ git+https://github.com/kuleuven/python-irodsclient.git@c8246c51291258c79e64032c97c4176c9ca66b6b
 python-magic==0.4.27
 python-slugify==8.0.4
 pytz==2024.2
