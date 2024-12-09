@@ -261,7 +261,7 @@ def init_and_secure_views():
             return None
         else:
             # save the request url which may come from a bookmark or a page that was iopen longer than the irods session lifetime
-            session["redirect_after_login"] = request.url
+            session["redirect_after_login"] = request.url # this is with a http scheme, but gets rewritten as https
             print(f"Request url before login {request.url}")
             return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
 

@@ -1,2 +1,2 @@
-__version__ = "0.18.0"
-__comment__ = "PRC 2.2.0, various bug fixes"
+__version__ = "0.18.2"
+__comment__ = "Patched version for python-irodsclient to solve stability in DB queries related to ACL's"
