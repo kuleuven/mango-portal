@@ -23,6 +23,7 @@ from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
 from irods.session import iRODSSession
 from irods.path import iRODSPath
+from irods.exception import CAT_SQL_ERR
 
 from PIL import Image
 from pdf2image import convert_from_path
@@ -912,31 +913,32 @@ def add_collection():
     collection_name = request.form["collection_name"]
     # parent_collection = irods_session.collections.get(parent_collection_path)
     full_path = f"{parent_collection_path}/{collection_name}"
-    try:
-        g.irods_session.collections.get(full_path)
+    if g.irods_session.collections.exists(full_path):
         flash(f"Collection {collection_name} already exists", "warning")
-    except Exception as e:
-        g.irods_session.collections.create(full_path)
-
-        if "/" in collection_name:
-            new_collection_tree_root = (
-                f"{parent_collection_path}/{collection_name.split('/')[0]}"
-            )
-            signals.subtree_added.send(
-                current_app._get_current_object(),
-                irods_session=g.irods_session,
-                collection_path=new_collection_tree_root,
-            )
-        else:
-            signals.collection_added.send(
-                current_app._get_current_object(),
-                irods_session=g.irods_session,
-                collection_path=full_path,
-            )
-            flash(
-                f"Collection {collection_name} added to {parent_collection_path}",
-                "success",
-            )
+    else:
+        try:
+            g.irods_session.collections.create(full_path)
+            if "/" in collection_name:
+                new_collection_tree_root = (
+                    f"{parent_collection_path}/{collection_name.split('/')[0]}"
+                )
+                signals.subtree_added.send(
+                    current_app._get_current_object(),
+                    irods_session=g.irods_session,
+                    collection_path=new_collection_tree_root,
+                )
+            else:
+                signals.collection_added.send(
+                    current_app._get_current_object(),
+                    irods_session=g.irods_session,
+                    collection_path=full_path,
+                )
+                flash(
+                    f"Collection {collection_name} added to {parent_collection_path}",
+                    "success",
+                )
+        except CAT_SQL_ERR:
+            flash(f"Collection {collection_name} already exists", "warning")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -1149,17 +1151,17 @@ def set_inheritance(collection_path: str):
     """ """
     if not collection_path.startswith("/"):
         collection_path = "/" + collection_path
-    if "inheritance" in request.form:
-        g.irods_session.acls.set(iRODSAccess("inherit", collection_path))
-    else:
-        g.irods_session.acls.set(iRODSAccess("noinherit", collection_path))
-
-    signals.collection_changed.send(
-        current_app._get_current_object(),
-        irods_session=g.irods_session,
-        collection_path=collection_path,
-    )
-    flash(f"Inheritance updated for {collection_path}", "success")
+    inherit_value = "inherit" if "inheritance" in request.form else "noinherit"
+    try:
+        g.irods_session.acls.set(iRODSAccess(inherit_value, collection_path))
+        signals.collection_changed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            collection_path=collection_path,
+        )
+        flash(f"Inheritance updated for {collection_path}", "success")
+    except Exception as e:
+        flash_error(e, "warning")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
