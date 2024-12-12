@@ -174,9 +174,6 @@ class SchemaForm {
     annotated_data = annotated_data || this.annotated_data;
     const fid = field.name;
 
-
-
-
     // Extract the data linked to this field
     let existing_values = annotated_data[fid];
     let input_name =
@@ -187,8 +184,6 @@ class SchemaForm {
 
     let first_input = form.querySelector(`[data-field-name="${fid}"]`);
 
-
-
     function check_date(input, index) {
       let myDate = new Date(existing_values[index])
       if (myDate.getMilliseconds() != 0) {
@@ -198,8 +193,6 @@ class SchemaForm {
       //return (input, value)
 
     }
-
-
 
     // if we have multiple-value multiple-choice
     if (
@@ -265,9 +258,6 @@ class SchemaForm {
     } // compatibility with pre-unit versions
 
     let first_unit = String(existing_values[0].__unit__[0]);
-
-
-
 
     // identify the piece of form in which annotation will be added
     let first_viewer = [...form.childNodes].filter(
