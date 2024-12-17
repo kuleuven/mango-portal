@@ -13,3 +13,4 @@ MANGO_NAVBAR_ADMIN_MODULES:
   - mango_open_search_admin_bp
   - mango_open_search_stats_bp
   - operator_admin_bp
+  - mango_flow_admin_bp

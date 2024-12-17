@@ -593,7 +593,7 @@ const button_group = TreeElement.create_button_group();
 // Add the button group to the offcanvas
 offcanvas.body.appendChild(button_group);
 // Add the offcanvas to the template
-offcanvas.append_to(document.getElementById('collection-content'));
+offcanvas.append_to(document.getElementById('content'));
 
 // Instantiate a TreeElement that will be filled with the top collection(s) provided by the url in 'bulk-links'
 const top_tree = new TreeElement(button_group);

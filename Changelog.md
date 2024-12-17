@@ -2,6 +2,42 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.18.3
+
+### Bug fixes
+
+- Copy nove bulk operations: side nav ("off canvas") was not functioning anymore
+
+## Release 0.18.2
+
+- Attempt to stabilise user experience: avoid looping over all possible results in query(User) in PRC
+- Upgrade of all Python packages
+- Collection tabs are now also governed as pluggable UI nav elements
+
+
+### Bug fixes 
+
+## Release 0.18.1
+
+### Bug fixes
+
+- Hotfix managed schema editing
+
+## Release 0.18.0 
+
+### New features
+
+- Updated PRC to 2.2.0
+- Activated audit plugin
+
+### Improvements
+
+- Perform full streaming of files in upload and download
+- iRODS session caching and logic is now more robust 
+- removing opensearch from the plugins directory: it lives in its own repository
+- made interfce elements more pluggable (tabs in the data object view)
+- smaller bug fixes
+
 ## Release 0.17.0 (development, quality)     [2024-08-27]
 
 ### New features

@@ -16,7 +16,8 @@ from flask import session, current_app
 irods_user_sessions = {}
 irods_node_logins = []
 
-SESSION_TTL = 60 * 30  # 30 minutes
+SESSION_TTL = 60 * 60 * 12  # 12 hours
+HEARTBEAT_INTERVAL = 60 * 10 # 10 mins
 
 class iRODSUserSession(iRODSSession):
     def __init__(self, irods_session: iRODSSession, openid_user_name = None, openid_user_email = None):
@@ -91,9 +92,9 @@ class SessionCleanupThread(Thread):
             #     if session_age > SESSION_TTL and not user_session.lock.locked():
             #         del irods_user_sessions[session_id]
             #         logging.info(f"Removed {session_id}")
-            time.sleep(1)
+            time.sleep(5)
             # emit a heartbeat logging at most every 300 seconds
-            if time.time() - self.heartbeat_time > 300:
+            if time.time() - self.heartbeat_time > HEARTBEAT_INTERVAL:
                 # reset the heartbeat reference time point
                 self.heartbeat_time = time.time()
                 logging.info(f"User session cleanup heartbeat")

@@ -333,7 +333,6 @@ class SchemaForm {
             .querySelectorAll(`[name="${subfield.name}"]`)
             .forEach((child) => (child.name = `${subfield.name}__${unit}`));
         });
-        console.log(viewer);
         const sub_annotations =
           annotated_data != undefined ? annotated_data[fid] : undefined;
         SchemaForm.prepare_objects(

@@ -23,6 +23,7 @@ from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
 from irods.session import iRODSSession
 from irods.path import iRODSPath
+from irods.exception import CAT_SQL_ERR
 
 from PIL import Image
 from pdf2image import convert_from_path
@@ -61,7 +62,12 @@ from kernel.common.error import flash_error
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
-from mango_ui import register_module, object_view_tabs
+from mango_ui import (
+    register_module,
+    object_view_tabs,
+    collection_view_tabs,
+    collection_extra_tabs,
+)
 
 UI = {
     "title": "Collections",
@@ -459,6 +465,8 @@ def collection_browse(collection=None):
             g.irods_session, current_collection
         ),
         user_trash_path=user_trash_path,
+        tabs=collection_view_tabs,
+        extra_tabs=collection_extra_tabs,
     )
 
 
@@ -819,27 +827,28 @@ def delete_data_object():
     return redirect(request.referrer)
 
 
-
-
 @browse_bp.route("/collection/upload/stream/<path:collection>", methods=["POST", "PUT"])
 @csrf.exempt
-def collection_upload_stream(collection:str):
+def collection_upload_stream(collection: str):
     collection = unquote(collection)
     logging.info(f"Request for file upload {collection}")
-    
+
     if not collection.startswith("/"):
         collection = "/" + collection
-        
+
     if filename := request.headers.get("filename", None):
         logging.info(f"Request to upload file {filename}")
+
         def do_upload():
-            irods_session : iRODSSession = g.irods_session
-            data_object = irods_session.data_objects.create(f"{collection}/{filename}", force=True)
+            irods_session: iRODSSession = g.irods_session
+            data_object = irods_session.data_objects.create(
+                f"{collection}/{filename}", force=True
+            )
             with data_object.open(mode="w") as do_handle:
                 total_bytes = 0
                 start = time.perf_counter()
                 while True:
-                    CHUNK_SIZE = 4*1024*1024
+                    CHUNK_SIZE = 4 * 1024 * 1024
                     chunk = request.stream.read(CHUNK_SIZE)
                     actual_chunk_length = len(chunk)
                     total_bytes += actual_chunk_length
@@ -847,12 +856,16 @@ def collection_upload_stream(collection:str):
                         break
                     do_handle.write(chunk)
                 delta = time.perf_counter() - start
-                logging.info(f"Wrote in total {total_bytes} bytes to irods in {delta} secs or {total_bytes/delta} bytes per second")
+                logging.info(
+                    f"Wrote in total {total_bytes} bytes to irods in {delta} secs or {total_bytes/delta} bytes per second"
+                )
             return {}
+
         return do_upload()
     else:
         logging.info(f"No file name present")
         return make_response(flask.jsonify({"message": "missing filename"}), 400)
+
 
 @browse_bp.route("/collection/upload/file", methods=["POST", "PUT"])
 def collection_upload_file():
@@ -900,31 +913,32 @@ def add_collection():
     collection_name = request.form["collection_name"]
     # parent_collection = irods_session.collections.get(parent_collection_path)
     full_path = f"{parent_collection_path}/{collection_name}"
-    try:
-        g.irods_session.collections.get(full_path)
+    if g.irods_session.collections.exists(full_path):
         flash(f"Collection {collection_name} already exists", "warning")
-    except Exception as e:
-        g.irods_session.collections.create(full_path)
-
-        if "/" in collection_name:
-            new_collection_tree_root = (
-                f"{parent_collection_path}/{collection_name.split('/')[0]}"
-            )
-            signals.subtree_added.send(
-                current_app._get_current_object(),
-                irods_session=g.irods_session,
-                collection_path=new_collection_tree_root,
-            )
-        else:
-            signals.collection_added.send(
-                current_app._get_current_object(),
-                irods_session=g.irods_session,
-                collection_path=full_path,
-            )
-            flash(
-                f"Collection {collection_name} added to {parent_collection_path}",
-                "success",
-            )
+    else:
+        try:
+            g.irods_session.collections.create(full_path)
+            if "/" in collection_name:
+                new_collection_tree_root = (
+                    f"{parent_collection_path}/{collection_name.split('/')[0]}"
+                )
+                signals.subtree_added.send(
+                    current_app._get_current_object(),
+                    irods_session=g.irods_session,
+                    collection_path=new_collection_tree_root,
+                )
+            else:
+                signals.collection_added.send(
+                    current_app._get_current_object(),
+                    irods_session=g.irods_session,
+                    collection_path=full_path,
+                )
+                flash(
+                    f"Collection {collection_name} added to {parent_collection_path}",
+                    "success",
+                )
+        except CAT_SQL_ERR:
+            flash(f"Collection {collection_name} already exists", "warning")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
@@ -1137,17 +1151,17 @@ def set_inheritance(collection_path: str):
     """ """
     if not collection_path.startswith("/"):
         collection_path = "/" + collection_path
-    if "inheritance" in request.form:
-        g.irods_session.acls.set(iRODSAccess("inherit", collection_path))
-    else:
-        g.irods_session.acls.set(iRODSAccess("noinherit", collection_path))
-
-    signals.collection_changed.send(
-        current_app._get_current_object(),
-        irods_session=g.irods_session,
-        collection_path=collection_path,
-    )
-    flash(f"Inheritance updated for {collection_path}", "success")
+    inherit_value = "inherit" if "inheritance" in request.form else "noinherit"
+    try:
+        g.irods_session.acls.set(iRODSAccess(inherit_value, collection_path))
+        signals.collection_changed.send(
+            current_app._get_current_object(),
+            irods_session=g.irods_session,
+            collection_path=collection_path,
+        )
+        flash(f"Inheritance updated for {collection_path}", "success")
+    except Exception as e:
+        flash_error(e, "warning")
 
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
