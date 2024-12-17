@@ -777,6 +777,30 @@ def projects_usage():
     )
 
 
+def get_zone(project_info):
+        if project_info["platform"] == "irods":
+            return [
+                "-".join(x["value"].split("-")[4:])
+                for x in project_info["platform_options"]
+                if x["key"] == "zone-jobid"
+            ][0]
+        else:
+            return "Non iRODS"
+
+
+def gather_user_data(member, project_data, users):
+    user_data = users.get(
+        member["username"],
+        {"user_account": member["username"], "user_name": "", "user_email": ""},
+    )  # some users are not returned by 'users', e.g. machine accounts
+    new_user_data = {k: v for k, v in user_data.items()}  # copy contents of dictionary
+    new_user_data["user_role"] = member["role"]
+    new_user_data["project_name"] = project_data["name"]
+    new_user_data["project_type"] = project_data.get("type", "")
+    new_user_data["zone_name"] = get_zone(project_data)
+    return new_user_data
+
+
 @data_platform_project_bp.route("/data-platform/project_user_search", methods=["GET"])
 @openid_login_required
 @cache.cached(timeout=3600)
@@ -784,40 +808,20 @@ def project_user_search():
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
 
-    response = requests.get(f"{API_URL}/v1/projects", headers=header)
-    response.raise_for_status()
+    projects_response = requests.get(f"{API_URL}/v1/projects", headers=header)
+    projects_response.raise_for_status()
 
-    projects = response.json()
+    projects = projects_response.json()
 
-    projects_list = []
-    for project in projects:
-        if project["platform"] == "irods":
-            zone_name = [
-                "-".join(x["value"].split("-")[4:])
-                for x in project["platform_options"]
-                if x["key"] == "zone-jobid"
-            ][0]
-            projects_list.append((zone_name, project["name"], project["type"]))
-        else:
-            projects_list.append(("Non iRODS", project["name"], ""))
-    project_list_of_dicts = []
-    for project in projects_list:
-        response = requests.get(
-            f"{API_URL}/v1/projects/{project[1]}/members", headers=header
-        )
-        members = response.json()
-        for member in members:
-            project_list_of_dicts.append(
-                {
-                    "user_name": member["name"],
-                    "user_account": member["username"],
-                    "user_role": member["role"],
-                    "user_email": member["email"],
-                    "project_name": project[1],
-                    "project_type": project[2],
-                    "zone_name": project[0],
-                }
-            )
+    users_response = requests.get(f"{API_URL}/v1/users", headers=header)
+    users_response.raise_for_status()
+
+    users = {x["username"]: {"user_name": x["name"], "user_account": x["username"], "user_email": x["email"]} for x in users_response.json()}
+    project_list_of_dicts = [
+        gather_user_data(member, project, users)
+        for project in projects
+        for member in project["members"]
+    ]
 
     return render_template(
         "project/project_user_search.html.j2",
