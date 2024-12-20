@@ -13,7 +13,7 @@ DEFAULT_IRODS_PARAMETERS = {
     "irods_ssl_ca_certificate_file": "",
     "irods_ssl_verify_server": "cert",
     "irods_default_resource": "default",
-    "refresh_time": (60*60)
+    "refresh_time": (60 * 60),
 }
 
 ssl_context = ssl.create_default_context(
@@ -115,6 +115,15 @@ irods_zones = {
         "parameters": {
             "host": "demo.irods.t.icts.kuleuven.be",
             "zone": "icts_demo",
+        },
+        "ssl_settings": {},
+        "admin_users": ["u0123318", "x0116999"],
+    },
+    "icts": {
+        "jobid": "icts-t-lnx-irods-icts",
+        "parameters": {
+            "host": "icts.irods.t.icts.kuleuven.be",
+            "zone": "icts",
         },
         "ssl_settings": {},
         "admin_users": ["u0123318", "x0116999"],
