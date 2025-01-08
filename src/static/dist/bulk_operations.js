@@ -2,12 +2,11 @@
 
 //#region Constants
 /** Body of the table with the contents of the collection. */
-const tbody = document.querySelector('#browseTable tbody');
+const tbody = document.querySelector('#browseTable');
 /** Selection of all the checkboxes inside the body of the table (which excludes the header!). */
-const tbody_checkboxes = tbody.querySelectorAll('input[type="checkbox"]');
-console.log(tbody_checkboxes)
+const tbody_checkboxes = tbody.querySelectorAll('.bulk_operations_checkbox');
 /** Small badge that shows the number of selected items if there is any. */
-const badge_counter = document.querySelector('#browseTable thead span.badge');
+const badge_counter = document.querySelector('#bulk_operations_badge');
 /** Button ("apply") to trigger the action selected in the dropdown. */
 const bulk_buttons = document.querySelector('div#bulk-operations');
 /** One checkbox to rule them all (it's in the header of the table). */
@@ -41,7 +40,7 @@ select_all.addEventListener('change', () => {
         bulk_buttons.querySelectorAll("button").forEach((button) => {
             button.setAttribute("disabled", "");
         })
-        select_all.parentElement.removeChild(badge_counter); // the counter badge is removed altogether
+        badge_counter.parentElement.removeChild(badge_counter); // the counter badge is removed altogether
     }
 });
 
@@ -74,7 +73,7 @@ tbody_checkboxes.forEach((checkbox) => {
                 }
             })
             if (are_checked == 0) { // update button and badge if no other checkboxes are checked
-                select_all.parentElement.removeChild(badge_counter);
+                badge_counter.parentElement.removeChild(badge_counter);
             }
         }
     })

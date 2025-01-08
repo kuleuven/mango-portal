@@ -1,44 +1,5 @@
-<div class="btn-toolbar justify-content-between"
-     role="toolbar"
-     aria-label="Bulk operations"
-     id="bulk-operations">
-    <div class="btn-group" role="group" aria-label="Buttons">
-        {% if ('own' in current_user_rights) %}
-            <button type="button"
-                    class="btn btn-light"
-                    onclick="bulk_delete()"
-                    id="bulk-delete"
-                    disabled>
-                <i class="bi bi-trash" fill="currentColor"></i> Delete
-            </button>
-            <button type="button"
-                    class="btn btn-light"
-                    onclick="bulk_move()"
-                    id="bulk-move"
-                    disabled>
-                <i class="bi bi-send" fill="currentColor"></i> Move
-            </button>
-        {% endif %}
-        <button type="button"
-                class="btn btn-light"
-                onclick="bulk_copy()"
-                id="bulk-copy"
-                disabled>
-            <i class="bi bi-copy" fill="currentColor"></i> Copy
-        </button>
-        <button type="button"
-                class="btn btn-light"
-                onclick="bulk_download()"
-                id="bulk-download"
-                disabled>
-            <i class="bi bi-download" fill="currentColor"></i> Download
-        </button>
-    </div>
-<span class="text-body-secondary mt-2"><i class="bi bi-exclamation-triangle" fill="currentColor"></i>
-Copying/Download is only available for data objects.
-</span>
-</div>
-<bulk-links tree="{{ url_for("browse_bp.get_sub_collections") }}" />
+{% import "blocks.html.j2" as block_macros %}
+{{ block_macros.bulk_operations(current_user_rights) }}
 <table class="table table-striped table-hover mt-2" id="browseTable">
     <thead>
         <tr>
@@ -48,7 +9,7 @@ Copying/Download is only available for data objects.
                        value=""
                        id="select_all"
                        aria-label="Select all rows" />
-                <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-primary"></span>
+                <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-primary" id="bulk_operations_badge"></span>
             </th>
             <th scope="col">Name</th>
             <th scope="col">Owner</th>
@@ -63,7 +24,7 @@ Copying/Download is only available for data objects.
             <tr>
                 <td scope="row">
                     <input style="vertical-align:middle"
-                           class="form-check-input checkbox-inline"
+                           class="form-check-input checkbox-inline bulk_operations_checkbox"
                            type="checkbox"
                            value="col-{{ collection.path }}"
                            aria-label="Select {{ collection.path }}" />
@@ -82,7 +43,7 @@ Copying/Download is only available for data objects.
             <tr>
                 <td scope="row">
                     <input style="vertical-align:middle"
-                           class="form-check-input checkbox-inline"
+                           class="form-check-input checkbox-inline bulk_operations_checkbox"
                            type="checkbox"
                            value="dobj-{{ data_object.path }}"
                            aria-label="Select {{ collection.path }}" />
