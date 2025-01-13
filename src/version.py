@@ -1,2 +1,2 @@
-__version__ = "0.18.3"
-__comment__ = "Fixed side nav in bulk operations for move/copy"
+__version__ = "0.18.4"
+__comment__ = "Various bug fixes"

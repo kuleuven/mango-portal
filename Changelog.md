@@ -2,6 +2,19 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.18.4
+
+### New features
+
+- made collection tab templates overridable, including nested tabs in extra
+
+### Bug fixes
+
+- better datetime handling in schema based metadata
+- upgraded dependent PRC fork to 2.2.0 level
+- data platform: better reporting of HTTP API version (KULeuven specific)
+
+
 ## Release 0.18.3
 
 ### Bug fixes
@@ -9,6 +22,9 @@ Note: versioning follows Semver standard with 3 levels
 - Copy nove bulk operations: side nav ("off canvas") was not functioning anymore
 
 ## Release 0.18.2
+
+
+### New features
 
 - Attempt to stabilise user experience: avoid looping over all possible results in query(User) in PRC
 - Upgrade of all Python packages
