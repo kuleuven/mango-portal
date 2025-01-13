@@ -16,5 +16,5 @@ let annotated_data = JSON.parse(atob(container.getAttribute("schema-values"))); 
 let prefix = container.getAttribute("prefix"); // prefix for AVU names
 const field_ids = [];
 // request the information and start!
-let ann = new AnnotationRequest(schema_url, annotated_data, prefix);
+let ann = new AnnotationRequest(schema_url, annotated_data, prefix, container_id);
 ann.retrieve();
