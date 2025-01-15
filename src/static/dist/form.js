@@ -205,7 +205,7 @@ class SchemaForm {
           if (existing_values.indexOf(chk.value) > -1)
             chk.setAttribute("checked", "");
         });
-      } else {
+      } else if (field.values.multiple) {
         // autocomplete
         const answers = first_input.querySelector("div[id$='answers']");
         for (let value of existing_values) {

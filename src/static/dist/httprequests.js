@@ -344,9 +344,9 @@ class AnnotationRequest extends MangoRequest {
    * @param {Object<String,String[]>} annotated_data Key-value pairs with existing metadata related to the schema.
    * @param {String} prefix Prefix for the metadata attribute names, e.g. `mgs.book`
    */
-  constructor(schema_url, annotated_data, prefix) {
+  constructor(schema_url, annotated_data, prefix, container_id) {
     super(schema_url);
-    this.parse_response(annotated_data, prefix);
+    this.parse_response(annotated_data, prefix, container_id);
   }
 
   /**
@@ -354,7 +354,7 @@ class AnnotationRequest extends MangoRequest {
    * @param {Object<String,String[]>} annotated_data Key-value pairs with existing metadata related to the schema.
    * @param {String} prefix Prefix for the metadata attribute names, e.g. `mgs.book`
    */
-  parse_response(annotated_data, prefix) {
+  parse_response(annotated_data, prefix, container_id) {
     this.addEventListener("load", () => {
       /**
        * @type {SchemaContents}
