@@ -17,7 +17,7 @@
     </ol>
   </nav>
   <div class="row">
-    <div class="col-11">
+    <div class="col-10">
       <h3 class="mb-4">
         <i class="bi bi-file-earmark fs-4"></i> {{ data_object.name }}
         {% if (current_user_rights | intersection(own_or_write)) and ((data_object.path.count("/")) > 3) %}
@@ -29,10 +29,11 @@
       fields=[{"name": "new_name", "label": "Name", "value": data_object.name, "required": true}],
       hidden_fields=[{"name": "item_path", "value": data_object.path}]) }}
     </div>
-    <div class="col-1 display-6">
+    <div class="col-2 display-6">
       {% if data_object.size < config["DATA_OBJECT_MAX_SIZE_DOWNLOAD"] %}
         <a href="{{ url_for('browse_bp.download_object', data_object_path = data_object.path.lstrip('/') ) }}"><i class="bi bi-download"></i></a>
       {% endif %}
+      {{ block_macros.link_pid(g.irods_session.zone, data_object, "d") }}
     </div>
   </div>
   <ul class="nav nav-tabs mb-4" id="object_tab" role="tablist">

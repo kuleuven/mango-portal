@@ -123,7 +123,7 @@
             <tbody>
                 {% for item in grouped_metadata[config['MANGO_NOSCHEMA_LABEL']].values() %}
                     <tr>
-                        <th  class="text-break">{{ item.name }}</th>
+                        <th class="text-break">{{ item.name }}</th>
                         <td class="text-break">{{ item.value }}</td>
                         <td class="text-break">{{ item.units if item.units is not none }}</td>
                         {% if not item.name.startswith(readonly_prefixes) and not read_only and (current_user_rights | intersection(own_or_write)) %}
@@ -373,7 +373,8 @@
         {% endif %}
     </div>
 {% endmacro %}
-{% macro analysis_tika_block(result, consolidate=false, consolidated=[], consolidate_url='{{ url_for }}', data_object_path = '', read_only = false) %}
+{% macro analysis_tika_block(result, consolidate=false, consolidated=[], consolidate_url='{{ url_for }}
+    ', data_object_path = '', read_only = false) %}
     <h2>Inspect with Tika metadata extractor</h2>
     {% if result['X-ANALYSIS-timestamp'] %}
         <p class="text-end">Analysis executed on {{ result['X-ANALYSIS-timestamp'] }}</p>
@@ -425,4 +426,18 @@
             <li class="list-group-item">{{ result['X-TIKA:Parsed-By-Full-Set'] }}</li>
         {% endif %}
     </ul>
+{% endmacro %}
+{% macro link_pid(zone, item, item_type) %}
+    <a href="#" title="Copy Persistent URL" onclick="copy_pid_url()">
+        <i class="bi bi-link"></i>
+    </a>
+    <script>
+        function copy_pid_url() {
+        const hostname = window.location.origin;
+        const route = '{{ url_for('browse_bp.resolve_persistent_id', zone = zone, id = item.id, item_type = item_type) }}';
+        const path = `${hostname}${route}`;
+        navigator.clipboard.writeText(path);
+        alert(`"${path}" copied to clipboard!`);
+        }
+    </script>
 {% endmacro %}
