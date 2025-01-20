@@ -437,7 +437,7 @@
         const route = '{{ url_for('browse_bp.resolve_persistent_id', zone = zone, id = item.id, item_type = item_type) }}';
         const path = `${hostname}${route}`;
         navigator.clipboard.writeText(path);
-        alert(`"${path}" copied to clipboard!`);
+        alert(`A persistent url was copied to your clipbard: ${hostname}${route}. Anyone with access can use this link.`);
         }
     </script>
 {% endmacro %}
