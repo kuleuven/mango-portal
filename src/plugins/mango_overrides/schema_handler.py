@@ -1,6 +1,8 @@
 from kernel.metadata_schema import BaseSchemaPermissionsManager
 from irods.session import iRODSSession
 from pathlib import Path
+import re
+import json
 from plugins.operator import get_zone_operator_session
 
 
@@ -51,29 +53,39 @@ class iRODSSchemaManager:
 
         return ""
 
-    def _get_realm_schemas_path(self):
-        irods_session = get_zone_operator_session(self.zone)
+    @property
+    def irods_session(self):
+        return get_zone_operator_session(self.zone)
+
+    @property
+    def realm_schemas_path(self):
+        irods_session = self.irods_session
         return irods_session.collections.get(self._storage_schemas_path)
 
     def _get_schema_path(self, schema_name: str) -> Path:
-        schema_path = self._get_realm_schemas_path() / schema_name
-        if not schema_path.exists():
-            schema_path.mkdir(parents=True, exist_ok=True)
-        return schema_path
+        irods_session = self.irods_session
+        schema_path = Path(self._storage_schemas_path) / schema_name
+        return irods_session.collections.create(str(schema_path), recurse=True)
 
     def get_schema_info(self, schema_name: str) -> dict:
-        schema_dir = self._get_schema_path(schema_name)
+        schema_coll = self._get_schema_path(schema_name)
         if (
             hasattr(self, "_schemas")
             and (schema_name in self._schemas)
-            and (self._schemas[schema_name]["timestamp"] == schema_dir.stat().st_mtime)
+            and (self._schemas[schema_name]["timestamp"] == schema_coll.modify_time)
         ):
             return self._schemas[schema_name]
 
-        all_schema_files = list(schema_dir.glob("*.json"))
+        all_schema_files = [
+            obj for obj in schema_coll.data_objects if obj.name.endswith(".json")
+        ]
         # pprint.pprint(all_schema_files)
-        published_files = list(schema_dir.glob("*published.json"))
-        draft_files = list(schema_dir.glob("*draft.json"))
+        published_files = [
+            obj.name for obj in all_schema_files if obj.name.endswith("published.json")
+        ]
+        draft_files = [
+            obj.name for obj in all_schema_files if obj.name.endswith("draft.json")
+        ]
         total_count = len(all_schema_files)
         published_count = len(published_files)
         draft_count = len(draft_files)
@@ -110,10 +122,10 @@ class iRODSSchemaManager:
                 else False
             ),
             "published_name": (
-                sorted(published_files)[-1].name if published_count >= 1 else ""
+                sorted(published_files)[-1] if published_count >= 1 else ""
             ),
-            "draft_name": sorted(draft_files)[-1].name if draft_count >= 1 else "",
-            "timestamp": schema_dir.stat().st_mtime,
+            "draft_name": sorted(draft_files)[-1] if draft_count >= 1 else "",
+            "timestamp": schema_coll.modify_time,
             "versions_sorted": versions_sorted,
             "latest_version": versions_sorted[-1] if total_count > 0 else "",
             "realm": self.realm,
@@ -126,7 +138,7 @@ class iRODSSchemaManager:
         This is needed for using schemas to add / edit metadata
         """
 
-        realm_schemas_collection = self._get_realm_schemas_path()
+        realm_schemas_collection = self.realm_schemas_path()
         schemas = []
         if hasattr(self, "_schemas_dir_mtime") and (
             realm_schemas_collection.modify_time == self._schemas_dir_mtime
