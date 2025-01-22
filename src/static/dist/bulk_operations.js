@@ -2,28 +2,28 @@
 
 //#region Constants
 /** Body of the table with the contents of the collection. */
-const tbody = document.querySelector('#browseTable');
+const collection_contents = document.querySelector('#collectionContents');
 /** Selection of all the checkboxes inside the body of the table (which excludes the header!). */
-const tbody_checkboxes = tbody.querySelectorAll('.bulk_operations_checkbox');
+const collection_contents_checkboxes = collection_contents.querySelectorAll('.bulk_operations_checkbox');
 /** Small badge that shows the number of selected items if there is any. */
 const badge_counter = document.querySelector('#bulk_operations_badge');
 /** Button ("apply") to trigger the action selected in the dropdown. */
 const bulk_buttons = document.querySelector('div#bulk-operations');
 /** One checkbox to rule them all (it's in the header of the table). */
-const select_all = document.querySelector('#browseTable input#select_all');
+const select_all = document.querySelector('#collectionContents input#select_all');
 /** Custom DOM element that contains the url to call the top tree. */
 const urls = document.querySelector('bulk-links');
 //#endregion
 
 function are_dobj_selected() {
-    return [...tbody_checkboxes].filter((el) => el.checked == true && el.value.startsWith("dobj")).length > 0;
+    return [...collection_contents_checkboxes].filter((el) => el.checked == true && el.value.startsWith("dobj")).length > 0;
 }
 //#region Listeners
 /** Behavior of the checkbox that rules all other checkboxes. */
 select_all.addEventListener('change', () => {
     if (select_all.checked) {
         // When this checkbox is checked
-        tbody_checkboxes.forEach((el) => el.checked = true); // all other checkboxes are checked
+        collection_contents_checkboxes.forEach((el) => el.checked = true); // all other checkboxes are checked
         bulk_buttons.querySelectorAll("button").forEach((button) => {
             if (are_dobj_selected() || ["bulk-delete", "bulk-move"].indexOf(button.id) > -1) {
                 button.removeAttribute("disabled")
@@ -33,10 +33,10 @@ select_all.addEventListener('change', () => {
             // the counter badge is shown if not visible yet
             select_all.parentElement.appendChild(badge_counter);
         }
-        badge_counter.innerHTML = tbody_checkboxes.length; // the counter badge is updated
+        badge_counter.innerHTML = collection_contents_checkboxes.length; // the counter badge is updated
     } else {
         // When this checkbox is unchecked
-        tbody_checkboxes.forEach((el) => el.checked = false); // all other checkboxes are unchecked
+        collection_contents_checkboxes.forEach((el) => el.checked = false); // all other checkboxes are unchecked
         bulk_buttons.querySelectorAll("button").forEach((button) => {
             button.setAttribute("disabled", "");
         })
@@ -45,10 +45,10 @@ select_all.addEventListener('change', () => {
 });
 
 /** Behavior of the checkboxes in the body of the table. */
-tbody_checkboxes.forEach((checkbox) => {
+collection_contents_checkboxes.forEach((checkbox) => {
     checkbox.addEventListener('change', () => {
         /** Number of already checked checkboxes. */
-        let are_checked = [...tbody_checkboxes].filter((c) => c.checked).length;
+        let are_checked = [...collection_contents_checkboxes].filter((c) => c.checked).length;
         badge_counter.innerHTML = are_checked; // update badge counter
         if (checkbox.checked) {
             // when the checkbox is checked
@@ -61,7 +61,7 @@ tbody_checkboxes.forEach((checkbox) => {
             if (are_checked == 1) {
                 select_all.parentElement.appendChild(badge_counter)
             }
-            if (are_checked == tbody_checkboxes.length) {
+            if (are_checked == collection_contents_checkboxes.length) {
                 select_all.checked = true;
             }
         } else {
@@ -99,7 +99,7 @@ function bulk_delete() {
 function apply_bulk_operation(action) {
    
     /** Array of paths to apply the action upon. */
-    const selected_items = [...tbody_checkboxes].filter((c) => c.checked).map((c) => c.value);
+    const selected_items = [...collection_contents_checkboxes].filter((c) => c.checked).map((c) => c.value);
     /** Number of collections selected. */
     const n_collections = selected_items.filter((c) => c.startsWith('col-')).length;
     /** Number of data objects selected. */
@@ -132,7 +132,7 @@ function apply_bulk_operation(action) {
 
     confirmation_form.addEventListener("submit", ()=> { 
         modal.hide();
-        tbody_checkboxes.forEach((el) => el.checked = false); // uncheck all checkboxes
+        collection_contents_checkboxes.forEach((el) => el.checked = false); // uncheck all checkboxes
         bulk_buttons.querySelectorAll("button").forEach((btn) => {
 btn.setAttribute('disabled', ''); // the button to trigger the action is disabled
         })
