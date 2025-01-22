@@ -91,7 +91,7 @@
          aria-label="Bulk operations"
          id="bulk-operations">
         <div class="btn-group" role="group" aria-label="Buttons">
-            {% if ('own' in current_user_rights) %}
+            {% if (current_user_rights | intersection(own_or_write)) %}            
                 <button type="button"
                         class="btn btn-light"
                         onclick="bulk_delete()"
