@@ -604,7 +604,13 @@ def projects_statistics():
         flash(f"No project information found in {year}.")
         projects = []
 
-    def create_project_dict(project):
+    response_quota = requests.get(f"{API_URL}/v1/projects/quota", headers=header)
+
+    response_quota.raise_for_status()
+
+    projects_quota = response_quota.json()
+
+    def create_project_dict(project, projects_quota):
         if project["project"]["platform"] == "irods":
             zone_name = [
                 "-".join(x["value"].split("-")[4:])
@@ -613,11 +619,23 @@ def projects_statistics():
             ][0]
         else:
             zone_name = "Non iRODS"
+
+        project_name = project["project"]["name"]
+
+        # Find matching project in projects_quota and extract create date
+        for quota_project in projects_quota:
+            if quota_project["name"] == project_name:
+                project_active_dates = [item["date"] for item in quota_project["log"] if not item["archived"]]
+                if len(project_active_dates) > 0:
+                    project_create_date = project_active_dates[0]
+                break
+
         return {
             "zone_name": zone_name,
-            "project_name": project["project"]["name"],
+            "project_name": project_name,
+            "project_create_date": project_create_date,
             "project_type": project["project"]["type"],
-            "project_status": "Archived" if project["project"]["archived"] == True else "Active",
+            "project_status": "Archived" if project["project"]["archived"] else "Active",
             "usage_total": convert_bytes_to_GB(
                 [x["used_size"] for x in project["usage"]][-1]
             ),
@@ -627,15 +645,15 @@ def projects_statistics():
                 [x["used_size"] for x in project["usage"]][-1],
             ),
             "responsible_name": project["responsibles"][0]["name"]
-            if project["responsibles"] != None
+            if project["responsibles"]
             else "",
             "responsible_account": project["responsibles"][0]["username"]
-            if project["responsibles"] != None
+            if project["responsibles"]
             else "",
             "sap_ref": project["project"]["sap_ref"],
         }
 
-    projects_list = [create_project_dict(project) for project in projects]
+    projects_list = [create_project_dict(project, projects_quota) for project in projects]
 
     return render_template(
         "project/projects_statistics.html.j2",
