@@ -86,8 +86,8 @@ group_members:
   matches: always
 
 gallery_view_dayral_barsha:
-  source: common/collection_content.html.j2
-  target: common/collection_gallery.html.j2
+  source: collection_content.html.j2
+  target: collection_gallery.html.j2
   matches:
     all:
       subtree: '/{{zone}}/home/Dayral-Barsha' #quotes needed as in principle {} are special characters
