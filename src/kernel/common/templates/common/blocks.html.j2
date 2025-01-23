@@ -459,7 +459,7 @@
             navigator.clipboard.writeText(path);
             
             document.querySelector("body").appendChild(toastContainer); // only add the toast
-            toastBody.innerHTML = `A persistent url was copied to your clipbard: <code>${hostname}${route}</code>.<br>Anyone with access can use this link.`;
+            toastBody.innerHTML = `A persistent url was copied to your clipboard: <code>${hostname}${route}</code>.<br>Anyone with access can use this link.`;
             const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toast);
             toastBootstrap.show();
         }
