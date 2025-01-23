@@ -1,9 +1,9 @@
 {% extends "base.html.j2" %}
 {% import "dialogs.html.j2" as dialogs %}
 {% import "blocks.html.j2" as block_macros %}
-{% set own_or_write = ["own", "modify", "modify object", "modify_object", "write"] %}
+{% set own_or_write = ["own", "delete_object", "delete object", "modify", "modify object", "modify_object", "write"] %}
 {% block body %}
-  {% set own_or_write = ["own", "modify", "modify object", "modify_object", "write"] %}
+  {% set own_or_write = ["own", "delete_object", "delete object", "modify", "modify object", "modify_object", "write"] %}
   <nav aria-label="breadcrumb"
        class="navbar-light bg-light sticky-top pb-2 pt-1">
     <ol class="breadcrumb">
