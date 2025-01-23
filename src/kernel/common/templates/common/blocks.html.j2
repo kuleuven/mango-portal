@@ -85,6 +85,49 @@
         </form>
     {% endif %}
 {% endmacro %}
+{% macro bulk_operations(current_user_rights) -%}
+    <div class="btn-toolbar justify-content-between"
+         role="toolbar"
+         aria-label="Bulk operations"
+         id="bulk-operations">
+        <div class="btn-group" role="group" aria-label="Buttons">
+            {% if (current_user_rights | intersection(own_or_write)) %}            
+                <button type="button"
+                        class="btn btn-light"
+                        onclick="bulk_delete()"
+                        id="bulk-delete"
+                        disabled>
+                    <i class="bi bi-trash" fill="currentColor"></i> Delete
+                </button>
+                <button type="button"
+                        class="btn btn-light"
+                        onclick="bulk_move()"
+                        id="bulk-move"
+                        disabled>
+                    <i class="bi bi-send" fill="currentColor"></i> Move
+                </button>
+            {% endif %}
+            <button type="button"
+                    class="btn btn-light"
+                    onclick="bulk_copy()"
+                    id="bulk-copy"
+                    disabled>
+                <i class="bi bi-copy" fill="currentColor"></i> Copy
+            </button>
+            <button type="button"
+                    class="btn btn-light"
+                    onclick="bulk_download()"
+                    id="bulk-download"
+                    disabled>
+                <i class="bi bi-download" fill="currentColor"></i> Download
+            </button>
+        </div>
+    <span class="text-body-secondary mt-2"><i class="bi bi-exclamation-triangle" fill="currentColor"></i>
+    Copying/Download is only available for data objects.
+</span>
+</div>
+<bulk-links tree="{{ url_for("browse_bp.get_sub_collections") }}" />
+{% endmacro -%}
 {% macro show_schema_metadata(name, info, schema_info, schema_metadata, level = 0, unit = None) %}
     {% if info['type'] == 'object' %}
         <div class="border border-1 border-secondary rounded p-3 my-1">

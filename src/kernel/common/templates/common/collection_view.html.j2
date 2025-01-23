@@ -197,7 +197,7 @@ function applyAction() {
   let action = document.getElementById("action_select").value;
   let selectedCollections = [];
   let selectedDataObjects = [];
-  let rows = document.getElementById("browseTable").querySelectorAll("tr");
+  let rows = document.getElementById("collectionContents").querySelectorAll("tr");
   let checkboxes = rows[0].querySelectorAll("[type=checkbox]");
   for (const checkbox of checkboxes){
     if (checkbox.checked){
