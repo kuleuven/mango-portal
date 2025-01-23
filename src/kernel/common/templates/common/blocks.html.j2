@@ -432,12 +432,37 @@
         <i class="bi bi-link"></i>
     </a>
     <script>
+        const toastContainer = document.createElement("div");
+        toastContainer.className = "toast-container position-fixed top-0 start-50 translate-middle-x";
+
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.role = "alert";
+        toast.setAttribute("aria-live", "assertive");
+        toast.setAttribute("aria-atomic", true);
+
+        const toastHeader = document.createElement("div");
+        toastHeader.className = "toast-header text-bg-success text-bold";
+        toastHeader.innerHTML = "ManGO Persistent URL";
+
+        const toastBody = document.createElement("div");
+        toastBody.className = "toast-body text-center";
+        
+        toastContainer.appendChild(toast);
+        toast.appendChild(toastHeader);
+        toast.appendChild(toastBody);
+        
         function copy_pid_url() {
-        const hostname = window.location.origin;
-        const route = '{{ url_for('browse_bp.resolve_persistent_id', zone = zone, id = item.id, item_type = item_type) }}';
-        const path = `${hostname}${route}`;
-        navigator.clipboard.writeText(path);
-        alert(`A persistent url was copied to your clipbard: ${hostname}${route}. Anyone with access can use this link.`);
+            const hostname = window.location.origin;
+            const route = '{{ url_for('browse_bp.resolve_persistent_id', zone = zone, id = item.id, item_type = item_type) }}';
+            const path = `${hostname}${route}`;
+            navigator.clipboard.writeText(path);
+            
+            document.querySelector("body").appendChild(toastContainer); // only add the toast
+            toastBody.innerHTML = `A persistent url was copied to your clipbard: <code>${hostname}${route}</code>.<br>Anyone with access can use this link.`;
+            const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toast);
+            toastBootstrap.show();
         }
+        
     </script>
 {% endmacro %}
