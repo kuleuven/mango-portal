@@ -1193,6 +1193,39 @@ def empty_user_trash():
     return redirect(url_for("browse_bp.collection_browse", collection=user_trash_path))
 
 
+@browse_bp.route(
+    "/PID/<zone>/<id>/",
+    methods=["GET"],
+    defaults={"item_type": None},
+    strict_slashes=False,
+)
+@browse_bp.route("/PID/<zone>/<id>/<item_type>")
+def resolve_persistent_id(zone, id, item_type=None):
+    assert g.irods_session.zone == zone
+    from irods.models import Collection, DataObject
+    from irods.column import Criterion
+
+    if item_type is None or item_type == "c":
+        res = [
+            item[Collection.name]
+            for item in g.irods_session.query(Collection.name).filter(
+                Criterion("=", Collection.id, id)
+            )
+        ]
+        if len(res) > 0:
+            return redirect(url_for("browse_bp.collection_browse", collection=res[0]))
+
+    res = [
+        f"{item[Collection.name]}/{item[DataObject.name]}"
+        for item in g.irods_session.query(Collection.name, DataObject.name).filter(
+            Criterion("=", DataObject.id, id)
+        )
+    ]
+    if len(res) > 0:
+        return redirect(url_for("browse_bp.view_object", data_object_path=res[0]))
+    return abort(404, f"No collection or data object with ID {id}")
+
+
 @browse_bp.route("/items/bulk", methods=["POST"])
 @csrf.exempt
 def bulk_operation_items():
