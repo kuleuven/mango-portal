@@ -40,7 +40,10 @@
                                        value="col-{{ collection.path }}"
                                        aria-label="Select {{ collection.path }}" />
                                 <p class="card-text" style="margin-left: 0.5rem; max-width: 10rem">
-                                    <a href="{{ url_for('browse_bp.collection_browse', collection=collection.path.lstrip('/') ) }}" style="word-wrap: break-word">{{ collection.name }}</a>
+                                    <a href="{{ url_for('browse_bp.collection_browse', collection=collection.path.lstrip('/') ) }}"
+                                    style="word-wrap: break-word"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-title="{{ collection.name }}">{{ collection.name }}</a>
                                 </p>
                             </div>
                         </div>
@@ -80,7 +83,10 @@
                                        value="dobj-{{ data_object.path }}"
                                        aria-label="Select {{ data_object.path }}" />
                                 <p class="card-text" style="margin-left: 0.5rem; max-width: 10rem">
-                                    <a href="{{ url_for('browse_bp.view_object', data_object_path=data_object.path.lstrip('/') ) }}" style="word-wrap: break-word">{{ data_object.name }}</a>
+                                    <a href="{{ url_for('browse_bp.view_object', data_object_path=data_object.path.lstrip('/') ) }}"
+                                       style="word-wrap: break-word"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-title="{{ data_object.name }}">{{ data_object.name }}</a>
                                 </p>
                             </div>
                         </div>
