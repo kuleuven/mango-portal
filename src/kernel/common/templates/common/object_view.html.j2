@@ -261,6 +261,57 @@
     </div>
   </div>
 </div>
+
+
+ <!-- Download meta data-->
+  <div class="modal fade"
+       id="downloadMetaData"
+       tabindex="-1"
+       aria-labelledby="downloadMetaDataLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addMetaDataLabel">Download metadata</h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
+        </div>
+        <form action="{{ url_for("metadata_bp.add_meta_data") }}"
+              method="post"
+              enctype="multipart/form-data"
+              class="row g-3 needs-validation"
+              novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="redirect_hash" value="#metadata" />
+          <div class="modal-body">
+
+<!-- <p> {{ grouped_metadata }} </p> --> 
+<!-- <p> {{ schema_labels }} </p>--> 
+ 
+            {% for schema in grouped_metadata %}
+
+              <div>
+    <input type="checkbox" id="{{schema}}" name="{{schema}}" checked />
+    <label for="{{schema}}"> {{schema }} </label>
+  </div>
+
+    <!-- {% for schema in schemas %}<p> {{ schema }}">{{ schemas[schema]["title"] }}</p> {% endfor %} --> 
+
+    {% endfor %}
+
+           
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" type="submit">Download</button>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+
 {{ dialogs.iframe_dialog('a.pipeline', header="Build information") }}
 {% endblock body %}
 {% block javascript %}
