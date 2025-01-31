@@ -34,17 +34,20 @@
                                         bottom: 0;
                                         position: absolute;
                                         margin-bottom: 1rem">
-                                <input style="vertical-align:middle"
+                                <input id="checkbox-{{ collection.path }}"
+                                       style="vertical-align:middle"
                                        class="form-check-input checkbox-inline bulk_operations_checkbox"
                                        type="checkbox"
                                        value="col-{{ collection.path }}"
                                        aria-label="Select {{ collection.path }}" />
-                                <p class="card-text" style="margin-left: 0.5rem; max-width: 10rem">
+                                <label class="form-check-label" 
+                                       style="margin-left: 0.5rem; max-width: 10rem"
+                                       for="checkbox-{{ collection.path }}">
                                     <a href="{{ url_for('browse_bp.collection_browse', collection=collection.path.lstrip('/') ) }}"
                                     style="word-wrap: break-word"
                                     data-bs-toggle="tooltip"
                                     data-bs-title="{{ collection.name }}">{{ collection.name }}</a>
-                                </p>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -77,17 +80,20 @@
                                         position: absolute;
                                         margin-bottom: 1rem;
                                         max-height: 2rem">
-                                <input style="vertical-align:middle"
+                                <input id="checkbox-{{ data_object.path }}"
+                                       style="vertical-align:middle"
                                        class="form-check-input checkbox-inline bulk_operations_checkbox"
                                        type="checkbox"
                                        value="dobj-{{ data_object.path }}"
                                        aria-label="Select {{ data_object.path }}" />
-                                <p class="card-text" style="margin-left: 0.5rem; max-width: 10rem">
+                                <label class="form-check-label"
+                                       style="margin-left: 0.5rem; max-width: 10rem"
+                                       for="checkbox-{{ data_object.path }}">
                                     <a href="{{ url_for('browse_bp.view_object', data_object_path=data_object.path.lstrip('/') ) }}"
                                        style="word-wrap: break-word"
                                        data-bs-toggle="tooltip"
                                        data-bs-title="{{ data_object.name }}">{{ data_object.name }}</a>
-                                </p>
+                                </label>
                             </div>
                         </div>
                     </div>
