@@ -242,4 +242,23 @@ def download_meta_data():
 
 @metadata_bp.route("/collection/metadata/download", methods=["POST"])
 def download_meta_data_collection():
+
+    collection_path = request.form["collection-path"]
+    if not collection_path.startswith("/"):
+        collection_path  = "/" + collection_path 
+    collection = g.irods_session.collections.get(collection_path)
+    
+    # check which metadata is requested and store in metadata_list
+    metadata_list = request.form.getlist('metadata')
+    if "other" in metadata_list:
+        metadata_list.remove("other")
+        metadata_list.append("mg")
+
+    print(metadata_list)
+    # based on this list you can filter the reorganized dictionary    
+    metadata_items = collection.metadata.items()
+    # reorganized_dict = md2dict.convert_metadata_to_dict(metadata_items)
+
+    return redirect(request.referrer)
+
     return redirect(request.referrer)

@@ -79,8 +79,8 @@ readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type=type, current_user
 
 
         <input type="hidden"
-               id="object-path-add"
-               name="object-path"
+               id="{{type}}-path-add"
+               name="{{type}}-path"
                value="{{ object.path }}" />
                     <input type="hidden"
                            id="target-type-add"
@@ -230,7 +230,7 @@ readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type=type, current_user
           </div>
           <input type="hidden"
                  id="object-path-delete"
-                 name="object-path"
+                 name="{{type}}-path"
                     value="{{ object.path }}" />
 
         </div>
@@ -305,8 +305,8 @@ readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type=type, current_user
 
 
         <input type="hidden"
-               id="object-path-add"
-               name="object-path"
+               id="{{type}}-path-download"
+               name="{{type}}-path"
                value="{{ object.path }}" />
 
 </div>
@@ -327,6 +327,7 @@ const mbadge_counter = mbody.querySelector('span#badge');
 const mselect_all = mbody.querySelector('input#select_all');
 
 
+// select all 
 mselect_all.addEventListener('change', () => {
   if ( mselect_all.checked) {  // if select all checked : check all + show counter
     mbody_checkboxes.forEach((el) => el.checked = true);
@@ -341,17 +342,17 @@ mselect_all.addEventListener('change', () => {
 
 })
 
-
+// select individual 
 mbody_checkboxes.forEach((checkbox) => {
   checkbox.addEventListener('change', () => {
     let are_checked = [...mbody_checkboxes].filter((el) => el.checked);  
     mbadge_counter.innerHTML = are_checked.length
 
-  if (are_checked.length < [...mbody_checkboxes].length )  {
+  if (are_checked.length < [...mbody_checkboxes].length )  { // if not all boxes are checked : hide counter + uncheck all
         mbadge_counter.hidden = false;
-    mselect_all.checked = false;
+        mselect_all.checked = false;
   }
-  if (are_checked.length == 0)  {
+  if (are_checked.length == 0)  {  // if no boxes are checked:  hide counter
     mbadge_counter.hidden = true;
   }
   })
