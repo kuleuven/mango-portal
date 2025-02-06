@@ -8,7 +8,7 @@
 {% set url_add = url_for('metadata_bp.add_meta_data') %}
 {% set url_edit = url_for('metadata_bp.edit_meta_data') %}
 {% set url_delete = url_for('metadata_bp.delete_meta_data') %}
-{% set url_download = url_for('metadata_bp.add_meta_data') %}
+{% set url_download = url_for('metadata_bp.download_meta_data') %}
 {% else %}
 <!-- if it is a collection do this --> 
 
@@ -17,7 +17,7 @@
 {% set url = url_for('metadata_bp.add_meta_data_collection')%}
 {% set url_edit = url_for('metadata_bp.edit_meta_data_collection') %}
 {% set url_delete = url_for('metadata_bp.delete_meta_data_collection') %}
-{% set url_download = url_for('metadata_bp.add_meta_data_collection') %}
+{% set url_download = url_for('metadata_bp.download_meta_data_collection') %}
 {% endif %}
 
 
@@ -268,22 +268,48 @@ readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type=type, current_user
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <input type="hidden" name="redirect_hash" value="#metadata" />
           <div class="modal-body">
+          <div> 
+                   <input 
+                       type="checkbox"
+                       id="select_all"
+                       aria-label="Select all rows"
+                        />
+    <label for="select_all"> Select all </label>
+                <span id="badge" hidden="true" class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-primary"> 0 </span>
 
-<!-- <p> {{ grouped_metadata }} </p> --> 
-<!-- <p> {{ schema_labels }} </p>--> 
- 
+    </div>
+
+<div id="schema_checkboxes"> 
+
+
+
+          
             {% for schema in grouped_metadata %}
-
               <div>
-    <input type="checkbox" id="{{schema}}" name="{{schema}}" checked />
+    <input 
+    type="checkbox" 
+    value="{{schema}}" 
+    name="metadata" 
+     />
     <label for="{{schema}}"> {{schema }} </label>
   </div>
-
-    <!-- {% for schema in schemas %}<p> {{ schema }}">{{ schemas[schema]["title"] }}</p> {% endfor %} --> 
-
     {% endfor %}
 
-           
+
+        <input 
+    type="checkbox" 
+    name="metadata"
+    value="analysis" 
+     />
+    <label for="analysis"> analysis </label>
+
+
+        <input type="hidden"
+               id="object-path-add"
+               name="object-path"
+               value="{{ object.path }}" />
+
+</div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -293,5 +319,42 @@ readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type=type, current_user
   </div>
 </div>
 </div>
+<script> 
+
+const mbody = document.querySelector('#downloadMetaData');
+const mbody_checkboxes = mbody.querySelectorAll('#schema_checkboxes input[type="checkbox"]');
+const mbadge_counter = mbody.querySelector('span#badge');
+const mselect_all = mbody.querySelector('input#select_all');
 
 
+mselect_all.addEventListener('change', () => {
+  if ( mselect_all.checked) {  // if select all checked : check all + show counter
+    mbody_checkboxes.forEach((el) => el.checked = true);
+        mbadge_counter.hidden = false;
+
+  mbadge_counter.innerHTML = mbody_checkboxes.length 
+} else {  // if select all not checked : uncheck all + hide counter
+  mbody_checkboxes.forEach((el) => el.checked = false);
+      mbadge_counter.hidden = true;
+ 
+}
+
+})
+
+
+mbody_checkboxes.forEach((checkbox) => {
+  checkbox.addEventListener('change', () => {
+    let are_checked = [...mbody_checkboxes].filter((el) => el.checked);  
+    mbadge_counter.innerHTML = are_checked.length
+
+  if (are_checked.length < [...mbody_checkboxes].length )  {
+        mbadge_counter.hidden = false;
+    mselect_all.checked = false;
+  }
+  if (are_checked.length == 0)  {
+    mbadge_counter.hidden = true;
+  }
+  })
+})
+
+</script>
