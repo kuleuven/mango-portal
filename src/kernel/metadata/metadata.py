@@ -215,3 +215,31 @@ def add_tika_metadata():
             request.referrer.split("#")[0] + request.values["redirect_hash"]
         )
     return redirect(request.referrer)
+
+
+
+@metadata_bp.route("/data_object/metadata/download", methods=["POST"])
+def download_meta_data():
+
+    data_object_path = request.form["object-path"]
+    if not data_object_path.startswith("/"):
+        data_object_path = "/" + data_object_path
+    data_object = g.irods_session.data_objects.get(data_object_path)
+    
+    # check which metadata is requested and store in metadata_list
+    metadata_list = request.form.getlist('metadata')
+    if "other" in metadata_list:
+        metadata_list.remove("other")
+        metadata_list.append("mg")
+
+    print(metadata_list)
+    # based on this list you can filter the reorganized dictionary    
+    metadata_items = data_object.metadata.items()
+    # reorganized_dict = md2dict.convert_metadata_to_dict(metadata_items)
+
+    return redirect(request.referrer)
+
+
+@metadata_bp.route("/collection/metadata/download", methods=["POST"])
+def download_meta_data_collection():
+    return redirect(request.referrer)
