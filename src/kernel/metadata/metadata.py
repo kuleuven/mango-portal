@@ -261,4 +261,16 @@ def download_meta_data_collection():
 
     return redirect(request.referrer)
 
+
+
+@metadata_bp.route("/<schema>/metadata/download/<object_id>")
+def download_meta_data_schema(schema: str, object_id: str):
+    
+    print("here we go")
+    print(schema, object_id)
+
+    data_object = g.session.get_by_id(object_id)
+    print(data_object)
+
+
     return redirect(request.referrer)
