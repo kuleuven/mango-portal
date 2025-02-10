@@ -1,4 +1,8 @@
 {% import "dialogs.html.j2" as dialogs %}
+
+
+
+
 {% set own_or_write = ["own", "delete_object", "delete object", "modify", "modify object", "modify_object", "write"] %}
 {% macro permission_block(item_path, permissions, acl_users_dict, acl_counts, my_groups=[], group_filter_exclude=[], current_user_rights = [], recursive=false, read_only = false ) %}
     <table class="table table-striped table-hover mt-2" id="permssions-table">
@@ -117,11 +121,8 @@
         {% endif %}
     {% endif %}
 {% endmacro %}
-{% macro metadata_block(object_id, object_path, grouped_metadata, schemas, schema_labels, readonly_prefixes=(""), item_type="collection", read_only=False, current_user_rights=[], realm="", flattened_schemas={}) %}
-    <button type="button"
-            class="btn btn-secondary"
-            data-bs-toggle="modal"
-            data-bs-target="#downloadMetaData">Download metadata</button>
+{% macro metadata_block(object_id, object_path, grouped_metadata, schemas, schema_labels, readonly_prefixes=(""), item_type="collection", read_only=False, current_user_rights=[], realm="", flattened_schemas={}, reorganized_dict={}) %}
+
     <!-- nav top bar -->
     <ul class="nav nav-pills mb-3 mt-3"
         id="metadata-groups-tab"
@@ -173,6 +174,63 @@
                                 <button type="submit" class="btn btn-primary">Edit</button>
                             </form>
                         {% endif %}
+
+                <a href="" class="btn btn-primary" type="button" id="download-metadata" download="metadata.json"> Download Metadata </a>
+                
+                <div class="accordion" id="metadata-download-checkboxes">
+
+        {% for top_level, top_level_title in top_levels %}
+        {% if top_level in grouped_metadata %}
+  <div class="accordion-item">
+    <div class="form-check form-check-inline">
+    <input id="download_{{top_level}}" class="form-check-input" type="checkbox" checked> 
+    <label for="#download_{{top_level}}" data-bs-toggle="collapse" data-bs-target="#download_subclass_{{top_level}}" class="form-check-label"> 
+    {{top_level_title}} </label>
+    </div>
+    <div id="download_subclass_{{top_level}}" class="accordion-collapse collapse">
+      <div class="accordion-body"> 
+ {% for sublevel in grouped_metadata[top_level] %}
+
+<div class="form-check form-check-inline">
+    <input id="download_{{top_level}}_{{sublevel}}" class="form-check-input" type="checkbox" name="{{sublevel}}" data-mg-parent="{{top_level}}" data-mg-level="second-level" checked> 
+    <label for="#download_{{top_level}}_{{sublevel}}" class="form-check-label"> 
+    {{sublevel}} </label>
+    </div>
+ {% endfor %}
+
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endfor%}
+
+</div>
+                
+                <pre class="border p-1 bg-light" style="white-space: pre-wrap;" id="metadata-json"> </pre>
+
+                
+
+                <script> 
+
+                    let metadata = JSON.parse({{reorganized_dict | tojson}})
+                    console.log(metadata);
+
+                    let json_metadata = JSON.stringify(metadata, null, "  ")
+                    document.querySelector("pre#metadata-json").innerHTML = json_metadata;
+                    document.querySelector("a#download-metadata").href = `data:text/json;charset=utf-8,${json_metadata}`
+                    
+
+                    let metadataCheckboxes = document.querySelector("div#metadata-download-checkboxes").querySelectorAll("input")
+                    metadataCheckboxes.forEach((checkbox)=> { 
+                        if (checkbox.getAttribute("data-mg-level") == "second-level") {
+                            checkbox.addEventListener("change", ()=> {
+                                console.log([...metadataCheckboxes].filter(x=>x.checked).map(x=>({"name": x.name, "parent": x.getAttribute("data-mg-parent")})))
+                            })
+                        }
+                        
+                    }) 
+
+                </script> 
                     {% else %}
                         <div class="accordion" id="parent-accordion-{{ top_level }}">
                             {% for sublevel in grouped_metadata[top_level] %}
@@ -403,3 +461,4 @@
         {% endif %}
     </ul>
 {% endmacro %}
+

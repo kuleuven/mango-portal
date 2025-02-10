@@ -60,6 +60,8 @@ from kernel.metadata_schema import get_schema_manager
 from kernel.template_overrides import get_template_override_manager
 from kernel.common.error import flash_error
 
+from mango_mdconverter import md2dict
+
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
 from mango_ui import (
@@ -669,6 +671,9 @@ def view_object(data_object_path):
     logging.info(f"Object view: using template {view_template}")
     logging.info(f"Realm: {realm}")
 
+    reorganized_dict = md2dict.convert_metadata_to_dict(data_object.metadata.items())
+    reorganized_dict = json.dumps(reorganized_dict)
+
     return render_template(
         view_template,
         data_object=data_object,
@@ -679,6 +684,7 @@ def view_object(data_object_path):
         acl_counts=acl_counts,
         my_groups=my_groups,
         grouped_metadata=grouped_metadata,
+        reorganized_dict = reorganized_dict,
         schema_labels=schema_labels,
         realm=realm,
         schemas=schemas,
