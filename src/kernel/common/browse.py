@@ -440,7 +440,7 @@ def collection_browse(collection=None):
     ).get_template_for_catalog_item(
         current_collection, "common/collection_view.html.j2"
     )
-    logging.info(f"Collection view: using template {view_template}")
+    logging.info(f"Collection view: using template {view_template} for {current_collection.path}")
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
 
     return render_template(
