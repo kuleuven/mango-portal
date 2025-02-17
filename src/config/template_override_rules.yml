@@ -34,6 +34,21 @@ zone: tier1_data_pilot
 #     always: true
 
 ---
+zone: cold
+
+collection_home_realm:
+  source: common/collection_view.html.j2
+  target: cold_storage/project_view.html.j2
+  matches:
+    all:
+      depth: 3
+
+cold_sidebar:
+  source: sidebar.html.j2
+  target: cold_storage/cold_sidebar.html.j2
+  matches: always
+
+---
 zone: icts_demo
 
 # collection_view_iot:
@@ -43,6 +58,14 @@ zone: icts_demo
 #     always: true
 ---
 zone: all
+
+collection_home_simple:
+  source: common/collection_view.html.j2
+  target: common/collection_view_content_only.html.j2
+  matches:
+    any:
+      path: '/{{zone}}/home'
+
 gallery_carrousel:
   source: common/collection_view.html.j2
   target: common/gallery_carrousel.html.j2
