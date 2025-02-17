@@ -1060,7 +1060,7 @@ def object_preview(data_object_path):
     data_object = g.irods_session.data_objects.get(data_object_path)
 
     if data_object.size == 0:
-        return send_file("static/file.png", "image/png")
+        return send_file("static/file_empty.png", "image/png")
     if data_object.size > current_app.config["DATA_OBJECT_MAX_SIZE_PREVIEW"]:
         return send_file("static/file_too_large.png", "image/png")
     else:
