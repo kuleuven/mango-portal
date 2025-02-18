@@ -418,7 +418,12 @@ def collection_browse(collection=None):
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
-    my_groups = g.irods_session.my_groups
+    # Moving public group to end of groups list, so it does not become the default option.
+    my_groups = [group for group in g.irods_session.my_groups if group.name != "public"]
+    for group in g.irods_session.my_groups:
+        if group.name == "public":
+            my_groups.append(group)
+
     # temp: look up metadata items in full, including create_time and modify_time
     from irods.query import Query
     from irods.column import Criterion, In
@@ -610,7 +615,11 @@ def view_object(data_object_path):
     acl_users_dict = {user.name: user.type for user in acl_users}
     acl_counts = Counter([permission.access_name for permission in permissions])
 
-    my_groups = g.irods_session.my_groups
+    # Moving public group to end of groups list, so it does not become the default option.
+    my_groups = [group for group in g.irods_session.my_groups if group.name != "public"]
+    for group in g.irods_session.my_groups:
+        if group.name == "public":
+            my_groups.append(group)
 
     # temp: look up metadata items in full, including create_time and modify_time
     # from irods.query import Query
