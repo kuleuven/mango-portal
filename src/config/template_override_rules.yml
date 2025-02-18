@@ -107,3 +107,10 @@ group_members:
   source: user/group_members.html.j2
   target: mango_overrides/user/group_members.html.j2
   matches: always
+
+gallery_view_dayral_barsha:
+  source: collection_content.html.j2
+  target: collection_gallery.html.j2
+  matches:
+    all:
+      subtree: '/{{zone}}/home/Dayral-Barsha' #quotes needed as in principle {} are special characters

@@ -1060,9 +1060,9 @@ def object_preview(data_object_path):
     data_object = g.irods_session.data_objects.get(data_object_path)
 
     if data_object.size == 0:
-        return send_file("static/bh_sag_A.jpg", "image/jpeg")
+        return send_file("static/file_empty.png", "image/png")
     if data_object.size > current_app.config["DATA_OBJECT_MAX_SIZE_PREVIEW"]:
-        return send_file("static/too-large.jpg", "image/jpeg")
+        return send_file("static/file_too_large.png", "image/png")
     else:
         if not os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
             local_path = f"/tmp/irods-download-{data_object.name}"
@@ -1101,7 +1101,7 @@ def object_preview(data_object_path):
         if os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
             return send_file(f"{thumbnail_storage}/{data_object.id}.png", "image/png")
         else:
-            return send_file("static/generate_preview_failed.png", "image/png")
+            return send_file("static/file_format_not_understood.png", "image/png")
 
 
 @browse_bp.route("/permission/set/<path:item_path>", methods=["POST"])

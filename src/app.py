@@ -261,7 +261,9 @@ def init_and_secure_views():
             return None
         else:
             # save the request url which may come from a bookmark or a page that was iopen longer than the irods session lifetime
-            session["redirect_after_login"] = request.url # this is with a http scheme, but gets rewritten as https
+            session["redirect_after_login"] = (
+                request.url
+            )  # this is with a http scheme, but gets rewritten as https
             print(f"Request url before login {request.url}")
             return redirect(url_for(current_app.config["MANGO_LOGIN_ACTION"]))
 
@@ -398,6 +400,13 @@ def os_env(parameter, default=None):
 @app.template_filter("b64encode")
 def b64encode(string):
     return base64.b64encode(string.encode("utf-8")).decode()
+
+
+@app.template_filter("shorten_name")
+def shorten_name(string):
+    if len(string) < 25:
+        return string
+    return f"{string[:7]}...{string[-7:]}"
 
 
 # register the main landing page route dynamically

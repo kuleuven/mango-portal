@@ -111,7 +111,7 @@
       <div class="tab-pane fade show {% if loop.first %}active{% endif %}"
            id="{{ tab.id }}"
            role="tabpanel"
-           aria-labelledby="{{ tab.id }}-tab">{% include tab.template|mango_template(collection.path) %}</div>
+           aria-labelledby="{{ tab.id }}-tab">{% include tab.template|mango_template(g.irods_session.zone, collection) %}</div>
     {% endfor %}
   </div>
   <!-- Add collection modal-->
