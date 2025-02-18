@@ -71,7 +71,7 @@
                                         margin-left:auto;
                                         margin-right:auto"
                                     alt="Card image cap"
-                                    src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path) }}">
+                                    src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path.lstrip('/')) }}">
                             </picture>
                         </a>
                         <div class="card-body" style="position: relative">
