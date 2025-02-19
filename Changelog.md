@@ -2,6 +2,18 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.19.0
+
+### New features
+
+- gallery view: display collection contents via the data object preview as thumnnails
+- cold storage: external plugin with important new functionality for arhiving, but prepared the core mango portal to have all overrides in place
+- template overrides: have a new possible depth criterion for collection/data object paths
+- template overrides: allow for {{zone}} in direct paths, just as with subtrees (useful for listing the home collection)
+
+### Bug fixes
+- various smaller improvements, no large bugs
+
 ## Release 0.18.4
 
 ### New features
