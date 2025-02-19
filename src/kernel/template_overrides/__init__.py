@@ -3,6 +3,7 @@ Template override system:
 Collection and data object views and other template calls can be changed by overriding the corresponding
 jinja2 template based on several rules (or no real rule at all for permanent overrides)
 """
+
 from app import app
 from irods.collection import iRODSCollection
 from irods.data_object import iRODSDataObject
@@ -56,9 +57,11 @@ class TemplateOverrideManager:
                     self.rules[override_item["source"]].append(
                         {
                             "target": override_item["target"],
-                            "matches": override_item["matches"]
-                            if "matches" in override_item
-                            else None,
+                            "matches": (
+                                override_item["matches"]
+                                if "matches" in override_item
+                                else None
+                            ),
                         }
                     )
 
@@ -106,13 +109,32 @@ class TemplateOverrideManager:
                         return all(metadata_matches)
                     return any(metadata_matches)
                 case "path":
+                    if isinstance(match_value, list):
+                        match_value = [
+                            path_value.replace("{{zone}}", self.zone)
+                            for path_value in match_value
+                        ]
+                    elif isinstance(match_value, str):
+                        match_value = match_value.replace("{{zone}}", self.zone)
+                    else:
+                        logging.warning(
+                            f"No str or list type for match_value {match_value}"
+                        )
+
+                    logging.info(
+                        f"Hey a path rule applied, checking match_value {match_value}"
+                    )
                     return (
-                        type(match_value) == list and catalog_item.path in match_value
-                    ) or (type(match_value) == str and catalog_item.path == match_value)
+                        isinstance(match_value, list)
+                        and catalog_item.path in match_value
+                    ) or (
+                        isinstance(match_value, str)
+                        and catalog_item.path == match_value
+                    )
                 case "subtree":
                     # For subtree lists, one of the items must match
                     logging.info(f"Entering subtree rule for override {match_value}")
-                    if type(match_value) == list:
+                    if isinstance(match_value, list):
                         for subtree in match_value:
                             subtree = subtree.replace(
                                 "{{zone}}", self.zone
@@ -121,11 +143,19 @@ class TemplateOverrideManager:
                             if catalog_item.path.startswith(subtree):
                                 return True
 
-                    if type(match_value) == str:
+                    if isinstance(match_value, str):
                         match_value = match_value.replace("{{zone}}", self.zone)
-                        return catalog_item.path.startswith(match_value)
+                        return (
+                            catalog_item is not None
+                            and catalog_item.path.startswith(match_value)
+                        )
+
+                case "depth":
+                    # a forward slash is not allowed, no need for {{zone}} resolving
+                    return (len(catalog_item.path.split("/")) - 1) == int(match_value)
+
                 case _:
-                    logging.warn(
+                    logging.warning(
                         f"Unsupported match method {match_key} in template overrides"
                     )
 
@@ -177,7 +207,7 @@ class TemplateOverrideManager:
 
         # check if there exists a rule for this template
         if source_template_path not in self.rules:
-            logging.debug(f"No source path {source_template_path} in rules")
+            logging.info(f"No source path {source_template_path} in rules")
             return source_template_path
 
         if source_template_path in self.rules:
@@ -224,4 +254,3 @@ def mango_template_override_filter(
     return get_template_override_manager(zone).get_template_for_catalog_item(
         catalog_item, template
     )
-

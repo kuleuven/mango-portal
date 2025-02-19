@@ -1,0 +1,103 @@
+{% import "blocks.html.j2" as block_macros %}
+{{ block_macros.bulk_operations(current_user_rights) }}
+<div id="collectionContents">
+            <div>
+                <input class="form-check-input"
+                       type="checkbox"
+                       value=""
+                       id="select_all"
+                       aria-label="Select all rows" />
+                <span class="translate-middle badge rounded-pill bg-primary"
+                      id="bulk_operations_badge"></span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap">
+                {% for collection in sub_collections %}
+                    <div class="card" style="width: 14rem; height: 18rem">
+                        <a href="{{ url_for('browse_bp.collection_browse', collection=collection.path.lstrip('/') ) }}"
+                           style="max-width:14rem;
+                                  max-height:14rem;
+                                  width:auto;
+                                  height:auto">
+                            <img class="card-img-top"
+                                 style="max-height:14rem;
+                                        max-width:14rem;
+                                        width:auto;
+                                        height:auto;
+                                        display:block;
+                                        margin-left:auto;
+                                        margin-right:auto"
+                                 alt="Card image cap"
+                                 src="{{ url_for('static', filename='folder.png') }}">
+                        </a>
+                        <div class="card-body">
+                            <div style="display: flex;
+                                        bottom: 0;
+                                        position: absolute;
+                                        margin-bottom: 1rem">
+                                <input id="checkbox-{{ collection.path }}"
+                                       style="vertical-align:middle"
+                                       class="form-check-input checkbox-inline bulk_operations_checkbox"
+                                       type="checkbox"
+                                       value="col-{{ collection.path }}"
+                                       aria-label="Select {{ collection.path }}" />
+                                <label class="form-check-label" 
+                                       style="margin-left: 0.5rem; max-width: 10rem"
+                                       for="checkbox-{{ collection.path }}">
+                                    <a href="{{ url_for('browse_bp.collection_browse', collection=collection.path.lstrip('/') ) }}"
+                                    style="word-wrap: break-word"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-title="{{ collection.name }}">{{ collection.name | shorten_name  }}</a>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                {% for data_object in data_objects %}
+                    <div class="card" style="width: 14rem; height: 18rem">
+                        <a href="{{ url_for('browse_bp.view_object',  data_object_path=data_object.path.lstrip('/') ) }}"
+                           style="max-width:14rem;
+                                  max-height:14rem;
+                                  width:auto;
+                                  height:auto">
+                            <picture>
+                                <img 
+                                    loading="lazy"
+                                    class="card-img-top"
+                                        style="max-height:14rem;
+                                        max-width:14rem;
+                                        width:auto;
+                                        height:auto;
+                                        display:block;
+                                        margin-left:auto;
+                                        margin-right:auto"
+                                    alt="Card image cap"
+                                    src="{{ url_for('browse_bp.object_preview', data_object_path = data_object.path.lstrip('/')) }}">
+                            </picture>
+                        </a>
+                        <div class="card-body" style="position: relative">
+                            <div style="display: flex;
+                                        bottom: 0;
+                                        position: absolute;
+                                        margin-bottom: 1rem;
+                                        max-height: 2rem">
+                                <input id="checkbox-{{ data_object.path }}"
+                                       style="vertical-align:middle"
+                                       class="form-check-input checkbox-inline bulk_operations_checkbox"
+                                       type="checkbox"
+                                       value="dobj-{{ data_object.path }}"
+                                       aria-label="Select {{ data_object.path }}" />
+                                <label class="form-check-label"
+                                       style="margin-left: 0.5rem; max-width: 10rem"
+                                       for="checkbox-{{ data_object.path }}">
+                                    <a href="{{ url_for('browse_bp.view_object', data_object_path=data_object.path.lstrip('/') ) }}"
+                                       style="word-wrap: break-word"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-title="{{ data_object.name }}">{{ data_object.name | shorten_name }}</a>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+  

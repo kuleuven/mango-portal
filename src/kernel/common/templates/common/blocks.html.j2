@@ -1,5 +1,5 @@
 {% import "dialogs.html.j2" as dialogs %}
-{% set own_or_write = ["own", "modify", "modify object", "modify_object", "write"] %}
+{% set own_or_write = ["own", "delete_object", "delete object", "modify", "modify object", "modify_object", "write"] %}
 {% macro permission_block(item_path, permissions, acl_users_dict, acl_counts, my_groups=[], group_filter_exclude=[], current_user_rights = [], recursive=false, read_only = false ) %}
     <table class="table table-striped table-hover mt-2" id="permssions-table">
         <thead>
@@ -85,6 +85,49 @@
         </form>
     {% endif %}
 {% endmacro %}
+{% macro bulk_operations(current_user_rights) -%}
+    <div class="btn-toolbar justify-content-between"
+         role="toolbar"
+         aria-label="Bulk operations"
+         id="bulk-operations">
+        <div class="btn-group" role="group" aria-label="Buttons">
+            {% if (current_user_rights | intersection(own_or_write)) %}            
+                <button type="button"
+                        class="btn btn-light"
+                        onclick="bulk_delete()"
+                        id="bulk-delete"
+                        disabled>
+                    <i class="bi bi-trash" fill="currentColor"></i> Delete
+                </button>
+                <button type="button"
+                        class="btn btn-light"
+                        onclick="bulk_move()"
+                        id="bulk-move"
+                        disabled>
+                    <i class="bi bi-send" fill="currentColor"></i> Move
+                </button>
+            {% endif %}
+            <button type="button"
+                    class="btn btn-light"
+                    onclick="bulk_copy()"
+                    id="bulk-copy"
+                    disabled>
+                <i class="bi bi-copy" fill="currentColor"></i> Copy
+            </button>
+            <button type="button"
+                    class="btn btn-light"
+                    onclick="bulk_download()"
+                    id="bulk-download"
+                    disabled>
+                <i class="bi bi-download" fill="currentColor"></i> Download
+            </button>
+        </div>
+    <span class="text-body-secondary mt-2"><i class="bi bi-exclamation-triangle" fill="currentColor"></i>
+    Copying/Download is only available for data objects.
+</span>
+</div>
+<bulk-links tree="{{ url_for("browse_bp.get_sub_collections") }}" />
+{% endmacro -%}
 {% macro show_schema_metadata(name, info, schema_info, schema_metadata, level = 0, unit = None) %}
     {% if info['type'] == 'object' %}
         <div class="border border-1 border-secondary rounded p-3 my-1">
@@ -123,7 +166,7 @@
             <tbody>
                 {% for item in grouped_metadata[config['MANGO_NOSCHEMA_LABEL']].values() %}
                     <tr>
-                        <th  class="text-break">{{ item.name }}</th>
+                        <th class="text-break">{{ item.name }}</th>
                         <td class="text-break">{{ item.value }}</td>
                         <td class="text-break">{{ item.units if item.units is not none }}</td>
                         {% if not item.name.startswith(readonly_prefixes) and not read_only and (current_user_rights | intersection(own_or_write)) %}
@@ -373,7 +416,8 @@
         {% endif %}
     </div>
 {% endmacro %}
-{% macro analysis_tika_block(result, consolidate=false, consolidated=[], consolidate_url='{{ url_for }}', data_object_path = '', read_only = false) %}
+{% macro analysis_tika_block(result, consolidate=false, consolidated=[], consolidate_url='{{ url_for }}
+    ', data_object_path = '', read_only = false) %}
     <h2>Inspect with Tika metadata extractor</h2>
     {% if result['X-ANALYSIS-timestamp'] %}
         <p class="text-end">Analysis executed on {{ result['X-ANALYSIS-timestamp'] }}</p>
@@ -425,4 +469,43 @@
             <li class="list-group-item">{{ result['X-TIKA:Parsed-By-Full-Set'] }}</li>
         {% endif %}
     </ul>
+{% endmacro %}
+{% macro link_pid(zone, item, item_type) %}
+    <a href="#" title="Copy Persistent URL" onclick="copy_pid_url()">
+        <i class="bi bi-link"></i>
+    </a>
+    <script>
+        const toastContainer = document.createElement("div");
+        toastContainer.className = "toast-container position-fixed top-0 start-50 translate-middle-x";
+
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.role = "alert";
+        toast.setAttribute("aria-live", "assertive");
+        toast.setAttribute("aria-atomic", true);
+
+        const toastHeader = document.createElement("div");
+        toastHeader.className = "toast-header text-bg-success text-bold";
+        toastHeader.innerHTML = "ManGO Persistent URL";
+
+        const toastBody = document.createElement("div");
+        toastBody.className = "toast-body text-center";
+        
+        toastContainer.appendChild(toast);
+        toast.appendChild(toastHeader);
+        toast.appendChild(toastBody);
+        
+        function copy_pid_url() {
+            const hostname = window.location.origin;
+            const route = '{{ url_for('browse_bp.resolve_persistent_id', zone = zone, id = item.id, item_type = item_type) }}';
+            const path = `${hostname}${route}`;
+            navigator.clipboard.writeText(path);
+            
+            document.querySelector("body").appendChild(toastContainer); // only add the toast
+            toastBody.innerHTML = `A persistent url was copied to your clipboard: <code>${hostname}${route}</code>.<br>Anyone with access can use this link.`;
+            const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toast);
+            toastBootstrap.show();
+        }
+        
+    </script>
 {% endmacro %}
