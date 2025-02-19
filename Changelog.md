@@ -10,6 +10,8 @@ Note: versioning follows Semver standard with 3 levels
 - cold storage: external plugin with important new functionality for arhiving, but prepared the core mango portal to have all overrides in place
 - template overrides: have a new possible depth criterion for collection/data object paths
 - template overrides: allow for {{zone}} in direct paths, just as with subtrees (useful for listing the home collection)
+- separation of various handlers into their own space for collection and data oject opertions:metadata handling, bulk operations, permissions, 
+- flexible system for registering new tabs in collection and data object views via plugins
 
 ### Bug fixes
 - various smaller improvements, no large bugs
