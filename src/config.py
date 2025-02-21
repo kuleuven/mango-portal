@@ -36,7 +36,19 @@ HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
 
 MANGO_PLUGIN_BLUEPRINTS = [
     # {"module": "", "blueprint": ""},
-   
+    {"module": "plugins.mango_open_search.search", "blueprint": "mango_open_search_bp"},
+    {
+        "module": "plugins.mango_open_search.admin",
+        "blueprint": "mango_open_search_admin_bp",
+    },
+    {
+        "module": "plugins.mango_open_search.api",
+        "blueprint": "mango_open_search_api_bp",
+    },
+    {
+        "module": "plugins.mango_open_search.stats",
+        "blueprint": "mango_open_search_stats_bp",
+    },
     {"module": "plugins.data_platform.user", "blueprint": "data_platform_user_bp"},
     {
         "module": "plugins.data_platform.project",
@@ -58,6 +70,9 @@ MANGO_PLUGIN_BLUEPRINTS = [
     },
     {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
     {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
+    {"module": "plugins.mango_audit.audit_admin", "blueprint": "mango_audit_bp"},
+    {"module": "plugins.mango_audit.audit_history", "blueprint": "mango_audit_history_bp"},
+    {"module": "plugins.cold_storage.cs_routes", "blueprint": "cold_storage_bp"},
     # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
 ]
 
