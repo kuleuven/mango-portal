@@ -28,7 +28,7 @@
   <div class="row">
     <div class="col">
       <div class="card">
-        <div class="card-header" style="margin-bottom: 5px">
+        <div class="card-header mb-2">
           <h1 class="bi bi-archive display-1"></h1>
         </div>
         <ul class="nav nav-tabs mb-4" id="project_tab" role="tablist">
@@ -387,20 +387,20 @@
             <table class="table table-hover">
             {% for token in project['machine_tokens'] %}
               <tr>
-                <th class="bg-secondary bg-gradient" style="color: white;" colspan="{% if can_edit %}4{% else %}3{% endif %}">{{ token['type'] }}</th>
+                <th class="bg-secondary bg-gradient" style="color: white;" colspan="{% if can_edit %}5{% else %}4{% endif %}">{{ token['type'] }}</th>
               </tr>
               <tr>
                 <th>Account</th>
-                <td colspan="{% if can_edit %}3{% else %}2{% endif %}">{{ project['name'] }}_{{ token['type'] }}</td>
+                <td colspan="{% if can_edit %}4{% else %}3{% endif %}">{{ project['name'] }}_{{ token['type'] }}</td>
               </tr>
               <tr>
                 <th>Default permission</th>
-                <td colspan="{% if can_edit %}3{% else %}2{% endif %}">{{ token['default_permission'] }}</td>
+                <td colspan="{% if can_edit %}4{% else %}3{% endif %}">{{ token['default_permission'] }}</td>
               </tr>
               <tr>
                 <th class="align-middle">Password credential</th>
                 {% if token['isset'] %}
-                <td class="align-middle" colspan="2">Expires at {{ token['expiration']|format_time }}</td>
+                <td class="align-middle" colspan="3">Expires at {{ token['expiration']|format_time }}</td>
                 {% if can_edit %}
                 <td>
                   <form method="POST" action="{{url_for('data_platform_project_bp.machine_account_password', project_name = project.name, type = token['type'])}}">
@@ -410,7 +410,7 @@
                 </td>
                 {% endif %}
                 {% else %}
-                <td class="align-middle" colspan="2">Not activated</td>
+                <td class="align-middle" colspan="3">Not activated</td>
                 {% if can_edit %}
                 <td>
                   <form method="POST" action="{{url_for('data_platform_project_bp.machine_account_password', project_name = project.name, type = token['type'])}}">
@@ -433,11 +433,12 @@
                 <a href="#" data-bs-toggle="modal" data-bs-target="#removeSSHKey" data-bs-type="{{ token['type'] }}" data-bs-fingerprint="{{ ssh_key['fingerprint'] }}"><i class="bi bi-trash"></i></a>
                 {% endif %}
                 </td>
-                <td class="align-middle">{{ ssh_key['source_ip'] }}
+                <td class="align-middle">from {{ ssh_key['source_ip'] }}
                 {% if can_edit %}
                 <a href="#" data-bs-toggle="modal" data-bs-target="#modifySSHKeyIP" data-bs-type="{{ token['type'] }}" data-bs-fingerprint="{{ ssh_key['fingerprint'] }}" data-bs-source-ip="{{ ssh_key['source_ip'] }}"><i class="bi bi-pencil"></i></a>
                 {% endif %}
                 </td>
+                <td class="align-middle">until {{ ssh_key['expiration'] }}</td>
                 {% if loop.first and admin %}
                 <td rowspan="{{ token['ssh_keys']|length }}">
                   {% if loop.first %}
@@ -450,7 +451,7 @@
               {% else %}
               <tr>
                 <th class="align-middle">SSH keys</th>
-                <td class="align-middle" colspan="2">No SSH key activated</td>
+                <td class="align-middle" colspan="3">No SSH key activated</td>
                 {% if admin %}
                 <td><a class="btn btn-block btn-primary" href="{{url_for('data_platform_project_bp.add_ssh_key', project_name = project.name, type = token['type'])}}">Add SSH key</a></td>
                 {% elif can_edit %}
