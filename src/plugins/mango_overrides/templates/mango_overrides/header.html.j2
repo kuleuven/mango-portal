@@ -5,6 +5,11 @@
             <div class="col">
                 <a href="{{ url_for('index') }}" class="text-decoration-none">
                     {% if 'irods_session' in g and 'logo' in config.irods_zones[g.irods_session.zone] %}
+                         <img class="logo"
+                             alt="logo"
+                             src="{{ url_for('static', filename='logo.svg') }}"
+                             width="137"
+                             style="margin: -10px auto" />
                         <img class="logo"
                              alt="logo"
                              src="{{ url_for('static', filename=config.irods_zones[g.irods_session.zone]['logo']) }}"
