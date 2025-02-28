@@ -166,98 +166,93 @@
         id="metadata-groups-tab"
         role="tablist">
         {% set top_levels = [('schema', 'Schemas'), ('analysis', 'Automatic extraction'), ('other', 'Other metadata'), ('edit-download', 'Add/download')] %}
-        {% for top_level, top_level_title in top_levels %}
-            {% if top_level in grouped_metadata or top_level == "edit-download" %}
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link {% if loop.index == 1 %}active{% endif %}"
-                            id="pills-{{ top_level }}-tab"
-                            data-bs-toggle="pill"
-                            data-bs-target="#pills-{{ top_level }}"
-                            type="button"
-                            role="tab"
-                            aria-controls="pills-{{ top_level }}"
-                            {% if loop.index == 1 %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
-                        {{ top_level_title }}
-                    </button>
-                </li>
-            {% endif %}
+        {% for top_level, top_level_title in top_levels if top_level in grouped_metadata or top_level == "edit-download" %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if loop.first %}active{% endif %}"
+                        id="pills-{{ top_level }}-tab"
+                        data-bs-toggle="pill"
+                        data-bs-target="#pills-{{ top_level }}"
+                        type="button"
+                        role="tab"
+                        aria-controls="pills-{{ top_level }}"
+                        {% if loop.first %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
+                    {{ top_level_title }}
+                </button>
+            </li>
         {% endfor %}
     </ul>
     <!-- content-->
     <div class="tab-content" id="pills-tabContent-schema">
-        {% for top_level, top_level_title in top_levels %}
-            {% if top_level in grouped_metadata or top_level == "edit-download" %}
-                <div class="tab-pane fade {% if loop.index == 1 %}show active{% endif %}"
-                     id="pills-{{ top_level }}"
-                     role="tabpanel"
-                     aria-labelledby="pills-{{ top_level }}-tab">
-                    {% if top_level == "edit-download" %}
-                        {% if not read_only and (current_user_rights | intersection(own_or_write)) %}
-                            <button type="button"
-                                    class="btn btn-primary"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#addMetaData">Add metadata</button>
-                            <div class="h4 pt-4 mt-4 mb-2 border-top border-success">Edit/add metadata via schema</div>
-                            <form class="row g-3 col-md-6 mt-4"
-                                  method="get"
-                                  action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
-                                <input type="hidden" name="item_type" value="{{ item_type }}" />
-                                <input type="hidden" name="id" value="{{ object_id }}" />
-                                <input type="hidden" name="object_path" value="{{ object_path }}" />
-                                <input type="hidden" name="realm" value="{{ realm }}" />
-                                <input type="hidden" name="status" value="published" />
-                                <select name="schema" class="form-select">
-                                    {% for schema in schemas %}<option value="{{ schema }}">{{ schemas[schema]["title"] }}</option>{% endfor %}
-                                </select>
-                                <button type="submit" class="btn btn-primary">Edit</button>
-                            </form>
-                        {% endif %}
-                        <a href=""
-                           class="btn btn-primary"
-                           type="button"
-                           id="download-metadata"
-                           download="metadata.json">Download Metadata</a>
-                        <div class="accordion" id="metadata-download-checkboxes">
-                            {% for top_level, top_level_title in top_levels %}
-                                {% if top_level in grouped_metadata %}
-                                    <div class="accordion-item">
-                                        <div class="form-check form-check-inline">
-                                            <input id="download_{{ top_level }}"
-                                                   class="form-check-input"
-                                                   type="checkbox"
-                                                   checked>
-                                            <label for="#download_{{ top_level }}"
-                                                   data-bs-toggle="collapse"
-                                                   data-bs-target="#download_subclass_{{ top_level }}"
-                                                   class="form-check-label">{{ top_level_title }}</label>
-                                        </div>
-                                        <div id="download_subclass_{{ top_level }}"
-                                             class="accordion-collapse collapse">
-                                            <div class="accordion-body">
-                                                {% for sublevel in grouped_metadata[top_level] %}
-                                                    <div class="form-check form-check-inline">
-                                                        <input id="download_{{ top_level }}_{{ sublevel }}"
-                                                               class="form-check-input"
-                                                               type="checkbox"
-                                                               name="{{ sublevel }}"
-                                                               data-mg-parent="{{ top_level }}"
-                                                               data-mg-level="second-level"
-                                                               checked>
-                                                        <label for="#download_{{ top_level }}_{{ sublevel }}"
-                                                               class="form-check-label">{{ sublevel }}</label>
-                                                    </div>
-                                                {% endfor %}
+        {% for top_level, top_level_title in top_levels if top_level in grouped_metadata or top_level == "edit-download" %}
+            <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+                 id="pills-{{ top_level }}"
+                 role="tabpanel"
+                 aria-labelledby="pills-{{ top_level }}-tab">
+                {% if top_level == "edit-download" %}
+                    {% if not read_only and (current_user_rights | intersection(own_or_write)) %}
+                        <button type="button"
+                                class="btn btn-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#addMetaData">Add metadata</button>
+                        <div class="h4 pt-4 mt-4 mb-2 border-top border-success">Edit/add metadata via schema</div>
+                        <form class="row g-3 col-md-6 mt-4"
+                              method="get"
+                              action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
+                            <input type="hidden" name="item_type" value="{{ item_type }}" />
+                            <input type="hidden" name="id" value="{{ object_id }}" />
+                            <input type="hidden" name="object_path" value="{{ object_path }}" />
+                            <input type="hidden" name="realm" value="{{ realm }}" />
+                            <input type="hidden" name="status" value="published" />
+                            <select name="schema" class="form-select">
+                                {% for schema in schemas %}<option value="{{ schema }}">{{ schemas[schema]["title"] }}</option>{% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary">Edit</button>
+                        </form>
+                    {% endif %}
+                    <a href=""
+                       class="btn btn-primary"
+                       type="button"
+                       id="download-metadata"
+                       download="metadata.json">Download Metadata</a>
+                    <div class="accordion" id="metadata-download-checkboxes">
+                        {% for top_level, top_level_title in top_levels if top_level in grouped_metadata %}
+                            <div class="accordion-item">
+                                <div class="form-check form-check-inline">
+                                    <input id="download_{{ top_level }}"
+                                           class="form-check-input"
+                                           type="checkbox"
+                                           checked>
+                                    <label for="#download_{{ top_level }}"
+                                           data-bs-toggle="collapse"
+                                           data-bs-target="#download_subclass_{{ top_level }}"
+                                           class="form-check-label">{{ top_level_title }}</label>
+                                </div>
+                                <div id="download_subclass_{{ top_level }}"
+                                     class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        {% for sublevel in grouped_metadata[top_level] %}
+                                            <div class="form-check form-check-inline">
+                                                <input id="download_{{ top_level }}_{{ sublevel }}"
+                                                       class="form-check-input"
+                                                       type="checkbox"
+                                                       name="{{ sublevel }}"
+                                                       data-mg-parent="{{ top_level }}"
+                                                       data-mg-level="second-level"
+                                                       checked>
+                                                <label for="#download_{{ top_level }}_{{ sublevel }}"
+                                                       class="form-check-label">{{ sublevel }}</label>
                                             </div>
-                                        </div>
+                                        {% endfor %}
                                     </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        <pre class="border p-1 bg-light"
-                             style="white-space: pre-wrap"
-                             id="metadata-json"> </pre>
-                        <script>
-                    let metadata = JSON.parse({{reorganized_dict | tojson}})
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <pre class="border p-1 bg-light"
+                         style="white-space: pre-wrap"
+                         id="metadata-json"> </pre>
+                    <script>
+                    let metadata = JSON.parse({{reorganized_dict | tojson if reorganized_dict else "{}"}})
                     console.log(metadata);
 
                     let json_metadata = JSON.stringify(metadata, null, "  ")
@@ -275,57 +270,54 @@
                         
                     }) 
 
-                        </script>
-                    {% else %}
-                        <div class="accordion" id="parent-accordion-{{ top_level }}">
-                            {% for sublevel in grouped_metadata[top_level] %}
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button"
-                                                type="button"
-                                                data-bs-toggle="collapse"
-                                                data-bs-target="#accordion-{{ sublevel }}">
-                                            {{ schemas[sublevel]["title"] if top_level == "schema" and sublevel in schemas else sublevel }}
-                                        </button>
-                                    </h2>
+                    </script>
+                {% else %}
+                    <div class="accordion" id="parent-accordion-{{ top_level }}">
+                        {% for sublevel in grouped_metadata[top_level] %}
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#accordion-{{ sublevel }}">
+                                        {{ schemas[sublevel]["title"] if top_level == "schema" and sublevel in schemas else sublevel }}
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="accordion-{{ sublevel }}"
+                                 class="accordion-collapse collapse {% if grouped_metadata[top_level]|length == 1 %}show{% endif %}"
+                                 data-bs-parent="#parent-accordion-{{ top_level }}">
+                                <div class="accordion-body">
+                                    {% if top_level == "schema" and sublevel in schema_labels and grouped_metadata[top_level][sublevel].get("mgs."~ sublevel ~".__version__", False) %}
+                                        <p class="text-end fst-italic">
+                                            Schema version: {{ grouped_metadata[top_level][sublevel].get("mgs."~ sublevel ~".__version__").value }}
+                                        </p>
+                                        {% for name, info in schema_labels[sublevel].items() if info['level'] == 0 %}
+                                            {{ show_schema_metadata(name, info, schema_labels[sublevel], grouped_metadata[top_level][sublevel]) }}
+                                        {% endfor %}
+                                        <div class="row">
+                                            <a href="{{ url_for('metadata_bp.download_meta_data_schema', schema=sublevel, object_id=object_id) }}"
+                                               title="download schema metadata"><i class="bi bi-file-arrow-down"></i></a>
+                                            <button type="button"
+                                                    class="btn btn-danger float-end"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#delete_schema_data_{{ sublevel }}">
+                                                Delete metadata for schema "{{ schemas[sublevel]['title'] if schemas[sublevel] else sublevel }}"
+                                            </button>
+                                            {{ dialogs.confirm_delete_dialog('delete_schema_data_' ~ schema, url_for('metadata_schema_form_bp.delete_schema_metadata_for_item') , title='Are you sure you want to delete all metadata', mode="custom", readonly_fields = [{'name' : 'item_path', 'value': object_path,  'label': 'Item'}, {'name' : 'schema_identifier', 'value': schema, 'label': 'Schema'}], hidden_fields=[{'name':'redirect_hash', 'value': '#metadata'}, {'name': 'item_type', 'value': item_type}], modal_class='modal-lg') }}
+                                        </div>
+                                    {% else %}
+                                        {% set readonly_group = readonly or not (current_user_rights | intersection(own_or_write) ) or top_level in readonly_prefixes %}
+                                        {% set automatic_metadata = top_level == "analysis" %}
+                                        {{ mini_metadata_table(grouped_metadata[top_level][sublevel], readonly_group, automatic_metadata) }}
+                                        {# render schemas without schema info#}
+                                    {% endif %}
                                 </div>
-                                <div id="accordion-{{ sublevel }}"
-                                     class="accordion-collapse collapse {% if grouped_metadata[top_level]|length == 1 %}show{% endif %}"
-                                     data-bs-parent="#parent-accordion-{{ top_level }}">
-                                    <div class="accordion-body">
-                                        {% if top_level == "schema" and sublevel in schema_labels and grouped_metadata[top_level][sublevel].get("mgs."~ sublevel ~".__version__", False) %}
-                                            <p class="text-end fst-italic">
-                                                Schema version: {{ grouped_metadata[top_level][sublevel].get("mgs."~ sublevel ~".__version__").value }}
-                                            </p>
-                                            {% for name, info in schema_labels[sublevel].items() %}
-                                                {% if info['level'] == 0 %}
-                                                    {{ show_schema_metadata(name, info, schema_labels[sublevel], grouped_metadata[top_level][sublevel]) }}
-                                                {% endif %}
-                                            {% endfor %}
-                                            <div class="row">
-                                                <a href="{{ url_for('metadata_bp.download_meta_data_schema', schema=sublevel, object_id=object_id) }}"
-                                                   title="download schema metadata"><i class="bi bi-file-arrow-down"></i></a>
-                                                <button type="button"
-                                                        class="btn btn-danger float-end"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#delete_schema_data_{{ sublevel }}">
-                                                    Delete metadata for schema "{{ schemas[sublevel]['title'] if schemas[sublevel] else sublevel }}"
-                                                </button>
-                                                {{ dialogs.confirm_delete_dialog('delete_schema_data_' ~ schema, url_for('metadata_schema_form_bp.delete_schema_metadata_for_item') , title='Are you sure you want to delete all metadata', mode="custom", readonly_fields = [{'name' : 'item_path', 'value': object_path,  'label': 'Item'}, {'name' : 'schema_identifier', 'value': schema, 'label': 'Schema'}], hidden_fields=[{'name':'redirect_hash', 'value': '#metadata'}, {'name': 'item_type', 'value': item_type}], modal_class='modal-lg') }}
-                                            </div>
-                                        {% else %}
-                                            {% set readonly_group = readonly or not (current_user_rights | intersection(own_or_write) ) or top_level in readonly_prefixes %}
-                                            {% set automatic_metadata = top_level == "analysis" %}
-                                            {{ mini_metadata_table(grouped_metadata[top_level][sublevel], readonly_group, automatic_metadata) }}
-                                            {# render schemas without schema info#}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
         {% endfor %}
     </div>
 {% endmacro %}
