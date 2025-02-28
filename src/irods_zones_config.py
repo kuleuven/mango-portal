@@ -128,6 +128,15 @@ irods_zones = {
         "ssl_settings": {},
         "admin_users": ["u0123318", "x0116999"],
     },
+    "cold": {
+        "jobid": "icts-t-lnx-irods-cold",
+        "parameters": {
+            "host": "cold.irods.t.icts.kuleuven.be",
+            "zone": "cold",
+        },
+        "ssl_settings": {},
+        "admin_users": ["u0123318", "x0116999"],
+    },
     "kuleuven_tier1_poc": {
         "admin_users": ["vsc33436", "x0116999"],
         "logo": "vsc-combi.webp",  # path in static folder

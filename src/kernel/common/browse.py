@@ -464,7 +464,7 @@ def collection_browse(collection=None):
     ).get_template_for_catalog_item(
         current_collection, "common/collection_view.html.j2"
     )
-    logging.info(f"Collection view: using template {view_template}")
+    logging.info(f"Collection view: using template {view_template} for {current_collection.path}")
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
 
     return render_template(
@@ -1088,9 +1088,9 @@ def object_preview(data_object_path):
     data_object = g.irods_session.data_objects.get(data_object_path)
 
     if data_object.size == 0:
-        return send_file("static/bh_sag_A.jpg", "image/jpeg")
+        return send_file("static/file_empty.png", "image/png")
     if data_object.size > current_app.config["DATA_OBJECT_MAX_SIZE_PREVIEW"]:
-        return send_file("static/too-large.jpg", "image/jpeg")
+        return send_file("static/file_too_large.png", "image/png")
     else:
         if not os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
             local_path = f"/tmp/irods-download-{data_object.name}"
@@ -1129,7 +1129,7 @@ def object_preview(data_object_path):
         if os.path.exists(f"{thumbnail_storage}/{data_object.id}.png"):
             return send_file(f"{thumbnail_storage}/{data_object.id}.png", "image/png")
         else:
-            return send_file("static/generate_preview_failed.png", "image/png")
+            return send_file("static/file_format_not_understood.png", "image/png")
 
 
 @browse_bp.route("/permission/set/<path:item_path>", methods=["POST"])
@@ -1219,6 +1219,39 @@ def empty_user_trash():
             request.referrer.split("#")[0] + request.values["redirect_hash"]
         )
     return redirect(url_for("browse_bp.collection_browse", collection=user_trash_path))
+
+
+@browse_bp.route(
+    "/PID/<zone>/<id>/",
+    methods=["GET"],
+    defaults={"item_type": None},
+    strict_slashes=False,
+)
+@browse_bp.route("/PID/<zone>/<id>/<item_type>")
+def resolve_persistent_id(zone, id, item_type=None):
+    assert g.irods_session.zone == zone
+    from irods.models import Collection, DataObject
+    from irods.column import Criterion
+
+    if item_type is None or item_type == "c":
+        res = [
+            item[Collection.name]
+            for item in g.irods_session.query(Collection.name).filter(
+                Criterion("=", Collection.id, id)
+            )
+        ]
+        if len(res) > 0:
+            return redirect(url_for("browse_bp.collection_browse", collection=res[0]))
+
+    res = [
+        f"{item[Collection.name]}/{item[DataObject.name]}"
+        for item in g.irods_session.query(Collection.name, DataObject.name).filter(
+            Criterion("=", DataObject.id, id)
+        )
+    ]
+    if len(res) > 0:
+        return redirect(url_for("browse_bp.view_object", data_object_path=res[0]))
+    return abort(404, f"No collection or data object with ID {id}")
 
 
 @browse_bp.route("/items/bulk", methods=["POST"])

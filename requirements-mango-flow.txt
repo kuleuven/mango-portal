@@ -52,6 +52,7 @@ json5==0.10.0
 kiwisolver==1.4.7
 kombu==5.4.2
 Mako==1.3.7
+mango-mdconverter==0.0.9
 MarkupSafe==3.0.2
 matplotlib==3.9.3
 multidict==6.1.0
