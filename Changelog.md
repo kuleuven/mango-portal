@@ -2,6 +2,15 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.19.1 [tbd]
+
+### New features
+- allow icons in extra tabs (currently for cold storage plugin)
+
+### Bug fixes
+
+see also plugins
+
 ## Release 0.19.0 [2025-02-19]
 
 ### New features
