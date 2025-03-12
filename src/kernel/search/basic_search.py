@@ -479,7 +479,7 @@ def catalog_search():
             search_template = get_template_override_manager(
                 g.irods_session.zone
             ).get_template_for_catalog_item(
-                current_collection, "search/basic_catalog_search.html.j2"
+                g.irods_session.collections.get(current_collection), "search/basic_catalog_search.html.j2"
             )
 
         return render_template(
