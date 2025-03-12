@@ -96,7 +96,9 @@
                     </a>
                     <div class="card-body">
                         <p class="card-text" style="bottom: 0; position: absolute; margin-bottom: 1rem"> 
-                            <a href="{{ url_for('browse_bp.collection_browse', collection=row['name'].lstrip('/') ) }}">{{ row['name'] | shorten_name }}</a> 
+                            <a href="{{ url_for('browse_bp.collection_browse', collection=row['name'].lstrip('/') ) }}" 
+                            data-bs-toggle="tooltip" 
+                            data-bs-title="{{ row['name'] }}">{{ row['name'].split('/')[-1] | shorten_name }}</a> 
                         </p>
                     </div>
                 </div>
