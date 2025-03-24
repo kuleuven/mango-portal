@@ -7,7 +7,7 @@
 
 {% block body %}
 {% set can_edit = project['my_role'] == 'manager' or project['my_role'] == 'responsible' or admin %}
-{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-sftp-ingress': 'false', 'gdpr-data': 'false', 'enforce-quota': 'false', 'inherit-permissions': 'false', 'strict-permissions': 'false'} %}
+{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-sftp-ingress': 'false', 'gdpr-data': 'false', 'enforce-quota': 'false', 'inherit-permissions': 'false', 'strict-permissions': 'false', 'expose-pipeline-user': 'false'} %}
 {% for opt in project['platform_options'] %}
 {% if opts.update({opt['key']: opt['value']}) %}{% endif %}
 {% endfor %}
@@ -245,6 +245,10 @@
                   <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" value="true" id="inherit-permissions" name="inherit-permissions" onChange="this.form.submit()" {% if opts['inherit-permissions'] == "true" %}checked{% endif %} />
                     <label class="form-check-label" for="inherit-permissions">Inherit permissions of the top level collection to subcollections (this implies a flat permission model, nobody is owner of any file)</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" value="true" id="expose-pipeline-user" name="expose-pipeline-user" onChange="this.form.submit()" {% if opts['expose-pipeline-user'] == "true" %}checked{% endif %} />
+                    <label class="form-check-label" for="expose-pipeline-user">Expose the pipeline machine account to project managers/responsibles</label>
                   </div>
                   {% endif %}
                   <div class="form-check form-switch">
