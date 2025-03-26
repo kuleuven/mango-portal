@@ -228,7 +228,7 @@
                                            class="form-check-label">{{ top_level_title }}</label>
                                 </div>
                                 <div id="download_subclass_{{ top_level }}"
-                                     class="accordion-collapse collapse">
+                                     class="accordion-collapse show">
                                     <div class="accordion-body">
                                         {% for sublevel in grouped_metadata[top_level] %}
                                             <div class="form-check form-check-inline">
@@ -254,8 +254,10 @@
                     <script>
                     let metadata = JSON.parse({{reorganized_dict | tojson if reorganized_dict else "{}"}})
                     console.log(metadata);
-
+                    
+                    // we get the metadata , turn it into a string : this string we print & this string the user can download
                     let json_metadata = JSON.stringify(metadata, null, "  ")
+                    console.log(json_metadata)
                     document.querySelector("pre#metadata-json").innerHTML = json_metadata;
                     document.querySelector("a#download-metadata").href = `data:text/json;charset=utf-8,${json_metadata}`
                     
@@ -263,8 +265,30 @@
                     let metadataCheckboxes = document.querySelector("div#metadata-download-checkboxes").querySelectorAll("input")
                     metadataCheckboxes.forEach((checkbox)=> { 
                         if (checkbox.getAttribute("data-mg-level") == "second-level") {
-                            checkbox.addEventListener("change", ()=> {
-                                console.log([...metadataCheckboxes].filter(x=>x.checked).map(x=>({"name": x.name, "parent": x.getAttribute("data-mg-parent")})))
+                            checkbox.addEventListener("change", () => {
+                                let selected_dict = {}
+                                let selected = [...metadataCheckboxes].filter(x=>x.checked).map((x) => selected_dict[x.name] = x.getAttribute("data-mg-parent")); // make a list of checked keys
+                                console.log(selected_dict)
+                                let filtered_json = {};
+                                Object.keys(selected_dict).forEach((key) =>  { if (key.length != 0) { 
+                                    if (selected_dict[key] == "schema") {filtered_json[key] = metadata["schema"][key] }
+                                    else  {filtered_json[key] = metadata[key] }
+                                    
+                                    }  } )
+                                json_metadata = JSON.stringify(filtered_json, null, "  ");
+                                document.querySelector("pre#metadata-json").innerHTML = json_metadata;
+                                document.querySelector("a#download-metadata").href = `data:text/json;charset=utf-8,${json_metadata}`
+
+                                //let keys = Objects.keys(metadata);
+                                // let filtered_list = selected.map((key)  => ({ [key] : metadata[key] }));
+                              //  selected.forEach((object) => if (object.length != 0) { filtered_json[]}
+                                console.log(filtered_json) ;
+
+
+
+
+                              //  console.log([...metadataCheckboxes].filter(x=>x.checked).map(x=>({"name": x.name, "parent": x.getAttribute("data-mg-parent")})))
+
                             })
                         }
                         
