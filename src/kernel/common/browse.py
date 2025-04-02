@@ -467,6 +467,10 @@ def collection_browse(collection=None):
     logging.info(f"Collection view: using template {view_template} for {current_collection.path}")
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
 
+    reorganized_dict = md2dict.convert_metadata_to_dict(current_collection.metadata.items())
+    reorganized_dict = json.dumps(reorganized_dict)
+    print(reorganized_dict)
+
     return render_template(
         view_template,
         co_path=co_path,
@@ -491,7 +495,11 @@ def collection_browse(collection=None):
         user_trash_path=user_trash_path,
         tabs=collection_view_tabs,
         extra_tabs=collection_extra_tabs,
+        reorganized_dict = reorganized_dict,
     )
+
+
+
 
 
 @browse_bp.route("/data-object/view/<path:data_object_path>")
