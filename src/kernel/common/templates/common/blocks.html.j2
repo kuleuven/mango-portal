@@ -252,83 +252,101 @@
                          style="white-space: pre-wrap"
                          id="metadata-json"> </pre>
                     <script>
-                    let metadata = JSON.parse({{reorganized_dict | tojson if reorganized_dict else "{}"}})
-                    console.log(metadata);
+
+                    // get metadata as object literal
+                    let metadata = JSON.parse({{reorganized_dict | tojson if reorganized_dict else "{}"}})     
+                    console.log(metadata)               
                     
-                    // we get the metadata , turn it into a string : this string we print & this string the user can download
+                    // stringify the metadata 
                     let json_metadata = JSON.stringify(metadata, null, "  ")
-                    console.log(json_metadata)
+                    
+                    // print stringified metadata
                     document.querySelector("pre#metadata-json").innerHTML = json_metadata;
+                    
+                    // download metadata 
                     document.querySelector("a#download-metadata").href = `data:text/json;charset=utf-8,${json_metadata}`
 
+                    // make a list of all the checkboxes
+                    let metadataCheckboxes = document.querySelector("div#metadata-download-checkboxes").querySelectorAll("input")
 
-                    function checkboxes() {
-                            let selected_dict = {}
-                            let selected = [...metadataCheckboxes].filter(x=>x.checked).map((x) => selected_dict[x.name] = x.getAttribute("data-mg-parent")); // make a list of checked keys
-                            let filtered_json = {};
-                            Object.keys(selected_dict).forEach((key) =>  { if (key.length != 0) { 
-                                if (selected_dict[key] == "schema") {filtered_json[key] = metadata["schema"][key] }
-                                else  {filtered_json[key] = metadata[key] }}} )
-                            json_metadata = JSON.stringify(filtered_json, null, "  ");
-                            document.querySelector("pre#metadata-json").innerHTML = json_metadata;
-                            document.querySelector("a#download-metadata").href = `data:text/json;charset=utf-8,${json_metadata}`
+                    // set all checkboxes to checked 
+                    metadataCheckboxes.forEach((checkbox) => checkbox.checked = true)
 
-
+                    // function to filter using checkboxes
+                    function FilterCheckboxes() { 
+                        let selected_dict = {}
+                        // make a list of checked keys with its parent
+                        let selected = [...metadataCheckboxes].filter(x => x.checked).map((x) => selected_dict[x.name] = x.getAttribute("data-mg-parent")); 
+                        let filtered_json = {};
+                        Object.keys(selected_dict).forEach((key) => {
+                            if (key.length != 0) {
+                                // if schema metadata
+                                if (selected_dict[key] == "schema") {
+                                    if (!filtered_json["schema"]) {
+                                        filtered_json["schema"] = {};
+                                    }
+                                    filtered_json["schema"][key] = metadata["schema"][key]  // get the key from main object and add it to filtered_json
+                                // analysis metadata 
+                                } else if (selected_dict[key] == "analysis") {
+                                    if (!filtered_json["analysis"]) {
+                                        filtered_json["analysis"] = {};
+                                    }
+                                    filtered_json["analysis"][key] = metadata["analysis"][key] // get the key from main object and add it to filtered_json
+                                // if other 
+                                } else {
+                                    filtered_json[key] = metadata[key] // get the key from main object and add it to filtered_json
+                                }
+                            }
+                        })
+                        json_metadata = JSON.stringify(filtered_json, null, "  ");
+                        document.querySelector("pre#metadata-json").innerHTML = json_metadata;
+                        document.querySelector("a#download-metadata").href = `data:text/json;charset=utf-8,${json_metadata}`
                     }
                     
-
-                    let metadataCheckboxes = document.querySelector("div#metadata-download-checkboxes").querySelectorAll("input")
-                    console.log(metadataCheckboxes)
+                    //add functionalities to checkboxes
                     metadataCheckboxes.forEach((checkbox)=> { 
-                        if (checkbox.getAttribute("data-mg-level") == "second-level") {
+                        if (checkbox.getAttribute("data-mg-level") == "second-level") {   //for metadata on the second level do this
                             checkbox.addEventListener("change", () => {
-                            checkboxes()
-                            //  console.log([...metadataCheckboxes].filter(x=>x.checked).map(x=>({"name": x.name, "parent": x.getAttribute("data-mg-parent")})))
-                            let parentCheckbox = checkbox.parentElement.parentElement.parentElement.parentElement;
-                            let inputs = parentCheckbox.querySelectorAll("input");
-                            if (checkbox.checked == false) {
-                                inputs[0].checked = false;
-                            }
-                            if (checkbox.checked == true) {
-                                let checked = true
-                                for (let i = 1; i < inputs.length; i++) {
-                                    if (inputs[i].checked == false) {
-                                        checked = false }
-                                    }
-                                if(checked) {
-                                    inputs[0].checked = true;
+                                FilterCheckboxes()
+                                let parentCheckbox = checkbox.parentElement.parentElement.parentElement.parentElement;
+                                let inputs = parentCheckbox.querySelectorAll("input");
+                                if (checkbox.checked == false) { // uncheck parent checkbox
+                                    inputs[0].checked = false;
                                 }
-                            }
-                            
-                            }
-                            )
-
-                        }
-                        else {
-                            console.log(checkbox.checked)
-                            checkbox.addEventListener("change", () => {
-                                let container = checkbox.parentElement.parentElement
-                                let inputs = container.querySelectorAll("input")
-
-                                if (checkbox.checked) {
+                                if (checkbox.checked == true) {   // check if all checkboxes are checked if checked is true check parent
+                                    let checked = true
                                     for (let i = 1; i < inputs.length; i++) {
-                                        inputs[i].checked = true;
-
+                                        if (inputs[i].checked == false) {
+                                            checked = false
+                                        }
                                     }
-
-                                checkboxes()
-                                }
-                                else {
-                                    for (let i = 1; i < inputs.length; i++) {
-                                        inputs[i].checked = false;
+                                    if (checked) {
+                                        inputs[0].checked = true;
                                     }
-                                checkboxes()
-
                                 }
                             })
                         }
-                        
-                    }) 
+                                
+                    else {
+                        //for metadata on the first level do this
+                        checkbox.addEventListener("change", () => {
+                        let container = checkbox.parentElement.parentElement
+                        let inputs = container.querySelectorAll("input")
+
+                        if (checkbox.checked) {
+                            for (let i = 1; i < inputs.length; i++) {  //check all children checkboxes
+                                inputs[i].checked = true;
+                            }
+                            FilterCheckboxes()
+                        } else {
+                            for (let i = 1; i < inputs.length; i++) { // uncheck all children checkboxes
+                                inputs[i].checked = false;
+                            }
+                            FilterCheckboxes()
+                        }
+                        })
+                        }
+                        })
 
                     </script>
                 {% else %}
