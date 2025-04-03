@@ -33,7 +33,7 @@ class TabInfo:
 object_view_tabs = [
     TabInfo(
         id="system",title="System properties",template="object_system_properties.html.j2"),
-    TabInfo(id="metadata", title="Metadata", template="metadata.html.j2"),
+    TabInfo(id="metadata", title="Metadata", template="object_metadata.html.j2"), 
     TabInfo(id="permissions", title="Permissions", template="object_permissions.html.j2"),
     TabInfo(id="preview", title="Preview", template="object_preview.html.j2"),
     TabInfo(id="analysis", title="Metadata inspection and extraction", template="object_analysis.html.j2",
@@ -43,7 +43,7 @@ object_view_tabs = [
 collection_view_tabs = [
     TabInfo(id="content", title="Content", template="collection_content.html.j2"),
     TabInfo(id="permissions", title="Permissions", template="collection_permissions.html.j2"),
-    TabInfo(id="metadata", title="Metadata", template="metadata.html.j2"),
+    TabInfo(id="metadata", title="Metadata", template="collection_metadata.html.j2"), 
     TabInfo(id="extra", title="Extra", template="collection_extra.html.j2"),
 ]
 
