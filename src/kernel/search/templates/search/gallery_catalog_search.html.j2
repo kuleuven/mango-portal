@@ -107,10 +107,13 @@
                 <div class="card" style="width: 14rem;height: 18rem">
                      <a href = "{{ url_for('browse_bp.view_object',  data_object_path=row['path']+'/'+row['name']) }}"
                         style="max-width:14rem;max-height:14rem;width:auto;height:auto;">
-                            <img class="card-img-top"
+                        <picture>
+                            <img loading="lazy"
+                                 class="card-img-top"
                                  style="max-width:14rem;max-height:14rem;width:auto;height:auto;"
                                  src="{{ url_for('browse_bp.object_preview', data_object_path = row['path']+'/'+row['name']) }}"
                                  alt="Card image cap">
+                        </picture>
                     <div class="card-body">
                         <p class="card-text" style="bottom: 0; position: absolute; margin-bottom: 1rem"> 
                             <a href="{{ url_for('browse_bp.view_object', data_object_path=row['path']+'/'+row['name']) }}">{{ row['name'] | shorten_name }}</a> 
