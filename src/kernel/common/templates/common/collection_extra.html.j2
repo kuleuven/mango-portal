@@ -10,7 +10,9 @@
                    type="button"
                    role="tab"
                    aria-controls="home"
-                   aria-selected="true">{{ tab.title }}</a>
+                   aria-selected="true">
+                    {% if tab.bootstrap_icon %}<i class="bi bi-{{ tab.bootstrap_icon }}"></i>{% endif %}
+                {{ tab.title }}</a>
             </li>
         {% endfor %}
     </ul>

@@ -2,7 +2,30 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.18.4
+## Release 0.19.1 [tbd]
+
+### New features
+- allow icons in extra tabs (currently for cold storage plugin)
+
+### Bug fixes
+
+see also plugins
+
+## Release 0.19.0 [2025-02-19]
+
+### New features
+
+- gallery view: display collection contents via the data object preview as thumnnails
+- cold storage: external plugin with important new functionality for arhiving, but prepared the core mango portal to have all overrides in place
+- template overrides: have a new possible depth criterion for collection/data object paths
+- template overrides: allow for {{zone}} in direct paths, just as with subtrees (useful for listing the home collection)
+- separation of various handlers into their own space for collection and data oject opertions:metadata handling, bulk operations, permissions, 
+- flexible system for registering new tabs in collection and data object views via plugins
+
+### Bug fixes
+- various smaller improvements, no large bugs
+
+## Release 0.18.4 [2025-01-13]
 
 ### New features
 
@@ -15,13 +38,13 @@ Note: versioning follows Semver standard with 3 levels
 - data platform: better reporting of HTTP API version (KULeuven specific)
 
 
-## Release 0.18.3
+## Release 0.18.3 [2024-12-13]
 
 ### Bug fixes
 
 - Copy nove bulk operations: side nav ("off canvas") was not functioning anymore
 
-## Release 0.18.2
+## Release 0.18.2 [2024-12-09]
 
 
 ### New features
@@ -33,13 +56,13 @@ Note: versioning follows Semver standard with 3 levels
 
 ### Bug fixes 
 
-## Release 0.18.1
+## Release 0.18.1 [2024-11-26]
 
 ### Bug fixes
 
 - Hotfix managed schema editing
 
-## Release 0.18.0 
+## Release 0.18.0 [2024-11-22]
 
 ### New features
 

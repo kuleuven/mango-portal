@@ -45,9 +45,9 @@ from irods.column import Criterion, Like
 from datetime import datetime
 from flask_paginate import Pagination, get_page_parameter
 
-basic_search_bp = Blueprint(
-    "basic_search_bp", __name__, template_folder="templates/search"
-)
+from kernel.template_overrides import get_template_override_manager
+
+basic_search_bp = Blueprint("basic_search_bp", __name__, template_folder="templates")
 
 
 from mango_ui import register_module
@@ -75,21 +75,21 @@ irods_comparison_operator = {
 def build_basic_query_filters(form):
     """
 
-{'avus-0-meta_a': '',
- 'avus-0-meta_u': '',
- 'avus-0-meta_v': '',
- 'avus-1-meta_a': '',
- 'avus-1-meta_u': '',
- 'avus-1-meta_v': '',
- 'create_date-comparison': 'before',
- 'create_date-date': '',
- 'csrf_token': 'IjlmZDc4OTFlNzdiOTYyNzg1NWI4Zjc0YTBjM2NkMzNkZDRmNWQwNjki.YjIKRA.SmWr4OGmq8iz-zTIVGTPg1fMj-c',
- 'item_name-comparison': 'contains',
- 'item_name-item_name': '',
- 'item_name-item_type': 'data_object',
- 'mod_date-comparison': 'before',
- 'mod_date-date': '',
- 'submit': 'Search'}
+    {'avus-0-meta_a': '',
+     'avus-0-meta_u': '',
+     'avus-0-meta_v': '',
+     'avus-1-meta_a': '',
+     'avus-1-meta_u': '',
+     'avus-1-meta_v': '',
+     'create_date-comparison': 'before',
+     'create_date-date': '',
+     'csrf_token': 'IjlmZDc4OTFlNzdiOTYyNzg1NWI4Zjc0YTBjM2NkMzNkZDRmNWQwNjki.YjIKRA.SmWr4OGmq8iz-zTIVGTPg1fMj-c',
+     'item_name-comparison': 'contains',
+     'item_name-item_name': '',
+     'item_name-item_type': 'data_object',
+     'mod_date-comparison': 'before',
+     'mod_date-date': '',
+     'submit': 'Search'}
 
     """
     filters = []
@@ -278,7 +278,10 @@ def catalog_search():
     class ItemTypeNameForm(Form):
         item_type = SelectField(
             "Type",  # add any option
-            choices=[("data_object", "Data object"), ("collection", "Collection"),],
+            choices=[
+                ("data_object", "Data object"),
+                ("collection", "Collection"),
+            ],
             validate_choice=False,
         )
         comparison = SelectField(
@@ -294,7 +297,9 @@ def catalog_search():
 
     class ColllectionForm(Form):
         collection = SelectField(
-            "Collection (subtree)", validate_choice=False, choices=subtrees,
+            "Collection (subtree)",
+            validate_choice=False,
+            choices=subtrees,
         )
 
     class CatalogSearchForm(Form):
@@ -468,8 +473,17 @@ def catalog_search():
         )
         # pprint(pagination)
 
+        search_template = "search/basic_catalog_search.html.j2"
+
+        if current_collection := request.values.get("collection_subtree-collection", None):
+            search_template = get_template_override_manager(
+                g.irods_session.zone
+            ).get_template_for_catalog_item(
+                g.irods_session.collections.get(current_collection), "search/basic_catalog_search.html.j2"
+            )
+
         return render_template(
-            "basic_catalog_search.html.j2",
+            search_template,
             search_form=search_form,
             results=results,
             total=total,
@@ -483,7 +497,7 @@ def catalog_search():
     else:
 
         return render_template(
-            "basic_catalog_search.html.j2",
+            "search/basic_catalog_search.html.j2",
             search_form=search_form,
             results=[],
             meta_names=meta_names,

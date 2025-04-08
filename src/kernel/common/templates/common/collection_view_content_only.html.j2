@@ -92,7 +92,7 @@
     </div>
   {% endif %}
   <ul class="nav nav-tabs mb-4" id="collection_tab" role="tablist">
-    {% for tab in tabs %}
+    {% for tab in tabs if tab.id in ['content'] %}
       <li class="nav-item" role="presentation">
         <a class="nav-link {% if loop.first %}active{% endif %}"
            href="#{{ tab.id }}"
@@ -107,11 +107,11 @@
     {% endfor %}
   </ul>
   <div class="tab-content" id="myTabContent">
-    {% for tab in tabs %}
+    {% for tab in tabs if tab.id in ['content'] %}
       <div class="tab-pane fade show {% if loop.first %}active{% endif %}"
            id="{{ tab.id }}"
            role="tabpanel"
-           aria-labelledby="{{ tab.id }}-tab">{% include tab.template|mango_template(g.irods_session.zone, collection) %}</div>
+           aria-labelledby="{{ tab.id }}-tab">{% include tab.template|mango_template(collection.path) %}</div>
     {% endfor %}
   </div>
   <!-- Add collection modal-->
