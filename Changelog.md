@@ -2,12 +2,17 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.19.1 [tbd]
+## Release 0.20.0 [2025-04-08]
 
 ### New features
+
 - allow icons in extra tabs (currently for cold storage plugin)
+- groups logic display: sort groups but "public" last in list
+- smaller improvements
 
 ### Bug fixes
+
+- fixed deprecated code in tmpFiles (upload), however the route and function is deprecated anyway
 
 see also plugins
 
