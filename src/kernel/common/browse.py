@@ -419,6 +419,7 @@ def collection_browse(collection=None):
     acl_counts = Counter([permission.access_name for permission in permissions])
 
     my_groups = g.irods_session.my_groups
+
     # temp: look up metadata items in full, including create_time and modify_time
     from irods.query import Query
     from irods.column import Criterion, In
