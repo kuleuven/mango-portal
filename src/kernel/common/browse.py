@@ -869,7 +869,9 @@ def collection_upload_stream(collection: str):
 
 @browse_bp.route("/collection/upload/file", methods=["POST", "PUT"])
 def collection_upload_file():
-    """ """
+    """ 
+    Deprecated, use collection_upload_stream route instead
+    """
     MANGO_STORAGE_BASE_PATH = Path("storage")
     TEMP_PATH = MANGO_STORAGE_BASE_PATH / "tmp"
     if not TEMP_PATH.exists():
@@ -878,18 +880,16 @@ def collection_upload_file():
     collection = request.form["collection"]
     print(f"Requested upload file for collection {collection}")
     f = request.files["file"]
-    filename = f.filename
-    temp_file_name = tempfile.mktemp(dir=TEMP_PATH)
-    print(f"Temporary file for upload: {temp_file_name}")
-    f.save(temp_file_name)
+    temp_file = tempfile.TemporaryFile(dir=TEMP_PATH) # tempfile.mktemp(dir=TEMP_PATH)
+    print(f"Temporary file for upload: {temp_file.name}")
+    f.save(temp_file)
 
-    # current_collection = irods_session.collections.get(collection)
     g.irods_session.data_objects.put(temp_file_name, collection + "/" + f.filename)
     data_object: iRODSDataObject = g.irods_session.data_objects.get(
         f"{collection}/{f.filename}"
     )
 
-    os.unlink(temp_file_name)
+    temp_file.close()
 
     signals.data_object_added.send(
         current_app._get_current_object(),
