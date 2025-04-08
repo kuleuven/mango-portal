@@ -2,7 +2,16 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.19.0
+## Release 0.19.1 [tbd]
+
+### New features
+- allow icons in extra tabs (currently for cold storage plugin)
+
+### Bug fixes
+
+see also plugins
+
+## Release 0.19.0 [2025-02-19]
 
 ### New features
 
@@ -16,7 +25,7 @@ Note: versioning follows Semver standard with 3 levels
 ### Bug fixes
 - various smaller improvements, no large bugs
 
-## Release 0.18.4
+## Release 0.18.4 [2025-01-13]
 
 ### New features
 
@@ -29,13 +38,13 @@ Note: versioning follows Semver standard with 3 levels
 - data platform: better reporting of HTTP API version (KULeuven specific)
 
 
-## Release 0.18.3
+## Release 0.18.3 [2024-12-13]
 
 ### Bug fixes
 
 - Copy nove bulk operations: side nav ("off canvas") was not functioning anymore
 
-## Release 0.18.2
+## Release 0.18.2 [2024-12-09]
 
 
 ### New features
@@ -47,13 +56,13 @@ Note: versioning follows Semver standard with 3 levels
 
 ### Bug fixes 
 
-## Release 0.18.1
+## Release 0.18.1 [2024-11-26]
 
 ### Bug fixes
 
 - Hotfix managed schema editing
 
-## Release 0.18.0 
+## Release 0.18.0 [2024-11-22]
 
 ### New features
 
