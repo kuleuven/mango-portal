@@ -270,6 +270,7 @@ def set_project_options():
             "enforce-quota",
             "inherit-permissions",
             "strict-permissions",
+            "expose-pipeline-user",
         ]
 
     for key in options:
