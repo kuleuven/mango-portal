@@ -17,10 +17,13 @@ irods_user_sessions = {}
 irods_node_logins = []
 
 SESSION_TTL = 60 * 60 * 12  # 12 hours
-HEARTBEAT_INTERVAL = 60 * 10 # 10 mins
+HEARTBEAT_INTERVAL = 60 * 10  # 10 mins
+
 
 class iRODSUserSession(iRODSSession):
-    def __init__(self, irods_session: iRODSSession, openid_user_name = None, openid_user_email = None):
+    def __init__(
+        self, irods_session: iRODSSession, openid_user_name=None, openid_user_email=None
+    ):
         self.irods_session = irods_session
         self.lock = Lock()
         self.created = datetime.datetime.now()
@@ -37,7 +40,7 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.my_groups = self.my_groups = [
             group for group in my_groups if group.name != irods_session.username
         ]
-        self.my_groups.sort(key=lambda x: x.name)
+        self.my_groups.sort(key=lambda x: (x.name.lower() == "public", x.name.lower()))
 
         self.irods_session.my_group_ids = self.my_group_ids = [
             group.id for group in self.my_groups
@@ -47,9 +50,13 @@ class iRODSUserSession(iRODSSession):
         ]
 
         if openid_user_name:
-            self.irods_session.openid_user_name = self.openid_user_name = openid_user_name
+            self.irods_session.openid_user_name = self.openid_user_name = (
+                openid_user_name
+            )
         if openid_user_email:
-            self.irods_session.openid_user_email = self.openid_user_email = openid_user_email
+            self.irods_session.openid_user_email = self.openid_user_email = (
+                openid_user_email
+            )
 
     def __del__(self):
         # release connections upon object destruction
@@ -100,9 +107,16 @@ class SessionCleanupThread(Thread):
                 logging.info(f"User session cleanup heartbeat")
 
 
-def add_irods_session(session_id, irods_session: iRODSSession, openid_user_name = None, openid_user_email = None):
+def add_irods_session(
+    session_id,
+    irods_session: iRODSSession,
+    openid_user_name=None,
+    openid_user_email=None,
+):
     global irods_user_sessions
-    irods_user_sessions[session_id] = iRODSUserSession(irods_session, openid_user_name, openid_user_email)
+    irods_user_sessions[session_id] = iRODSUserSession(
+        irods_session, openid_user_name, openid_user_email
+    )
     irods_user_sessions[session_id].lock.acquire()
     signals.session_pool_user_session_created.send(
         current_app._get_current_object(),
