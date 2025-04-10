@@ -165,13 +165,12 @@
      
      <div class="d-flex justify-content-start">
         <button type="button"
-                class="btn btn-primary"
+                class="btn btn-secondary"
                 data-bs-toggle="modal"
                 data-bs-target="#addMetaData">Add individual metadata</button>
 
-
 <div id="myDropdown" class="dropdown ms-3 ">
-    <button class="btn btn-primary dropdown-toggle"
+    <button class="btn btn-secondary dropdown-toggle"
             type="button"
             data-bs-toggle="dropdown"
             aria-expanded="false">Add schema metadata</button>
@@ -184,7 +183,6 @@
 </div>
 </div>
        <form id="myForm"
-              class="row g-3 col-md-6 mt-4"
               method="get"
               action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
             <input type="hidden" name="item_type" value="{{ item_type }}" />
@@ -193,31 +191,25 @@
             <input type="hidden" name="realm" value="{{ realm }}" />
             <input type="hidden" name="status" value="published" />
             <input type="hidden" name="schema" value=""  /> 
-
-
         </form>
 
-        <script>
+        <script>  // script submit the form based on the schema selected using dropdown menu 
                        const ul = document.getElementById("dropdown").children;                   
                        for (const li of ul) {
                             const schema = li.children[0].getAttribute("data-value");
                             console.log(schema)
                             li.children[0].addEventListener('click', () => {
                                     document.querySelector('#myForm input[name="schema"]').setAttribute("value", schema)
-                                    document.getElementById("myForm").submit();
-                                        
+                                    document.getElementById("myForm").submit();                
                         } )
                             }
         </script>
- 
-
-   
     {% endif %}
     <!-- nav top bar -->
     <ul class="nav nav-pills mb-3 mt-3"
         id="metadata-groups-tab"
         role="tablist">
-        {% set top_levels = [('schema', 'Schemas'), ('analysis', 'Automatic extraction'), ('other', 'Other metadata'), ('edit-download', 'Add/download')] %}
+        {% set top_levels = [('schema', 'Schemas'), ('analysis', 'Automatic extraction'), ('other', 'Other metadata'), ('edit-download', 'Download metadata')] %}
         {% for top_level, top_level_title in top_levels if top_level in grouped_metadata or top_level == "edit-download" %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link {% if loop.first %}active{% endif %}"
@@ -242,10 +234,10 @@
                  aria-labelledby="pills-{{ top_level }}-tab">
                 {% if top_level == "edit-download" %}
                     <a href=""
-                       class="btn btn-primary"
+                       class="btn btn-success mb-4 mt-1"
                        type="button"
                        id="download-metadata"
-                       download="metadata.json">Download Metadata</a>
+                       download="metadata.json"> <i class="bi bi-download"></i> Download metadata</a>
                     <div class="accordion" id="metadata-download-checkboxes">
                         {% for top_level, top_level_title in top_levels if top_level in grouped_metadata %}
                             <div class="accordion-item">
@@ -406,8 +398,8 @@
                                         {% endfor %}
                                         <div class="row">
 
-                                             <form 
-              class="row g-3 col-md-6 mt-4"
+ <div class="col-md-12 d-flex justify-content-between">
+<form 
               method="get"
               action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
             <input type="hidden" name="item_type" value="{{ item_type }}" />
@@ -416,17 +408,13 @@
             <input type="hidden" name="realm" value="{{ realm }}" />
             <input type="hidden" name="status" value="published" />
             <input type="hidden" name="schema" value="{{ sublevel }}" /> 
-
-                <button type="submit" class="btn btn-primary">Edit</button>
-
+                <button type="submit" class="btn btn-primary m-2">Edit Metadata for "{{ schemas[sublevel]['title'] if schemas[sublevel] else sublevel }}"</button>
         </form>
-
-
                                             <button type="button"
-                                                    class="btn btn-danger float-end"
+                                                    class="btn btn-danger m-2"
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#delete_schema_data_{{ sublevel }}">
-                                                Delete metadata for schema "{{ schemas[sublevel]['title'] if schemas[sublevel] else sublevel }}"
+                                                Delete metadata for "{{ schemas[sublevel]['title'] if schemas[sublevel] else sublevel }}"
                                             </button>
                                             {{ dialogs.confirm_delete_dialog('delete_schema_data_' ~ sublevel, url_for('metadata_schema_form_bp.delete_schema_metadata_for_item') ,
                                              title='Are you sure you want to delete all metadata', 
@@ -434,8 +422,7 @@
                                              readonly_fields = [{'name' : 'item_path', 'value': object_path,  'label': 'Item'}, {'name' : 'schema_identifier', 'value': sublevel, 'label': 'Schema'}], 
                                              hidden_fields=[{'name':'redirect_hash', 'value': '#metadata'}, {'name': 'item_type', 'value': item_type}], 
                                              modal_class='modal-lg') }}
-                                        
-                            
+</div>
                                         </div>
                                     {% else %}
                                         {% set readonly_group = readonly or not (current_user_rights | intersection(own_or_write) ) or top_level in readonly_prefixes %}
