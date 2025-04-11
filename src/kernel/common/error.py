@@ -12,6 +12,9 @@ def error_noaccess(e):
 def error_notfound(e):
     return render_template("404.html.j2", e=e)
 
+@error_bp.app_errorhandler(413)
+def error_notfound(e):
+    return render_template("413.html.j2", e=e)
 
 @error_bp.app_errorhandler(500)
 def error_internalserver(e):
