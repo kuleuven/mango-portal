@@ -174,12 +174,14 @@
     <button class="btn btn-secondary dropdown-toggle"
             type="button"
             data-bs-toggle="dropdown"
+            id="dropdownButton"
             aria-expanded="false">Add schema metadata</button>
 
     <ul class="dropdown-menu" id="dropdown">
         {% for schema in schemas if schema not in grouped_metadata["schema"] %}
         <li><a class="dropdown-item" id="link" href="#" data-value="{{ schema }}">{{ schemas[schema]["title"] }}</a></li>
         {% endfor %}
+
     </ul>
 </div>
 <div class="flex-grow-1"> </div> <!-- spacer to push download button to the right --> 
@@ -188,7 +190,6 @@
                 class="btn btn-secondary"
                 data-bs-toggle="modal"
                 data-bs-target="#downloadMetaData"> Download metadata </button>
-
 </div>
 <!-- form to add schema metadata --> 
        <form id="myForm"  
@@ -212,6 +213,10 @@
                                     document.getElementById("myForm").submit();                
                         } )
                             }
+
+                        if (document.querySelectorAll("#dropdown li").length === 0) { 
+                            document.getElementById("dropdownButton").disabled = true;
+                        }
         </script>
     {% endif %}
     <!-- nav top bar -->
@@ -234,7 +239,6 @@
             </li>
         {% endfor %}
     </ul>
-
 
 <!-- Download modal -->
 <div class="modal fade"
@@ -295,12 +299,12 @@
                             </div>
                         {% endfor %}
                     </div>
+
                     <pre class="border p-1 bg-light"
-                         style="white-space: pre-wrap"
+                         style="white-space: pre-wrap; min-width: 65%;"
                          id="metadata-json"> </pre>
                 
                     </div>
-          
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -308,7 +312,7 @@
                        class="btn btn-primary"
                        type="button"
                        id="download-metadata"
-                       download="metadata.json"> Download</a> 
+                       download='{{ object_path.split("/")[-1] }}.metadata.json'> Download</a> 
         </div>
     </form>
 </div>
