@@ -182,15 +182,16 @@
         {% endfor %}
     </ul>
 </div>
-<div class="flex-grow-1"> </div>
+<div class="flex-grow-1"> </div> <!-- spacer to push download button to the right --> 
 
      <button type="button"
-                class="btn btn-primary ml-auto"
+                class="btn btn-secondary"
                 data-bs-toggle="modal"
                 data-bs-target="#downloadMetaData"> Download metadata </button>
 
 </div>
-       <form id="myForm"
+<!-- form to add schema metadata --> 
+       <form id="myForm"  
               method="get"
               action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
             <input type="hidden" name="item_type" value="{{ item_type }}" />
@@ -201,7 +202,7 @@
             <input type="hidden" name="schema" value=""  /> 
         </form>
 
-        <script>  // script submit the form based on the schema selected using dropdown menu 
+        <script>  // script to submit the form based on the schema selected using dropdown menu 
                        const ul = document.getElementById("dropdown").children;                   
                        for (const li of ul) {
                             const schema = li.children[0].getAttribute("data-value");
@@ -217,7 +218,7 @@
     <ul class="nav nav-pills mb-3 mt-3"
         id="metadata-groups-tab"
         role="tablist">
-        {% set top_levels = [('schema', 'Schemas'), ('analysis', 'Automatic extraction'), ('other', 'Other metadata')] %}   {# ('edit-download', 'Download metadata') #}
+        {% set top_levels = [('schema', 'Schemas'), ('analysis', 'Automatic extraction'), ('other', 'Other metadata')] %}   
         {% for top_level, top_level_title in top_levels if top_level in grouped_metadata or top_level == "edit-download" %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link {% if loop.first %}active{% endif %}"
@@ -258,11 +259,6 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <input type="hidden" name="redirect_hash" value="#metadata" />
                 <div class="modal-body">
-            <!--    <a href=""
-                       class="btn btn-success mb-4 mt-1"
-                       type="button"
-                       id="download-metadata"
-                       download="metadata.json"> <i class="bi bi-download"></i> Download metadata</a> --> 
                     <div class="d-flex flex-row"> 
 
                     <div class="accordion" id="metadata-download-checkboxes">
@@ -276,7 +272,7 @@
                                     <label for="#download_{{ top_level }}"
                                            data-bs-toggle="collapse"
                                            data-bs-target="#download_subclass_{{ top_level }}"
-                                           class="form-check-label" style="cursor: pointer">{{ top_level_title }}</label>
+                                           class="form-check-label" style="cursor: pointer">{{ top_level_title }}</label>  <!-- add a pointer here --> 
                                 </div>
                                 <div id="download_subclass_{{ top_level }}"
                                      class="accordion-collapse show">
@@ -308,7 +304,6 @@
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <!--    <button class="btn btn-primary" type="submit">Download</button> --> 
           <a href=""
                        class="btn btn-primary"
                        type="button"
@@ -416,24 +411,17 @@
                         }
                         })
 
-
-
-
                     </script>
 
 </div>
 
     <!-- content-->
     <div class="tab-content" id="pills-tabContent-schema">
-        {% for top_level, top_level_title in top_levels if top_level in grouped_metadata or top_level == "edit-download" %}
+        {% for top_level, top_level_title in top_levels if top_level in grouped_metadata %}
             <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
                  id="pills-{{ top_level }}"
                  role="tabpanel"
                  aria-labelledby="pills-{{ top_level }}-tab">
-                {% if top_level == "edit-download" %}
-                 
-              
-                {% else %}
                     <div class="accordion" id="parent-accordion-{{ top_level }}">
                         {% for sublevel in grouped_metadata[top_level] %}
                             <div class="accordion-item">
@@ -495,7 +483,6 @@
                             </div>
                         {% endfor %}
                     </div>
-                {% endif %}
             </div>
         {% endfor %}
     </div>
