@@ -27,23 +27,33 @@ class TabInfo:
     id: str
     title: str
     template: str
-    bootstrap_icon: str|None = None
+    bootstrap_icon: str | None = None
 
 
 object_view_tabs = [
     TabInfo(
-        id="system",title="System properties",template="object_system_properties.html.j2"),
-    TabInfo(id="metadata", title="Metadata", template="object_metadata.html.j2"), 
-    TabInfo(id="permissions", title="Permissions", template="object_permissions.html.j2"),
+        id="system",
+        title="System properties",
+        template="object_system_properties.html.j2",
+    ),
+    TabInfo(id="metadata", title="Metadata", template="object_metadata.html.j2"),
+    TabInfo(
+        id="permissions", title="Permissions", template="object_permissions.html.j2"
+    ),
     TabInfo(id="preview", title="Preview", template="object_preview.html.j2"),
-    TabInfo(id="analysis", title="Metadata inspection and extraction", template="object_analysis.html.j2",
+    TabInfo(
+        id="analysis",
+        title="Metadata inspection and extraction",
+        template="object_analysis.html.j2",
     ),
 ]
 
 collection_view_tabs = [
     TabInfo(id="content", title="Content", template="collection_content.html.j2"),
-    TabInfo(id="permissions", title="Permissions", template="collection_permissions.html.j2"),
-    TabInfo(id="metadata", title="Metadata", template="collection_metadata.html.j2"), 
+    TabInfo(
+        id="permissions", title="Permissions", template="collection_permissions.html.j2"
+    ),
+    TabInfo(id="metadata", title="Metadata", template="collection_metadata.html.j2"),
     TabInfo(id="extra", title="Extra", template="collection_extra.html.j2"),
 ]
 
