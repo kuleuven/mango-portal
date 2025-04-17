@@ -70,7 +70,7 @@ import datetime
 
 print(f"Flask version {flask.__version__}")
 app.config["irods_zones"] = irods_zone_config_module.irods_zones
-
+prc_version = irods.version_as_tuple()
 
 # set the loggin level to the configured one
 rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
@@ -299,13 +299,17 @@ def bleach_clean(suspect, **kwargs):
 # return date into local time zone
 @app.template_filter("localize_datetime")
 def localize_datetime(
-    value, format="%Y-%m-%d %H:%M:%S", local_timezone="Europe/Brussels"
+    value: datetime.datetime, format="%Y-%m-%d %H:%M:%S", local_timezone="Europe/Brussels"
 ):
-    tz = pytz.timezone(local_timezone)  # timezone you want to convert to from UTC
-    utc = pytz.timezone("UTC")
-    value = utc.localize(value, is_dst=None).astimezone(pytz.utc)
-    local_dt = value.astimezone(tz)
-    return local_dt.strftime(format)
+    global prc_version
+    if prc_version >= (3,0,0):
+        return value.astimezone(pytz.timezone(local_timezone)).strftime(format)
+    else:
+        tz = pytz.timezone(local_timezone)  # timezone you want to convert to from UTC
+        utc = pytz.timezone("UTC")
+        value = utc.localize(value, is_dst=None).astimezone(pytz.utc)
+        local_dt = value.astimezone(tz)
+        return local_dt.strftime(format)
 
 
 @app.template_filter("parse_json_date")
