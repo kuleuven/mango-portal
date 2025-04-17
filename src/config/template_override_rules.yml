@@ -114,3 +114,10 @@ gallery_view_dayral_barsha:
   matches:
     all:
       subtree: '/{{zone}}/home/Dayral-Barsha' #quotes needed as in principle {} are special characters
+
+gallery_view_search_dayral_barsha:
+  source: search/basic_catalog_search.html.j2
+  target: search/gallery_catalog_search.html.j2
+  matches:
+    all:
+      subtree: '/{{zone}}/home/Dayral-Barsha' #quotes needed as in principle {} are special characters
