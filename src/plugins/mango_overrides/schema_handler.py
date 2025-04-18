@@ -166,17 +166,24 @@ class iRODSSchemaManager:
     ) -> dict | bool:
         schema_paths = []
         if status in ["published", "draft"] and not version:
-            schema_paths = list(
-                self._get_schema_path(schema_name).glob(f"{schema_name}*{status}.json")
-            )
+            schema_paths = [
+                obj
+                for obj in self._get_schema_path(schema_name).data_objects
+                if obj.endswith("json")
+            ]
         if version:
-            schema_paths = list(
-                self._get_schema_path(schema_name).glob(
-                    f"*{schema_name}*v{version}*.json"
-                )
-            )
+            schema_paths = [
+                obj
+                for obj in self._get_schema_path(schema_name).data_objects
+                if re.search(f".*{version}.*json")
+            ]
         if len(schema_paths) >= 1:
-            return sorted(schema_paths)[-1].read_text()
+            schema_object = sorted(schema_paths, key=lambda x: x.name)[-1]
+        else:
+            schema_object = schema_paths[0]
+        if schema_object:
+            with schema_object.open() as f:
+                return json.load(f)  # or f.read().decode() if we want it as a string
 
         return False
 
