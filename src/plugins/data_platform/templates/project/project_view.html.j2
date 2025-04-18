@@ -7,7 +7,7 @@
 
 {% block body %}
 {% set can_edit = project['my_role'] == 'manager' or project['my_role'] == 'responsible' or admin %}
-{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-sftp-ingress': 'false', 'gdpr-data': 'false', 'enforce-quota': 'false', 'inherit-permissions': 'false', 'strict-permissions': 'false'} %}
+{% set opts = {'folder-layout': 'v1', 'sftp-openfile': 'false', 'enable-sftp-ingress': 'false', 'gdpr-data': 'false', 'enforce-quota': 'false', 'inherit-permissions': 'false', 'strict-permissions': 'false', 'expose-pipeline-user': 'false'} %}
 {% for opt in project['platform_options'] %}
 {% if opts.update({opt['key']: opt['value']}) %}{% endif %}
 {% endfor %}
@@ -28,274 +28,455 @@
   <div class="row">
     <div class="col">
       <div class="card">
-        <div class="card-header">
+        <div class="card-header mb-2">
           <h1 class="bi bi-archive display-1"></h1>
         </div>
-        <table class="table">
-          <tr>
-            <th>Project name</th>
-            <td>{{ project['name'] }}</td>
-          </tr>
-          {% if not project['activated'] %}
-          <tr>
-            <th>Status</th>
-            <td>
-            Will be activated at {{ project['valid_after'] }}
-            </td>
-          </tr>
-          {% elif project['archived'] %}
-          <tr>
-            <th>Status</th>
-            <td>
-            Archived at {{ status['archived_at']|parse_json_timestamp|format_timestamp }}
-            </td>
-          </tr>
-          {% elif not status['provisioned'] %}
-          <tr>
-            <th>Status</th>
-            <td>Changes pending in {{ project['platform']|replace('generic', 'the globus share storage') }}</td>
-          </tr>
+        <ul class="nav nav-tabs mb-4" id="project_tab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <a class="nav-link active" href="#settings" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="home" aria-selected="true" style="margin-left: 5px">General settings</a>
+          </li>
+        
+          {% if project['platform'] == 'irods' and not project['archived'] %}
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" href="#machineaccounts" id="machineaccounts-tab" data-bs-toggle="tab" data-bs-target="#machineaccounts" type="button" role="tab" aria-controls="home" aria-selected="false" tabindex="-1">Machine accounts</a>
+          </li>
           {% endif %}
-          <tr>
-            <th>Project Type</th>
-            <td>
-            {{ project['type'] }}
-            {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
-            {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <th>Description</th>
-            <td>
-            {{ project['description'] }}
-            {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
-            {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <th>Afsprakennota Code</th>
-            <td>
-            {{ project['an'] }}
-            {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
-            {% endif %}
-            </td>
-          </tr>
-
-          {% if project['sap_ref'] %}
-          <tr>
-            <th>SAP Project ID</th>
-            <td>
-            {{ project['sap_ref'] }}
-            {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
-            {% endif %}
-            </td>
-          </tr>
-          {% endif %}
-
-          {% if project['vsc_call'] %}
-          <tr>
-            <th>VSC Project Call</th>
-            <td>
-            {{ project['vsc_call'] }}
-            {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
-            {% endif %}
-            </td>
-          </tr>
-          {% endif %}
-
-          <tr>
-            <th>Lifetime</th>
-            <td>
-            {% if project['valid_after'] %}
-            {{ project['valid_after']|parse_json_date|format_date }}
-            {% else %}
-            {{ status['created_at']|parse_json_timestamp|format_date }}
-            {% endif %}
-
-            &#8212;
-
-            {% if project['archived'] %}
-            {{ status['archived_at']|parse_json_timestamp|yesterday|format_date }}
-            {% elif project['invalid_after'] %}
-            {{ project['invalid_after']|parse_json_date|yesterday|format_date  }}
-            {% else %}
-            infinite
-            {% endif %}
-            {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
-            {% endif %}
-            </td>
-          </tr>
-
-          <tr>
-            <th>Platform</th>
-            <td>
-            {{ project['platform'] }} 
-            {% if 'zone' in zone %}
-            (zone {{ zone['zone'] }})
-            {% endif %}
-            </td>
-          </tr>
-          {% if project['platform'].startswith("irods") and 'zone' in zone and project['my_role'] != '' and not project['archived'] %}
-          <tr>
-            <th>Home folder</th>
-            <td>
-              <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="irods_zone" value="{{ zone['zone'] }}" />
-                <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/home/{{ project['name'] }}" />
-              </form>
-            </td>
-          </tr>
-          {% endif %}
-
-          {% if project['platform'].startswith("rdr") %}
-          <tr>
-            <th>S3 Bucket</th>
-            <td>
-              {{ opts['s3_bucket']|default('dataverse') }}/{{ opts['s3_prefix']|default('') }}
-              {% if admin %}
-              <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProjectRDR"><i class="bi bi-pencil"></i></a>
+        
+          <li class="nav-item" role="presentation">
+            <a class="nav-link " href="#quotalog" id="quotalog-tab" data-bs-toggle="tab" data-bs-target="#quotalog" type="button" role="tab" aria-controls="home" aria-selected="false" tabindex="-1">Quota history</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+            <table class="table">
+              <tr>
+                <th>Project name</th>
+                <td>{{ project['name'] }}</td>
+              </tr>
+              {% if not project['activated'] %}
+              <tr>
+                <th>Status</th>
+                <td>
+                Will be activated at {{ project['valid_after'] }}
+                </td>
+              </tr>
+              {% elif project['archived'] %}
+              <tr>
+                <th>Status</th>
+                <td>
+                Archived at {{ status['archived_at']|parse_json_timestamp|format_timestamp }}
+                </td>
+              </tr>
+              {% elif not status['provisioned'] %}
+              <tr>
+                <th>Status</th>
+                <td>Changes pending in {{ project['platform']|replace('generic', 'the globus share storage') }}</td>
+              </tr>
               {% endif %}
-            </td>
-          </tr>
-          {% endif %}
-          <tr>
-            <th>Size</th>
-            <td>{{ status['used_size']|format_size }} of {{ project['quota_size']|format_size }} used
-            {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyQuota"><i class="bi bi-pencil"></i></a>
-            {% endif %}
+              <tr>
+                <th>Project Type</th>
+                <td>
+                {{ project['type'] }}
+                {% if admin %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th>Description</th>
+                <td>
+                {{ project['description'] }}
+                {% if admin %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th>Afsprakennota Code</th>
+                <td>
+                {{ project['an'] }}
+                {% if admin %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+                </td>
+              </tr>
 
-            {% if project['quota_size'] > 0 %}
-            <div class="progress">
-              <div class="progress-bar{% if status['used_size'] > project['quota_size'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_size'] * 100 / project['quota_size'] }}%" aria-valuenow="{{ status['used_size'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_size'] }}"></div>
-            </div>
-            {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <th>Inodes</th>
-            <td>{{ status['used_inodes']|format_intword }} of {{ project['quota_inodes']|format_intword }} inodes used
-            {% if project['platform'].startswith("irods") %}
-            ({{ status['platform_info']['object_count'] }} objects, 
-            {{ status['platform_info']['coll_count'] }} collections, 
-            {{ status['platform_info']['meta_count'] }} metadata records) 
-            {% endif %}
-            {% if admin %}
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modifyQuota"><i class="bi bi-pencil"></i></a>
-            {% endif %}
+              {% if project['sap_ref'] %}
+              <tr>
+                <th>SAP Project ID</th>
+                <td>
+                {{ project['sap_ref'] }}
+                {% if admin %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+                </td>
+              </tr>
+              {% endif %}
 
-            {% if project['quota_inodes'] > 0 %}
-            <div class="progress">
-              <div class="progress-bar{% if status['used_inodes'] > project['quota_inodes'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_inodes'] * 100 / project['quota_inodes'] }}%" aria-valuenow="{{ status['used_inodes'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_inodes'] }}"></div>
-            </div>
-            {% endif %}
-            </td>
-          </tr>
+              {% if project['vsc_call'] %}
+              <tr>
+                <th>VSC Project Call</th>
+                <td>
+                {{ project['vsc_call'] }}
+                {% if admin %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+                </td>
+              </tr>
+              {% endif %}
 
-          {% if admin %}
-          <tr>
-            <th>Features</th>
-            <td>
-              <form action="{{ url_for('data_platform_project_bp.set_project_options') }}" method="post">
+              <tr>
+                <th>Lifetime</th>
+                <td>
+                {% if project['valid_after'] %}
+                {{ project['valid_after']|parse_json_date|format_date }}
+                {% else %}
+                {{ status['created_at']|parse_json_timestamp|format_date }}
+                {% endif %}
+
+                &#8212;
+
+                {% if project['archived'] %}
+                {{ status['archived_at']|parse_json_timestamp|yesterday|format_date }}
+                {% elif project['invalid_after'] %}
+                {{ project['invalid_after']|parse_json_date|yesterday|format_date  }}
+                {% else %}
+                infinite
+                {% endif %}
+                {% if admin %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+                </td>
+              </tr>
+
+              <tr>
+                <th>Platform</th>
+                <td>
+                {{ project['platform'] }} 
+                {% if 'zone' in zone %}
+                (zone {{ zone['zone'] }})
+                {% endif %}
+                </td>
+              </tr>
+              {% if project['platform'].startswith("irods") and 'zone' in zone and project['my_role'] != '' and not project['archived'] %}
+              <tr>
+                <th>Home folder</th>
+                <td>
+                  <form action="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="irods_zone" value="{{ zone['zone'] }}" />
+                    <input type="submit" class="btn btn-link p-0 m-0" name="collection" value="/{{ zone['zone'] }}/home/{{ project['name'] }}" />
+                  </form>
+                </td>
+              </tr>
+              {% endif %}
+
+              {% if project['platform'].startswith("rdr") %}
+              <tr>
+                <th>S3 Bucket</th>
+                <td>
+                  {{ opts['s3_bucket']|default('dataverse') }}/{{ opts['s3_prefix']|default('') }}
+                  {% if admin %}
+                  <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProjectRDR"><i class="bi bi-pencil"></i></a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endif %}
+              <tr>
+                <th>Size</th>
+                <td>{{ status['used_size']|format_size }} of {{ project['quota_size']|format_size }} used
+                {% if admin %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modifyQuota"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+
+                {% if project['quota_size'] > 0 %}
+                <div class="progress">
+                  <div class="progress-bar{% if status['used_size'] > project['quota_size'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_size'] * 100 / project['quota_size'] }}%" aria-valuenow="{{ status['used_size'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_size'] }}"></div>
+                </div>
+                {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th>Inodes</th>
+                <td>{{ status['used_inodes']|format_intword }} of {{ project['quota_inodes']|format_intword }} inodes used
+                {% if project['platform'].startswith("irods") %}
+                ({{ status['platform_info']['object_count'] }} objects, 
+                {{ status['platform_info']['coll_count'] }} collections, 
+                {{ status['platform_info']['meta_count'] }} metadata records) 
+                {% endif %}
+                {% if admin %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modifyQuota"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+
+                {% if project['quota_inodes'] > 0 %}
+                <div class="progress">
+                  <div class="progress-bar{% if status['used_inodes'] > project['quota_inodes'] %} bg-danger{% endif %}" role="progressbar" style="width: {{ status['used_inodes'] * 100 / project['quota_inodes'] }}%" aria-valuenow="{{ status['used_inodes'] }}" aria-valuemin="0" aria-valuemax="{{ project['quota_inodes'] }}"></div>
+                </div>
+                {% endif %}
+                </td>
+              </tr>
+
+              {% if admin %}
+              <tr>
+                <th>Features</th>
+                <td>
+                  <form action="{{ url_for('data_platform_project_bp.set_project_options') }}" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <input type="hidden" name="project" value="{{ project['name'] }}" />
+                  {% if project['platform'].startswith("irods") %}
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" value="true" id="enforce-quota" name="enforce-quota" onChange="this.form.submit()" {% if opts['enforce-quota'] == "true" %}checked{% endif %} />
+                    <label class="form-check-label" for="enforce-quota">Enforce quota, block writes if quota are exceeded</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" value="true" id="sftp-openfile" name="sftp-openfile" onChange="this.form.submit()" {% if opts['sftp-openfile'] == "true" %}checked{% endif %} />
+                    <label class="form-check-label" for="sftp-openfile">Enable SFTP open files for read-write</label>
+                  </div>
+                  {% endif %}
+                  {% if project['platform'] == "irods" %}
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" value="true" id="enable-sftp-ingress" name="enable-sftp-ingress" onChange="this.form.submit()" {% if opts['enable-sftp-ingress'] == "true" %}checked{% endif %} />
+                    <label class="form-check-label" for="enable-sftp-ingress">Enable SFTP ingress service</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" value="true" id="strict-permissions" name="strict-permissions" onChange="this.form.submit()" {% if opts['strict-permissions'] == "true" %}checked{% endif %} />
+                    <label class="form-check-label" for="strict-permissions">Strict permissions, only project managers have write access to top level collection</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" value="true" id="inherit-permissions" name="inherit-permissions" onChange="this.form.submit()" {% if opts['inherit-permissions'] == "true" %}checked{% endif %} />
+                    <label class="form-check-label" for="inherit-permissions">Inherit permissions of the top level collection to subcollections (this implies a flat permission model, nobody is owner of any file)</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" value="true" id="expose-pipeline-user" name="expose-pipeline-user" onChange="this.form.submit()" {% if opts['expose-pipeline-user'] == "true" %}checked{% endif %} />
+                    <label class="form-check-label" for="expose-pipeline-user">Expose the pipeline machine account to project managers/responsibles</label>
+                  </div>
+                  {% endif %}
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" value="true" id="gdpr-data" name="gdpr-data" onChange="this.form.submit()" {% if opts['gdpr-data'] == "true" %}checked{% endif %} />
+                    <label class="form-check-label" for="gdpr-data">Stored data is subject to the General Data Protection Regulation</label>
+                  </div>
+                  </form>
+                </td>
+              </tr>
+              {% endif %}
+            </table>
+            <table class="table table-hover">
+              <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Role</th>
+                {% if can_edit %}
+                <th></th>
+                <th></th>
+                {% endif %}
+              </tr>
+              {% for member in project['members'] %}
+              <tr>
+                <td>{{ member['username'] }}</td>
+                <td>{{ member['name'] }}</td>
+                <td>{{ member['role'] }}</td>
+                {% if can_edit and not admin and (member['role'] == 'responsible' and (project['my_role'] != 'responsible' or project['responsibles'] <= 1) or member['role'] == 'support') %}
+                <td></td>
+                <td></td>
+                {% elif can_edit %}
+                <td>
+                  <a href="#" data-bs-toggle="modal" data-bs-target="#editMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-pencil"></i></a>
+                </td>
+                <td>
+                  <a class="text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-trash"></i></a>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </table>
+            {% if can_edit %}
+            <div>
+            <form action="{{ url_for('data_platform_project_bp.deploy_project') }}" method="post" class="m-2 mt-0">
+              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMember">
+                  Add member
+              </button>
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <input type="hidden" name="project" value="{{ project['name'] }}" />
-              {% if project['platform'].startswith("irods") %}
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" value="true" id="enforce-quota" name="enforce-quota" onChange="this.form.submit()" {% if opts['enforce-quota'] == "true" %}checked{% endif %} />
-                <label class="form-check-label" for="enforce-quota">Enforce quota, block writes if quota are exceeded</label>
-              </div>
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" value="true" id="sftp-openfile" name="sftp-openfile" onChange="this.form.submit()" {% if opts['sftp-openfile'] == "true" %}checked{% endif %} />
-                <label class="form-check-label" for="sftp-openfile">Enable SFTP open files for read-write</label>
+              {% if not status['provisioned'] %}
+              <input type="submit" name="submit" value="Apply changes in {{ project['platform']|replace('generic', 'the globus share storage') }}" class="btn btn-block btn-primary"/>
+              {% endif %}
+              {% if project['archived'] %}
+              {% if admin %}
+              <input type="submit" name="submit" value="Unarchive" class="btn btn-block btn-primary"/>
+              {% if status['provisioned'] and status['used_inodes'] <= 1 %}
+              <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProject">
+                  Delete
+              </button>
+              <div class="modal fade"
+                  id="deleteProject"
+                  tabindex="-1"
+                  aria-labelledby="deleteProjectLabel"
+                  aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="deleteProjectLabel">
+                        Delete project
+                      </h5>
+                      <button type="button"
+                              class="btn-close"
+                              data-bs-dismiss="modal"
+                              aria-label="Close">
+                      </button>
+                    </div>
+                      <div class="modal-body">
+                        Remove all records of the project. This cannot be undone. The project name cannot be reused later.
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                          Cancel
+                        </button>
+                        <input type="submit" name="submit" value="Delete" class="btn btn-danger" />
+                      </div>
+                    </form>
+                  </div>
+                </div>
               </div>
               {% endif %}
-              {% if project['platform'] == "irods" %}
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" value="true" id="enable-sftp-ingress" name="enable-sftp-ingress" onChange="this.form.submit()" {% if opts['enable-sftp-ingress'] == "true" %}checked{% endif %} />
-                <label class="form-check-label" for="enable-sftp-ingress">Enable SFTP ingress service</label>
-              </div>
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" value="true" id="strict-permissions" name="strict-permissions" onChange="this.form.submit()" {% if opts['strict-permissions'] == "true" %}checked{% endif %} />
-                <label class="form-check-label" for="strict-permissions">Strict permissions, only project managers have write access to top level collection</label>
-              </div>
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" value="true" id="inherit-permissions" name="inherit-permissions" onChange="this.form.submit()" {% if opts['inherit-permissions'] == "true" %}checked{% endif %} />
-                <label class="form-check-label" for="inherit-permissions">Inherit permissions of the top level collection to subcollections (this implies a flat permission model, nobody is owner of any file)</label>
+              {% endif %}
+              {% else %}
+              {% if admin %}
+              <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#archiveProject">
+                  Archive
+              </button>
+              <div class="modal fade"
+                  id="archiveProject"
+                  tabindex="-1"
+                  aria-labelledby="archiveProjectLabel"
+                  aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="archiveProjectLabel">
+                        Archive project
+                      </h5>
+                      <button type="button"
+                              class="btn-close"
+                              data-bs-dismiss="modal"
+                              aria-label="Close">
+                      </button>
+                    </div>
+                      <div class="modal-body">
+                        Archiving a project means that access to the data will no longer be possible for all members, but the data is not automatically cleaned up. API tokens will be revoked, and cannot be restored if the project is unarchived later.
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                          Cancel
+                        </button>
+                        <input type="submit" name="submit" value="Archive" class="btn btn-danger" />
+                      </div>
+                    </form>
+                  </div>
+                </div>
               </div>
               {% endif %}
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" value="true" id="gdpr-data" name="gdpr-data" onChange="this.form.submit()" {% if opts['gdpr-data'] == "true" %}checked{% endif %} />
-                <label class="form-check-label" for="gdpr-data">Stored data is subject to the General Data Protection Regulation</label>
-              </div>
-              </form>
-            </td>
-          </tr>
-          {% endif %}
-        </table>
-        <table class="table table-hover">
-          <tr>
-            <th>Username</th>
-            <th>Name</th>
-            <th>Role</th>
-            {% if can_edit %}
-            <th></th>
-            <th></th>
+              {% endif %}
+            </form>
+            </div>
             {% endif %}
-          </tr>
-          {% for member in project['members'] %}
-          <tr>
-            <td>{{ member['username'] }}</td>
-            <td>{{ member['name'] }}</td>
-            <td>{{ member['role'] }}</td>
-            {% if can_edit and not admin and (member['role'] == 'responsible' and (project['my_role'] != 'responsible' or project['responsibles'] <= 1) or member['role'] == 'support') %}
-            <td></td>
-            <td></td>
-            {% elif can_edit %}
-            <td>
-              <a href="#" data-bs-toggle="modal" data-bs-target="#editMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-pencil"></i></a>
-            </td>
-            <td>
-              <a class="text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteMember" data-bs-username="{{ member['username'] }}" data-bs-role="{{ member['role'] }}" data-bs-project="{{ project['name']}}"><i class="bi bi-trash"></i></a>
-            </td>
-            {% endif %}
-          </tr>
-          {% endfor %}
-        </table>
-        {% if can_edit %}
-        <div>
-        <form action="{{ url_for('data_platform_project_bp.deploy_project') }}" method="post" class="m-2 mt-0">
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMember">
-              Add member
-          </button>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <input type="hidden" name="project" value="{{ project['name'] }}" />
-          {% if not status['provisioned'] %}
-          <input type="submit" name="submit" value="Apply changes in {{ project['platform']|replace('generic', 'the globus share storage') }}" class="btn btn-block btn-primary"/>
-          {% endif %}
-          {% if project['archived'] %}
-          {% if admin %}
-          <input type="submit" name="submit" value="Unarchive" class="btn btn-block btn-primary"/>
-          {% if status['provisioned'] and status['used_inodes'] <= 1 %}
-          <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProject">
-              Delete
-          </button>
+          </div>
+          {% if project['platform'] == 'irods' and not project['archived'] %}
+          <div class="tab-pane fade show" id="machineaccounts" role="tabpanel" aria-labelledby="machineaccounts-tab">
+            <p style="margin: 0px 5px">
+              For unattended scripts that send data to the data platform, or retrieve data from it, you can request a long-living token or SSH key to use in the script. The long-living token is tied to a separate username, so that permissions can be set to what is strictly necessary. Be aware that resetting the token is possible at any time, but will invalidate the previous value and scripts will stop working.
+            </p>
+            <p style="margin: 15px 5px">
+              Note that by policy, this token is only available for unattended data streams such as lab equipment uploading data. It should not be used in scripts that are started manually by an end user, either directly (command line) or indirectly (e.g. through a custom web portal). In case of doubt, please contact the data team.
+            </p>
+            <table class="table table-hover">
+            {% for token in project['machine_tokens'] %}
+              <tr>
+                <th class="bg-secondary bg-gradient" style="color: white;" colspan="{% if can_edit %}5{% else %}4{% endif %}">{{ token['type'] }}</th>
+              </tr>
+              <tr>
+                <th>Account</th>
+                <td colspan="{% if can_edit %}4{% else %}3{% endif %}">{{ project['name'] }}_{{ token['type'] }}</td>
+              </tr>
+              <tr>
+                <th>Default permission</th>
+                <td colspan="{% if can_edit %}4{% else %}3{% endif %}">{{ token['default_permission'] }}</td>
+              </tr>
+              <tr>
+                <th class="align-middle">Password credential</th>
+                {% if token['isset'] %}
+                <td class="align-middle" colspan="3">Expires at {{ token['expiration']|format_time }}</td>
+                {% if can_edit %}
+                <td>
+                  <form method="POST" action="{{url_for('data_platform_project_bp.machine_account_password', project_name = project.name, type = token['type'])}}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="submit" class="btn btn-danger" value="Reset password" />
+                  </form>
+                </td>
+                {% endif %}
+                {% else %}
+                <td class="align-middle" colspan="3">Not activated</td>
+                {% if can_edit %}
+                <td>
+                  <form method="POST" action="{{url_for('data_platform_project_bp.machine_account_password', project_name = project.name, type = token['type'])}}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="submit" class="btn btn-primary" value="Retrieve password" />
+                  </form>
+                </td>
+                {% endif %}
+                {% endif %}
+              </tr>
+              
+              {% if token['ssh_keys'] %}
+              {% for ssh_key in token['ssh_keys'] %}
+              <tr>
+                {% if loop.first %}
+                <th rowspan="{{ token['ssh_keys']|length }}" {% if token['ssh_keys']|length == 1 %}class="align-middle"{% endif %}>SSH keys</th>
+                {% endif %}
+                <td class="align-middle"><code>{{ ssh_key['fingerprint'] }}</code>
+                {% if can_edit %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#removeSSHKey" data-bs-type="{{ token['type'] }}" data-bs-fingerprint="{{ ssh_key['fingerprint'] }}"><i class="bi bi-trash"></i></a>
+                {% endif %}
+                </td>
+                <td class="align-middle">from {{ ssh_key['source_ip'] }}
+                {% if can_edit %}
+                <a href="#" data-bs-toggle="modal" data-bs-target="#modifySSHKeyIP" data-bs-type="{{ token['type'] }}" data-bs-fingerprint="{{ ssh_key['fingerprint'] }}" data-bs-source-ip="{{ ssh_key['source_ip'] }}"><i class="bi bi-pencil"></i></a>
+                {% endif %}
+                </td>
+                <td class="align-middle">until {{ ssh_key['expiration'] }}</td>
+                {% if loop.first and admin %}
+                <td rowspan="{{ token['ssh_keys']|length }}">
+                  {% if loop.first %}
+                  <a class="btn btn-block btn-primary" href="{{url_for('data_platform_project_bp.add_ssh_key', project_name = project.name, type = token['type'])}}">Add SSH key</a>
+                  {% endif %}
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+              {% else %}
+              <tr>
+                <th class="align-middle">SSH keys</th>
+                <td class="align-middle" colspan="3">No SSH key activated</td>
+                {% if admin %}
+                <td><a class="btn btn-block btn-primary" href="{{url_for('data_platform_project_bp.add_ssh_key', project_name = project.name, type = token['type'])}}">Add SSH key</a></td>
+                {% elif can_edit %}
+                <td>Contact ICTS to add a key</td>
+                {% endif %}
+              </tr>
+              {% endif %}
+            {% endfor %}
+            </table>
+          </div>
+          {% if can_edit %}
           <div class="modal fade"
-              id="deleteProject"
-              tabindex="-1"
-              aria-labelledby="deleteProjectLabel"
-              aria-hidden="true">
+            id="removeSSHKey"
+            tabindex="-1"
+            aria-labelledby="removeSSHKeyLabel"
+            aria-hidden="true">
             <div class="modal-dialog">
               <div class="modal-content">
                 <div class="modal-header">
-                  <h5 class="modal-title" id="deleteProjectLabel">
-                    Delete project
+                  <h5 class="modal-title" id="removeSSHKeyLabel">
+                    Remove SSH key
                   </h5>
                   <button type="button"
                           class="btn-close"
@@ -303,36 +484,62 @@
                           aria-label="Close">
                   </button>
                 </div>
+                <form action="{{ url_for('data_platform_project_bp.remove_ssh_key', project_name=project.name) }}""
+                      method="post"
+                      enctype="multipart/form-data"
+                      class="row g-3 needs-validation"
+                      novalidate>
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                   <div class="modal-body">
-                    Remove all records of the project. This cannot be undone. The project name cannot be reused later.
+                    <div class="mb-3">
+                      <label for="type-remove" class="col-form-label">
+                        Type
+                      </label>
+                      <input type="text"
+                            class="form-control"
+                            id="type-remove"
+                            name="type"
+                            required autocomplete="off" readonly />
+                      <div class="invalid-feedback">
+                        A valid type is required.
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label for="fingerprint-remove" class="col-form-label">
+                        Fingerprint
+                      </label>
+                      <input type="text"
+                            class="form-control"
+                            id="fingerprint-remove"
+                            name="fingerprint"
+                            required autocomplete="off" readonly  />
+                      <div class="invalid-feedback">
+                        A valid fingerprint is required.
+                      </div>
+                    </div>
                   </div>
                   <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                       Cancel
                     </button>
-                    <input type="submit" name="submit" value="Delete" class="btn btn-danger" />
+                    <button class="btn btn-danger" type="submit">
+                      Remove
+                    </button>
                   </div>
                 </form>
               </div>
             </div>
           </div>
-          {% endif %}
-          {% endif %}
-          {% else %}
-          {% if admin %}
-          <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#archiveProject">
-              Archive
-          </button>
           <div class="modal fade"
-              id="archiveProject"
-              tabindex="-1"
-              aria-labelledby="archiveProjectLabel"
-              aria-hidden="true">
+            id="modifySSHKeyIP"
+            tabindex="-1"
+            aria-labelledby="modifySSHKeyIPLabel"
+            aria-hidden="true">
             <div class="modal-dialog">
               <div class="modal-content">
                 <div class="modal-header">
-                  <h5 class="modal-title" id="archiveProjectLabel">
-                    Archive project
+                  <h5 class="modal-title" id="modifySSHKeyIPLabel">
+                    Modify SSH key
                   </h5>
                   <button type="button"
                           class="btn-close"
@@ -340,65 +547,121 @@
                           aria-label="Close">
                   </button>
                 </div>
+                <form action="{{ url_for('data_platform_project_bp.modify_ssh_key', project_name=project.name) }}""
+                      method="post"
+                      enctype="multipart/form-data"
+                      class="row g-3 needs-validation"
+                      novalidate>
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                   <div class="modal-body">
-                    Archiving a project means that access to the data will no longer be possible for all members, but the data is not automatically cleaned up. API tokens will be revoked, and cannot be restored if the project is unarchived later.
+                    <div class="mb-3">
+                      <label for="type-modify" class="col-form-label">
+                        Type
+                      </label>
+                      <input type="text"
+                            class="form-control"
+                            id="type-modify"
+                            name="type"
+                            required autocomplete="off" readonly />
+                      <div class="invalid-feedback">
+                        A valid type is required.
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label for="fingerprint-modify" class="col-form-label">
+                        Fingerprint
+                      </label>
+                      <input type="text"
+                            class="form-control"
+                            id="fingerprint-modify"
+                            name="fingerprint"
+                            required autocomplete="off" readonly />
+                      <div class="invalid-feedback">
+                        A valid fingerprint is required.
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label for="sourceip" class="col-form-label">
+                        Source IP
+                      </label>
+                      <input type="text"
+                            class="form-control"
+                            id="sourceip"
+                            name="source_ip"
+                            placeholder="192.158.1.38 or 2001:db8:1234::5"
+                            required autocomplete="off" />
+                      <div class="invalid-feedback">
+                        A valid source IP is required.
+                      </div>
+                    </div>
                   </div>
                   <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                       Cancel
                     </button>
-                    <input type="submit" name="submit" value="Archive" class="btn btn-danger" />
+                    <button class="btn btn-primary" type="submit">
+                      Save
+                    </button>
                   </div>
                 </form>
               </div>
             </div>
           </div>
+          <script>
+          var modifySSHKeyIP = document.getElementById('modifySSHKeyIP')
+          modifySSHKeyIP.addEventListener('show.bs.modal', function (event) {
+            // Button that triggered the modal
+            var button = event.relatedTarget
+            // Extract info from data-bs-* attributes
+            var fieldType = button.getAttribute('data-bs-type')
+            var fieldFingerprint = button.getAttribute('data-bs-fingerprint')
+            var fieldSourceIP = button.getAttribute('data-bs-source-ip')
+          
+            var modalBodyInputType = modifySSHKeyIP.querySelector('#type-modify')
+            var modalBodyInputFingerprint = modifySSHKeyIP.querySelector('#fingerprint-modify')
+            var modalBodyInputSourceIP = modifySSHKeyIP.querySelector('#sourceip')
+
+            modalBodyInputType.value = fieldType
+            modalBodyInputFingerprint.value = fieldFingerprint
+            modalBodyInputSourceIP.value = fieldSourceIP
+          });
+
+          var removeSSHKey = document.getElementById('removeSSHKey')
+          removeSSHKey.addEventListener('show.bs.modal', function (event) {
+            // Button that triggered the modal
+            var button = event.relatedTarget
+            // Extract info from data-bs-* attributes
+            var fieldType = button.getAttribute('data-bs-type')
+            var fieldFingerprint = button.getAttribute('data-bs-fingerprint')
+          
+            var modalBodyInputType = removeSSHKey.querySelector('#type-remove')
+            var modalBodyInputFingerprint = removeSSHKey.querySelector('#fingerprint-remove')
+
+            modalBodyInputType.value = fieldType
+            modalBodyInputFingerprint.value = fieldFingerprint
+          });
+          </script>
           {% endif %}
+
           {% endif %}
-        </form>
-        </div>
-        {% endif %}
-        <div>
-        {% if project['platform'] == 'irods' and not project['archived'] %}
-        <table class="table table-hover">
-          <tr>
-            <th>API Token Username</th>
-            <th>Default permissions</th>
-            <th>Expiration</th>
-            {% if can_edit %}
-            <th></th>
-            {% endif %}
-          </tr>
-          {% for token in project['machine_tokens'] %}
-          <tr>
-            <td class="align-middle">{{ project['name'] }}_{{ token['type'] }}</td>
-            <td class="align-middle">{{ token['default_permission'] }}</td>
-            <td class="align-middle">{% if token['isset'] %}{{ token['expiration']|format_time }}{% else %}Not activated{% endif %}</td>
-            {% if can_edit %}
-            <td>
-              <a class="btn btn-block btn-secondary" href="{{url_for('data_platform_project_bp.api_token', project_name = project.name, type = token['type'])}}">Retrieve API token</a>
-            </td>
-            {% endif %}
-          </tr>
-          {% endfor %}
-        </table>
-        {% endif %}
-        <table class="table table-hover">
-          <tr>
-            <th>Quota Change Date</th>
-            <th>Quota</th>
-            <th>Modified by</th>
-            <th>Message</th>
-          </tr>
-          {% for log in quotalog %}
-          <tr>
-            <td class="align-middle">{{ log['date']|parse_json_date|format_date }}</td>
-            <td class="align-middle">{% if log['archived'] %}Project is archived{% else %}{{ log['quota_size']|format_size }}, {{ log['quota_inodes']|format_intword }} inodes{% endif %}</td>
-            <td class="align-middle">{{ log['modified_by'] }}</td>
-            <td class="align-middle">{{ log['message'] }}</td>
-          </tr>
-          {% endfor %}
-        </table>
+          <div class="tab-pane fade show" id="quotalog" role="tabpanel" aria-labelledby="quotalog-tab">
+            <table class="table table-hover">
+              <tr>
+                <th>Quota Change Date</th>
+                <th>Quota</th>
+                <th>Modified by</th>
+                <th>Message</th>
+              </tr>
+              {% for log in quotalog %}
+              <tr>
+                <td class="align-middle">{{ log['date']|parse_json_date|format_date }}</td>
+                <td class="align-middle">{% if log['archived'] %}Project is archived{% else %}{{ log['quota_size']|format_size }}, {{ log['quota_inodes']|format_intword }} inodes{% endif %}</td>
+                <td class="align-middle">{{ log['modified_by'] }}</td>
+                <td class="align-middle">{{ log['message'] }}</td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
         </div>
       </div>
     </div>

@@ -67,7 +67,7 @@
         {% if messages %}
           {% for category, message in messages %}
             <div class="toast"
-                 {% if category !="success" %} data-bs-autohide="false" {% else %} data-bs-delay="2000" {% endif %}
+                 {% if category !="success" %} data-bs-autohide="false" {% else %} data-bs-delay="3000" {% endif %}
                  role="alert"
                  aria-live="assertive"
                  aria-atomic="true">
@@ -79,7 +79,7 @@
                         data-bs-dismiss="toast"
                         aria-label="Close"></button>
               </div>
-              <div class="toast-body">{{ message }}</div>
+              <div class="toast-body">{{ message | safe }}</div>
             </div>
           {% endfor %}
         {% endif %}
@@ -109,6 +109,9 @@
       <script src="{{url_for('static', filename='js/form-validation.js')}}"></script>
       {% block javascript %}
         <script>
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
       // Activate toast mechanism
       var toastElList = [].slice.call(document.querySelectorAll('.toast'))
       var toastList = toastElList.map(function (toastEl) {

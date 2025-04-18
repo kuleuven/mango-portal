@@ -1,0 +1,65 @@
+{% extends "base_openid.html.j2" %}
+
+{% block body %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+          <a href="{{ url_for('data_platform_user_bp.login_openid_select_zone')}}">Project overview</a>
+      </li>
+      <li class="breadcrumb-item">
+          <a href="{{ url_for('data_platform_project_bp.project', project_name=project_name)}}">{{ project_name }}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Create API SSH Key</li>
+    </ol>
+  </nav>
+  <h4 class="mb-3">API user {{ type }}</h4>
+    <p>
+      For unattended scripts that send data to the data platform, or retrieve data from it, you can request an SSH key to use in the script. The SSH credentials are tied to a separate username, so that permissions can be set to what is strictly necessary.
+    </p>
+    <p>
+      Note that by policy, this SSH key is only available for unattended data streams such as lab equipment uploading data. It should not be used in scripts that are started manually by an end user, either directly (command line) or indirectly (e.g. through a custom web portal). In case of doubt, please contact the data team.
+    </p>
+    <p>
+      Only RSA keys of at least 4096 bits are supported.
+    </p>
+    
+
+    <form method="POST">
+      <div class="mb-3">
+        <label for="description" class="col-form-label">
+          API username
+        </label>
+        <input type="text"
+                class="form-control"
+                name="type"
+                value="{{ project_name }}_{{ type }}" readonly />
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="col-form-label">
+          SSH Authorized Key
+        </label>
+        <input type="text"
+                class="form-control"
+                name="authorized_key" placeholder="ssh-rsa XXX..." />
+        <div class="invalid-feedback">
+          An RSA public key with at least 4096 bits must be specified.
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="col-form-label">
+          Source IP address
+        </label>
+        <input type="text"
+                class="form-control"
+                name="source_ip" placeholder="192.158.1.38 or 2001:db8:1234::5" />
+        <div class="invalid-feedback">
+          Source IP address is required
+        </div>
+      </div>
+
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="submit" class="btn btn-primary" value="Add SSH key" />
+    </form>
+{% endblock body %}

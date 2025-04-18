@@ -1,2 +1,2 @@
-__version__ = "0.18.4"
-__comment__ = "Various bug fixes"
+__version__ = "0.20.0"
+__comment__ = "Smaller features and fixs, mainly in used plugins"

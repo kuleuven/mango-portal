@@ -104,6 +104,13 @@ def project(project_name):
         for t in project["machine_tokens"]:
             t["expiration"] = datetime.strptime(t["expiration"], "%Y-%m-%dT%H:%M:%S%z")
 
+            response = requests.get(
+                f"{API_URL}/v1/irods/projects/{project_name}/ssh_key/{t['type']}", headers=header
+            )
+            response.raise_for_status()
+
+            t["ssh_keys"] = response.json()
+
     return render_template(
         "project/project_view.html.j2",
         project=project,
@@ -263,6 +270,7 @@ def set_project_options():
             "enforce-quota",
             "inherit-permissions",
             "strict-permissions",
+            "expose-pipeline-user",
         ]
 
     for key in options:
@@ -341,30 +349,12 @@ def deploy_project():
 
 
 @data_platform_project_bp.route(
-    "/data-platform/project/<project_name>/api_token/<type>", methods=["GET", "POST"]
+    "/data-platform/project/<project_name>/machine_account_password/<type>", methods=["POST"]
 )
 @openid_login_required
-def api_token(project_name, type):
+def machine_account_password(project_name, type):
     token, _ = current_user_api_token()
     header = {"Authorization": "Bearer " + token}
-
-    if request.method == "GET":
-        response = requests.get(
-            f"{API_URL}/v1/irods/projects/{project_name}/machine_token", headers=header
-        )
-        response.raise_for_status()
-
-        current_machine_tokens = response.json()
-
-        for t in current_machine_tokens:
-            t["expiration"] = datetime.strptime(t["expiration"], "%Y-%m-%dT%H:%M:%S%z")
-
-        return render_template(
-            "project/api_token.html.j2",
-            project_name=project_name,
-            type=type,
-            current_machine_tokens=current_machine_tokens,
-        )
 
     response = requests.post(
         f"{API_URL}/v1/irods/projects/{project_name}/machine_token",
@@ -378,13 +368,105 @@ def api_token(project_name, type):
     info["expiration"] = datetime.strptime(info["expiration"], "%Y-%m-%dT%H:%M:%S%z")
 
     return render_template(
-        "project/api_token_connection_info.html.j2",
+        "project/machine_account_connection_info.html.j2",
         project_name=project_name,
         type=type,
         info=info,
         setup_json=json.dumps(info["irods_environment"], indent=4),
     )
 
+
+@data_platform_project_bp.route(
+    "/data-platform/project/<project_name>/ssh_key/<type>", methods=["GET", "POST"]
+)
+@openid_login_required
+def add_ssh_key(project_name, type):
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    if request.method == "GET":
+        return render_template(
+            "project/ssh_key.html.j2",
+            project_name=project_name,
+            type=type,
+        )
+
+    response = requests.post(
+        f"{API_URL}/v1/irods/projects/{project_name}/ssh_key/{type}",
+        headers=header,
+        json={
+            "authorized_key": request.form.get("authorized_key"), 
+            "source_ip": request.form.get("source_ip"),
+        },
+    )
+
+    if response.status_code >= 400 and response.status_code < 500:
+        flash(response.json()["message"], "warning")
+
+        return render_template(
+            "project/ssh_key.html.j2",
+            project_name=project_name,
+            type=type,
+        )
+
+    response.raise_for_status()
+
+    flash(f"The SSH key has been added to API user {project_name}_{type}.", "info")
+
+    return redirect(url_for("data_platform_project_bp.project", project_name=project_name))
+
+@data_platform_project_bp.route(
+    "/data-platform/project/<project_name>/ssh_key/modify", methods=["POST"]
+)
+@openid_login_required
+def modify_ssh_key(project_name):
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    type = request.form.get("type")
+    fingerprint = request.form.get("fingerprint")
+
+    response = requests.put(
+        f"{API_URL}/v1/irods/projects/{project_name}/ssh_key/{type}/{fingerprint}",
+        headers=header,
+        json={
+            "source_ip": request.form.get("source_ip"),
+        },
+    )
+
+    if response.status_code >= 400 and response.status_code < 500:
+        flash(response.json()["message"], "warning")
+    else:
+        response.raise_for_status()
+
+        flash(f"The SSH key {fingerprint} has been modified for API user {project_name}_{type}.", "info")
+
+    return redirect(url_for("data_platform_project_bp.project", project_name=project_name))
+
+@data_platform_project_bp.route(
+    "/data-platform/project/<project_name>/ssh_key/remove", methods=["POST"]
+)
+@openid_login_required
+def remove_ssh_key(project_name):
+    token, _ = current_user_api_token()
+    header = {"Authorization": "Bearer " + token}
+
+    type = request.form.get("type")
+    fingerprint = request.form.get("fingerprint")
+
+    response = requests.delete(
+        f"{API_URL}/v1/irods/projects/{project_name}/ssh_key/{type}/{fingerprint}",
+        headers=header,
+    )
+
+    if response.status_code >= 400 and response.status_code < 500:
+        flash(response.json()["message"], "warning")
+    else:
+        response.raise_for_status()
+
+        flash(f"The SSH key has been removed from API user {project_name}_{type}.", "info")
+
+    return redirect(url_for("data_platform_project_bp.project", project_name=project_name))
 
 @data_platform_project_bp.route("/data-platform/projects/add/irods", methods=["POST"])
 @openid_login_required
@@ -604,7 +686,13 @@ def projects_statistics():
         flash(f"No project information found in {year}.")
         projects = []
 
-    def create_project_dict(project):
+    response_quota = requests.get(f"{API_URL}/v1/projects/quota", headers=header)
+
+    response_quota.raise_for_status()
+
+    projects_quota = response_quota.json()
+
+    def create_project_dict(project, projects_quota):
         if project["project"]["platform"] == "irods":
             zone_name = [
                 "-".join(x["value"].split("-")[4:])
@@ -613,11 +701,23 @@ def projects_statistics():
             ][0]
         else:
             zone_name = "Non iRODS"
+
+        project_name = project["project"]["name"]
+
+        # Find matching project in projects_quota and extract create date
+        for quota_project in projects_quota:
+            if quota_project["name"] == project_name:
+                project_active_dates = [item["date"] for item in quota_project["log"] if not item["archived"]]
+                if len(project_active_dates) > 0:
+                    project_create_date = project_active_dates[0]
+                break
+
         return {
             "zone_name": zone_name,
-            "project_name": project["project"]["name"],
+            "project_name": project_name,
+            "project_create_date": project_create_date,
             "project_type": project["project"]["type"],
-            "project_status": "Archived" if project["project"]["archived"] == True else "Active",
+            "project_status": "Archived" if project["project"]["archived"] else "Active",
             "usage_total": convert_bytes_to_GB(
                 [x["used_size"] for x in project["usage"]][-1]
             ),
@@ -627,15 +727,15 @@ def projects_statistics():
                 [x["used_size"] for x in project["usage"]][-1],
             ),
             "responsible_name": project["responsibles"][0]["name"]
-            if project["responsibles"] != None
+            if project["responsibles"]
             else "",
             "responsible_account": project["responsibles"][0]["username"]
-            if project["responsibles"] != None
+            if project["responsibles"]
             else "",
             "sap_ref": project["project"]["sap_ref"],
         }
 
-    projects_list = [create_project_dict(project) for project in projects]
+    projects_list = [create_project_dict(project, projects_quota) for project in projects]
 
     return render_template(
         "project/projects_statistics.html.j2",
