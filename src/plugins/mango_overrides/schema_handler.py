@@ -301,7 +301,7 @@ class iRODSSchemaManager:
                 )
 
             with draft_object.open("w") as f:
-                json.dump(f, json_contents)
+                f.write(json.dumps(json_contents).encode())
 
         if with_status == "published":
             # First see what the origin could be: for example is there a draft version or not
@@ -321,7 +321,7 @@ class iRODSSchemaManager:
             )
 
             with new_published_file.open("w") as f:
-                json.dump(f, json_contents)
+                f.write(json.dumps(json_contents).encode())
 
         return validity
 
@@ -330,35 +330,40 @@ class iRODSSchemaManager:
     def archive_published_schema(self, schema_name: str):
         current_schema_info = self.get_schema_info(schema_name)
         if published_file_name := current_schema_info["published_name"]:
-            published_file: Path = (
-                self._get_schema_path(schema_name) / published_file_name
+            published_file: iRODSDataObject = self._get_schema_version_object(
+                schema_name, published_file_name
             )
             # change the status to archived
-            schema_dict = json.loads(published_file.read_text())
+            with published_file.open() as f:
+                schema_dict = json.load(f)
             schema_dict["status"] = "archived"
-            published_file.write_text(json.dumps(schema_dict))
-            published_file.rename(
-                self._get_schema_path(schema_name)
-                / published_file_name.replace("-published.json", ".json")
+            with published_file.open(
+                "w"
+            ) as f:  # it doesn't work to read and write with w+
+                f.write(json.dumps(schema_dict).encode())
+            self.irods_session.data_objects.move(
+                published_file.path,
+                published_file.path.replace("-published.json", ".json"),
             )
             return True
-        else:
-            return False
+        return False
 
     def check_and_sanitize_schema(self, schema_name: str):
         current_schema_info = self.get_schema_info(schema_name)
         if current_schema_info["total_count"] == 0:
-            current_schema_path = self._get_realm_schemas_path() / schema_name
-            current_schema_path.rmdir()
+            current_schema_path = self._get_schema_path()
+            current_schema_path.remove()
             logging.warn(
-                f"Removed schema directory {current_schema_path} from file system because there are no more files left"
+                f"Removed schema directory {current_schema_path.path} from file system because there are no more files left"
             )
         # TODO: check for multiple drafts, published versions that may be there because of non robust handling
 
     def delete_draft_schema(self, schema_name: str):
         current_schema_info = self.get_schema_info(schema_name)
         if draft_file_name := current_schema_info["draft_name"]:
-            draft_file: Path = self._get_schema_path(schema_name) / draft_file_name
+            draft_file: iRODSDataObject = self._get_schema_version_object(
+                schema_name, draft_file_name
+            )
             draft_file.unlink()
             # do a sanitize check, maybe the directory can be deleted
             self.check_and_sanitize_schema(schema_name)
