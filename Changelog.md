@@ -2,6 +2,18 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+
+## Release 0.21.0 [TBD]
+
+### New features
+
+- Increased download limit to 50GB over http
+- Upgraded PRC requirement to 3.1.0 (use requirements-mangoflow.txt)
+
+### Bug fixes
+
+
+
 ## Release 0.20.0 [2025-04-08]
 
 ### New features
