@@ -2,6 +2,7 @@ from kernel.metadata_schema import BaseSchemaPermissionsManager
 from irods.session import iRODSSession
 from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
+from irods.access import iRODSAccess
 from pathlib import Path
 import re
 import json
@@ -18,9 +19,20 @@ class iRODSSchemaManager:
         self._storage_schemas_path = str(Path("/") / zone / "mango" / "schemas" / realm)
         irods_session = get_zone_operator_session(zone)
 
-        _schema_manager_realm = irods_session.collections.create(
-            self._storage_schemas_path, recurse=True
-        )
+        if not irods_session.collections.exists(self._storage_schemas_path):
+            _schema_manager_realm = irods_session.collections.create(
+                self._storage_schemas_path, recurse=True
+            )
+            irods_session.acls.set(
+                iRODSAccess("read", self._storage_schemas_path, user_name=realm),
+                recursive=True,
+            )
+            irods_session.acls.set(iRODSAccess("inherit", self._storage_schemas_path))
+        else:
+            _schema_manager_realm = irods_session.collections.get(
+                self._storage_schemas_path, recurse=True
+            )
+
         # load schemas if any exist yet
         self.zone = zone
         self.realm = realm
