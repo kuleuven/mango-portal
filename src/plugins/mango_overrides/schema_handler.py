@@ -1,5 +1,7 @@
 from kernel.metadata_schema import BaseSchemaPermissionsManager
 from irods.session import iRODSSession
+from irods.data_object import iRODSDataObject
+from irods.collection import iRODSCollection
 from pathlib import Path
 import re
 import json
@@ -54,18 +56,29 @@ class iRODSSchemaManager:
         return ""
 
     @property
-    def irods_session(self):
+    def irods_session(self) -> iRODSSession:
         return get_zone_operator_session(self.zone)
 
     @property
-    def realm_schemas_path(self):
+    def realm_schemas_path(self) -> iRODSCollection:
         irods_session = self.irods_session
         return irods_session.collections.get(self._storage_schemas_path)
 
-    def _get_schema_path(self, schema_name: str) -> Path:
+    def _get_schema_path(self, schema_name: str) -> iRODSCollection:
         irods_session = self.irods_session
         schema_path = Path(self._storage_schemas_path) / schema_name
         return irods_session.collections.create(str(schema_path), recurse=True)
+
+    def _get_schema_version_object(
+        self, schema_name: str, file_name: str
+    ) -> iRODSDataObject:
+        irods_session = self.irods_session
+        schema_version_path = str(
+            Path(self._get_schema_path(schema_name).path) / file_name
+        )
+        if not irods_session.data_objects.exists(schema_version_path):
+            return irods_session.data_objects.create(schema_version_path)
+        return irods_session.data_objects.get(schema_version_path)
 
     def get_schema_info(self, schema_name: str) -> dict:
         schema_coll = self._get_schema_path(schema_name)
@@ -204,7 +217,7 @@ class iRODSSchemaManager:
             current_schema_info["latest_version"]
             and semver.compare(current_version, current_schema_info["latest_version"])
             < 0
-        ):
+        ):  # current version is earlier than latest version
             if not any(
                 (current_schema_info["draft"], current_schema_info["published"])
             ):
@@ -257,7 +270,9 @@ class iRODSSchemaManager:
                     draft_file_name,
                 ):
                     json_contents["version"] = current_schema_info["latest_version"]
-                    draft_file_name.write_text(json.dumps(json_contents))
+                    draft_object = self._get_schema_version_object(
+                        schema_name, draft_file_name
+                    )
                 else:
                     current_version = (
                         current_schema_info["latest_version"]
@@ -265,11 +280,9 @@ class iRODSSchemaManager:
                         else "v1.0.0"
                     )
                     json_contents["version"] = current_version
-                    draft_file_name = (
-                        self._get_schema_path(schema_name)
-                        / f"{schema_name}-v{current_version}-draft.json"
+                    draft_object = self._get_schema_version_object(
+                        schema_name, f"{schema_name}-v{current_version}-draft.json"
                     )
-                    draft_file_name.write_text(json.dumps(json_contents))
             else:
                 if current_version.startswith("auto"):
                     auto_part = current_version.split("-")[1]  # major, minor, bugfix
@@ -283,12 +296,12 @@ class iRODSSchemaManager:
                     )
                 json_contents["version"] = current_version
 
-                draft_file = (
-                    self._get_schema_path(schema_name)
-                    / f"{schema_name}-v{current_version}-draft.json"
+                draft_object = self._get_schema_version_object(
+                    schema_name, f"{schema_name}-v{current_version}-draft.json"
                 )
 
-                draft_file.write_text(json.dumps(json_contents))
+            with draft_object.open("w") as f:
+                json.dump(f, json_contents)
 
         if with_status == "published":
             # First see what the origin could be: for example is there a draft version or not
@@ -296,17 +309,19 @@ class iRODSSchemaManager:
             # if there is no draft version, check if there is an (older) published version en rename it by
             # removing the "published" attribute in the filename and calculate a new version
             if draft_file_name := current_schema_info["draft_name"]:
-                draft_file: Path = self._get_schema_path(schema_name) / draft_file_name
+                draft_file: iRODSDataObject = self._get_schema_version_object(
+                    schema_name, draft_file_name
+                )
                 draft_file.unlink()
             if current_schema_info["published_name"]:
                 self.archive_published_schema(schema_name)
 
-            new_published_file = (
-                self._get_schema_path(schema_name)
-                / f"{schema_name}-v{current_version}-published.json"
+            new_published_file = self._get_schema_version_object(
+                schema_name, f"{schema_name}-v{current_version}-published.json"
             )
 
-            new_published_file.write_text(json.dumps(json_contents))
+            with new_published_file.open("w") as f:
+                json.dump(f, json_contents)
 
         return validity
 
