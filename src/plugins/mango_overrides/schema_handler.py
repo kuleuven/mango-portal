@@ -1,4 +1,4 @@
-from kernel.metadata_schema import BaseSchemaPermissionsManager
+from kernel.metadata_schema import BaseSchemaPermissionsManager, SchemaManager
 from irods.session import iRODSSession
 from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
@@ -6,18 +6,27 @@ from irods.access import iRODSAccess
 from pathlib import Path
 import re
 import json
+import semver
 from plugins.operator import get_zone_operator_session
 
 
-class iRODSSchemaManager:
+class iRODSSchemaManager(SchemaManager):
     def __init__(
         self,
         zone: str,
         realm: str,
         permission_manager_class=BaseSchemaPermissionsManager,
     ):
-        self._storage_schemas_path = str(Path("/") / zone / "mango" / "schemas" / realm)
+        mango_collection = Path("/") / zone / "mango"
+        rods_irods_session = get_zone_operator_session(zone, client_user="rods")
+        if not rods_irods_session.collections.exists(str(mango_collection)):
+            rods_irods_session.collections.create(str(mango_collection))
+        rods_irods_session.acls.set(
+            iRODSAccess("own", str(mango_collection), user_name="operator"),
+            recursive=True,
+        )
         irods_session = get_zone_operator_session(zone)
+        self._storage_schemas_path = str(mango_collection / "schemas" / realm)
 
         if not irods_session.collections.exists(self._storage_schemas_path):
             _schema_manager_realm = irods_session.collections.create(
@@ -30,7 +39,7 @@ class iRODSSchemaManager:
             irods_session.acls.set(iRODSAccess("inherit", self._storage_schemas_path))
         else:
             _schema_manager_realm = irods_session.collections.get(
-                self._storage_schemas_path, recurse=True
+                self._storage_schemas_path
             )
 
         # load schemas if any exist yet
@@ -97,7 +106,10 @@ class iRODSSchemaManager:
         if (
             hasattr(self, "_schemas")
             and (schema_name in self._schemas)
-            and (self._schemas[schema_name]["timestamp"] == schema_coll.modify_time)
+            and (
+                self._schemas[schema_name]["timestamp"]
+                == schema_coll.modify_time.timestamp()
+            )
         ):
             return self._schemas[schema_name]
 
@@ -150,7 +162,7 @@ class iRODSSchemaManager:
                 sorted(published_files)[-1] if published_count >= 1 else ""
             ),
             "draft_name": sorted(draft_files)[-1] if draft_count >= 1 else "",
-            "timestamp": schema_coll.modify_time,
+            "timestamp": schema_coll.modify_time.timestamp(),
             "versions_sorted": versions_sorted,
             "latest_version": versions_sorted[-1] if total_count > 0 else "",
             "realm": self.realm,
@@ -163,7 +175,7 @@ class iRODSSchemaManager:
         This is needed for using schemas to add / edit metadata
         """
 
-        realm_schemas_collection = self.realm_schemas_path()
+        realm_schemas_collection = self.realm_schemas_path
         schemas = []
         if hasattr(self, "_schemas_dir_mtime") and (
             realm_schemas_collection.modify_time == self._schemas_dir_mtime
@@ -171,11 +183,12 @@ class iRODSSchemaManager:
             schemas = self._schemas.keys()
         else:
             schemas = [
-                schema_path.path
+                schema_path.name
                 for schema_path in realm_schemas_collection.subcollections
             ]
 
         schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
+        print(schemas_dict)
 
         if not filters:
             return schemas_dict
@@ -194,13 +207,13 @@ class iRODSSchemaManager:
             schema_paths = [
                 obj
                 for obj in self._get_schema_path(schema_name).data_objects
-                if obj.endswith("json")
+                if obj.name.endswith("json")
             ]
         if version:
             schema_paths = [
                 obj
                 for obj in self._get_schema_path(schema_name).data_objects
-                if re.search(f".*{version}.*json")
+                if re.search(f".*{version}.*json", obj.name)
             ]
         if len(schema_paths) >= 1:
             schema_object = sorted(schema_paths, key=lambda x: x.name)[-1]
