@@ -207,13 +207,13 @@ class iRODSSchemaManager(SchemaManager):
             schema_paths = [
                 obj
                 for obj in self._get_schema_path(schema_name).data_objects
-                if obj.name.endswith("json")
+                if re.match(f"{schema_name}-v[\d.]+-{status}\.json$", obj.name)
             ]
         if version:
             schema_paths = [
                 obj
                 for obj in self._get_schema_path(schema_name).data_objects
-                if re.search(f".*{version}.*json", obj.name)
+                if re.search(f"{schema_name}-v{version}.*json", obj.name)
             ]
         if len(schema_paths) >= 1:
             schema_object = sorted(schema_paths, key=lambda x: x.name)[-1]
