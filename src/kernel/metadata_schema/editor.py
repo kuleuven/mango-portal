@@ -166,14 +166,10 @@ def list_meta_data_schemas(realm):
 def get_schema(realm: str, schema: str):
     schema_manager = get_schema_manager(g.irods_session.zone, realm)
     if version := request.values.get("version", None):
-        schema_content = json.dumps(
-            schema_manager.load_schema(schema_name=schema, version=version)
-        )
+        schema_content = schema_manager.load_schema(schema_name=schema, version=version)
     else:
         status = request.values.get("status", "published")
-        schema_content = json.dumps(
-            schema_manager.load_schema(schema_name=schema, status=status)
-        )
+        schema_content = schema_manager.load_schema(schema_name=schema, status=status)
     if schema_content:
         return Response(schema_content, status=200, mimetype="application/json")
     else:

@@ -221,7 +221,8 @@ class iRODSSchemaManager(SchemaManager):
             schema_object = schema_paths[0]
         if schema_object:
             with schema_object.open() as f:
-                return json.load(f)  # or f.read().decode() if we want it as a string
+                # return json.load(f)
+                return f.read().decode()  # we want it as a string
 
         return False
 
