@@ -73,7 +73,12 @@ class BaseSchemaPermissionsManager:
     def get_defined_schema_permissions(self, realm: None):
         return self.schema_permissions
 
-class FileSystemSchemaManager:
+
+class SchemaManager:
+    pass
+
+
+class FileSystemSchemaManager(SchemaManager):
     def __init__(
         self,
         zone: str,
@@ -168,12 +173,14 @@ class FileSystemSchemaManager:
             "published": True if published_count > 0 else False,
             "draft_count": draft_count,
             "draft": True if draft_count > 0 else False,
-            "archived": True
-            if all([draft_count == 0, published_count == 0, total_count > 0])
-            else False,
-            "published_name": sorted(published_files)[-1].name
-            if published_count >= 1
-            else "",
+            "archived": (
+                True
+                if all([draft_count == 0, published_count == 0, total_count > 0])
+                else False
+            ),
+            "published_name": (
+                sorted(published_files)[-1].name if published_count >= 1 else ""
+            ),
             "draft_name": sorted(draft_files)[-1].name if draft_count >= 1 else "",
             "timestamp": schema_dir.stat().st_mtime,
             "versions_sorted": versions_sorted,
@@ -317,9 +324,11 @@ class FileSystemSchemaManager:
                 if current_version.startswith("auto"):
                     auto_part = current_version.split("-")[1]  # major, minor, bugfix
                     current_version = self.increment_version(
-                        current_schema_info["latest_version"]
-                        if current_schema_info["latest_version"]
-                        else "1.0.0",
+                        (
+                            current_schema_info["latest_version"]
+                            if current_schema_info["latest_version"]
+                            else "1.0.0"
+                        ),
                         auto_part,
                     )
                 json_contents["version"] = current_version
@@ -415,6 +424,14 @@ schema_permissions_manager_module = importlib.import_module(
 schema_permissions_manager_class = getattr(
     schema_permissions_manager_module, schema_permissions_manager_config["class"]
 )
+schema_manager_config = app.config.get(
+    "MANGO_SCHEMA_MANAGER_CLASS",
+    {"module": "kernel.metadata_schema", "class": "FileSystemSchemaManager"},
+)
+schema_manager_module = importlib.import_module(
+    schema_manager_config["module"], package="app"
+)
+schema_manager_class = getattr(schema_manager_module, schema_manager_config["class"])
 
 schema_managers = {}
 
@@ -423,10 +440,11 @@ logging.info(
 )
 
 
-def get_schema_manager(zone: str, realm: str) -> FileSystemSchemaManager:
+def get_schema_manager(zone: str, realm: str) -> SchemaManager:
     global schema_managers
+
     if zone_realm_key := f"{zone}-{realm}" not in schema_managers:
-        schema_managers[zone_realm_key] = FileSystemSchemaManager(
+        schema_managers[zone_realm_key] = schema_manager_class(
             zone, realm, schema_permissions_manager_class
         )
 
