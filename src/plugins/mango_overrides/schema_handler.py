@@ -8,6 +8,7 @@ import re
 import json
 import semver
 from plugins.operator import get_zone_operator_session
+import logging
 
 
 class iRODSSchemaManager(SchemaManager):
@@ -188,7 +189,6 @@ class iRODSSchemaManager(SchemaManager):
             ]
 
         schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
-        print(schemas_dict)
 
         if not filters:
             return schemas_dict
@@ -377,10 +377,10 @@ class iRODSSchemaManager(SchemaManager):
     def check_and_sanitize_schema(self, schema_name: str):
         current_schema_info = self.get_schema_info(schema_name)
         if current_schema_info["total_count"] == 0:
-            current_schema_path = self._get_schema_path()
-            current_schema_path.remove()
+            current_schema_path = self._get_schema_path(schema_name)
+            current_schema_path.remove(force=True)
             logging.warn(
-                f"Removed schema directory {current_schema_path.path} from file system because there are no more files left"
+                f"Removed schema collection {current_schema_path.path} from iRODS because there are no more files left"
             )
         # TODO: check for multiple drafts, published versions that may be there because of non robust handling
 
