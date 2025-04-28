@@ -161,11 +161,11 @@ def group_prefix_metadata_items(
     def is_valid_composite_units(units):
         return re.match("\d+(\.\d+)*$", units)
 
-    analysis_label = "analysis"
+    ANALYSIS_LABEL = "analysis"
 
     grouped_metadata = {"schema": {}, no_schema_label: {}}
     if group_analysis_unit:
-        grouped_metadata[analysis_label] = {}
+        grouped_metadata[ANALYSIS_LABEL] = {}
     for avu in metadata_items:
         if avu.name.startswith(mango_prefix) and avu.name.count(".") >= 2:
             (mango_schema_prefix, schema, avu_name) = avu.name.split(".", 2)
@@ -213,9 +213,9 @@ def group_prefix_metadata_items(
 
         elif group_analysis_unit and avu.units and avu.units.startswith("analysis/"):
             analysis_group = avu.units.split("/")[1]
-            if not analysis_group in grouped_metadata[analysis_label]:
-                grouped_metadata[analysis_label][analysis_group] = MultiDict()
-            grouped_metadata[analysis_label][analysis_group].add(avu.name, avu)
+            if not analysis_group in grouped_metadata[ANALYSIS_LABEL]:
+                grouped_metadata[ANALYSIS_LABEL][analysis_group] = MultiDict()
+            grouped_metadata[ANALYSIS_LABEL][analysis_group].add(avu.name, avu)
         elif avu.name.count(".") > 0:
             other_group = avu.name.split(".", 1)[0]
             if not other_group in grouped_metadata[no_schema_label]:
@@ -234,15 +234,15 @@ def group_prefix_metadata_items(
     else:
         del grouped_metadata[no_schema_label]
     if group_analysis_unit:
-        if len(grouped_metadata[analysis_label]) > 0:
-            for k in grouped_metadata[analysis_label]:
-                grouped_metadata[analysis_label][k] = MultiDict(
+        if len(grouped_metadata[ANALYSIS_LABEL]) > 0:
+            for k in grouped_metadata[ANALYSIS_LABEL]:
+                grouped_metadata[ANALYSIS_LABEL][k] = MultiDict(
                     sorted(
-                        grouped_metadata[analysis_label][k].items(), key=itemgetter(0)
+                        grouped_metadata[ANALYSIS_LABEL][k].items(), key=itemgetter(0)
                     )
                 )
         else:
-            del grouped_metadata[analysis_label]
+            del grouped_metadata[ANALYSIS_LABEL]
 
     if len(grouped_metadata["schema"]) == 0:
         del grouped_metadata["schema"]
@@ -468,9 +468,8 @@ def collection_browse(collection=None):
     logging.info(f"Collection view: using template {view_template} for {current_collection.path}")
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
 
-    reorganized_dict = md2dict.convert_metadata_to_dict(current_collection.metadata.items())
-    reorganized_dict = json.dumps(reorganized_dict)
-    print(reorganized_dict)
+    reorganized_dict = json.dumps(md2dict.convert_metadata_to_dict(current_collection.metadata.items()))
+    #print(reorganized_dict)
 
     return render_template(
         view_template,
@@ -680,8 +679,7 @@ def view_object(data_object_path):
     logging.info(f"Object view: using template {view_template}")
     logging.info(f"Realm: {realm}")
 
-    reorganized_dict = md2dict.convert_metadata_to_dict(data_object.metadata.items())
-    reorganized_dict = json.dumps(reorganized_dict)
+    reorganized_dict = json.dumps(md2dict.convert_metadata_to_dict(data_object.metadata.items()))
 
     return render_template(
         view_template,
