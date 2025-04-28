@@ -7,6 +7,7 @@ echo "Starting instance from directory $(dirname $0)"
 
 export SERVICE_PORT=3000
 export spOption="mango_portal"
+export IRODS_QUERY_LIMIT=2000
 
 #export MANGO_AUTH="via_callback"
 export MANGO_AUTH=localdev
