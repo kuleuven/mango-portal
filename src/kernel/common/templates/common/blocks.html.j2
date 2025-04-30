@@ -170,14 +170,14 @@
                 class="btn btn-secondary"
                 data-bs-toggle="modal"
                 data-bs-target="#addMetaData">Add individual metadata</button>
-<div id="myDropdown" class="dropdown ms-1 ">
+<div class="dropdown ms-1 ">
     <button class="btn btn-secondary dropdown-toggle"
             type="button"
             data-bs-toggle="dropdown"
-            id="dropdownButton"
+            id="addSchemaDropdown"
             aria-expanded="false">Add schema metadata</button>
 
-    <ul class="dropdown-menu" id="dropdown">
+    <ul class="dropdown-menu" id="addSchemaList">
         {% for schema in schemas if schema not in grouped_metadata["schema"] %}
         <li><a class="dropdown-item" id="link" href="#" data-value="{{ schema }}">{{ schemas[schema]["title"] }}</a></li>
         {% endfor %}
@@ -192,7 +192,7 @@
                 data-bs-target="#downloadMetaData"> Download metadata </button>
 </div>
 <!-- form to add schema metadata --> 
-       <form id="myForm"  
+       <form id="addSchemaForm"  
               method="get"
               action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
             <input type="hidden" name="item_type" value="{{ item_type }}" />
@@ -204,18 +204,14 @@
         </form>
 
         <script>  // script to submit the form based on the schema selected using dropdown menu 
-                       const ul = document.getElementById("dropdown").children;                   
-                       for (const li of ul) {
-                            const schema = li.children[0].getAttribute("data-value");
-                            console.log(schema)
-                            li.children[0].addEventListener('click', () => {
-                                    document.querySelector('#myForm input[name="schema"]').setAttribute("value", schema)
-                                    document.getElementById("myForm").submit();                
-                        } )
-                            }
-
-                        if (document.querySelectorAll("#dropdown li").length === 0) { 
-                            document.getElementById("dropdownButton").disabled = true;
+                        document.getElementById("addSchemaDropdown").querySelectorAll("[data-value]").forEach((option) => {
+                            option.addEventListener("click", () => {
+                            document.querySelector('#addSchemaForm input[name="schema"]').value = option.getAttribute("data-value");
+                            document.getElementById("addSchemaForm").submit();
+                            });
+                        });
+                        if (document.querySelectorAll("#addSchemaList li").length === 0) { 
+                            document.getElementById("addSchemaDropdown").disabled = true;
                         }
         </script>
     {% endif %}
@@ -224,7 +220,7 @@
         id="metadata-groups-tab"
         role="tablist">
         {% set top_levels = [('schema', 'Schemas'), ('analysis', 'Automatic extraction'), ('other', 'Other metadata')] %}   
-        {% for top_level, top_level_title in top_levels if top_level in grouped_metadata or top_level == "edit-download" %}
+        {% for top_level, top_level_title in top_levels if top_level in grouped_metadata %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link {% if loop.first %}active{% endif %}"
                         id="pills-{{ top_level }}-tab"
@@ -268,7 +264,7 @@
                     <div class="accordion" id="metadata-download-checkboxes">
                         {% for top_level, top_level_title in top_levels if top_level in grouped_metadata %}
                             <div class="accordion-item" >
-                                <div class="form-check form-check-inline">
+                                <div class="form-check ml-2">
                                     <input id="download_{{ top_level }}"
                                            class="form-check-input"
                                            type="checkbox"
@@ -280,9 +276,9 @@
                                 </div>
                                 <div id="download_subclass_{{ top_level }}"
                                      class="accordion-collapse show">
-                                    <div class="accordion-body">
+                                    <div class="accordion-body pt-1">
                                         {% for sublevel in grouped_metadata[top_level] %}
-                                            <div class="form-check form-check-inline">
+                                            <div class="form-check pt-0">
                                                 <input id="download_{{ top_level }}_{{ sublevel }}"
                                                        class="form-check-input"
                                                        type="checkbox"
@@ -335,35 +331,24 @@
                     // make a list of all the checkboxes
                     let metadataCheckboxes = document.querySelector("div#metadata-download-checkboxes").querySelectorAll("input")
 
-                    // set all checkboxes to checked 
-                    metadataCheckboxes.forEach((checkbox) => checkbox.checked = true)
 
                     // function to filter using checkboxes
-                    function FilterCheckboxes() { 
-                        let selected_dict = {}
-                        // make a list of checked keys with its parent
-                        let selected = [...metadataCheckboxes].filter(x => x.checked).map((x) => selected_dict[x.name] = x.getAttribute("data-mg-parent")); 
+                    function filterCheckboxes() { 
+                       
                         let filtered_json = {};
-                        Object.keys(selected_dict).forEach((key) => {
-                            if (key.length != 0) {
-                                // if schema metadata
-                                if (selected_dict[key] == "schema") {
-                                    if (!filtered_json["schema"]) {
-                                        filtered_json["schema"] = {};
-                                    }
-                                    filtered_json["schema"][key] = metadata["schema"][key]  // get the key from main object and add it to filtered_json
-                                // analysis metadata 
-                                } else if (selected_dict[key] == "analysis") {
-                                    if (!filtered_json["analysis"]) {
-                                        filtered_json["analysis"] = {};
-                                    }
-                                    filtered_json["analysis"][key] = metadata["analysis"][key] // get the key from main object and add it to filtered_json
-                                // if other 
-                                } else {
-                                    filtered_json[key] = metadata[key] // get the key from main object and add it to filtered_json
+                        [...metadataCheckboxes].filter((x) => x.checked).forEach((x)=> {
+                            const checkbox_parent = x.getAttribute("data-mg-parent");
+                            if (checkbox_parent == "schema" || checkbox_parent == "analysis") {  // schema or analysis
+                                if (!(checkbox_parent in filtered_json)) {
+                                    filtered_json[checkbox_parent] = {}   // create the dictionary
                                 }
+                                    filtered_json[checkbox_parent][x.name] = metadata[checkbox_parent][x.name];  // add metadata
+                            }
+                            else {  
+                               filtered_json[x.name] = metadata[x.name] // get the key from main object and add it to filtered_json   
                             }
                         })
+                   
                         json_metadata = JSON.stringify(filtered_json, null, "  ");
                         document.querySelector("pre#metadata-json").innerHTML = json_metadata;
                         document.querySelector("a#download-metadata").href = `data:text/json;charset=utf-8,${json_metadata}`
@@ -373,23 +358,17 @@
                     metadataCheckboxes.forEach((checkbox)=> { 
                         if (checkbox.getAttribute("data-mg-level") == "second-level") {   //for metadata on the second level do this
                             checkbox.addEventListener("change", () => {
-                                console.log("hello hello")
-                                FilterCheckboxes()
+                                filterCheckboxes()
                                 let parentCheckbox = checkbox.parentElement.parentElement.parentElement.parentElement;
-                                let inputs = parentCheckbox.querySelectorAll("input");
+                                let input = parentCheckbox.querySelector("input:not([data-mg-level])");
                                 if (checkbox.checked == false) { // uncheck parent checkbox
-                                    inputs[0].checked = false;
+                                    input.checked = false;
                                 }
-                                if (checkbox.checked == true) {   // check if all checkboxes are checked if checked is true check parent
-                                    let checked = true
-                                    for (let i = 1; i < inputs.length; i++) {
-                                        if (inputs[i].checked == false) {
-                                            checked = false
-                                        }
+                                else {   // check if all checkboxes are checked if checked is true check parent
+                                    if ([...parentCheckbox.querySelectorAll("input[data-mg-level]")].every((x) => x.checked)) {
+                                        input.checked = true;
                                     }
-                                    if (checked) {
-                                        inputs[0].checked = true;
-                                    }
+                               
                                 }
                             })
                         }
@@ -398,18 +377,13 @@
                         //for metadata on the first level do this
                         checkbox.addEventListener("change", () => {
                         let container = checkbox.parentElement.parentElement
-                        let inputs = container.querySelectorAll("input")
-
+                        let inputs = container.querySelectorAll("input[data-mg-level]");
                         if (checkbox.checked) {
-                            for (let i = 1; i < inputs.length; i++) {  //check all children checkboxes
-                                inputs[i].checked = true;
-                            }
-                            FilterCheckboxes()
+                            [...inputs].forEach((input) => input.checked = true)  // check all children
+                            filterCheckboxes()
                         } else {
-                            for (let i = 1; i < inputs.length; i++) { // uncheck all children checkboxes
-                                inputs[i].checked = false;
-                            }
-                            FilterCheckboxes()
+                            [...inputs].forEach((input) => input.checked = false) // uncheck all children
+                            filterCheckboxes()
                         }
                         })
                         }
