@@ -19,14 +19,17 @@ class iRODSSchemaManager(SchemaManager):
         permission_manager_class=BaseSchemaPermissionsManager,
     ):
         mango_collection = Path("/") / zone / "mango"
+        irods_session = get_zone_operator_session(zone)
+
+        # TODO make rods user configurable
         rods_irods_session = get_zone_operator_session(zone, client_user="rods")
         if not rods_irods_session.collections.exists(str(mango_collection)):
             rods_irods_session.collections.create(str(mango_collection))
         rods_irods_session.acls.set(
-            iRODSAccess("own", str(mango_collection), user_name="operator"),
+            iRODSAccess("own", str(mango_collection), user_name=irods_session.username),
             recursive=True,
         )
-        irods_session = get_zone_operator_session(zone)
+
         self._storage_schemas_path = str(mango_collection / "schemas" / realm)
 
         if not irods_session.collections.exists(self._storage_schemas_path):
