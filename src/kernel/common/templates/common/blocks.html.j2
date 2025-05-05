@@ -359,7 +359,7 @@
                         if (checkbox.getAttribute("data-mg-level") == "second-level") {   //for metadata on the second level do this
                             checkbox.addEventListener("change", () => {
                                 filterCheckboxes()
-                                let parentCheckbox = checkbox.parentElement.parentElement.parentElement.parentElement;
+                                let parentCheckbox = checkbox.closest(".accordion-item");
                                 let input = parentCheckbox.querySelector("input:not([data-mg-level])");
                                 if (checkbox.checked == false) { // uncheck parent checkbox
                                     input.checked = false;
@@ -376,8 +376,7 @@
                     else {
                         //for metadata on the first level do this
                         checkbox.addEventListener("change", () => {
-                        let container = checkbox.parentElement.parentElement
-                        let inputs = container.querySelectorAll("input[data-mg-level]");
+                        let inputs = checkbox.closest(".accordion-item").querySelectorAll("input[data-mg-level]");
                         if (checkbox.checked) {
                             [...inputs].forEach((input) => input.checked = true)  // check all children
                             filterCheckboxes()
