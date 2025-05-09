@@ -8,7 +8,7 @@ Note: versioning follows Semver standard with 3 levels
 ### New features
 
 - Increased download limit to 50GB over http
-- Upgraded PRC requirement to 3.1.0 (use requirements-mangoflow.txt)
+- Upgraded PRC requirement to 3.1.0 (use requirements-mango-flow.txt)
 
 ### Bug fixes
 
