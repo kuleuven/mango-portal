@@ -399,6 +399,7 @@ def collection_browse(collection=None):
                             prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                             result_dict={},
                         )
+                        schema_labels[schema]["title"] = schema_dict["title"]
                         logging.info(
                             f"Flattened schema {schema}: {schema_labels[schema]}"
                         )
@@ -600,6 +601,7 @@ def view_object(data_object_path):
                         prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                         result_dict={},
                     )
+                    schema_labels[schema]["title"] = schema_dict["title"]
                 logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
             except:
                 pass
