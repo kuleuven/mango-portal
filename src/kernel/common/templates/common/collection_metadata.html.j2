@@ -1,4 +1,6 @@
-{{ block_macros.metadata_block(collection.id, collection.path.lstrip("/") , grouped_metadata, schemas, schema_labels, readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="collection", current_user_rights=current_user_rights, realm=realm) }}
+{{ block_macros.metadata_block(collection.id, collection.path.lstrip("/") , grouped_metadata, schemas, 
+schema_labels, readonly_prefixes=config["METADATA_NOEDIT_PREFIX"], item_type="collection", 
+current_user_rights=current_user_rights, realm=realm, reorganized_dict=reorganized_dict) }}
 <!-- Add meta data modal -->
 <div class="modal fade"
      id="addMetaData"
