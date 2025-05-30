@@ -394,7 +394,7 @@ def collection_browse(collection=None):
 
                     if schema_dict:
                         schema_labels[schema] = flatten_schema(
-                            ("", schema_dict),
+                            schema_dict,
                             level=0,
                             prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                             result_dict={},
@@ -595,7 +595,7 @@ def view_object(data_object_path):
 
                 if schema_dict:
                     schema_labels[schema] = flatten_schema(
-                        ("", schema_dict),
+                        schema_dict,
                         level=0,
                         prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                         result_dict={},
