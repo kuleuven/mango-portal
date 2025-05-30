@@ -215,3 +215,6 @@ def add_tika_metadata():
             request.referrer.split("#")[0] + request.values["redirect_hash"]
         )
     return redirect(request.referrer)
+
+
+
