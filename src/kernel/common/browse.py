@@ -60,6 +60,8 @@ from kernel.metadata_schema import get_schema_manager
 from kernel.template_overrides import get_template_override_manager
 from kernel.common.error import flash_error
 
+from mango_mdconverter import md2dict
+
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
 
 from mango_ui import (
@@ -159,21 +161,23 @@ def group_prefix_metadata_items(
     def is_valid_composite_units(units):
         return re.match("\d+(\.\d+)*$", units)
 
-    grouped_metadata = {no_schema_label: MultiDict()}
+    ANALYSIS_LABEL = "analysis"
+
+    grouped_metadata = {"schema": {}, no_schema_label: {}}
     if group_analysis_unit:
-        grouped_metadata["analysis"] = MultiDict()
+        grouped_metadata[ANALYSIS_LABEL] = {}
     for avu in metadata_items:
         if avu.name.startswith(mango_prefix) and avu.name.count(".") >= 2:
             (mango_schema_prefix, schema, avu_name) = avu.name.split(".", 2)
             # item.name = meta_name
-            if schema not in grouped_metadata:
-                grouped_metadata[schema] = MultiDict()
+            if schema not in grouped_metadata["schema"]:
+                grouped_metadata["schema"][schema] = MultiDict()
             if schema not in schemas:
-                grouped_metadata[schema].add(avu.name, avu)
+                grouped_metadata["schema"][schema].add(avu.name, avu)
                 continue
             # Allow units only for first level fields, eg if set through non mango schema processing
             if avu.units and avu.name.count(".") == 2:
-                grouped_metadata[schema].add(avu.name, avu)
+                grouped_metadata["schema"][schema].add(avu.name, avu)
                 continue
             if (
                 avu.units
@@ -182,7 +186,7 @@ def group_prefix_metadata_items(
                 and avu_name.count(".") == (avu.units.count(".") + 1)
             ):
                 components = avu.name.split(".")
-                parent = grouped_metadata[schema]
+                parent = grouped_metadata["schema"][schema]
                 for _i in range(len(components)):
                     if _i < 2:
                         continue
@@ -205,23 +209,43 @@ def group_prefix_metadata_items(
                 #     grouped_metadata[schema][composite_id][avu.units] = MultiDict()
                 # grouped_metadata[schema][composite_id][avu.units].add(avu.name, avu)
             else:
-                grouped_metadata[schema].add(avu.name, avu)
+                grouped_metadata["schema"][schema].add(avu.name, avu)
 
-        elif group_analysis_unit and avu.units and avu.units.startswith("analysis"):
-            grouped_metadata["analysis"].add(avu.name, avu)
+        elif group_analysis_unit and avu.units and avu.units.startswith("analysis/"):
+            analysis_group = avu.units.split("/")[1]
+            if not analysis_group in grouped_metadata[ANALYSIS_LABEL]:
+                grouped_metadata[ANALYSIS_LABEL][analysis_group] = MultiDict()
+            grouped_metadata[ANALYSIS_LABEL][analysis_group].add(avu.name, avu)
+        elif avu.name.count(".") > 0:
+            other_group = avu.name.split(".", 1)[0]
+            if not other_group in grouped_metadata[no_schema_label]:
+                grouped_metadata[no_schema_label][other_group] = MultiDict()
+            grouped_metadata[no_schema_label][other_group].add(avu.name, avu)
         else:
-            grouped_metadata[no_schema_label].add(avu.name, avu)
+            if not no_schema_label in grouped_metadata[no_schema_label]:
+                grouped_metadata[no_schema_label][no_schema_label] = MultiDict()
+            grouped_metadata[no_schema_label][no_schema_label].add(avu.name, avu)
     # sort the non schema lists by key
-    grouped_metadata[no_schema_label] = MultiDict(
-        sorted(grouped_metadata[no_schema_label].items(), key=itemgetter(0))
-    )
-    if "analysis" in grouped_metadata:
-        grouped_metadata["analysis"] = MultiDict(
-            sorted(grouped_metadata["analysis"].items(), key=itemgetter(0))
-        )
-    # if there are no consolidated metadata in the analysis group, delete the (empty) group
-    if group_analysis_unit and len(grouped_metadata["analysis"]) == 0:
-        del grouped_metadata["analysis"]
+    if len(grouped_metadata[no_schema_label]) > 0:
+        for k in grouped_metadata[no_schema_label]:
+            grouped_metadata[no_schema_label][k] = MultiDict(
+                sorted(grouped_metadata[no_schema_label][k].items(), key=itemgetter(0))
+            )
+    else:
+        del grouped_metadata[no_schema_label]
+    if group_analysis_unit:
+        if len(grouped_metadata[ANALYSIS_LABEL]) > 0:
+            for k in grouped_metadata[ANALYSIS_LABEL]:
+                grouped_metadata[ANALYSIS_LABEL][k] = MultiDict(
+                    sorted(
+                        grouped_metadata[ANALYSIS_LABEL][k].items(), key=itemgetter(0)
+                    )
+                )
+        else:
+            del grouped_metadata[ANALYSIS_LABEL]
+
+    if len(grouped_metadata["schema"]) == 0:
+        del grouped_metadata["schema"]
     return grouped_metadata
 
 
@@ -345,13 +369,13 @@ def collection_browse(collection=None):
         and current_app.config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata
     ):
         pass
-    else:
+    elif "schema" in grouped_metadata:
         # json_template_dir = get_metadata_schema_dir(g.irods_session)
 
-        for schema in grouped_metadata:  # schema_labels[schema][item.name]:
-            if schema != current_app.config["MANGO_NOSCHEMA_LABEL"] and schema_manager:
+        for schema in grouped_metadata["schema"]:  # schema_labels[schema][item.name]:
+            if schema_manager:
                 try:
-                    if version := grouped_metadata[schema].get(
+                    if version := grouped_metadata["schema"][schema].get(
                         f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}.__version__",
                         "",
                     ):
@@ -421,19 +445,19 @@ def collection_browse(collection=None):
     my_groups = g.irods_session.my_groups
 
     # temp: look up metadata items in full, including create_time and modify_time
-    from irods.query import Query
-    from irods.column import Criterion, In
-    from irods.models import CollectionMeta
+    # from irods.query import Query
+    # from irods.column import Criterion, In
+    # from irods.models import CollectionMeta
 
-    objects = [CollectionMeta]
-    filters = []
-    avu_ids = [metadata.avu_id for (_, metadata) in grouped_metadata[other].items()]
-    metadata_objects = []
-    if avu_ids:
-        filters += [In(CollectionMeta.id, avu_ids)]
+    # objects = [CollectionMeta]
+    # filters = []
+    # avu_ids = [metadata.avu_id for (_, metadata) in grouped_metadata[other].items()]
+    # metadata_objects = []
+    # if avu_ids:
+    #     filters += [In(CollectionMeta.id, avu_ids)]
 
-        query = Query(g.irods_session, *objects).filter(*filters)
-        metadata_objects = query.execute()
+    #     query = Query(g.irods_session, *objects).filter(*filters)
+    #     metadata_objects = query.execute()
 
     # end temp
     view_template = get_template_override_manager(
@@ -443,6 +467,9 @@ def collection_browse(collection=None):
     )
     logging.info(f"Collection view: using template {view_template} for {current_collection.path}")
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
+
+    reorganized_dict = json.dumps(md2dict.convert_metadata_to_dict(current_collection.metadata.items()))
+    #print(reorganized_dict)
 
     return render_template(
         view_template,
@@ -461,14 +488,18 @@ def collection_browse(collection=None):
         grouped_metadata=grouped_metadata,  # sorted_metadata,
         schema_labels=schema_labels,
         my_groups=my_groups,
-        metadata_objects=metadata_objects,
+        # metadata_objects=metadata_objects,
         current_user_rights=get_current_user_rights(
             g.irods_session, current_collection
         ),
         user_trash_path=user_trash_path,
         tabs=collection_view_tabs,
         extra_tabs=collection_extra_tabs,
+        reorganized_dict = reorganized_dict,
     )
+
+
+
 
 
 @browse_bp.route("/data-object/view/<path:data_object_path>")
@@ -543,39 +574,38 @@ def view_object(data_object_path):
         and current_app.config["MANGO_NOSCHEMA_LABEL"] in grouped_metadata
     ):
         pass
-    else:
+    elif "schema" in grouped_metadata:
         json_template_dir = get_metadata_schema_dir(g.irods_session)
 
-        for schema in grouped_metadata:  # schema_labels[schema][item.name]:
-            if schema != current_app.config["MANGO_NOSCHEMA_LABEL"]:
-                try:
-                    if version := grouped_metadata[schema].get(
-                        f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}.__version__",
-                        "",
-                    ):
-                        schema_dict = json.loads(
-                            schema_manager.load_schema(
-                                schema, status="", version=version.value
-                            )
+        for schema in grouped_metadata["schema"]:  # schema_labels[schema][item.name]:
+            try:
+                if version := grouped_metadata["schema"][schema].get(
+                    f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}.__version__",
+                    "",
+                ):
+                    schema_dict = json.loads(
+                        schema_manager.load_schema(
+                            schema, status="", version=version.value
                         )
-                    else:
-                        schema_dict = json.loads(
-                            schema_manager.load_schema(schema, status="published")
-                        )
+                    )
+                else:
+                    schema_dict = json.loads(
+                        schema_manager.load_schema(schema, status="published")
+                    )
 
-                    if schema_dict:
-                        schema_labels[schema] = flatten_schema(
-                            ("", schema_dict),
-                            level=0,
-                            prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
-                            result_dict={},
-                        )
-                    logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
-                except:
-                    pass
+                if schema_dict:
+                    schema_labels[schema] = flatten_schema(
+                        ("", schema_dict),
+                        level=0,
+                        prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
+                        result_dict={},
+                    )
+                logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
+            except:
+                pass
     if group_analysis_unit:
         consolidated_analysis_metadata_names = (
-            [avu_name for avu_name in grouped_metadata["analysis"]]
+            [avu_name for v in grouped_metadata["analysis"].values() for avu_name in v]
             if "analysis" in grouped_metadata
             else []
         )
@@ -584,9 +614,10 @@ def view_object(data_object_path):
         # pprint.pprint(grouped_metadata['other'].items())
         consolidated_analysis_metadata_names = [
             avu.name
-            for avu in grouped_metadata[
+            for group in grouped_metadata[
                 current_app.config["MANGO_NOSCHEMA_LABEL"]
             ].values()
+            for avu in group
             if avu.units and avu.units.startswith("analysis")
         ]
     # see if the mime type is present in the metadata, if not
@@ -648,6 +679,8 @@ def view_object(data_object_path):
     logging.info(f"Object view: using template {view_template}")
     logging.info(f"Realm: {realm}")
 
+    reorganized_dict = json.dumps(md2dict.convert_metadata_to_dict(data_object.metadata.items()))
+
     return render_template(
         view_template,
         data_object=data_object,
@@ -658,6 +691,7 @@ def view_object(data_object_path):
         acl_counts=acl_counts,
         my_groups=my_groups,
         grouped_metadata=grouped_metadata,
+        reorganized_dict = reorganized_dict,
         schema_labels=schema_labels,
         realm=realm,
         schemas=schemas,

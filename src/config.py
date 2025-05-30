@@ -99,7 +99,7 @@ MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {
 }
 
 MANGO_SCHEMA_MANAGER_CLASS = {
-    "module": "plugins.mango_overrides.schema_handler",
+    "module": "kernel.metadata_schema.schema_handler",
     "class": "iRODSSchemaManager",
 }
 

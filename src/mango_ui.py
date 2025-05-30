@@ -27,7 +27,7 @@ class TabInfo:
     id: str
     title: str
     template: str
-    bootstrap_icon: str|None = None
+    bootstrap_icon: str | None = None
 
 
 object_view_tabs = [
