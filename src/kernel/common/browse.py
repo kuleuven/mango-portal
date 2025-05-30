@@ -172,9 +172,9 @@ def group_prefix_metadata_items(
             # item.name = meta_name
             if schema not in grouped_metadata["schema"]:
                 grouped_metadata["schema"][schema] = MultiDict()
-            if schema not in schemas:
-                grouped_metadata["schema"][schema].add(avu.name, avu)
-                continue
+            # if schema not in schemas:
+            #     grouped_metadata["schema"][schema].add(avu.name, avu)
+            #     continue
             # Allow units only for first level fields, eg if set through non mango schema processing
             if avu.units and avu.name.count(".") == 2:
                 grouped_metadata["schema"][schema].add(avu.name, avu)
