@@ -1,0 +1,79 @@
+from plugins.operator import get_zone_operator_session
+from pathlib import Path
+from irods.access import iRODSAccess
+
+
+def get_current_path(zone):
+    return Path("storage" / zone / "mango" / "realms")
+
+
+def get_destination_path(zone):
+    return Path("/" / zone / "mango")
+
+
+def setup_zone(zone, operator_user):
+    rods_irods_session = get_zone_operator_session(zone, client_user="rods")
+    mango_col = str(get_destination_path(zone))
+
+    if not rods_irods_session.collections.exists(mango_col):
+        rods_irods_session.collections.create(mango_col)
+        rods_irods_session.acls.set(
+            iRODSAccess("own", mango_col, user_name=operator_user),
+            recursive=True,
+        )
+
+
+def setup_realm(irods_session, schemas_path, realm):
+    # create the realm collection if needed
+    schemas_path = str(schemas_path)
+    if not irods_session.collections.exists(schemas_path):
+        irods_session.collections.create(schemas_path, recurse=True)
+        irods_session.acls.set(
+            iRODSAccess("read", schemas_path, user_name=realm),
+            recursive=True,
+        )
+        irods_session.acls.set(iRODSAccess("inherit", schemas_path))
+
+
+def migrate_schemas(zone):
+    try:
+        irods_session = get_zone_operator_session(zone)
+    except Exception as e:
+        raise ValueError("This zone is not supported or something else went wrong: ", e)
+    source_path = get_current_path(zone)
+    destination_path = get_destination_path(zone)
+    # set up the zone
+    setup_zone(zone, irods_session.username)
+
+    # set up each realm
+    for realm_path in source_path.iterdir():
+        realm = realm_path.name
+        schemas_path = destination_path / realm / "schemas"
+        setup_realm(schemas_path)
+
+        # iterate over each schema
+        for schema_folder in (source_path / "schemas").iterdir():
+            schema_name = schema_folder.name
+            schema_path = schemas_path / schema_name
+            irods_session.collections.create(str(schema_path))
+            for schema_file in schema_folder.iterdir():
+                destination = str(schema_path / schema_file.name)
+                irods_session.data_objects.put(str(schema_file), destination)
+        print(
+            f"Schemas to migrate: {','.join(schema.name for schema in (source_path/ 'schemas').iterdir())}"
+        )
+        print(
+            f"Successfully migrated schemas: {irods_session.collections.get(str(schemas_path)).subcollections}"
+        )
+
+
+if __name__ == "__main__":
+    import sys
+
+    args = sys.argv
+    if len(args) == 1:
+        print("Please provide names of valid zones")
+        exit()
+    for zone in args[1:]:
+        print(f"Starting migration for `{zone}`")
+        # migrate_schemas(zone)
