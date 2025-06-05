@@ -2,13 +2,21 @@ from plugins.operator import get_zone_operator_session
 from pathlib import Path
 from irods.access import iRODSAccess
 
+"""Migrate existing schemas from persistent storage to iRODS
+
+1. Export the API_URL and API_TOKEN of the tier you are in
+2. Run this from mango-portal/src with the virtual environment activated
+3. Run like `python migrate_schemas.py <zone1> <zone2>`  (with whatever zones you want to migrate)
+
+"""
+
 
 def get_current_path(zone):
-    return Path("storage" / zone / "mango" / "realms")
+    return Path("storage") / zone / "mango" / "realms"
 
 
 def get_destination_path(zone):
-    return Path("/" / zone / "mango")
+    return Path("/") / zone / "mango"
 
 
 def setup_zone(zone, operator_user):
@@ -49,21 +57,24 @@ def migrate_schemas(zone):
     for realm_path in source_path.iterdir():
         realm = realm_path.name
         schemas_path = destination_path / realm / "schemas"
-        setup_realm(schemas_path)
+        setup_realm(irods_session, schemas_path, realm)
 
         # iterate over each schema
-        for schema_folder in (source_path / "schemas").iterdir():
+        for schema_folder in (realm_path / "schemas").iterdir():
             schema_name = schema_folder.name
             schema_path = schemas_path / schema_name
+            print(schema_name, len([x for x in schema_folder.iterdir()]))
+            if len([x for x in schema_folder.iterdir()]) == 0:
+                continue
             irods_session.collections.create(str(schema_path))
             for schema_file in schema_folder.iterdir():
                 destination = str(schema_path / schema_file.name)
                 irods_session.data_objects.put(str(schema_file), destination)
         print(
-            f"Schemas to migrate: {','.join(schema.name for schema in (source_path/ 'schemas').iterdir())}"
+            f"Schemas to migrate: {','.join(schema.name for schema in (realm_path/ 'schemas').iterdir() if len([x for x in schema.iterdir()]) > 0)}"
         )
         print(
-            f"Successfully migrated schemas: {irods_session.collections.get(str(schemas_path)).subcollections}"
+            f"Schemas in iRODS: {[schema.name for schema in irods_session.collections.get(str(schemas_path)).subcollections]}"
         )
 
 
@@ -76,4 +87,4 @@ if __name__ == "__main__":
         exit()
     for zone in args[1:]:
         print(f"Starting migration for `{zone}`")
-        # migrate_schemas(zone)
+        migrate_schemas(zone)
