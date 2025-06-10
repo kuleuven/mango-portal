@@ -163,7 +163,7 @@ def edit_schema_metadata_for_item():
 
     if schema_as_json:
         flat_form_dict = flatten_schema(
-            ("", form_dict), level=0, prefix=prefix, result_dict={}
+            form_dict, level=0, prefix=prefix, result_dict={}
         )
 
     catalog_item = (
