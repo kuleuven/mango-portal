@@ -56,7 +56,15 @@ def migrate_schemas(zone):
     # set up each realm
     for realm_path in source_path.iterdir():
         realm = realm_path.name
+        try:
+            irods_session.groups.get(realm)
+        except Exception as e:
+            print(f"{realm} does not exist as a group", e)
+            continue
         schemas_path = destination_path / realm / "schemas"
+        # if len(list((realm_path / "schemas").iterdir())) == 0:
+        #     print(f"No schemas for this realm")
+        #     continue
         setup_realm(irods_session, schemas_path, realm)
 
         # iterate over each schema
@@ -69,7 +77,10 @@ def migrate_schemas(zone):
             irods_session.collections.create(str(schema_path))
             for schema_file in schema_folder.iterdir():
                 destination = str(schema_path / schema_file.name)
-                irods_session.data_objects.put(str(schema_file), destination)
+                try:
+                    irods_session.data_objects.put(str(schema_file), destination)
+                except Exception as e:
+                    print(f"Failed to migrate {schema_file}", e)
         print(
             f"Schemas to migrate: {','.join(schema.name for schema in (realm_path/ 'schemas').iterdir() if len([x for x in schema.iterdir()]) > 0)}"
         )
