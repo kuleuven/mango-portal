@@ -1,7 +1,9 @@
 FROM python:3.10
 WORKDIR /app
 COPY requirements-mango-flow.txt requirements.txt
-RUN apt-get update && apt-get -y upgrade && apt-get -y install poppler-utils nano vim
+RUN apt-get update && apt-get -y upgrade && \
+	apt-get -y install libimage-exiftool-perl nano poppler-utils vim && \
+	rm -rf /var/lib/apt/lists/*
 RUN pip install -r requirements.txt
 RUN echo "Europe/Brussels" > /etc/timezone && rm /etc/localtime && dpkg-reconfigure -f noninteractive tzdata
 ARG TIKA_URL=http://localhost:9998/
