@@ -11,5 +11,6 @@ ENV TIKA_URL=$TIKA_URL
 ENV spOption="ManGO_portal"
 COPY src  /app/
 COPY unstash/src /app/
+COPY build-labels.json /app/static/build-info.json
 EXPOSE 80
 CMD ["python", "waitress_serve.py"]
