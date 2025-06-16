@@ -125,10 +125,6 @@ class TemplatesRequest extends MangoRequest {
       // container id
       for (let template of grouped_templates) {
         schema_infos[template.name] = template.schema_info;
-        // don't do anything if there are only archived versions
-        if (!(template.schema_info.draft | template.schema_info.published)) {
-          continue;
-        }
         let schema_name = template.name;
         // pattern to retrieve the name, version and status from the filename
         let re =
@@ -142,6 +138,9 @@ class TemplatesRequest extends MangoRequest {
         }
         if (this_template.draft_count > 0) {
           versions.push(this_template.draft_name.match(re).groups);
+        }
+        if (versions.length == 0) {
+          versions.push({"name": schema_name, "version": this_template.versions_sorted[this_template.versions_sorted.length - 1], "status": "archived"}); 
         }
         let title = this_template.title;
 
