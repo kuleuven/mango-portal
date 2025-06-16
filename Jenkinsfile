@@ -4,7 +4,7 @@ properties([
         disableConcurrentBuilds(),
 ])
 
-labelFile = "/app/static/build-labels.json"
+def labelFile = "/app/static/build-labels.json"
 
 def allowed_branch_names = [
   'development': 'development',
