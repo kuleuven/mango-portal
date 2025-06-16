@@ -4,6 +4,8 @@ properties([
         disableConcurrentBuilds(),
 ])
 
+labelFile = "/app/static/build-labels.json"
+
 def allowed_branch_names = [
   'development': 'development',
   'mango_flow': 'development',
@@ -64,7 +66,6 @@ node() {
     imageTag = tag
     noPublish = !publish
     unstash = 'mango_plugins'
-    labelFile = "/app/static/build-labels.json"
   }
 }
 if (tier!="") {
