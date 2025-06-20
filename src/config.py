@@ -71,8 +71,12 @@ MANGO_PLUGIN_BLUEPRINTS = [
     {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
     {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
     {"module": "plugins.mango_audit.audit_admin", "blueprint": "mango_audit_bp"},
-    {"module": "plugins.mango_audit.audit_history", "blueprint": "mango_audit_history_bp"},
+    {
+        "module": "plugins.mango_audit.audit_history",
+        "blueprint": "mango_audit_history_bp",
+    },
     {"module": "plugins.cold_storage.cs_routes", "blueprint": "cold_storage_bp"},
+    {"module": "kernel.search2.basic_search", "blueprint": "basic_search2_bp"},
     # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
 ]
 

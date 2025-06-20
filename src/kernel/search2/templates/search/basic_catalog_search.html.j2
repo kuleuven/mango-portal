@@ -1,0 +1,559 @@
+{% extends "base.html.j2" %}
+{% from 'bootstrap5/form.html' import render_form, render_field, render_form_row, render_hidden_errors %}
+{% block body %}
+    <style>
+.vertical_horizontal_center {
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+}
+
+#exact_match {
+    margin-top: -15px;
+    margin-left: 15px;
+}
+
+.l1 {
+  padding-left: 3em;
+}
+
+    </style>
+    {% if results %}
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-secondary"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#basic-search-form"
+                    aria-expanded="false"
+                    aria-controls="collapseform">Show/hide filters</button>
+        </div>
+    {% endif %}
+    <!-- start form -->
+    <form method="get"
+          action="{{ url_for('basic_search2_bp.catalog_search2') }}"
+          id="basic-search-form"
+          {% if results %}class="collapse"{% endif %}>
+        
+        <h4>Search</h4> 
+
+
+        {{ render_form_row([search_form.collection_subtree.collection]) }}
+
+
+        {{ render_form_row([search_form.item_name.item_name]) }}
+
+
+       <div id="exact_match" > 
+            {{ search_form.item_name.comparison(class_="form-check-input")  }}
+            {{ search_form.item_name.comparison.label }}
+        </div>   
+ 
+
+        {{ render_form_row([search_form.item_name.item_type]) }}
+
+
+        <!-- METADATA FILTERS -->
+
+    <!--    <h4>Filter by Metadata</h4> --> 
+
+<br> 
+        <div id="metadataFields">
+        <div id="schemaMetadata">
+                <h5>Schema</h5>
+                {{ render_form_row([search_form.schema_metadata.schema , search_form.schema_metadata.meta_a, search_form.schema_metadata.meta_v, search_form.schema_metadata.required],
+                                col_map = {
+                                "schema_metadata-schema": 'col-md-4',
+                                "schema_metadata-meta_a" : 'col-md-3',
+                                "schema_metadata-meta_v": 'col-md-3',
+                                "schema_metadata-required": 'col-md-2 checkbox'},
+                                form_group_classes="col-mb-0") }}
+
+
+        {% for subform in search_form.schema_metadata_no_label %}
+            {{ render_form_row([subform.schema, subform.meta_a, subform.meta_v])}}
+            {% endfor %}
+
+        <a href="#" id="addSchemaField"> Add schema metadata </a>
+ </div>
+
+                <h5>Non-schema</h5>
+                <div id="nonSchemaMetadata"> 
+           {{ render_form_row([search_form.non_schema_metadata.meta_attribute, search_form.non_schema_metadata.meta_value, search_form.non_schema_metadata.required],
+                                col_map = {
+                                "non_schema_metadata-meta_attribute" : 'col-md-5',
+                                "non_schema_metadata-meta_value": 'col-md-5',
+                                "non_schema_metadata-required": 'col-md-2 checkbox'},
+                                form_group_classes="col-mb-0") }}
+
+            {% for subform in search_form.non_schema_metadata_no_label %}
+                    {{ render_form_row([subform.meta_attribute, subform.meta_value, subform.required])}}
+
+                    {% endfor %}
+
+        <a href="#" id="addNonSchemaField"> Add non-schema metadata </a>
+            </div> 
+        </div>
+
+
+
+         <!--- DATE FILTER ---> 
+
+       <!-- <h4>Filter by Date</h4> --> 
+
+<div class="row">
+            <div class="col-md-6">
+                <h5>Created</h5>
+                {{ render_form_row([search_form.create_date.comparison, search_form.create_date.date])}}
+            </div>
+            <div class="col-md-6">
+                <h5>Modified</h5>
+                {{ render_form_row([search_form.mod_date.comparison, search_form.mod_date.date])}}
+            </div>
+        </div>
+
+
+        <div>
+            <br>
+            <input id="submit"
+                   class="btn btn-primary btn-md"
+                   name="submit"
+                   type="submit"
+                   value="Search">
+        </div>
+        {{ render_field(search_form.per_page) }}
+        {{ render_field(search_form.total) }}
+        {#   {{ render_field(search_form.submit) }}  #}
+        {# {{ search_form.csrf_token }} #}
+    </form>
+    {{ render_hidden_errors(search_form) }}
+    {# {{ pformat(results) }} #}
+    {# {{ render_form(search_form, form_type='horizonthal') }} #}
+    {% if dict_results|length > 0 %}
+        <h4 class="mt-3">Results</h4>
+        <div class="row">
+            <div class="col-md-8">{{ pagination.links }}</div>
+            <div class="col-md-4 text-end">{{ pagination.info }}</div>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    {% for header in dict_results[0] %}<th>{{ header | capitalize() }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in dict_results %}
+                    <tr>
+                        {% for key, value in row.items() %}
+                            {% if key == 'size' %}
+                                <td>{{ value | filesizeformat }}</td>
+                            {% elif key =='name' %}
+                                <td class="text-wrap text-break">
+                                    {% if row["type"] == 'data_object' %}
+                                        <a href="{{ url_for('browse_bp.view_object', data_object_path = row['path']+'/'+row['name']) }}">{{ value }}</a>
+                                    {% else %}
+                                        <a href="{{ url_for('browse_bp.collection_browse', collection=row['name']) }}">{{ value }}</a>
+                                    {% endif %}
+                                </td>
+                            {% elif key =='path' %}
+                                <td class="text-wrap text-break">{{ value }}</td>
+                            {% else %}
+                                <td>{{ value }}</td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="row">{{ pagination.links }}</div>
+    {% elif search_time is defined %}
+        <div class="text-warning">No matches for the specified criteria</div>
+    {% endif %}
+    {% if search_time is defined %}
+        <p class="small text-end">Searching took {{"%.3f" % (search_time) }} seconds</p>
+    {% endif %}
+    <datalist id="search_meta_names">
+        {% for meta_name in meta_names %}<option value="{{ meta_name }}" />{% endfor %}
+    </datalist>
+    {# <datalist id="co_search_meta_names">
+{% for meta_name in meta_names %}
+    <option value="{{ meta_name }}">
+{%endfor%}
+</datalist> #}
+    {# {{ collection_tree }} #}
+
+
+    <script> //  script loads the schema metadata 
+
+const collections = document.getElementById("collection_subtree-collection");
+
+collections.addEventListener("change", function() {
+    window.open(`/catalog/search?collection_subtree-collection=${collections.value}`, '_self');
+})
+
+const schemasObject = {{ schemas_dict|tojson }} // get the schema metadata
+
+function prependPlaceholder(schema, placeholder_text)  {  // create a placeholder for select fields
+    let basicOption = document.createElement("option");
+    basicOption.innerHTML = placeholder_text;
+    basicOption.disabled = true;
+    schema.prepend(basicOption);
+    schema.selectedIndex = "0";
+};
+
+const selectElements = document.querySelectorAll("#metadataFields .form-select");  // make a list of all select elements
+
+[...selectElements].forEach(function(schema, index) {
+  if (index % 2 === 0) {  // get even select elements (=schemas)
+    prependPlaceholder(schema, "choose a schema"); 
+    schema.addEventListener('change', function() {
+        let attribute = [...selectElements][index+1];
+        attribute.innerHTML = "";    
+        const optgroups = {}  // create optgroups obj to store optgroups in
+        schemasObject[schema.value].forEach( dict => {  // get the values for the select schema 
+              for (const [key, value] of Object.entries(dict)) {
+                    if (value.type === "label") {  // if it is a label
+                        let optgroup = document.createElement("optgroup");  // create an optgroup
+                        optgroup.setAttribute("label", value.display_label);
+                        attribute.add(optgroup);
+                        optgroups[value.title] = optgroup;  // add optgroup element to optgroup obj 
+                    }
+                    else { // if it is a field
+                        let option = document.createElement("option"); // create an option 
+                        option.innerHTML = value.title;
+                        option.setAttribute("value", key);
+                        option.setAttribute("type", value.type);
+                        if (value.enum) {
+                            option.setAttribute("enum", value.enum)
+                        }
+                        if (!value.parent) {
+                            attribute.add(option);  // add the option to attribute
+                        }
+                        else {
+                            optgroups[value.parent].appendChild(option)  // if the parent is in the optgroup obj then we add the field to this group
+                        };
+                };
+            };  
+        });          
+                let groups = attribute.querySelectorAll("optgroup");  // remove optgroup if it is empty
+                groups.forEach((x) => { if (x.children.length === 0) { 
+                    x.remove() }
+                } );
+                prependPlaceholder(attribute, "choose an attribute");
+   });
+ };
+});
+
+function getValue(attribute) {
+        console.log(attribute.id)
+        if (attribute.id === "schema_metadata-meta_a") {
+            return(document.getElementById("schema_metadata-meta_v"))
+        }
+        else {
+            let i = 0;
+            while (!attribute.id.includes(i)) { i++ };
+            return(document.getElementById("schema_metadata_no_label-" + i + "-meta_v"))
+        }
+}
+
+function createField(type, elementName, elementID) {
+    let element
+
+    if (type === "select") {
+    element = document.createElement("select")
+    element.classList.add("form-select");
+    }
+    else {
+    element = document.createElement("input")
+    element.classList.add("form-control");   
+    }
+    element.id = elementID;
+    element.setAttribute("name", elementName);     
+    return element
+}
+
+
+[...selectElements].forEach(function(schema, index) {
+    if (index % 2 !== 0) {  // get uneven select elements (= attributes)
+    let attribute = [...selectElements][index];
+    console.log(attribute)
+    function checkType() {
+        let selectedOption = attribute.options[attribute.selectedIndex];
+        let value = getValue(attribute);
+        switch(selectedOption.getAttribute("type")) {
+            case "select":
+                let select = createField("select", "schema_metadata-meta_v", "schema_metadata-meta_v");
+                let options = selectedOption.getAttribute("enum").split(",")
+                options.forEach((optionText) => {
+                        let option = document.createElement("option");
+                        option.textContent = optionText;
+                        select.appendChild(option)
+                })
+                value.replaceWith(select);
+                break;
+            case "integer":
+                let integer = createField("integer", "schema_metadata-meta_v", "schema_metadata-meta_v");
+                value.replaceWith(integer);
+                integer.type = "number";
+                break;
+            case "date":
+                let date = createField("date", "schema_metadata-meta_v", "schema_metadata-meta_v");
+                value.replaceWith(date);
+                date.type = "date";
+                break;
+            default:
+                let input = createField("default", "schema_metadata-meta_v", "schema_metadata-meta_v");
+                value.replaceWith(input);
+                input.type = "text"; 
+        }
+    }
+    attribute.addEventListener("change", checkType);
+    }
+})
+
+
+//dynamically create the label for row required for non schema metadata 
+let checkboxColNonSchema = document.getElementById("nonSchemaMetadata").querySelector(".checkbox");
+let requiredLabelNonSchema = document.createElement("label");
+requiredLabelNonSchema.classList.add('form-check-label');
+requiredLabelNonSchema.setAttribute('for', 'non_schema_metadata-required');
+requiredLabelNonSchema.innerHTML = "Required";
+checkboxColNonSchema.prepend(requiredLabelNonSchema)
+
+//dynamically create the label for row required for schema metadata
+let checkboxColSchema = document.getElementById("schemaMetadata").querySelector(".checkbox");
+let requiredLabelSchema = document.createElement("label");
+requiredLabelSchema.classList.add('form-check-label');
+requiredLabelSchema.setAttribute('for', 'schema_metadata-required');
+requiredLabelSchema.innerHTML = "Required";
+checkboxColSchema.prepend(requiredLabelSchema)
+document.getElementById("schema_metadata-required").classList.add("mt-3")
+document.getElementById("non_schema_metadata-required").classList.add("mt-3")
+
+
+
+
+  let counterSchema = 0;
+  let counterNonSchema = 0;
+            //schema
+        button = document.getElementById("addSchemaField"); 
+        button.addEventListener("click", function() {
+            let myList = document.querySelectorAll("#metadataFields #schemaMetadata .row");
+            let row = document.createElement("div");
+            optionsList = document.getElementById("schema_metadata-schema"); 
+            row.classList.add("row");
+
+            console.log(counterSchema);
+
+            //col1
+            let col1 = document.createElement("div")
+            col1.classList.add("col-md-4")
+            let container1 = document.createElement("div")
+            container1.classList.add("mb-0")
+            const schemaSelectElement = document.createElement("select")
+            schemaSelectElement.classList.add("form-select");
+            schemaSelectElement.setAttribute("name", `schema_metadata_no_label-${counterSchema}-schema`)
+            schemaSelectElement.id = `schema_metadata_no_label-${counterSchema}-schema`;
+            [...optionsList.children].forEach((x) => {
+                const clone = x.cloneNode(true);
+                schemaSelectElement.appendChild(clone);  })
+            schemaSelectElement.selectedIndex = 0;
+            container1.appendChild(schemaSelectElement);
+            col1.appendChild(container1);
+
+
+            //col2
+            let col2 = document.createElement("div")
+            col2.classList.add("col-md-3")
+            let container2 = document.createElement("div")
+            container2.classList.add("mb-0")
+            const attributeSelectElement = document.createElement("select")
+            attributeSelectElement.classList.add("form-select");
+            attributeSelectElement.setAttribute("name", `schema_metadata_no_label-${counterSchema}-meta_a`)
+            attributeSelectElement.id = `schema_metadata_no_label-${counterSchema}-meta_a`;
+            container2.appendChild(attributeSelectElement);
+            col2.appendChild(container2);
+
+            schemaSelectElement.addEventListener('change', function() {
+                let attribute = attributeSelectElement
+                attribute.innerHTML = "";    
+                const optgroups = {}  // create optgroups obj to store optgroups in
+                schemasObject[schemaSelectElement.value].forEach( dict => {  // get the values for the select schema 
+                    for (const [key, value] of Object.entries(dict)) {
+                            if (value.type === "label") {  // if it is a label
+                                let optgroup = document.createElement("optgroup");  // create an optgroup
+                                optgroup.setAttribute("label", value.display_label);
+                                attribute.add(optgroup);
+                                optgroups[value.title] = optgroup;  // add optgroup element to optgroup obj 
+                            }
+                            else { // if it is a field
+                                let option = document.createElement("option"); // create an option 
+                                option.innerHTML = value.title;
+                                option.setAttribute("value", key);
+                                if (value.enum) {
+                                        option.setAttribute("enum", value.enum)
+                                    }
+                                option.setAttribute("type", value.type);
+
+                                if (!value.parent) {
+                                    attribute.add(option);  // add the option to attribute
+                                }
+                                else {
+                                    optgroups[value.parent].appendChild(option)  // if the parent is in the optgroup obj then we add the field to this group
+                                };
+                        };
+                    };
+                        
+ });
+
+                let groups = attribute.querySelectorAll("optgroup");  // remove optgroup if it is empty
+                groups.forEach((x) => { if (x.children.length === 0) { 
+                    x.remove() }
+                } );
+                prependPlaceholder(attribute, "choose an attribute");
+
+
+});
+
+
+function createCheckTypeHandler(counter) {
+    return function checkType() {
+        //console.log(attributeSelect)
+        let selectedOption = attributeSelectElement.options[attributeSelectElement.selectedIndex];
+        console.log(selectedOption);
+        let value = getValue(attributeSelectElement);
+        console.log("this is the counter:", counterSchema);
+        console.log(value);
+        switch(selectedOption.getAttribute("type")) {
+            case "select":
+                let select = createField("select", `schema_metadata_no_label-${counter}-meta_v`,  `schema_metadata_no_label-${counter}-meta_v`);
+                let options = selectedOption.getAttribute("enum").split(",")
+                options.forEach((optionText) => {
+                        let option = document.createElement("option");
+                        option.textContent = optionText;
+                        select.appendChild(option)
+                })
+                value.replaceWith(select);
+                break;
+            case "integer":
+                let integer = createField("integer", `schema_metadata_no_label-${counter}-meta_v`,  `schema_metadata_no_label-${counter}-meta_v`);
+                value.replaceWith(integer);
+                integer.type = "number";
+                break;
+            case "date":
+                let date = createField("date", `schema_metadata_no_label-${counter}-meta_v`,  `schema_metadata_no_label-${counter}-meta_v`);
+                value.replaceWith(date);
+                date.type = "date";
+                break;
+            default:
+                let input = createField("default", `schema_metadata_no_label-${counter}-meta_v`,  `schema_metadata_no_label-${counter}-meta_v`);
+                value.replaceWith(input);
+                input.type = "text"; 
+        }
+    }
+}
+
+    let handler = createCheckTypeHandler(counterSchema);            //use a closure to freeze function parameters
+    attributeSelectElement.addEventListener("change", handler);
+    
+
+
+            //col3
+            let col3 = document.createElement("div")
+            col3.classList.add("col-md-3")
+            let container3 = document.createElement("div")
+            container3.classList.add("mb-0")
+            const valueInputField = document.createElement("input")
+            valueInputField.classList.add("form-control");
+            valueInputField.setAttribute("name", `schema_metadata_no_label-${counterSchema}-meta_v`)
+            valueInputField.id = `schema_metadata_no_label-${counterSchema}-meta_v`;
+            container3.appendChild(valueInputField);
+            col3.appendChild(container3);  
+
+
+            // col 4 
+
+            let col4 = document.createElement("div")
+            col4.classList.add("col-md-2")
+            let container4 = document.createElement("div")
+            container4.classList.add("mb-0")
+            const requiredCheckbox = document.createElement("input")
+            requiredCheckbox.classList.add("form-check-input");
+            requiredCheckbox.setAttribute("name", `schema_metadata_no_label-${counterSchema}-required`)
+            requiredCheckbox.id = `schema_metadata_no_label-${counterSchema}-required`;
+            requiredCheckbox.type = "checkbox";
+            requiredCheckbox.value = "y"
+            container4.appendChild(requiredCheckbox);
+            col4.appendChild(container4); 
+
+            row.appendChild(col1)     
+            row.appendChild(col2)     
+            row.appendChild(col3)    
+            row.appendChild(col4) 
+            
+            myList[myList.length - 1].after(row);
+
+            counterSchema++
+
+
+    })
+            
+
+            // non-schema
+        buttonNonSchema = document.getElementById("addNonSchemaField");
+        buttonNonSchema.addEventListener("click", function() { 
+            let myList = document.querySelectorAll("#metadataFields #nonSchemaMetadata .row");
+            let row = document.createElement("div");
+            row.classList.add("row");
+            //col 1 attribute name
+
+            console.log(counterNonSchema)
+            let attributeCol = document.createElement("div");
+            attributeCol.classList.add("col-md-5")
+            let attributeContainer = document.createElement("div")
+            attributeContainer.classList.add("mb-0")
+            const attributeInput = document.createElement("input")
+            attributeInput.classList.add("form-control");
+            attributeInput.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-meta_attribute`)
+            attributeInput.id = `non_schema_metadata_no_label-${counterNonSchema}-meta_attribute`;
+            attributeContainer.appendChild(attributeInput);
+            attributeCol.appendChild(attributeContainer);       
+            
+            //col 2 attribute value
+            let valueCol = document.createElement("div");
+            valueCol.classList.add("col-md-5")
+            let valueContainer = document.createElement("div")
+            valueContainer.classList.add("mb-0")
+            const valueInput = document.createElement("input")
+            valueInput.classList.add("form-control");
+            valueInput.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-meta_value`)
+            valueInput.id = `non_schema_metadata_no_label-${counterNonSchema}-meta_value`;
+            valueContainer.appendChild(valueInput);
+            valueCol.appendChild(valueContainer);
+
+            //col 3 required
+            let requiredCol = document.createElement("div");
+            requiredCol.classList.add("col-md-2")
+            let requiredContainer = document.createElement("div")
+            requiredContainer.classList.add("mb-0");
+            const requiredInput = document.createElement("input")
+            requiredInput.classList.add("form-check-input");
+            requiredInput.id = `non_schema_metadata_no_label-${counterNonSchema}-required`;
+            requiredInput.setAttribute("name",`non_schema_metadata_no_label-${counterNonSchema}-required`)
+            requiredInput.type = "checkbox";
+            requiredInput.value = "y";
+            requiredContainer.appendChild(requiredInput);
+            requiredCol.appendChild(requiredContainer);
+
+            row.appendChild(attributeCol)     
+            row.appendChild(valueCol)
+            row.appendChild(requiredCol)     
+            
+            myList[myList.length - 1].after(row);
+            counterNonSchema++
+
+})
+     
+    </script>
+{% endblock body %}
+
+
