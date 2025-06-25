@@ -39,23 +39,40 @@ a.right {
           action="{{ url_for('basic_search2_bp.catalog_search2') }}"
           id="basic-search-form"
           {% if results %}class="collapse"{% endif %}>
-        <h3>Search</h3>
-        <h5>Collection</h5>
+        <h3>Advanced Search</h3>
+        {# <h5>Collection</h5> #}
         {{ render_form_row([search_form.collection_subtree.collection]) }}
-        <h5>Name</h5>
+        {# <h5>Name</h5> #}
+        <fieldset class="mb-4"> 
         {{ render_form_row([search_form.item_name.item_name]) }}
         <div id="exact_match">
             {{ search_form.item_name.comparison(class_="form-check-input") }}
             {{ search_form.item_name.comparison.label }}
         </div>
-        <br>
-        <h5>Type</h5>
-        {{ render_form_row([search_form.item_name.item_type]) }}
+        </fieldset>
+        {# <h5>Type</h5> #}
+        {# {{ render_form_row([search_form.item_name.item_type] }} #}
+
+          <fieldset class="row mb-3">
+    <legend class="col-form-label col-sm-2 pt-0">{{ search_form.item_name.item_type.label}}</legend>
+    <div class="col-sm-10">
+    {% for choice in search_form.item_name.item_type.choices %} 
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="gridRadios" id="gridRadios1" value={{ choice.2 }} checked>
+        <label class="form-check-label" for="gridRadios1">
+          {{ choice.1 }}
+        </label>
+      </div>
+      {% endfor %}
+
+    </div>
+  </fieldset>
+
         <!-- METADATA FILTERS -->
         <!--    <h4>Filter by Metadata</h4> -->
         <div id="metadataFields">
             <div class="row">
-                <h5>Schema</h5>
+                <h5>Schema metadata</h5>
                 <div id="schemaMetadata">
                     {{ render_form_row([search_form.schema_metadata.schema , search_form.schema_metadata.meta_a, search_form.schema_metadata.meta_v, search_form.schema_metadata.required],
                                         col_map = {
@@ -67,11 +84,14 @@ a.right {
                     {% for subform in search_form.schema_metadata_no_label %}
                         {{ render_form_row([subform.schema, subform.meta_a, subform.meta_v]) }}
                     {% endfor %}
-                    <a href="#" id="addSchemaField" class="right">Add schema metadata</a>
+                    {# <a href="#" id="addSchemaField" class="right">Add schema metadata</a> #}
+                    <div class="d-flex flex-row-reverse">
+                        <button type="button" id="addSchemaField" class="btn btn-secondary me-3"> Add metadata </button>
+                        </div>
                 </div>
             </div>
             <div class="row">
-                <h5>Non-schema</h5>
+                <h5>Non-schema metadata</h5>
                 <div id="nonSchemaMetadata">
                     {{ render_form_row([search_form.non_schema_metadata.meta_attribute, search_form.non_schema_metadata.meta_value, search_form.non_schema_metadata.required],
                                         col_map = {
@@ -82,7 +102,9 @@ a.right {
                     {% for subform in search_form.non_schema_metadata_no_label %}
                         {{ render_form_row([subform.meta_attribute, subform.meta_value, subform.required]) }}
                     {% endfor %}
-                    <a href="#" id="addNonSchemaField" class="right">Add non-schema metadata</a>
+                    {# <a href="#" id="addNonSchemaField" class="right">Add non-schema metadata</a> #}
+                    <div class="d-flex flex-row-reverse"> 
+                    <button type="button" id="addNonSchemaField" class="btn btn-secondary me-3"> Add metadata </button>  </div>
                 </div>
             </div>
         </div>
@@ -101,7 +123,7 @@ a.right {
         <div>
             <br>
             <input id="submit"
-                   class="btn btn-primary btn-md"
+                   class="btn btn-primary btn-md m-3"
                    name="submit"
                    type="submit"
                    value="Search">
@@ -170,7 +192,7 @@ a.right {
 const collections = document.getElementById("collection_subtree-collection");
 
 collections.addEventListener("change", function() {
-    window.open(`/catalog/search?collection_subtree-collection=${collections.value}`, '_self');
+    window.open(`/catalog/search2?collection_subtree-collection=${collections.value}`, '_self');
 })
 
 const schemasObject = {{ schemas_dict|tojson }} // get the schema metadata
