@@ -385,7 +385,7 @@ def catalog_search2():
         )
 
         # meta_a = StringField("", render_kw={"list": "search_meta_names"})
-        meta_a = SelectField("")
+        meta_a = SelectField("", validate_choice=False)
         meta_v = StringField("")
         required = BooleanField("")
 
@@ -522,7 +522,7 @@ def catalog_search2():
 
     print(request.values)
 
-    if request.values.get("submit", False) == "Search" and search_form.validate():
+    if request.values.get("submit", False) == "Start Search" and search_form.validate():
         import time
 
         start = time.time()
