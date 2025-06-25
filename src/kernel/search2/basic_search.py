@@ -53,7 +53,7 @@ from flask_paginate import Pagination, get_page_parameter
 
 from kernel.template_overrides import get_template_override_manager
 
-from kernel.metadata_schema import get_schema_manager #, SchemaManager
+from kernel.metadata_schema import get_schema_manager  # , SchemaManager
 from mango_mdschema import helpers
 from multidict import MultiDict
 
@@ -444,7 +444,7 @@ def catalog_search2():
     subtrees = [base.path] + [collection.path for collection in base.subcollections]
     user_home = f"{g.irods_session.zone}/home/{g.irods_session.username}"
 
-    class ColllectionForm(Form):
+    class CollectionForm(Form):
         """Select field with possible collections."""
 
         collection = SelectField(
@@ -457,7 +457,7 @@ def catalog_search2():
         """Class for catalog search form."""
 
         item_name = FormField(ItemTypeNameForm, label="Name")
-        collection_subtree = FormField(ColllectionForm, label="Subtree filter")
+        collection_subtree = FormField(CollectionForm, label="Subtree filter")
         create_date = FormField(ItemDateForm, label="Created")
         mod_date = FormField(ItemDateForm, label="Modified")
         schema_metadata = FormField(AVUSchema, label="Metadata")
