@@ -40,16 +40,19 @@ a.right {
           id="basic-search-form"
           {% if results %}class="collapse"{% endif %}>
         <h3>Search</h3>
+        <h5>Collection</h5>
         {{ render_form_row([search_form.collection_subtree.collection]) }}
+        <h5>Name</h5>
         {{ render_form_row([search_form.item_name.item_name]) }}
         <div id="exact_match">
             {{ search_form.item_name.comparison(class_="form-check-input") }}
             {{ search_form.item_name.comparison.label }}
         </div>
+        <br>
+        <h5>Type</h5>
         {{ render_form_row([search_form.item_name.item_type]) }}
         <!-- METADATA FILTERS -->
         <!--    <h4>Filter by Metadata</h4> -->
-        <br>
         <div id="metadataFields">
             <div class="row">
                 <h5>Schema</h5>

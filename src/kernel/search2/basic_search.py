@@ -421,14 +421,14 @@ def catalog_search2():
         """Fields for Type, Name and Exact Match."""
 
         item_name = StringField(
-            "Name",
+            "Specify name",
             render_kw={
                 "placeholder": "Enter the name of the data object or collection"
             },
         )
 
         item_type = RadioField(
-            "Type",  # add any option
+            "Choose data type",  # add any option
             choices=[
                 ("data_object", "Data object"),
                 ("collection", "Collection"),
