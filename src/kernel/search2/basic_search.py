@@ -333,7 +333,7 @@ def catalog_search2():
                     restructured_item
                 )  # put all schemas together in one schemas_dict
 
-        print(f"These are all schemas dictionaries:: {json.dumps(schemas_dict)}")
+        # print(f"These are all schemas dictionaries:: {json.dumps(schemas_dict)}")
         if len(existing_schemas) == 0:
             existing_schemas = {"no_schemas": "no schemas found"}
 
