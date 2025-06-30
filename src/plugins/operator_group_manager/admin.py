@@ -74,7 +74,10 @@ def group_manager_index(realm: str):
     editable = current_user_is_group_manager = (
         True
         if (f"{realm}_manager" in g.irods_session.my_group_names)
-        or (hasattr(g.irods_session, "roles") and "mango_portal_admin" in g.irods_session.roles)
+        or (
+            hasattr(g.irods_session, "roles")
+            and "mango_portal_admin" in g.irods_session.roles
+        )
         else False
     )
 
@@ -96,13 +99,32 @@ def group_manager_index(realm: str):
         ]
         + [realm],
         missing_semantic_suffixes=missing_semantic_suffixes,
+        zone=g.irods_session.zone,
     )
+
+
+def build_yaml_path(realm):
+    return f"/{g.irods_session.zone}/mango/{realm}/user_management/user_management.yml"
+
+
+@operator_group_manager_admin_bp.route(
+    "/operator_group_manager/add_yaml/<realm>", methods=["POST"]
+)
+def add_yaml(realm: str):
+    operator_session = get_operator_session(g.irods_session.zone)
+    yaml_path = build_yaml_path(realm)
+    yaml_contents = request.form["user-management-yaml-contents"]
+    # TODO create directory if it does not exist and provide permissions
+    # TODO validate the contents and convert to yaml
+    with operator_session.data_objects.open(yaml_path, create=True) as f:
+        f.write(yaml_contents)
+    return redirect(request.referrer)
 
 
 @operator_group_manager_admin_bp.route("/operator_group_manager/<realm>/<group>")
 def view_members(realm, group):
     """ """
-    operator_session : iRODSSession = get_operator_session(g.irods_session.zone)
+    operator_session: iRODSSession = get_operator_session(g.irods_session.zone)
     members = operator_session.groups.getmembers(group)
     realm_members = operator_session.groups.getmembers(realm)
     member_names = [member.name for member in members]
@@ -118,14 +140,18 @@ def view_members(realm, group):
 
     protected_group = (
         True
-        if group in [f"{realm}_{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES]+[realm]
+        if group
+        in [f"{realm}_{suffix}" for suffix in PROTECTED_USER_GROUP_SUFFIXES] + [realm]
         else False
     )
 
     current_user_is_group_manager = (
         True
         if (f"{realm}_manager" in g.irods_session.my_group_names)
-        or (hasattr(g.irods_session, "roles") and "mango_portal_admin" in g.irods_session.roles)
+        or (
+            hasattr(g.irods_session, "roles")
+            and "mango_portal_admin" in g.irods_session.roles
+        )
         else False
     )
 
@@ -133,16 +159,14 @@ def view_members(realm, group):
     metadata = irodsgroup.metadata.items()
     has_realm_set = False
     try:
-        avu = irodsgroup.metadata.get_one('mg.realm')
+        avu = irodsgroup.metadata.get_one("mg.realm")
         has_realm_set = avu.value
     except:
         has_realm_set = False
-    
+
     has_valid_realm = False
     if has_realm_set and has_realm_set == realm:
         has_valid_realm = True
-
-
 
     return render_template(
         "operator_group_manager/view_group.html.j2",
@@ -168,8 +192,8 @@ def add_group(realm):
     operator_session = get_operator_session(g.irods_session.zone)
     group_name = f"{realm}_{request.form['group_name_suffix']}"
     try:
-        new_group : iRODSGroup = operator_session.user_groups.create(group_name)
-        new_group.metadata.add('mg.realm', realm)
+        new_group: iRODSGroup = operator_session.user_groups.create(group_name)
+        new_group.metadata.add("mg.realm", realm)
         return redirect(
             url_for(
                 "operator_group_manager_admin_bp.view_members",
@@ -232,15 +256,18 @@ def remove_members(realm, group):
         flash(f"Failed to add members {members} to group {group}: {e}", "danger")
     return redirect(request.referrer)
 
-@operator_group_manager_admin_bp.route('/operator_group_manager/set/realm/<realm>/<group>', methods=['POST'])
+
+@operator_group_manager_admin_bp.route(
+    "/operator_group_manager/set/realm/<realm>/<group>", methods=["POST"]
+)
 def set_realm(realm, group):
     try:
         operator_session = get_operator_session(g.irods_session.zone)
         irodsgroup = operator_session.groups.get(group)
         metadata = irodsgroup.metadata.items()
-        if 'mg.realm' in [avu.name for avu in metadata]:
-            irodsgroup.metadata.remove('mg.realm')
-        irodsgroup.metadata.add('mg.realm', realm)
+        if "mg.realm" in [avu.name for avu in metadata]:
+            irodsgroup.metadata.remove("mg.realm")
+        irodsgroup.metadata.add("mg.realm", realm)
     except Exception as e:
         flash(f"Failed to add realm {realm} to group {group}: {e}", "danger")
     return redirect(request.referrer)

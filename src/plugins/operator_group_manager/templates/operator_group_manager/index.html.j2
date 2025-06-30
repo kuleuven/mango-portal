@@ -49,6 +49,38 @@
                     </div>
                 {% endif %}
             </div>
+            <hr>
+            <h4>Automatic user management with ManGO Flow</h4>
+            <div class="alert alert-secondary" role="alert">
+            {% set yaml_path = "/{{ zone }}/mango/{{ realm }}/user_management/user_management.yml" %}
+            The file will be available as <code>{{ yaml_path }}</code>.
+            </div>
+            <form id="add-yaml" class="row align-items-center" method="post" action="{{ url_for("operator_group_manager_admin_bp.add_yaml", realm=realm) }}">
+            <div class="col-8">
+                <label class="form-label" for="user-management-file">Upload a YAML</label>
+                <input class="form-control" id="user-management-file" name="user-management-file" type="file" accept=".yml,.yaml">
+            </div>
+            <div class="col-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" id="add-user-management-yaml" class="btn btn-primary" disabled>Upload</button>
+            </div>
+            <div class="col-12" id="user-management-yaml-contents">
+            <input name="user-management-yaml-contents" type="hidden"><br>
+            <pre></pre>
+            </div>
+            </form>
+            <script>
+                document.querySelector("input#user-management-file").addEventListener("change", (event) => {
+                    const reader = new FileReader();
+                    reader.readAsText(event.target.files[0]);
+                    reader.onload = () => {
+                        const contents_div = document.querySelector("div#user-management-yaml-contents");
+                        contents_div.querySelector("input").value = reader.result;
+                        contents_div.querySelector("pre").innerHTML = reader.result;
+                        document.querySelector("button#add-user-management-yaml").removeAttribute("disabled");
+                    }
+                } )
+            </script>
         {% endif %}
     {% endif %}
     {% if realm and not groups %}<p>No groups found for {{ realm }}</p>{% endif %}
