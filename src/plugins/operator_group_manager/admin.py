@@ -11,14 +11,7 @@ import yaml
 from typing import Annotated, Union, Tuple
 from pydantic import RootModel, Field, ValidationError
 
-# for /<zone>/mango... stuff that should be somewhere else
-from plugins.operator import get_zone_operator_session
-from irods.access import (
-    iRODSAccess,
-)
-from irods.collection import (
-    iRODSCollection,
-)
+from lib.util import setup_realm_plugin_collection
 
 
 operator_group_manager_admin_bp = Blueprint(
@@ -272,7 +265,7 @@ def set_realm(realm, group):
     return redirect(request.referrer)
 
 
-# AUTOAMTIC MANAGER
+# AUTOMATIC USER MANAGEMENT
 
 
 def build_yaml_path(realm):
@@ -310,44 +303,6 @@ def validate_yaml(realm: str):
     yaml_contents = request.form["user-management-yaml-contents"]
     validation, result = validate_user_management_yaml(yaml_contents)
     return [yaml_path if validation else validation, result]
-
-
-def setup_mango_collection(
-    zone, operator_user: str = "operator", rods_user: str = "rods"
-) -> str:
-    # TODO this should go to some utils because the schema manager reading from iRODS also uses it
-    # and it would be useful for any other plugin that stores data there
-    mango_collection = f"/{zone}/mango"
-
-    rods_irods_session = get_zone_operator_session(zone, client_user=rods_user)
-    if not rods_irods_session.collections.exists(mango_collection):
-        rods_irods_session.collections.create(mango_collection)
-    rods_irods_session.acls.set(
-        iRODSAccess("own", mango_collection, user_name=operator_user),
-        recursive=True,
-    )
-    return mango_collection
-
-
-def setup_realm_plugin_collection(
-    irods_session: iRODSSession, realm: str, plugin_name: str, rods_user: str = "rods"
-) -> iRODSCollection:
-    # TODO this should go to some utils because the schema manager reading from iRODS also uses it
-    # and it would be useful for any other plugin that stores data there
-    mango_collection = setup_mango_collection(
-        irods_session.zone, irods_session.username, rods_user
-    )
-
-    storage_path = f"{mango_collection}/{realm}/{plugin_name}"
-
-    if not irods_session.collections.exists(storage_path):
-        irods_session.collections.create(storage_path, recurse=True)
-        irods_session.acls.set(
-            iRODSAccess("read", storage_path, user_name=realm),
-            recursive=True,
-        )
-        irods_session.acls.set(iRODSAccess("inherit", storage_path))
-    return storage_path
 
 
 @operator_group_manager_admin_bp.route(
