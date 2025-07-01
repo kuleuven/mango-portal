@@ -112,11 +112,16 @@ def build_basic_query_filters(form):
         filters += [Criterion("=", DataObject.replica_number, 0)]
 
     if form["item_name-item_name"]:
-        crit = "="
-        name = form["item_name-item_name"]
-        if form["item_name-comparison"] == "contains":
+        # crit = "="
+        # name = form["item_name-item_name"]
+        try:
+            if form["item_name-comparison"] == "y":
+                crit = "="
+                name = form["item_name-item_name"]
+        except:
             crit = "like"
             name = f"%{form['item_name-item_name']}%"
+
         column = DataObject.name
         if form["item_name-item_type"] == "collection":
             column = Collection.name
@@ -143,27 +148,34 @@ def build_basic_query_filters(form):
     #         Criterion(comparison, column_meta_base.units, form["any_avu-meta_u"])
     #     ]
 
-    for num in [1, 2, 3]:
-        if form[f"any_avu{num}-meta_a"]:
-            filters += [
-                Criterion("=", column_meta_base.name, form[f"any_avu{num}-meta_a"])
-            ]
 
-        if form[f"any_avu{num}-meta_v"]:
-            comparison = "like" if form[f"any_avu{num}-meta_v"].find("%") != -1 else "="
-            filters += [
-                Criterion(
-                    comparison, column_meta_base.value, form[f"any_avu{num}-meta_v"]
-                )
-            ]
+    # for num in [1, 2, 3]:
+    num = 0
+    while True:
+        try: 
+            if form[f"schema_metadata_no_label-{num}-meta_a"]:
+                filters += [
+                    Criterion("=", column_meta_base.name, form[f"schema_metadata_no_label-{num}-meta_a"])
+                ]
 
-        if form[f"any_avu{num}-meta_u"]:
-            comparison = "like" if form[f"any_avu{num}-meta_u"].find("%") != -1 else "="
-            filters += [
-                Criterion(
-                    comparison, column_meta_base.units, form[f"any_avu{num}-meta_u"]
-                )
-            ]
+            if form[f"schema_metadata_no_label-{num}-meta_v"]:
+                # comparison = "like" if form[f"any_avu{num}-meta_v"].find("%") != -1 else "="   TODO investigate
+                filters += [
+                    Criterion(
+                        comparison, column_meta_base.value, form[f"schema_metadata_no_label-{num}-meta_v"]
+                    )
+                ]
+
+            # if form[f"any_avu{num}-meta_u"]:
+            #     comparison = "like" if form[f"any_avu{num}-meta_u"].find("%") != -1 else "="
+            #     filters += [
+            #         Criterion(
+            #             comparison, column_meta_base.units, form[f"any_avu{num}-meta_u"]
+            #         )
+            #     ]
+            num += 1
+        except:
+            break
 
     # if form["collection_avu-meta_a"]:
     #     filters += [Criterion("=", CollectionMeta.name, form["collection_avu-meta_a"])]
@@ -665,6 +677,8 @@ def catalog_search2():
             search_time=end - start,
             meta_names=meta_names,
             pagination=pagination,
+            schemas_dict=schemas_dict,
+            existing_schemas=existing_schemas,
         )
 
     else:
