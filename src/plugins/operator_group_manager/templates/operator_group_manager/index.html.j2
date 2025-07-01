@@ -51,10 +51,6 @@
             </div>
             <hr>
             <h4>Automatic user management with ManGO Flow</h4>
-            <div class="alert alert-secondary" role="alert">
-            {% set yaml_path = "/{{ zone }}/mango/{{ realm }}/user_management/user_management.yml" %}
-            The file will be available as <code>{{ yaml_path }}</code>.
-            </div>
             <form id="add-yaml" class="row align-items-center" method="post" action="{{ url_for("operator_group_manager_admin_bp.add_yaml", realm=realm) }}">
             <div class="col-8">
                 <label class="form-label" for="user-management-file">Upload a YAML</label>
@@ -66,18 +62,46 @@
             </div>
             <div class="col-12" id="user-management-yaml-contents">
             <input name="user-management-yaml-contents" type="hidden"><br>
-            <pre></pre>
+            <div class="alert alert-secondary" role="alert">
+            </div>
+            <pre>
+            </pre>
             </div>
             </form>
             <script>
-                document.querySelector("input#user-management-file").addEventListener("change", (event) => {
+                const form = document.querySelector("form#add-yaml")
+                function validateYAML(contentsDiv, submitButton) {
+                    const url = '{{ url_for("operator_group_manager_admin_bp.validate_yaml", realm=realm) }}';
+                    const yamlFormData = new FormData(form);
+                    const yamlValidationRequest = new Request(url, {
+                            method: "POST",
+                            body: yamlFormData
+                        });
+                    fetch(yamlValidationRequest)
+                        .then((response) => response.json())
+                        .then((json) => {
+                            const [path, yamlData] = json;
+                            const alertElement = contentsDiv.querySelector("div.alert");
+                            alertElement.innerHTML = path ? `Valid YAML! It will be stored as <code>${path}</code>` : "YAML is not valid";
+                            alertElement.className = path ? "alert alert-secondary" : "alert alert-danger";
+                            
+                            const preElement = contentsDiv.querySelector("pre");
+                            preElement.innerHTML = yamlData;
+                            if (path) {
+                                contentsDiv.querySelector("input").value = yamlData;
+                                submitButton.removeAttribute("disabled");
+                            } else {
+                                submitButton.setAttribute("disabled", "");
+                            }
+                    })
+                }
+                form.querySelector("input#user-management-file").addEventListener("change", (event) => {
                     const reader = new FileReader();
                     reader.readAsText(event.target.files[0]);
                     reader.onload = () => {
-                        const contents_div = document.querySelector("div#user-management-yaml-contents");
-                        contents_div.querySelector("input").value = reader.result;
-                        contents_div.querySelector("pre").innerHTML = reader.result;
-                        document.querySelector("button#add-user-management-yaml").removeAttribute("disabled");
+                        const contentsDiv = form.querySelector("div#user-management-yaml-contents");
+                        contentsDiv.querySelector("input").value = reader.result;
+                        validateYAML(contentsDiv, form.querySelector("button#add-user-management-yaml"));
                     }
                 } )
             </script>

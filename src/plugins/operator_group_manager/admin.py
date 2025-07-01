@@ -7,6 +7,10 @@ from irods.session import iRODSSession
 from cache import cache
 import re, logging
 from mango_ui import register_module
+import yaml
+from typing import Annotated, Union, Tuple
+from pydantic import RootModel, Field, ValidationError
+
 
 operator_group_manager_admin_bp = Blueprint(
     "operator_group_manager_admin_bp", __name__, template_folder="templates"
@@ -101,24 +105,6 @@ def group_manager_index(realm: str):
         missing_semantic_suffixes=missing_semantic_suffixes,
         zone=g.irods_session.zone,
     )
-
-
-def build_yaml_path(realm):
-    return f"/{g.irods_session.zone}/mango/{realm}/user_management/user_management.yml"
-
-
-@operator_group_manager_admin_bp.route(
-    "/operator_group_manager/add_yaml/<realm>", methods=["POST"]
-)
-def add_yaml(realm: str):
-    operator_session = get_operator_session(g.irods_session.zone)
-    yaml_path = build_yaml_path(realm)
-    yaml_contents = request.form["user-management-yaml-contents"]
-    # TODO create directory if it does not exist and provide permissions
-    # TODO validate the contents and convert to yaml
-    with operator_session.data_objects.open(yaml_path, create=True) as f:
-        f.write(yaml_contents)
-    return redirect(request.referrer)
 
 
 @operator_group_manager_admin_bp.route("/operator_group_manager/<realm>/<group>")
@@ -270,4 +256,62 @@ def set_realm(realm, group):
         irodsgroup.metadata.add("mg.realm", realm)
     except Exception as e:
         flash(f"Failed to add realm {realm} to group {group}: {e}", "danger")
+    return redirect(request.referrer)
+
+
+# AUTOAMTIC MANAGER
+
+
+def build_yaml_path(realm):
+    return f"/{g.irods_session.zone}/mango/{realm}/user_management/user_management.yml"
+
+
+def validate_user_management_yaml(yaml_string: str) -> Tuple[bool, str]:
+    try:
+        yaml_contents = yaml.safe_load(yaml_string)
+    except Exception as e:
+        return False, f"Error reading the YAML, {e}"
+    validated_yaml = validate_user_management(yaml_contents)
+    if isinstance(validated_yaml, str):
+        return False, validated_yaml
+    return True, yaml_string  # no errors, return clean string to save to file
+
+
+def validate_user_management(yaml_contents: dict) -> dict:
+    User = Annotated[str, Field(pattern=r"([urb]\d{7})|(vsc\d{5})")]
+    UserManagement = RootModel[dict[str, Union[list[User], "UserManagement"]]]
+
+    try:
+        return UserManagement(yaml_contents).model_dump()
+    except ValidationError as e:
+        return f"The YAML is not in the correct format, {e}"
+    except Exception as e:
+        return f"There is something wrong with the YAML, {e}"
+
+
+@operator_group_manager_admin_bp.route(
+    "/operator_group_manager/validate_yaml/<realm>/", methods=["POST"]
+)
+def validate_yaml(realm: str):
+    yaml_path = build_yaml_path(realm)
+    yaml_contents = request.form["user-management-yaml-contents"]
+    validation, result = validate_user_management_yaml(yaml_contents)
+    return [yaml_path if validation else validation, result]
+
+
+@operator_group_manager_admin_bp.route(
+    "/operator_group_manager/add_yaml/<realm>", methods=["POST"]
+)
+def add_yaml(realm: str):
+    yaml_contents = request.form["user-management-yaml-contents"]
+    # TODO create directory if it does not exist and provide permissions
+    validation, result = validate_user_management_yaml(yaml_contents)
+    if not validation:
+        flash(result, "error")
+        return redirect(request.referrer)
+    operator_session = get_operator_session(g.irods_session.zone)
+
+    yaml_path = build_yaml_path(realm)
+    # with operator_session.data_objects.open(yaml_path, create=True) as f:
+    #     f.write(yaml_contents)
     return redirect(request.referrer)
