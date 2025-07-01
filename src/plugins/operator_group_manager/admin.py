@@ -13,7 +13,11 @@ from pydantic import RootModel, Field, ValidationError
 
 
 operator_group_manager_admin_bp = Blueprint(
-    "operator_group_manager_admin_bp", __name__, template_folder="templates"
+    "operator_group_manager_admin_bp",
+    __name__,
+    template_folder="templates",
+    static_folder="static/operator_group_manager",
+    static_url_path="/static/operator_group_manager",
 )
 
 UI = {
