@@ -11,6 +11,15 @@ import yaml
 from typing import Annotated, Union, Tuple
 from pydantic import RootModel, Field, ValidationError
 
+# for /<zone>/mango... stuff that should be somewhere else
+from plugins.operator import get_zone_operator_session
+from irods.access import (
+    iRODSAccess,
+)
+from irods.collection import (
+    iRODSCollection,
+)
+
 
 operator_group_manager_admin_bp = Blueprint(
     "operator_group_manager_admin_bp",
@@ -303,19 +312,61 @@ def validate_yaml(realm: str):
     return [yaml_path if validation else validation, result]
 
 
+def setup_mango_collection(
+    zone, operator_user: str = "operator", rods_user: str = "rods"
+) -> str:
+    # TODO this should go to some utils because the schema manager reading from iRODS also uses it
+    # and it would be useful for any other plugin that stores data there
+    mango_collection = f"/{zone}/mango"
+
+    rods_irods_session = get_zone_operator_session(zone, client_user=rods_user)
+    if not rods_irods_session.collections.exists(mango_collection):
+        rods_irods_session.collections.create(mango_collection)
+    rods_irods_session.acls.set(
+        iRODSAccess("own", mango_collection, user_name=operator_user),
+        recursive=True,
+    )
+    return mango_collection
+
+
+def setup_realm_plugin_collection(
+    irods_session: iRODSSession, realm: str, plugin_name: str, rods_user: str = "rods"
+) -> iRODSCollection:
+    # TODO this should go to some utils because the schema manager reading from iRODS also uses it
+    # and it would be useful for any other plugin that stores data there
+    mango_collection = setup_mango_collection(
+        irods_session.zone, irods_session.username, rods_user
+    )
+
+    storage_path = f"{mango_collection}/{realm}/{plugin_name}"
+
+    if not irods_session.collections.exists(storage_path):
+        irods_session.collections.create(storage_path, recurse=True)
+        irods_session.acls.set(
+            iRODSAccess("read", storage_path, user_name=realm),
+            recursive=True,
+        )
+        irods_session.acls.set(iRODSAccess("inherit", storage_path))
+    return storage_path
+
+
 @operator_group_manager_admin_bp.route(
     "/operator_group_manager/add_yaml/<realm>", methods=["POST"]
 )
 def add_yaml(realm: str):
     yaml_contents = request.form["user-management-yaml-contents"]
-    # TODO create directory if it does not exist and provide permissions
     validation, result = validate_user_management_yaml(yaml_contents)
     if not validation:
         flash(result, "error")
         return redirect(request.referrer)
     operator_session = get_operator_session(g.irods_session.zone)
-
+    # create directory if it does not exist and provide permissions
+    setup_realm_plugin_collection(operator_session, realm, "user_management")
     yaml_path = build_yaml_path(realm)
-    # with operator_session.data_objects.open(yaml_path, create=True) as f:
-    #     f.write(yaml_contents)
+    with operator_session.data_objects.open(yaml_path, "w", create=True) as f:
+        f.write(yaml_contents.encode())
+    flash(
+        f"The YAML has been successfully uploaded to <code>{yaml_path}</code>",
+        "success",
+    )
     return redirect(request.referrer)
