@@ -149,6 +149,22 @@ def build_basic_query_filters(form):
     #     ]
 
 
+    try: 
+        if form[f"schema_metadata-meta_a"]:
+            filters += [
+                Criterion("=", column_meta_base.name, form[f"schema_metadata-meta_a"])
+            ]
+
+        if form[f"schema_metadata-meta_v"]:
+            comparison = "like" if form[f"schema_metadata-meta_v"].find("%") != -1 else "="  
+            filters += [
+                Criterion(
+                    comparison, column_meta_base.value, form[f"schema_metadata-meta_v"]
+                )
+            ]
+    except:
+        pass
+
     # for num in [1, 2, 3]:
     num = 0
     while True:
@@ -159,7 +175,7 @@ def build_basic_query_filters(form):
                 ]
 
             if form[f"schema_metadata_no_label-{num}-meta_v"]:
-                # comparison = "like" if form[f"any_avu{num}-meta_v"].find("%") != -1 else "="   TODO investigate
+                comparison = "like" if form[f"schema_metadata_no_label-{num}-meta_v"].find("%") != -1 else "="   
                 filters += [
                     Criterion(
                         comparison, column_meta_base.value, form[f"schema_metadata_no_label-{num}-meta_v"]
@@ -173,6 +189,41 @@ def build_basic_query_filters(form):
             #             comparison, column_meta_base.units, form[f"any_avu{num}-meta_u"]
             #         )
             #     ]
+            num += 1
+        except:
+            break
+
+
+    if form[f"non_schema_metadata-meta_attribute"]:
+        filters += [
+            Criterion("=", column_meta_base.name, form[f"non_schema_metadata-meta_attribute"])
+        ]
+
+    if form[f"non_schema_metadata-meta_value"]:
+        comparison = "like" if form[f"non_schema_metadata-meta_value"].find("%") != -1 else "="  
+        filters += [
+            Criterion(
+                comparison, column_meta_base.value, form[f"non_schema_metadata-meta_value"]
+            )
+        ]
+
+
+    num = 0
+    while True:
+        try: 
+            if form[f"non_schema_metadata_no_label-{num}-meta_attribute"]:
+                filters += [
+                    Criterion("=", column_meta_base.name, form[f"non_schema_metadata_no_label-{num}-meta_attribute"])
+                ]
+
+            if form[f"non_schema_metadata_no_label-{num}-meta_value"]:
+                comparison = "like" if form[f"non_schema_metadata_no_label-{num}-meta_value"].find("%") != -1 else "="   
+                filters += [
+                    Criterion(
+                        comparison, column_meta_base.value, form[f"non_schema_metadata_no_label-{num}-meta_value"]
+                    )
+                ]
+
             num += 1
         except:
             break
