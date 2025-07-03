@@ -4,7 +4,6 @@ from irods.data_object import iRODSDataObject
 from irods.access import iRODSAccess
 from irods.session import iRODSSession
 import base64
-from plugins.operator import get_zone_operator_session
 
 
 def generate_breadcrumbs(path_string: str):
@@ -192,13 +191,10 @@ def unflatten_namespace_into_dict(
 
 
 def setup_mango_collection(
-    zone, operator_user: str = "operator", rods_user: str = "rods"
+    rods_irods_session: iRODSSession, operator_user: str, collection_name: str = "mango"
 ) -> str:
-    # TODO this should go to some utils because the schema manager reading from iRODS also uses it
-    # and it would be useful for any other plugin that stores data there
-    mango_collection = f"/{zone}/mango"
+    mango_collection = f"/{rods_irods_session.zone}/{collection_name}"
 
-    rods_irods_session = get_zone_operator_session(zone, client_user=rods_user)
     if not rods_irods_session.collections.exists(mango_collection):
         rods_irods_session.collections.create(mango_collection)
     rods_irods_session.acls.set(
@@ -209,15 +205,9 @@ def setup_mango_collection(
 
 
 def setup_realm_plugin_collection(
-    irods_session: iRODSSession, realm: str, plugin_name: str, rods_user: str = "rods"
+    irods_session: iRODSSession, realm: str, plugin_name: str, root_collection: str
 ) -> iRODSCollection:
-    # TODO this should go to some utils because the schema manager reading from iRODS also uses it
-    # and it would be useful for any other plugin that stores data there
-    mango_collection = setup_mango_collection(
-        irods_session.zone, irods_session.username, rods_user
-    )
-
-    storage_path = f"{mango_collection}/{realm}/{plugin_name}"
+    storage_path = f"{root_collection}/{realm}/{plugin_name}"
 
     if not irods_session.collections.exists(storage_path):
         irods_session.collections.create(storage_path, recurse=True)

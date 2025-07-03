@@ -11,8 +11,9 @@ import yaml
 from typing import Annotated, Union, Tuple
 from pydantic import RootModel, Field, ValidationError
 
-from lib.util import setup_realm_plugin_collection
+from lib.util import setup_mango_collection, setup_realm_plugin_collection
 
+from plugins.operator import get_zone_operator_session
 
 operator_group_manager_admin_bp = Blueprint(
     "operator_group_manager_admin_bp",
@@ -316,7 +317,12 @@ def add_yaml(realm: str):
         return redirect(request.referrer)
     operator_session = get_operator_session(g.irods_session.zone)
     # create directory if it does not exist and provide permissions
-    setup_realm_plugin_collection(operator_session, realm, "user_management")
+    rods_session = get_operator_session(g.irods_session.zone, client_user="rods")
+    mango_collection = setup_mango_collection(rods_session, operator_session.username)
+
+    setup_realm_plugin_collection(
+        operator_session, realm, "user_management", mango_collection
+    )
     yaml_path = build_yaml_path(realm)
     with operator_session.data_objects.open(yaml_path, "w", create=True) as f:
         f.write(yaml_contents.encode())
