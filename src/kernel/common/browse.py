@@ -172,9 +172,9 @@ def group_prefix_metadata_items(
             # item.name = meta_name
             if schema not in grouped_metadata["schema"]:
                 grouped_metadata["schema"][schema] = MultiDict()
-            if schema not in schemas:
-                grouped_metadata["schema"][schema].add(avu.name, avu)
-                continue
+            # if schema not in schemas:
+            #     grouped_metadata["schema"][schema].add(avu.name, avu)
+            #     continue
             # Allow units only for first level fields, eg if set through non mango schema processing
             if avu.units and avu.name.count(".") == 2:
                 grouped_metadata["schema"][schema].add(avu.name, avu)
@@ -394,11 +394,12 @@ def collection_browse(collection=None):
 
                     if schema_dict:
                         schema_labels[schema] = flatten_schema(
-                            ("", schema_dict),
+                            schema_dict,
                             level=0,
                             prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                             result_dict={},
                         )
+                        schema_labels[schema]["title"] = schema_dict["title"]
                         logging.info(
                             f"Flattened schema {schema}: {schema_labels[schema]}"
                         )
@@ -595,11 +596,12 @@ def view_object(data_object_path):
 
                 if schema_dict:
                     schema_labels[schema] = flatten_schema(
-                        ("", schema_dict),
+                        schema_dict,
                         level=0,
                         prefix=f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}",
                         result_dict={},
                     )
+                    schema_labels[schema]["title"] = schema_dict["title"]
                 logging.info(f"Flattened schema {schema}: {schema_labels[schema]}")
             except:
                 pass

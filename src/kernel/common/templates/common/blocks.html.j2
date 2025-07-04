@@ -399,43 +399,45 @@
                  id="pills-{{ top_level }}"
                  role="tabpanel"
                  aria-labelledby="pills-{{ top_level }}-tab">
-                    <div class="accordion" id="parent-accordion-{{ top_level }}">
-                        {% for sublevel in grouped_metadata[top_level] %}
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button"
-                                            type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#accordion-{{ sublevel }}">
-                                        {{ schemas[sublevel]["title"] if top_level == "schema" and sublevel in schemas else sublevel }}
-                                    </button>
-                                </h2>
-                            </div>
-                            <div id="accordion-{{ sublevel }}"
-                                 class="accordion-collapse collapse {% if grouped_metadata[top_level]|length == 1 %}show{% endif %}"
-                                 data-bs-parent="#parent-accordion-{{ top_level }}">
-                                <div class="accordion-body">
-                                    {% if top_level == "schema" and sublevel in schema_labels and grouped_metadata[top_level][sublevel].get("mgs."~ sublevel ~".__version__", False) %}
-                                        <p class="text-end fst-italic">
-                                            Schema version: {{ grouped_metadata[top_level][sublevel].get("mgs."~ sublevel ~".__version__").value }}
-                                        </p>
-                                        {% for name, info in schema_labels[sublevel].items() if info['level'] == 0 %}
-                                            {{ show_schema_metadata(name, info, schema_labels[sublevel], grouped_metadata[top_level][sublevel]) }}
-                                        {% endfor %}
-                                        <div class="row">
-
- <div class="col-md-12 d-flex justify-content-between">
-<form 
-              method="get"
-              action="{{ url_for("metadata_schema_form_bp.edit_schema_metadata_for_item") }}">
-            <input type="hidden" name="item_type" value="{{ item_type }}" />
-            <input type="hidden" name="id" value="{{ object_id }}" />
-            <input type="hidden" name="object_path" value="{{ object_path }}" />
-            <input type="hidden" name="realm" value="{{ realm }}" />
-            <input type="hidden" name="status" value="published" />
-            <input type="hidden" name="schema" value="{{ sublevel }}" /> 
-                <button type="submit" class="btn btn-primary m-2">Edit Metadata for "{{ schemas[sublevel]['title'] if schemas[sublevel] else sublevel }}"</button>
-        </form>
+                <div class="accordion" id="parent-accordion-{{ top_level }}">
+                    {% for sublevel in grouped_metadata[top_level] %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#accordion-{{ sublevel }}">
+                                    {{ schema_labels[sublevel]["title"] if top_level == "schema" and sublevel in schema_labels else sublevel }}
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="accordion-{{ sublevel }}"
+                             class="accordion-collapse collapse {% if grouped_metadata[top_level]|length == 1 %}show{% endif %}"
+                             data-bs-parent="#parent-accordion-{{ top_level }}">
+                            <div class="accordion-body">
+                                {% if top_level == "schema" and sublevel in schema_labels and grouped_metadata[top_level][sublevel].get("mgs."~ sublevel ~".__version__", False) %}
+                                    <p class="text-end fst-italic">
+                                        Schema version: {{ grouped_metadata[top_level][sublevel].get("mgs."~ sublevel ~".__version__").value }}
+                                    </p>
+                                    {% for name, info in schema_labels[sublevel].items() if info['level'] == 0 %}
+                                        {{ show_schema_metadata(name, info, schema_labels[sublevel], grouped_metadata[top_level][sublevel]) }}
+                                    {% endfor %}
+                                    <div class="row">
+                                        <div class="col-md-12 d-flex justify-content-between">
+                                            <form method="get"
+                                                  action="{{ url_for('metadata_schema_form_bp.edit_schema_metadata_for_item') }}">
+                                                <input type="hidden" name="item_type" value="{{ item_type }}" />
+                                                <input type="hidden" name="id" value="{{ object_id }}" />
+                                                <input type="hidden" name="object_path" value="{{ object_path }}" />
+                                                <input type="hidden" name="realm" value="{{ realm }}" />
+                                                <input type="hidden" name="status" value="published" />
+                                                <input type="hidden" name="schema" value="{{ sublevel }}" />
+                                                <button type="submit"
+                                                        class="btn btn-primary m-2"
+                                                        {% if not sublevel in schemas %}disabled{% endif %}>
+                                                    Edit Metadata for "{{ schemas[sublevel]['title'] if schemas[sublevel] else sublevel }}"
+                                                </button>
+                                            </form>
                                             <button type="button"
                                                     class="btn btn-danger m-2"
                                                     data-bs-toggle="modal"
