@@ -62,6 +62,8 @@ def group_manager_index(realm: str):
     groups = []
     realms = []
     operator_session = get_operator_session(g.irods_session.zone)
+    # automatic user management
+    user_management_yaml = {}
     if realm:
         # operator_session.
         groups = [
@@ -71,6 +73,16 @@ def group_manager_index(realm: str):
             .filter(User.type == "rodsgroup")
             .all()
         ]
+        # automatic user management
+        user_management_yaml["path"] = build_yaml_path(realm)
+        try:
+            user_management_yaml["object"] = g.irods_session.data_objects.get(
+                user_management_yaml["path"]
+            )
+            with user_management_yaml["object"].open("r") as f:
+                user_management_yaml["contents"] = f.read().decode()
+        except:
+            user_management_yaml["contents"] = ""
 
     if not realm:
         if "mango_admin" in g.irods_session.my_group_names:
@@ -111,6 +123,7 @@ def group_manager_index(realm: str):
         + [realm],
         missing_semantic_suffixes=missing_semantic_suffixes,
         zone=g.irods_session.zone,
+        user_management_yaml=user_management_yaml,
     )
 
 

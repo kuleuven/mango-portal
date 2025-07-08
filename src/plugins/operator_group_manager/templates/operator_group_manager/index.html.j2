@@ -62,10 +62,10 @@
             </div>
             <div class="col-12" id="user-management-yaml-contents">
             <input name="user-management-yaml-contents" type="hidden"><br>
-            <div class="alert alert-secondary" role="alert">
+            <div class="alert alert-{% if "object" in user_management_yaml %}primary{% else %}secondary{% endif %} role="alert">
+            {%if "object" in user_management_yaml %}A{% else %}No{% endif %} YAML file has been found in {{ user_management_yaml["path"] }}
             </div>
-            <pre>
-            </pre>
+            <pre>{{ user_management_yaml["contents"] }}</pre>
             </div>
             </form>
             <script>
