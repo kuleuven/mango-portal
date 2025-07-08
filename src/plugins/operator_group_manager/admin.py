@@ -283,7 +283,7 @@ def set_realm(realm, group):
 
 
 def build_yaml_path(realm):
-    return f"/{g.irods_session.zone}/mango/{realm}/user_management/user_management.yml"
+    return f"/{g.irods_session.zone}/mango/{realm}/user_management/user_groups.yaml"
 
 
 def validate_user_management_yaml(yaml_string: str) -> Tuple[bool, str]:
