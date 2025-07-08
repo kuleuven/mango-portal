@@ -317,7 +317,7 @@ def add_yaml(realm: str):
         return redirect(request.referrer)
     operator_session = get_operator_session(g.irods_session.zone)
     # create directory if it does not exist and provide permissions
-    rods_session = get_operator_session(g.irods_session.zone, client_user="rods")
+    rods_session = get_zone_operator_session(g.irods_session.zone, client_user="rods")
     mango_collection = setup_mango_collection(rods_session, operator_session.username)
 
     setup_realm_plugin_collection(
