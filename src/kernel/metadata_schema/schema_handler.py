@@ -350,6 +350,8 @@ class FileSystemSchemaManager(SchemaManager):
 
 
 class iRODSSchemaManager(SchemaManager):
+    STATUS_METADATA_NAME = "mg.lifecycle_status"
+
     def __init__(
         self,
         zone: str,
@@ -669,6 +671,7 @@ class iRODSSchemaManager(SchemaManager):
 
             with draft_object.open("w") as f:
                 f.write(json.dumps(json_contents).encode())
+            draft_object.metadata.set(self.STATUS_METADATA_NAME, with_status)
 
         if with_status == "published":
             # First see what the origin could be: for example is there a draft version or not
@@ -689,6 +692,7 @@ class iRODSSchemaManager(SchemaManager):
 
             with new_published_file.open("w") as f:
                 f.write(json.dumps(json_contents).encode())
+            new_published_file.metadata.set(self.STATUS_METADATA_NAME, with_status)
 
         return validity
 
@@ -704,10 +708,10 @@ class iRODSSchemaManager(SchemaManager):
             with published_file.open() as f:
                 schema_dict = json.load(f)
             schema_dict["status"] = "archived"
-            with published_file.open(
-                "w"
-            ) as f:  # it doesn't work to read and write with w+
+            with published_file.open("w") as f:
+                # it doesn't work to read and write with w+
                 f.write(json.dumps(schema_dict).encode())
+            published_file.metadata.set(self.STATUS_METADATA_NAME, "archived")
             self.irods_session.data_objects.move(
                 published_file.path,
                 published_file.path.replace("-published.json", ".json"),
