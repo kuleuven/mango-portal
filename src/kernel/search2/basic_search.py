@@ -411,7 +411,7 @@ def catalog_search2():
 
         meta_attribute = StringField("Attribute name")  # , [validators.Length(min=2)])
         meta_value = StringField("Attribute value")  # , [validators.Length(min=2)])
-        required = BooleanField("")
+        required = BooleanField("", render_kw = {'checked': '', 'disabled': ''})
 
         # data object variant with <data> search suggestions
 
@@ -436,7 +436,7 @@ def catalog_search2():
             "Attribute name", validate_choice=False
         )  # we don't validate because choices will be created dynamically
         meta_v = StringField("Attribute value")
-        required = BooleanField("")
+        required = BooleanField("", default=True, render_kw = {'checked': '', 'disabled': ''})
 
     class AVUSchemaNoLabel(Form):
         """AVU field for schema metadata with suggestion list and no label."""
@@ -730,6 +730,7 @@ def catalog_search2():
             pagination=pagination,
             schemas_dict=schemas_dict,
             existing_schemas=existing_schemas,
+            search_fields = request.values.to_dict(),
         )
 
     else:
@@ -742,4 +743,5 @@ def catalog_search2():
             # collection_tree=collection_tree,
             schemas_dict=schemas_dict,
             existing_schemas=existing_schemas,
+            search_fields = {},
         )
