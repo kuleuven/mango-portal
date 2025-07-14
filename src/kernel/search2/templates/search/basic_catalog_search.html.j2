@@ -236,11 +236,17 @@ a.right {
 
         [...selectElements].forEach(function(schema, index) {
             if (index % 2 === 0) { // get even select elements (=schemas)
-                prependPlaceholder(schema, "choose a schema");
+               // prependPlaceholder(schema, "choose a schema");
                 schema.addEventListener('change', function() {
                     let attribute = [...selectElements][index + 1];
                     attribute.innerHTML = "";
                     const optgroups = {} // create optgroups obj to store optgroups in
+                    console.log(schemasObject)
+                    if (schema.value == "") {
+                                        prependPlaceholder(schema, "choose a schema");
+
+                        }
+                    else {
                     schemasObject[schema.value].forEach(dict => { // get the values for the select schema 
                         for (const [key, value] of Object.entries(dict)) {
                             if (value.type === "label") { // if it is a label
@@ -265,6 +271,7 @@ a.right {
                             };
                         };
                     });
+                    };
                     let groups = attribute.querySelectorAll("optgroup"); // remove optgroup if it is empty
                     groups.forEach((x) => {
                         if (x.children.length === 0) {
