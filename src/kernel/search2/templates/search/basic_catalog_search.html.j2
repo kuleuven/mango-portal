@@ -198,7 +198,7 @@ a.right {
         //  script loads the schema metadata
         const collections = document.getElementById("collection_subtree-collection");
 
-        collections.addEventListener("change", function() {
+        collections.addEventListener("change", function() {   // reload page to get schemas for collection from backend
             window.open(`/catalog/search2?collection_subtree-collection=${collections.value}`, '_self');
         })
 
@@ -206,9 +206,6 @@ a.right {
         const resultsObject = {{ search_fields | tojson }}  // get the results
         const schemasObject = {{ schemas_dict | tojson }} // get the schema metadata
 
-        
-
-        console.log(resultsObject)
 
         function prependPlaceholder(schema, placeholder_text) { // create a placeholder for select fields
             let basicOption = document.createElement("option");
@@ -218,15 +215,15 @@ a.right {
             schema.selectedIndex = "0";
         };
         
-        document.addEventListener("DOMContentLoaded", function() {  // update the schema & attribute name fields
-
-            
+        document.addEventListener("DOMContentLoaded", function() {  // update the schema & attribute fields after search
+            // fixed schema metadata
             document.getElementById("schema_metadata-schema").value = resultsObject["schema_metadata-schema"];
-            document.getElementById("schema_metadata-schema").dispatchEvent(new Event("change", {
+            document.getElementById("schema_metadata-schema").dispatchEvent(new Event("change", {   // fake change event
                         bubbles: true
                     }));
             document.getElementById("schema_metadata-meta_a").value = resultsObject["schema_metadata-meta_a"]
             
+            // dynamic schema metadata
             let counterMd = 0;
             while (`schema_metadata_no_label-${counterMd}-schema` in resultsObject) {
                 document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).value = resultsObject[`schema_metadata_no_label-${counterMd}-schema`];
@@ -235,7 +232,6 @@ a.right {
                     }));  
             document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_a`];
                 counterMd += 1;
-
             };
         });
 
@@ -244,7 +240,6 @@ a.right {
 
         [...selectElements].forEach(function(schema, index) {
             if (index % 2 === 0) { // get even select elements (=schemas)
-               // prependPlaceholder(schema, "choose a schema");
                 schema.addEventListener('change', function() {
                     let attribute = [...selectElements][index + 1];
                     attribute.innerHTML = "";
@@ -290,8 +285,7 @@ a.right {
             };
         });
 
-        function getValue(attribute) {
-            console.log(attribute.id)
+        function getValue(attribute) {  // get attribute
             if (attribute.id === "schema_metadata-meta_a") {
                 return (document.getElementById("schema_metadata-meta_v"))
             } else {
@@ -303,9 +297,8 @@ a.right {
             }
         }
 
-        function createField(type, elementName, elementID) {
+        function createField(type, elementName, elementID) {  // function to create field based type
             let element
-
             if (type === "select") {
                 element = document.createElement("select")
                 element.classList.add("form-select");
@@ -322,12 +315,8 @@ a.right {
         [...selectElements].forEach(function(schema, index) {
             if (index % 2 !== 0) { // get uneven select elements (= attributes)
                 let attribute = [...selectElements][index];
-                console.log(attribute)
-                console.log(attribute.options)
-
                 function checkType() {
                     let selectedOption = attribute.options[attribute.selectedIndex];
-                    console.log(selectedOption);
                     let value = getValue(attribute);
                     switch (selectedOption.getAttribute("type")) {
                         case "select":
@@ -370,8 +359,6 @@ a.right {
 
         }
 
-
-
         //dynamically create the label for row required for non schema metadata 
         let checkboxColNonSchema = document.getElementById("nonSchemaMetadata").querySelector(".checkbox");
         let requiredLabelNonSchema = document.createElement("label");
@@ -389,8 +376,6 @@ a.right {
         checkboxColSchema.prepend(requiredLabelSchema)
         document.getElementById("schema_metadata-required").classList.add("mt-3")
         document.getElementById("non_schema_metadata-required").classList.add("mt-3")
-
-
 
 
         let counterSchema = 0;

@@ -420,7 +420,7 @@ def catalog_search2():
 
         meta_attribute = StringField("")
         meta_value = StringField("")
-        required = BooleanField("")
+        required = BooleanField("",  render_kw = {'checked': '', 'disabled': ''})
 
     class AVUSchema(Form):
         """Input field for schema metadata with suggestion list and label."""
@@ -450,7 +450,7 @@ def catalog_search2():
         # meta_a = StringField("", render_kw={"list": "search_meta_names"})
         meta_a = SelectField("", validate_choice=False)
         meta_v = StringField("")
-        required = BooleanField("")
+        required = BooleanField("",  render_kw = {'checked': '', 'disabled': ''})
 
     # # data object variant with <data> search suggestions
     # class AVUFormSuggestionListDO(Form):
