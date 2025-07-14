@@ -206,6 +206,8 @@ a.right {
         const resultsObject = {{ search_fields | tojson }}  // get the results
         const schemasObject = {{ schemas_dict | tojson }} // get the schema metadata
 
+        
+
         console.log(resultsObject)
 
         function prependPlaceholder(schema, placeholder_text) { // create a placeholder for select fields
@@ -225,10 +227,16 @@ a.right {
                     }));
             document.getElementById("schema_metadata-meta_a").value = resultsObject["schema_metadata-meta_a"]
             
-       //     let md_counter = 0;
-       //     while ()
+            let counterMd = 0;
+            while (`schema_metadata_no_label-${counterMd}-schema` in resultsObject) {
+                document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).value = resultsObject[`schema_metadata_no_label-${counterMd}-schema`];
+                document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).dispatchEvent(new Event("change", {
+                        bubbles: true
+                    }));  
+            document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_a`];
+                counterMd += 1;
 
-
+            };
         });
 
 
@@ -243,8 +251,7 @@ a.right {
                     const optgroups = {} // create optgroups obj to store optgroups in
                     console.log(schemasObject)
                     if (schema.value == "") {
-                                        prependPlaceholder(schema, "choose a schema");
-
+                        prependPlaceholder(schema, "choose a schema");
                         }
                     else {
                     schemasObject[schema.value].forEach(dict => { // get the values for the select schema 
