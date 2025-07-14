@@ -36,13 +36,11 @@ a.right {
     {% endif %}
     <!-- start form -->
     <form method="get"
-          action="{{ url_for("basic_search2_bp.catalog_search2") }}"
+          action="{{ url_for('basic_search2_bp.catalog_search2') }}"
           id="basic-search-form"
           {% if results %}class="collapse"{% endif %}>
         <h3>Advanced Search</h3>
-        {# <h5>Collection</h5> #}
         {{ render_form_row([search_form.collection_subtree.collection]) }}
-        {# <h5>Name</h5> #}
         <fieldset class="mb-4">
             {{ render_form_row([search_form.item_name.item_name]) }}
             <div id="exact_match">
@@ -50,7 +48,6 @@ a.right {
                 {{ search_form.item_name.comparison.label }}
             </div>
         </fieldset>
-        {# <h5>Type</h5> #}
         {# {{ render_form_row([search_form.item_name.item_type]) }} #}
         <fieldset class="row mb-3">
             <legend class="col-form-label col-sm-2 pt-0">{{ search_form.item_name.item_type.label }}</legend>
@@ -65,7 +62,6 @@ a.right {
             </div>
         </fieldset>
         <!-- METADATA FILTERS -->
-        <!--    <h4>Filter by Metadata</h4> -->
         <div id="metadataFields">
             <div class="row">
                 <h5>Schema metadata</h5>
@@ -86,14 +82,10 @@ a.right {
                                                 subform.id ~ '-required': 'col-md-2 checkbox'},
                                                 form_group_classes="col-mb-0") }}
                     {% endfor %}
-                    {# <a href="#" id="addSchemaField" class="right">Add schema metadata</a> #}
-                    <div class="d-flex flex-row-reverse">
-                                            <button type="button" id="removeSchemaField" class="btn btn-secondary me-3"><i class="bi bi-dash-circle"></i>
-
-</button>
-                        <button type="button" id="addSchemaField" class="btn btn-secondary me-3"><i class="bi bi-plus-circle"></i>
-</button>
-                    </div>
+                </div>
+                <div class="d-flex flex-row-reverse">
+                    <button type="button" id="removeSchemaField" onclick="removeLastElement('schemaMetadata')" class="btn btn-secondary me-3"><i class="bi bi-dash-circle"></i></button>
+                    <button type="button" id="addSchemaField" class="btn btn-secondary me-3"><i class="bi bi-plus-circle"></i></button>
                 </div>
             </div>
             <div class="row">
@@ -113,17 +105,15 @@ a.right {
                                                 subform.id ~ '-required': 'col-md-2 checkbox'},
                                                 form_group_classes="col-mb-0") }}
                     {% endfor %}
-                    {# <a href="#" id="addNonSchemaField" class="right">Add non-schema metadata</a> #}
-                    <div class="d-flex flex-row-reverse">
-                        <button type="button" id="removeNonSchemaField" class="btn btn-secondary me-3"><i class="bi bi-dash-circle"></i></button>
-
-                        <button type="button" id="addNonSchemaField" class="btn btn-secondary me-3"><i class="bi bi-plus-circle"></i></button>
-                    </div>
+     
+                </div>
+                <div class="d-flex flex-row-reverse">
+                    <button type="button" id="removeNonSchemaField" onclick="removeLastElement('nonSchemaMetadata')" class="btn btn-secondary me-3"><i class="bi bi-dash-circle"></i></button>
+                    <button type="button" id="addNonSchemaField"  class="btn btn-secondary me-3"><i class="bi bi-plus-circle"></i></button>
                 </div>
             </div>
         </div>
         <!--- DATE FILTER --->
-        <!-- <h4>Filter by Date</h4> -->
         <div class="row">
             <div class="col-md-6">
                 <h5>Created</h5>
@@ -213,14 +203,7 @@ a.right {
         })
 
 
-        //   const url = window.location.href;
-
-        //  if(url.search("schema_metadata-meta_a") > -1) {
-        //      document.getElementById("schema_metadata-meta_a").value = 
-
-        //  }
-
-        const resultsObject = {{ search_fields | tojson }}
+        const resultsObject = {{ search_fields | tojson }}  // get the results
         const schemasObject = {{ schemas_dict | tojson }} // get the schema metadata
 
         console.log(resultsObject)
@@ -233,7 +216,7 @@ a.right {
             schema.selectedIndex = "0";
         };
         
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function() {  // update the schema & attribute name fields
 
             
             document.getElementById("schema_metadata-schema").value = resultsObject["schema_metadata-schema"];
@@ -364,6 +347,17 @@ a.right {
         })
 
 
+        //code to remove last element from a row 
+        function removeLastElement(rowId) {
+            let schemaMd = document.getElementById(rowId);
+            if (schemaMd.childElementCount > 1) {
+            schemaMd.removeChild(schemaMd.lastElementChild);
+            }
+
+        }
+
+
+
         //dynamically create the label for row required for non schema metadata 
         let checkboxColNonSchema = document.getElementById("nonSchemaMetadata").querySelector(".checkbox");
         let requiredLabelNonSchema = document.createElement("label");
@@ -447,7 +441,7 @@ a.right {
                                 option.setAttribute("enum", value.enum)
                             }
                             option.setAttribute("type", value.type);
-
+                
                             if (!value.parent) {
                                 attribute.add(option); // add the option to attribute
                             } else {
@@ -455,7 +449,6 @@ a.right {
                             };
                         };
                     };
-
                 });
 
                 let groups = attribute.querySelectorAll("optgroup"); // remove optgroup if it is empty
@@ -465,8 +458,6 @@ a.right {
                     }
                 });
                 prependPlaceholder(attribute, "choose an attribute");
-
-
             });
 
 
@@ -510,8 +501,6 @@ a.right {
             let handler = createCheckTypeHandler(counterSchema); //use a closure to freeze function parameters
             attributeSelectElement.addEventListener("change", handler);
 
-
-
             //col3
             let col3 = document.createElement("div")
             col3.classList.add("col-md-3")
@@ -524,9 +513,7 @@ a.right {
             container3.appendChild(valueInputField);
             col3.appendChild(container3);
 
-
             // col 4 
-
             let col4 = document.createElement("div")
             col4.classList.add("col-md-2")
             let container4 = document.createElement("div")
