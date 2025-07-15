@@ -666,7 +666,6 @@ def view_object(data_object_path):
     ## Take into account tz info in a BC way, this was added in recent iRODS versions
     do_modtime = data_object.modify_time
     use_tz = do_modtime.tzinfo is not None and do_modtime.tzinfo.utcoffset(do_modtime) is not None
-    tika_file_path = Path(tika_file_path)
 
     if os.path.exists(tika_file_path) and do_modtime < (
         analysis_timestamp := datetime.datetime.fromtimestamp(
