@@ -36,8 +36,8 @@ register_module(**UI)
 # Protected groups are excluded from manipulation through the operator_group_manager functions
 # as they are handled through the data api platform
 PROTECTED_USER_GROUP_SUFFIXES = ["manager", "ingress", "egress", "responsible"]
-
-SEMANTIC_USER_GROUP_SUFFIXES = ["schema_manager"]
+USER_MANAGEMENT_SUFFIX = "user_management"
+SEMANTIC_USER_GROUP_SUFFIXES = ["schema_manager", USER_MANAGEMENT_SUFFIX]
 
 
 # @cache.memoize(1200)
@@ -94,7 +94,7 @@ def group_manager_index(realm: str):
                 g.irods_session, f"/{g.irods_session.zone}/home"
             )
 
-    editable = current_user_is_group_manager = (
+    editable = (
         True
         if (f"{realm}_manager" in g.irods_session.my_group_names)
         or (
@@ -102,6 +102,9 @@ def group_manager_index(realm: str):
             and "mango_portal_admin" in g.irods_session.roles
         )
         else False
+    )
+    current_user_is_group_manager = (
+        f"{realm}_{USER_MANAGEMENT_SUFFIX}" in g.irods_session.my_group_names
     )
 
     missing_semantic_suffixes = []
@@ -123,6 +126,7 @@ def group_manager_index(realm: str):
         + [realm],
         missing_semantic_suffixes=missing_semantic_suffixes,
         zone=g.irods_session.zone,
+        current_user_is_group_manager=current_user_is_group_manager,
         user_management_yaml=user_management_yaml,
     )
 
@@ -319,6 +323,21 @@ def validate_yaml(realm: str):
     return [yaml_path if validation else validation, result]
 
 
+def setup_user_management_collection(zone, realm):
+    operator_session = get_operator_session(zone)
+    # create directory if it does not exist and provide permissions
+    rods_session = get_zone_operator_session(zone, client_user="rods")
+    mango_collection = setup_mango_collection(rods_session, operator_session.username)
+
+    setup_realm_plugin_collection(
+        operator_session,
+        realm,
+        "user_management",
+        mango_collection,
+        f"{realm}_{USER_MANAGEMENT_SUFFIX}",
+    )
+
+
 @operator_group_manager_admin_bp.route(
     "/operator_group_manager/add_yaml/<realm>", methods=["POST"]
 )
@@ -328,16 +347,11 @@ def add_yaml(realm: str):
     if not validation:
         flash(result, "error")
         return redirect(request.referrer)
-    operator_session = get_operator_session(g.irods_session.zone)
-    # create directory if it does not exist and provide permissions
-    rods_session = get_zone_operator_session(g.irods_session.zone, client_user="rods")
-    mango_collection = setup_mango_collection(rods_session, operator_session.username)
 
-    setup_realm_plugin_collection(
-        operator_session, realm, "user_management", mango_collection
-    )
+    setup_user_management_collection(g.irods_session.zone, realm)
     yaml_path = build_yaml_path(realm)
-    with operator_session.data_objects.open(yaml_path, "w", create=True) as f:
+    # it should be fine if the user is part of the user_management group :)
+    with g.irods_session.data_objects.open(yaml_path, "w", create=True) as f:
         f.write(yaml_contents.encode())
     flash(
         f"The YAML has been successfully uploaded to <code>{yaml_path}</code>",

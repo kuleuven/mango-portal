@@ -205,7 +205,11 @@ def setup_mango_collection(
 
 
 def setup_realm_plugin_collection(
-    irods_session: iRODSSession, realm: str, plugin_name: str, root_collection: str
+    irods_session: iRODSSession,
+    realm: str,  # also group with read access
+    plugin_name: str,
+    root_collection: str,
+    write_access_group: str = None,
 ) -> iRODSCollection:
     storage_path = f"{root_collection}/{realm}/{plugin_name}"
 
@@ -215,5 +219,10 @@ def setup_realm_plugin_collection(
             iRODSAccess("read", storage_path, user_name=realm),
             recursive=True,
         )
+        if write_access_group is not None:
+            irods_session.acls.set(
+                iRODSAccess("write", storage_path, user_name=write_access_group),
+                recursive=True,
+            )
         irods_session.acls.set(iRODSAccess("inherit", storage_path))
     return storage_path

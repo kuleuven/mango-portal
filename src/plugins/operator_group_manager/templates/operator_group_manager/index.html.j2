@@ -49,6 +49,7 @@
                     </div>
                 {% endif %}
             </div>
+            {% if current_user_is_group_manager %}
             <hr>
             <h4>Automatic user management with ManGO Flow</h4>
             <form id="add-yaml" class="row align-items-center" method="post" action="{{ url_for("operator_group_manager_admin_bp.add_yaml", realm=realm) }}">
@@ -64,14 +65,15 @@
             <input name="user-management-yaml-contents" type="hidden"><br>
             <div class="alert alert-{% if "object" in user_management_yaml %}primary{% else %}secondary{% endif %} role="alert">
             {%if "object" in user_management_yaml %}A{% else %}No{% endif %} YAML file has been found in {{ user_management_yaml["path"] }}
-            </div>
-            <pre>{{ user_management_yaml["contents"] }}</pre>
-            </div>
-            </form>
-            <script>
-                const url = '{{ url_for("operator_group_manager_admin_bp.validate_yaml", realm=realm) }}';
-            </script>
-            <script src="{{url_for('operator_group_manager_admin_bp.static', filename='js/automatic_user_management.js')}}"></script>
+                </div>
+                <pre>{{ user_management_yaml["contents"] }}</pre>
+                </div>
+                </form>
+                <script>
+                    const url = '{{ url_for("operator_group_manager_admin_bp.validate_yaml", realm=realm) }}';
+                </script>
+                <script src="{{url_for('operator_group_manager_admin_bp.static', filename='js/automatic_user_management.js')}}"></script>
+            {% endif %}
         {% endif %}
     {% endif %}
     {% if realm and not groups %}<p>No groups found for {{ realm }}</p>{% endif %}
