@@ -1,21 +1,25 @@
-from flask import Blueprint, render_template, g, request, redirect, flash, url_for, current_app
-from . import get_operator_session
-from irods.user import iRODSGroup, iRODSUser
-from irods.models import Group, User
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from irods.column import Like
+from irods.models import Group, User
 from irods.session import iRODSSession
+from irods.user import iRODSGroup, iRODSUser
+
 from cache import cache
-import re, logging
-from mango_ui import register_module
-import yaml
-from typing import Annotated, Union, Tuple
-from pydantic import RootModel, Field, ValidationError
-
 from lib.util import setup_mango_collection, setup_realm_plugin_collection
-
+from mango_ui import register_module
 from plugins.operator import get_zone_operator_session
 
-from . import yaml_definition_uploaded, group_definition_cud
+from . import get_operator_session, group_definition_cud, yaml_definition_uploaded
+from .validation import validate_user_management_yaml
 
 operator_group_manager_admin_bp = Blueprint(
     "operator_group_manager_admin_bp",
@@ -292,29 +296,6 @@ def build_yaml_path(realm):
     return f"/{g.irods_session.zone}/mango/{realm}/user_management/user_groups.yaml"
 
 
-def validate_user_management_yaml(yaml_string: str) -> Tuple[bool, str]:
-    try:
-        yaml_contents = yaml.safe_load(yaml_string)
-    except Exception as e:
-        return False, f"Error reading the YAML, {e}"
-    validated_yaml = validate_user_management(yaml_contents)
-    if isinstance(validated_yaml, str):
-        return False, validated_yaml
-    return True, yaml_string  # no errors, return clean string to save to file
-
-
-def validate_user_management(yaml_contents: dict) -> dict:
-    User = Annotated[str, Field(pattern=r"([urb]\d{7})|(vsc\d{5})")]
-    UserManagement = RootModel[dict[str, Union[list[User], "UserManagement"]]]
-
-    try:
-        return UserManagement(yaml_contents).model_dump()
-    except ValidationError as e:
-        return f"The YAML is not in the correct format, {e}"
-    except Exception as e:
-        return f"There is something wrong with the YAML, {e}"
-
-
 @operator_group_manager_admin_bp.route(
     "/operator_group_manager/validate_yaml/<realm>/", methods=["POST"]
 )
@@ -360,5 +341,9 @@ def add_yaml(realm: str):
         "success",
     )
     # emit the signal with the current yamp path
-    yaml_definition_uploaded.send(current_app._get_current_object(), irods_session = g.irods_session, yaml_path=yaml_path)
+    yaml_definition_uploaded.send(
+        current_app._get_current_object(),
+        irods_session=g.irods_session,
+        yaml_path=yaml_path,
+    )
     return redirect(request.referrer)
