@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, g, request, redirect, flash, url_for
+from flask import Blueprint, render_template, g, request, redirect, flash, url_for, current_app
 from . import get_operator_session
 from irods.user import iRODSGroup, iRODSUser
 from irods.models import Group, User
@@ -14,6 +14,8 @@ from pydantic import RootModel, Field, ValidationError
 from lib.util import setup_mango_collection, setup_realm_plugin_collection
 
 from plugins.operator import get_zone_operator_session
+
+from . import yaml_definition_uploaded, group_definition_cud
 
 operator_group_manager_admin_bp = Blueprint(
     "operator_group_manager_admin_bp",
@@ -357,4 +359,6 @@ def add_yaml(realm: str):
         f"The YAML has been successfully uploaded to <code>{yaml_path}</code>",
         "success",
     )
+    # emit the signal with the current yamp path
+    yaml_definition_uploaded.send(current_app._get_current_object(), irods_session = g.irods_session, yaml_path=yaml_path)
     return redirect(request.referrer)
