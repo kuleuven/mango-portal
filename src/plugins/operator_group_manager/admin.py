@@ -1,3 +1,5 @@
+import re
+
 from flask import (
     Blueprint,
     current_app,
@@ -87,6 +89,11 @@ def group_manager_index(realm: str):
             )
             with user_management_yaml["object"].open("r") as f:
                 user_management_yaml["contents"] = f.read().decode()
+            valid, message = validate_user_management_yaml(
+                user_management_yaml["contents"]
+            )
+            if not valid:
+                user_management_yaml["validation_message"] = message
         except:
             user_management_yaml["contents"] = ""
 

@@ -64,8 +64,11 @@
             <div class="col-12" id="user-management-yaml-contents">
             <input name="user-management-yaml-contents" type="hidden"><br>
             <div class="alert alert-{% if "object" in user_management_yaml %}primary{% else %}secondary{% endif %} role="alert">
-            {%if "object" in user_management_yaml %}A{% else %}No{% endif %} YAML file has been found in {{ user_management_yaml["path"] }}
+            {% if "object" in user_management_yaml %}A{% else %}No{% endif %} YAML file has been found in {{ user_management_yaml["path"] }}
                 </div>
+            {% if "validation_message" in user_management_yaml %}
+                <div class="alert alert-danger role="alert">{{ user_management_yaml["validation_message"] }}</div>
+            {% endif %}
                 <pre>{{ user_management_yaml["contents"] }}</pre>
                 </div>
                 </form>
