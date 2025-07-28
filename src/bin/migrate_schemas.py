@@ -1,7 +1,9 @@
-#!/usr/bin/env python
-from plugins.operator import get_zone_operator_session
+import re
 from pathlib import Path
+
 from irods.access import iRODSAccess
+
+from plugins.operator import get_zone_operator_session
 
 """Migrate existing schemas from persistent storage to iRODS
 
@@ -10,6 +12,13 @@ from irods.access import iRODSAccess
 3. Run like `python migrate_schemas.py <zone1> <zone2>`  (with whatever zones you want to migrate)
 
 """
+
+STATUS_METADATA_NAME = "mg.lifecycle_status"
+
+
+def get_version_status(filename):
+    re_match = re.match(r"[^.]+-v\d.0.0-?(?P<status>published|draft)")
+    return "archived" if re_match is None else re_match.groupdict()["status"]
 
 
 def get_current_path(zone):
@@ -80,6 +89,9 @@ def migrate_schemas(zone):
                 destination = str(schema_path / schema_file.name)
                 try:
                     irods_session.data_objects.put(str(schema_file), destination)
+                    irods_session.data_objects.get(destination).metadata.set(
+                        STATUS_METADATA_NAME, get_version_status(schema_file.name)
+                    )
                 except Exception as e:
                     print(f"Failed to migrate {schema_file}", e)
         print(
