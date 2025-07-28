@@ -60,10 +60,16 @@ def update_mango_users_groups_from_yaml_task(self, task_data: dict[str, dict | s
 
 def update_users_mango(yaml_data: dict, realm: str):
     protected_groups = {f"{realm}_{role}": role for role in ["manager", "responsible"]}
+    machine_accounts = [f"{realm}_pipeline"]
 
     existing_users = get_members(realm)
 
-    yaml_users = set(user for group in yaml_data.values() for user in group)
+    yaml_users = set(
+        user
+        for group in yaml_data.values()
+        for user in group
+        if user not in machine_accounts
+    )
 
     added_users = [user for user in yaml_users if user not in existing_users]
     # delete users that are gone, except special roles
