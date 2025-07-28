@@ -16,8 +16,9 @@ def validate_user_management_yaml(yaml_string: str) -> Tuple[bool, str]:
 
 
 def validate_user_management(yaml_contents: dict) -> dict:
-    User = Annotated[str, Field(pattern=r"([urb]\d{7})|(vsc\d{5})")]
-    UserManagement = RootModel[dict[str, Union[list[User], "UserManagement"]]]
+    User = Annotated[str, Field(pattern=r"^([urbx]\d{7})|(vsc\d{5})|\w+_pipeline$")]
+    Group = Annotated[str, Field(pattern=r"^[\w]+$")]
+    UserManagement = RootModel[dict[Group, Union[list[User], "UserManagement"]]]
 
     try:
         return UserManagement(yaml_contents).model_dump()
