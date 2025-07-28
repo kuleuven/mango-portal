@@ -17,7 +17,7 @@ STATUS_METADATA_NAME = "mg.lifecycle_status"
 
 
 def get_version_status(filename):
-    re_match = re.match(r"[^.]+-v\d.0.0-?(?P<status>published|draft)")
+    re_match = re.match(r"[^.]+-v\d.0.0-?(?P<status>published|draft)", filename)
     return "archived" if re_match is None else re_match.groupdict()["status"]
 
 
