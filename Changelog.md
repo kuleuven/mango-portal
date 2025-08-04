@@ -2,12 +2,14 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.22.0 [2025-04-10]
+## Release 0.22.0 [2025-08-04]
 
 ### New features
 
 - Metadata schemas are now native irods data objects. See `src/bin/migrate_schemas.py` for the migration script
 - Patched version of PRC for irods 5.x compatibility
+- metadata download as json
+- reworked UI for metadata views
 
 ### Bug fixes
 
