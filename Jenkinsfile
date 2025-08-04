@@ -9,7 +9,7 @@ def allowed_branch_names = [
   'mango_flow': 'development',
   'devops-image-build-refactor': 'development',
   'main': 'latest',
-  'hotfix/invalid-sessions-hardening': 'development'
+  'feature/schemas-in-irods': 'development'
 ]
 
 def deploy_tier = [
