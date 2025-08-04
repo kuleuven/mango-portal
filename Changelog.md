@@ -2,8 +2,18 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.22.0 [2025-04-10]
 
-## Release 0.21.0 [TBD]
+### New features
+
+- Metadata schemas are now native irods data objects. See `src/bin/migrate_schemas.py` for the migration script
+- Patched version of PRC for irods 5.x compatibility
+
+### Bug fixes
+
+- Fixed crash (Tika) due to the use of naive datetime objects, while irods serves full ones
+
+## Release 0.21.0 [2025-04-10]
 
 ### New features
 
