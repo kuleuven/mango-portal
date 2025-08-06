@@ -54,6 +54,7 @@ node() {
   sh 'cp -rf extra-packages/mangoflow-custom-tasks/src/fogcoa_validation.py src/plugins/mango_flow/tasks'
   sh 'cp -rf extra-packages/mangoflow-custom-tasks/src/fogcoa_tasks.py src/plugins/mango_flow/tasks'
   sh 'cp -rf extra-packages/mangoflow-custom-tasks/src/fiber.py src/plugins/mango_flow/tasks'
+  sh 'cp -rf extra-packages/mangoflow-custom-tasks/src/mango_user_management.py src/plugins/mango_flow/tasks'
   sh 'find src/plugins'
   stash name: 'mango_plugins', includes: 'src/plugins/**/*'
 
