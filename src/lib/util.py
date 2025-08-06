@@ -1,6 +1,7 @@
 import os
 from irods.collection import iRODSCollection
 from irods.data_object import iRODSDataObject
+from irods.access import iRODSAccess
 from irods.session import iRODSSession
 import base64
 
@@ -129,13 +130,17 @@ def execute_atomic_operations(
     catalog_item: iRODSDataObject | iRODSCollection,
     avu_operations,
 ):
-    if irods_session.server_version > (4,2,11) or current_user_is_naked_owner(irods_session, catalog_item):
+    if irods_session.server_version > (4, 2, 11) or current_user_is_naked_owner(
+        irods_session, catalog_item
+    ):
         catalog_item.metadata.apply_atomic_operations(*avu_operations)
     else:
         mimic_atomic_operations(catalog_item, avu_operations)
 
+
 ### end workaround atomic operations
-        
+
+
 def get_type_for_path(irods_session: iRODSSession, item_path: str):
     try:
         _ = irods_session.collections.get(item_path)
@@ -158,17 +163,19 @@ def atob(x):
 # it does not work for ManGO repeated composite fields as it will
 # dissect them into the same lists
 
+
 def safely_add_to_dict(regular_dict: dict, key, value):
-    # simple multidict like behaviour for multivalued fields 
+    # simple multidict like behaviour for multivalued fields
     if key in regular_dict:
         if type(regular_dict[key]) == list:
             regular_dict[key].append(value)
         elif (existing_value := regular_dict[key]) is not None:
             regular_dict[key] = [existing_value, value]
-        else: # basically None value
+        else:  # basically None value
             regular_dict[key] = value
     else:
         regular_dict[key] = value
+
 
 # a namespaced_string with dots is expanded into a nested dict
 def unflatten_namespace_into_dict(
@@ -177,8 +184,45 @@ def unflatten_namespace_into_dict(
     if "." in namespaced_string:
         lead_key, rest = namespaced_string.split(".", 1)
         if lead_key not in target_dict:
-            target_dict[lead_key] ={}
+            target_dict[lead_key] = {}
         unflatten_namespace_into_dict(target_dict[lead_key], rest, value)
     else:
         safely_add_to_dict(target_dict, namespaced_string, value)
-        
+
+
+def setup_mango_collection(
+    rods_irods_session: iRODSSession, operator_user: str, collection_name: str = "mango"
+) -> str:
+    mango_collection = f"/{rods_irods_session.zone}/{collection_name}"
+
+    if not rods_irods_session.collections.exists(mango_collection):
+        rods_irods_session.collections.create(mango_collection)
+    rods_irods_session.acls.set(
+        iRODSAccess("own", mango_collection, user_name=operator_user),
+        recursive=True,
+    )
+    return mango_collection
+
+
+def setup_realm_plugin_collection(
+    irods_session: iRODSSession,
+    realm: str,  # also group with read access
+    plugin_name: str,
+    root_collection: str,
+    write_access_group: str = None,
+) -> iRODSCollection:
+    storage_path = f"{root_collection}/{realm}/{plugin_name}"
+
+    if not irods_session.collections.exists(storage_path):
+        irods_session.collections.create(storage_path, recurse=True)
+        irods_session.acls.set(
+            iRODSAccess("read", storage_path, user_name=realm),
+            recursive=True,
+        )
+        if write_access_group is not None:
+            irods_session.acls.set(
+                iRODSAccess("write", storage_path, user_name=write_access_group),
+                recursive=True,
+            )
+        irods_session.acls.set(iRODSAccess("inherit", storage_path))
+    return storage_path
