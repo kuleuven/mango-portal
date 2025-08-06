@@ -45,16 +45,33 @@
                             </button>
                         </p>
                     {% elif 'own' in current_user_rights %}
+
+                                          <form method="post"
+                                  id="delete-{{ permission.user_name }}"
+                                  action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                <input type="hidden" name="groups" value="{{ permission.user_name }}" />
+                                <input type="hidden" name="permission_type" value="null" />
+                                <input type="hidden" name="redirect_hash" value="#permissions" />
+                            </form>
+
                         <button type="button"
+
+                                onclick="passData('{{ permission.user_name }}')"
                                 class="btn btn-link"
                                 data-bs-toggle="modal"
-                                data-bs-target="#confirmation-dialog">
+                                data-bs-target="#permission-remove-modal">
                             <i class="bi bi-trash text-danger"></i>
                         </button>
                     {% endif %}
                 </td>
             </tr>
-            <div class="modal" id="confirmation-dialog" tabindex="-1">
+     
+{% endfor %}
+
+
+       <!-- delete modal --> 
+            <div class="modal" id="permission-remove-modal" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -64,30 +81,27 @@
                                     data-bs-dismiss="modal"
                                     aria-label="Close"></button>
                         </div>
-
-                    {% if 'own' in current_user_rights and ((permission.access_name == 'own' and acl_counts['own'] > 1) or permission.access_name != 'own') %}
-<p>    <input type="checkbox"
-                               form="delete-{{ permission.user_name }}"
-                               name="recursive"
-                               id="set_recursive"
-                               value="True"
-                               title="Remove recursively for all  items in this collection"
-                               checked /> Remove recursively for all  items in this collection
-
-                       </p>
-                    {% endif %}
-
-
+                        <div class="modal-body">
+                            <p id="info">
+                               
+                            </p>
+                            {# {% if 'own' in current_user_rights and ((permission.access_name == 'own' and acl_counts['own'] > 1) or permission.access_name != 'own') %}
+                                <p>
+                                    <input type="checkbox"
+                                           form="delete-{{ permission.user_name }}"
+                                           name="recursive"
+                                           id="set_recursive"
+                                           value="True"
+                                           title="Remove recursively for all  items in this collection"
+                                           checked />
+                                    Remove recursively for all  items in this collection
+                                </p>
+                            {% endif %} #}
+                        </div>
                         <div class="modal-footer">
-                            <form method="post"
-                                  id="delete-{{ permission.user_name }}"
-                                  action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                <input type="hidden" name="groups" value="{{ permission.user_name }}" />
-                                <input type="hidden" name="permission_type" value="null" />
-                                <input type="hidden" name="redirect_hash" value="#permissions" />
-                                <button type="submit" class="btn btn-primary" title="Remove permission">I'm sure</button>
-                            </form>
+      
+                            <button type="submit" class="btn btn-primary" name="removePermission" title="Remove permission">I'm sure</button>
+
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         </div>
                     </div>
@@ -95,7 +109,7 @@
             </div>
         </div>
     </div>
-{% endfor %}
+
 </tbody>
 </table>
 {% if 'own' in current_user_rights %}
@@ -138,3 +152,14 @@
     </div>
 {% endif %}
 <!--{{ acl_users_dict |pprint }}-->
+
+
+<script> 
+
+function passData(input) {
+    console.log(input);
+    document.getElementById("info").innerHTML = `<p> Remove ${input} </p>`;
+    document.getElementsByName("removePermission")[0].setAttribute("form", `delete-${input}`);
+}
+
+</script> 
