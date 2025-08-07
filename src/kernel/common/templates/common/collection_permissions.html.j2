@@ -147,9 +147,9 @@
         document.getElementsByName("removePermission")[0].setAttribute("form", `delete-${user_name}`);
         document.getElementById("set_recursive").setAttribute("form", `delete-${user_name}`);
         if (!(current_user_rights.includes('own') && ((permission === 'own' && acl_counts_own > 1) || permission !== 'own'))) {
-            document.getElementById("set_recursive").disabled = true;
-            document.getElementById("set_recursive").checked = false; // should this be checked or not?
-
+         //   document.getElementById("set_recursive").disabled = true;
+         //   document.getElementById("set_recursive").checked = false; // should this be checked or not?
+               document.getElementById("set_recursive").remove();
         }
     }
 </script>
