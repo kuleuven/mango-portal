@@ -68,8 +68,15 @@ tab_prefixes = {
   new: "new",
 };
 const designer = new Designer();
-const library_request = new LibraryRequest();
-library_request.retrieve();
+
+let library_request
+fetch("/metadata-schema/library").then((response) => {
+  return response.json();
+}).then((data) => {
+  library_request = new LibraryRequest(data);
+})
+
+
 const json_input = new JsonInput();
 /**
  * Empty schema to start with.
@@ -82,8 +89,14 @@ const json_input = new JsonInput();
 let starting_schema = new Schema("schema-editor-100", container_id, urls);
 
 // Request the list of schemas and start!
-let templates_request = new TemplatesRequest(urls, container_id);
-templates_request.retrieve();
+
+let templates_request
+
+fetch(urls.list).then((response) => {
+  return response.json();
+}).then((data) => {
+  templates_request = new TemplatesRequest(data, container_id, urls)
+})
 
 // permissions and related helper functions hiding the bitwise logic and make the code compact
 
