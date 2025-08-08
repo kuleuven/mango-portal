@@ -8,6 +8,7 @@ Flask-Caching==2.1.0
 Flask-Cors==4.0.0
 Flask-DebugToolbar==0.14.1
 flask-paginate==2023.10.24
+Flask-Session==0.8.0
 flask-wtf==1.2.1
 flower==2.0.1
 humanize==4.9.0

@@ -33,6 +33,7 @@ Flask-Caching==2.3.0
 Flask-Cors==5.0.0
 Flask-DebugToolbar==0.16.0
 flask-paginate==2024.4.12
+Flask-Session==0.8.0
 Flask-WTF==1.2.2
 flower==2.0.1
 fonttools==4.55.1

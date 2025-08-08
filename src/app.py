@@ -19,6 +19,8 @@ from flask import (
     current_app,
 )
 
+from flask_session import Session
+
 # Early initialisation to avoid circulr imports from main app and its config by other modules
 app = Flask(__name__)
 app.config.from_pyfile(os.getenv("MANGO_CONFIG", "config.py"))
@@ -67,6 +69,7 @@ from werkzeug.exceptions import HTTPException, ServiceUnavailable
 
 import datetime
 
+Session(app) # use session specified in config.py
 
 print(f"Flask version {flask.__version__}")
 app.config["irods_zones"] = irods_zone_config_module.irods_zones
