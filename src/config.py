@@ -1,4 +1,5 @@
 import os
+from cachelib import FileSystemCache
 
 MANGO_AUTH = os.environ.get("MANGO_AUTH", "login")  # "localdev" or "login"
 MANGO_LOGIN_ACTION = "data_platform_user_bp.login_openid"
@@ -108,3 +109,12 @@ MANGO_ERROR_MESSAGES = {
     "missing_paramenters": "Required parameters are missing",
     "illegal_characters": "Illegal characters have been used: request rejected.",
 }
+
+### Session backend
+
+SESSION_TYPE = "cachelib"
+SESSION_PERMANENT = True  # default True
+SESSION_SERIALIZATION_FORMAT = "json"  # defaults to 'msgpack'
+SESSION_CACHELIB = FileSystemCache(threshold=1500, cache_dir="/tmp/sessions")
+PERMANENT_SESSION_LIFETIME = 2 * 24 * 60 * 60  # 2 days
+SESSION_KEY_PREFIX = "mango_portal_session:"
