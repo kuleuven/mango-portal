@@ -115,6 +115,6 @@ MANGO_ERROR_MESSAGES = {
 SESSION_TYPE = "cachelib"
 SESSION_PERMANENT = True  # default True
 SESSION_SERIALIZATION_FORMAT = "json"  # defaults to 'msgpack'
-SESSION_CACHELIB = FileSystemCache(threshold=1500, cache_dir="/tmp/sessions")
-PERMANENT_SESSION_LIFETIME = 2 * 24 * 60 * 60  # 2 days
+SESSION_CACHELIB = FileSystemCache(threshold=100000, cache_dir="/tmp/sessions")
+PERMANENT_SESSION_LIFETIME = 1 * 24 * 60 * 60  # 1 days
 SESSION_KEY_PREFIX = "mango_portal_session:"

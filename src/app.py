@@ -69,7 +69,9 @@ from werkzeug.exceptions import HTTPException, ServiceUnavailable
 
 import datetime
 
-Session(app) # use session specified in config.py
+# use a non default session handler only if specified
+if app.config.get('SESSION_TYPE', None):
+    Session(app) # use session specified in config.py
 
 print(f"Flask version {flask.__version__}")
 app.config["irods_zones"] = irods_zone_config_module.irods_zones
