@@ -49,17 +49,23 @@ a.right {
             </div>
         </fieldset>
         {# {{ render_form_row([search_form.item_name.item_type]) }} #}
+
+        {% set selected_value = search_fields.get('item_name-item_type', 'default_value') %}
+
         <fieldset class="row mb-3">
             <legend class="col-form-label col-sm-2 pt-0">{{ search_form.item_name.item_type.label }}</legend>
             <div class="col-sm-10">
                 {% for choice in search_form.item_name.item_type.choices %}
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="item_name-item_type" id="item_name-item_type-{{ loop.index -1 }}" value={{ choice.0 }}>
+                        <input class="form-check-input" type="radio" name="item_name-item_type" id="item_name-item_type-{{ loop.index0 }}" value="{{ choice.0 }}"
+                       {% if selected_value == choice.0 or (selected_value == 'default_value' and loop.first) %} checked {% endif %}  > 
                         <label class="form-check-label"
-                               for="item_name-item_type-{{ loop.index -1 }}">{{ choice.1 }}</label>
+                               for="item_name-item_type-{{ loop.index0 }}">{{ choice.1 }}</label>
                     </div>
                 {% endfor %}
             </div>
+            {{ search_fields['item_name-item_type'] }}
+
         </fieldset>
         <!-- METADATA FILTERS -->
         <div id="metadataFields">
@@ -143,7 +149,7 @@ a.right {
                    class="btn btn-primary btn-md m-3"
                    name="submit"
                    type="submit"
-                   value="Start Search">
+                   value="Search">
         </div>
         {{ render_field(search_form.per_page) }}
         {{ render_field(search_form.total) }}
@@ -206,7 +212,6 @@ a.right {
 </datalist> #}
     {# {{ collection_tree }} #}
     <script>
-        document.getElementById("item_name-item_type-0").checked = true;
 
         //  script loads the schema metadata
         const collections = document.getElementById("collection_subtree-collection");

@@ -585,7 +585,7 @@ def catalog_search2():
 
     print(request.values)
 
-    if request.values.get("submit", False) == "Start Search" and search_form.validate():
+    if request.values.get("submit", False) == "Search" and search_form.validate():
         import time
 
         start = time.time()
