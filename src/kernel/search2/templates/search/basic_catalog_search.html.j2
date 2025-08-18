@@ -90,14 +90,14 @@ a.right {
                     {% endfor %}
                 </div>
                 <div class="d-flex flex-row-reverse">
-                    <button type="button"
+                    {# <button type="button"
                             id="removeSchemaField"
                             onclick="removeLastElement('schemaMetadata')"
                             class="btn btn-secondary me-3">
                         <i class="bi bi-dash-circle"></i>
-                    </button>
+                    </button> #}
                     <button type="button" id="addSchemaField" class="btn btn-secondary me-3">
-                        <i class="bi bi-plus-circle"></i>
+                        {# <i class="bi bi-plus-circle"></i> #} Add metadata field
                     </button>
                 </div>
             </div>
@@ -120,14 +120,14 @@ a.right {
                     {% endfor %}
                 </div>
                 <div class="d-flex flex-row-reverse">
-                    <button type="button"
+                    {# <button type="button"
                             id="removeNonSchemaField"
                             onclick="removeLastElement('nonSchemaMetadata')"
                             class="btn btn-secondary me-3">
                         <i class="bi bi-dash-circle"></i>
-                    </button>
+                    </button> #}
                     <button type="button" id="addNonSchemaField"  class="btn btn-secondary me-3">
-                        <i class="bi bi-plus-circle"></i>
+                        {# <i class="bi bi-plus-circle"></i> #} Add metadata field
                     </button>
                 </div>
             </div>
@@ -434,24 +434,7 @@ a.right {
 
         }
 
-        //dynamically create the label for row required for non schema metadata 
-        let checkboxColNonSchema = document.getElementById("nonSchemaMetadata").querySelector(".checkbox");
-        let requiredLabelNonSchema = document.createElement("label");
-        requiredLabelNonSchema.classList.add('form-check-label');
-        requiredLabelNonSchema.setAttribute('for', 'non_schema_metadata-required');
-        requiredLabelNonSchema.innerHTML = "Required";
-        checkboxColNonSchema.prepend(requiredLabelNonSchema)
-
-        //dynamically create the label for row required for schema metadata
-        let checkboxColSchema = document.getElementById("schemaMetadata").querySelector(".checkbox");
-        let requiredLabelSchema = document.createElement("label");
-        requiredLabelSchema.classList.add('form-check-label');
-        requiredLabelSchema.setAttribute('for', 'schema_metadata-required');
-        requiredLabelSchema.innerHTML = "Required";
-        checkboxColSchema.prepend(requiredLabelSchema)
-        document.getElementById("schema_metadata-required").classList.add("mt-3")
-        document.getElementById("non_schema_metadata-required").classList.add("mt-3")
-
+ 
 
 
         //code to add fields to form dynamically : schema & non-schema

@@ -56,6 +56,7 @@ from kernel.template_overrides import get_template_override_manager
 from kernel.metadata_schema import get_schema_manager  # , SchemaManager
 from mango_mdschema import helpers
 from multidict import MultiDict
+from wtforms.widgets import html_params
 
 
 basic_search2_bp = Blueprint("basic_search2_bp", __name__, template_folder="templates")
@@ -148,15 +149,16 @@ def build_basic_query_filters(form):
     #         Criterion(comparison, column_meta_base.units, form["any_avu-meta_u"])
     #     ]
 
-
-    try: 
+    try:
         if form[f"schema_metadata-meta_a"]:
             filters += [
                 Criterion("=", column_meta_base.name, form[f"schema_metadata-meta_a"])
             ]
 
         if form[f"schema_metadata-meta_v"]:
-            comparison = "like" if form[f"schema_metadata-meta_v"].find("%") != -1 else "="  
+            comparison = (
+                "like" if form[f"schema_metadata-meta_v"].find("%") != -1 else "="
+            )
             filters += [
                 Criterion(
                     comparison, column_meta_base.value, form[f"schema_metadata-meta_v"]
@@ -168,17 +170,27 @@ def build_basic_query_filters(form):
     # for num in [1, 2, 3]:
     num = 0
     while True:
-        try: 
+        try:
             if form[f"schema_metadata_no_label-{num}-meta_a"]:
                 filters += [
-                    Criterion("=", column_meta_base.name, form[f"schema_metadata_no_label-{num}-meta_a"])
+                    Criterion(
+                        "=",
+                        column_meta_base.name,
+                        form[f"schema_metadata_no_label-{num}-meta_a"],
+                    )
                 ]
 
             if form[f"schema_metadata_no_label-{num}-meta_v"]:
-                comparison = "like" if form[f"schema_metadata_no_label-{num}-meta_v"].find("%") != -1 else "="   
+                comparison = (
+                    "like"
+                    if form[f"schema_metadata_no_label-{num}-meta_v"].find("%") != -1
+                    else "="
+                )
                 filters += [
                     Criterion(
-                        comparison, column_meta_base.value, form[f"schema_metadata_no_label-{num}-meta_v"]
+                        comparison,
+                        column_meta_base.value,
+                        form[f"schema_metadata_no_label-{num}-meta_v"],
                     )
                 ]
 
@@ -193,34 +205,49 @@ def build_basic_query_filters(form):
         except:
             break
 
-
     if form[f"non_schema_metadata-meta_attribute"]:
         filters += [
-            Criterion("=", column_meta_base.name, form[f"non_schema_metadata-meta_attribute"])
-        ]
-
-    if form[f"non_schema_metadata-meta_value"]:
-        comparison = "like" if form[f"non_schema_metadata-meta_value"].find("%") != -1 else "="  
-        filters += [
             Criterion(
-                comparison, column_meta_base.value, form[f"non_schema_metadata-meta_value"]
+                "=", column_meta_base.name, form[f"non_schema_metadata-meta_attribute"]
             )
         ]
 
+    if form[f"non_schema_metadata-meta_value"]:
+        comparison = (
+            "like" if form[f"non_schema_metadata-meta_value"].find("%") != -1 else "="
+        )
+        filters += [
+            Criterion(
+                comparison,
+                column_meta_base.value,
+                form[f"non_schema_metadata-meta_value"],
+            )
+        ]
 
     num = 0
     while True:
-        try: 
+        try:
             if form[f"non_schema_metadata_no_label-{num}-meta_attribute"]:
                 filters += [
-                    Criterion("=", column_meta_base.name, form[f"non_schema_metadata_no_label-{num}-meta_attribute"])
+                    Criterion(
+                        "=",
+                        column_meta_base.name,
+                        form[f"non_schema_metadata_no_label-{num}-meta_attribute"],
+                    )
                 ]
 
             if form[f"non_schema_metadata_no_label-{num}-meta_value"]:
-                comparison = "like" if form[f"non_schema_metadata_no_label-{num}-meta_value"].find("%") != -1 else "="   
+                comparison = (
+                    "like"
+                    if form[f"non_schema_metadata_no_label-{num}-meta_value"].find("%")
+                    != -1
+                    else "="
+                )
                 filters += [
                     Criterion(
-                        comparison, column_meta_base.value, form[f"non_schema_metadata_no_label-{num}-meta_value"]
+                        comparison,
+                        column_meta_base.value,
+                        form[f"non_schema_metadata_no_label-{num}-meta_value"],
                     )
                 ]
 
@@ -406,12 +433,36 @@ def catalog_search2():
 
     # -------------------------- form --------------------------- #
 
+    class ButtonWidget(object):
+        """
+        Renders a multi-line text area.
+        `rows` and `cols` ought to be passed as keyword args when rendering.
+        """
+
+        input_type = "button"
+
+        html_params = staticmethod(html_params)
+
+        def __call__(self, field, **kwargs):
+            kwargs.setdefault("id", field.id)
+            kwargs.setdefault("type", self.input_type)
+            if "value" not in kwargs:
+                kwargs["value"] = field._value()
+            params = self.html_params(name=field.name, **kwargs)
+            label = '<i class="bi bi-trash"></i>' # field.label.text
+
+            return f"""<button {params}>{label}</button>"""
+
+    class ButtonField(StringField):
+        widget = ButtonWidget()
+
     class AVUForm(Form):
         """AVU input field basic and label."""
 
         meta_attribute = StringField("Attribute name")  # , [validators.Length(min=2)])
         meta_value = StringField("Attribute value")  # , [validators.Length(min=2)])
-        required = BooleanField("", render_kw = {'checked': '', 'disabled': ''})
+        # required = BooleanField("", render_kw = {'checked': '', 'disabled': ''})
+        required = ButtonField("Remove")
 
         # data object variant with <data> search suggestions
 
@@ -420,7 +471,8 @@ def catalog_search2():
 
         meta_attribute = StringField("")
         meta_value = StringField("")
-        required = BooleanField("",  render_kw = {'checked': '', 'disabled': ''})
+        # required = BooleanField("",  render_kw = {'checked': '', 'disabled': ''})
+        required = ButtonField("")
 
     class AVUSchema(Form):
         """Input field for schema metadata with suggestion list and label."""
@@ -436,7 +488,8 @@ def catalog_search2():
             "Attribute name", validate_choice=False
         )  # we don't validate because choices will be created dynamically
         meta_v = StringField("Attribute value")
-        required = BooleanField("", default=True, render_kw = {'checked': '', 'disabled': ''})
+        # required = BooleanField("", default=True, render_kw = {'checked': '', 'disabled': ''})
+        required = ButtonField("Remove")
 
     class AVUSchemaNoLabel(Form):
         """AVU field for schema metadata with suggestion list and no label."""
@@ -450,7 +503,9 @@ def catalog_search2():
         # meta_a = StringField("", render_kw={"list": "search_meta_names"})
         meta_a = SelectField("", validate_choice=False)
         meta_v = StringField("")
-        required = BooleanField("",  render_kw = {'checked': '', 'disabled': ''})
+        # required = BooleanField("", render_kw={"checked": "", "disabled": ""})
+        required = ButtonField("")
+
 
     # # data object variant with <data> search suggestions
     # class AVUFormSuggestionListDO(Form):
@@ -730,7 +785,7 @@ def catalog_search2():
             pagination=pagination,
             schemas_dict=schemas_dict,
             existing_schemas=existing_schemas,
-            search_fields = request.values.to_dict(),
+            search_fields=request.values.to_dict(),
         )
 
     else:
@@ -743,5 +798,5 @@ def catalog_search2():
             # collection_tree=collection_tree,
             schemas_dict=schemas_dict,
             existing_schemas=existing_schemas,
-            search_fields = {},
+            search_fields={},
         )
