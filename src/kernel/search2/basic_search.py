@@ -461,8 +461,10 @@ def catalog_search2():
 
         meta_attribute = StringField("Attribute name")  # , [validators.Length(min=2)])
         meta_value = StringField("Attribute value")  # , [validators.Length(min=2)])
-        # required = BooleanField("", render_kw = {'checked': '', 'disabled': ''})
-        required = ButtonField("Remove")
+        meta_unit = StringField("Unit value")  # , [validators.Length(min=2)])
+
+        # remove = BooleanField("", render_kw = {'checked': '', 'disabled': ''})
+        remove = ButtonField("      ")
 
         # data object variant with <data> search suggestions
 
@@ -471,8 +473,8 @@ def catalog_search2():
 
         meta_attribute = StringField("")
         meta_value = StringField("")
-        # required = BooleanField("",  render_kw = {'checked': '', 'disabled': ''})
-        required = ButtonField("")
+        # remove = BooleanField("",  render_kw = {'checked': '', 'disabled': ''})
+        remove = ButtonField("")
 
     class AVUSchema(Form):
         """Input field for schema metadata with suggestion list and label."""
@@ -488,8 +490,8 @@ def catalog_search2():
             "Attribute name", validate_choice=False
         )  # we don't validate because choices will be created dynamically
         meta_v = StringField("Attribute value")
-        # required = BooleanField("", default=True, render_kw = {'checked': '', 'disabled': ''})
-        required = ButtonField("Remove")
+        # remove = BooleanField("", default=True, render_kw = {'checked': '', 'disabled': ''})
+        remove = ButtonField("      ")
 
     class AVUSchemaNoLabel(Form):
         """AVU field for schema metadata with suggestion list and no label."""
@@ -503,8 +505,8 @@ def catalog_search2():
         # meta_a = StringField("", render_kw={"list": "search_meta_names"})
         meta_a = SelectField("", validate_choice=False)
         meta_v = StringField("")
-        # required = BooleanField("", render_kw={"checked": "", "disabled": ""})
-        required = ButtonField("")
+        # remove = BooleanField("", render_kw={"checked": "", "disabled": ""})
+        remove = ButtonField("")
 
 
     # # data object variant with <data> search suggestions

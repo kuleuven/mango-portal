@@ -71,63 +71,53 @@ a.right {
         <div id="metadataFields">
             <div class="row">
                 <h5>Schema metadata</h5>
+
                 <div id="schemaMetadata">
-                    {{ render_form_row([search_form.schema_metadata.schema , search_form.schema_metadata.meta_a, search_form.schema_metadata.meta_v, search_form.schema_metadata.required],
+                    {{ render_form_row([search_form.schema_metadata.schema , search_form.schema_metadata.meta_a, search_form.schema_metadata.meta_v, search_form.schema_metadata.remove],
                                         col_map = {
                                         "schema_metadata-schema": 'col-md-4',
                                         "schema_metadata-meta_a" : 'col-md-3',
-                                        "schema_metadata-meta_v": 'col-md-3',
-                                        "schema_metadata-required": 'col-md-2 checkbox'},
+                                        "schema_metadata-meta_v": 'col-md-4',
+                                        "schema_metadata-remove": 'col-md-1 remove'},
                                         form_group_classes="col-mb-0") }}
                     {% for subform in search_form.schema_metadata_no_label %}
-                        {{ render_form_row([subform.schema, subform.meta_a, subform.meta_v, subform.required],
+                        {{ render_form_row([subform.schema, subform.meta_a, subform.meta_v, subform.remove],
                                                 col_map = {
                                                 subform.id ~ '-schema': 'col-md-4',
                                                 subform.id ~ '-meta_a' : 'col-md-3',
-                                                subform.id ~ '-meta_v': 'col-md-3',
-                                                subform.id ~ '-required': 'col-md-2 checkbox'},
+                                                subform.id ~ '-meta_v': 'col-md-4',
+                                                subform.id ~ '-remove': 'col-md-1 remove'},
                                                 form_group_classes="col-mb-0") }}
                     {% endfor %}
                 </div>
-                <div class="d-flex flex-row-reverse">
-                    {# <button type="button"
-                            id="removeSchemaField"
-                            onclick="removeLastElement('schemaMetadata')"
-                            class="btn btn-secondary me-3">
-                        <i class="bi bi-dash-circle"></i>
-                    </button> #}
-                    <button type="button" id="addSchemaField" class="btn btn-secondary me-3">
-                        {# <i class="bi bi-plus-circle"></i> #} Add metadata field
-                    </button>
-                </div>
+      
+     <div class="d-flex justify-content-end">
+        <button type="button" id="addSchemaField" class="btn btn-secondary me-3">
+            {# <i class="bi bi-plus-circle"></i> #} Add metadata
+        </button>
+</div>
             </div>
             <div class="row">
                 <h5>Non-schema metadata</h5>
                 <div id="nonSchemaMetadata">
-                    {{ render_form_row([search_form.non_schema_metadata.meta_attribute, search_form.non_schema_metadata.meta_value, search_form.non_schema_metadata.required],
+                    {{ render_form_row([search_form.non_schema_metadata.meta_attribute, search_form.non_schema_metadata.meta_value, search_form.non_schema_metadata.remove],
                                         col_map = {
                                         "non_schema_metadata-meta_attribute" : 'col-md-5',
                                         "non_schema_metadata-meta_value": 'col-md-5',
-                                        "non_schema_metadata-required": 'col-md-2 checkbox'},
+                                        "non_schema_metadata-remove": 'col-md-2 checkbox'},
                                         form_group_classes="col-mb-0") }}
                     {% for subform in search_form.non_schema_metadata_no_label %}
-                        {{ render_form_row([subform.meta_attribute, subform.meta_value, subform.required],
+                        {{ render_form_row([subform.meta_attribute, subform.meta_value, subform.remove],
                                                 col_map = {
                                                 subform.id ~ '-meta_attribute': 'col-md-5',
                                                 subform.id ~ '-meta_value' : 'col-md-5',
-                                                subform.id ~ '-required': 'col-md-2 checkbox'},
+                                                subform.id ~ '-remove': 'col-md-2 checkbox'},
                                                 form_group_classes="col-mb-0") }}
                     {% endfor %}
                 </div>
-                <div class="d-flex flex-row-reverse">
-                    {# <button type="button"
-                            id="removeNonSchemaField"
-                            onclick="removeLastElement('nonSchemaMetadata')"
-                            class="btn btn-secondary me-3">
-                        <i class="bi bi-dash-circle"></i>
-                    </button> #}
+                <div class="d-flex justify-content-end"> 
                     <button type="button" id="addNonSchemaField"  class="btn btn-secondary me-3">
-                        {# <i class="bi bi-plus-circle"></i> #} Add metadata field
+                        {# <i class="bi bi-plus-circle"></i> #} Add metadata
                     </button>
                 </div>
             </div>
@@ -424,17 +414,43 @@ a.right {
         }
 
 
-
-        //code to remove last element from a row 
-        function removeLastElement(rowId) {
-            let schemaMd = document.getElementById(rowId);
-            if (schemaMd.childElementCount > 1) {
-                schemaMd.removeChild(schemaMd.lastElementChild);
-            }
-
+        function removeRow(rowId) {
+            document.getElementById(rowId).remove()
         }
 
- 
+
+        function createRemoveRowHandler(rowId) {
+            return function() {
+                return removeRow(rowId);
+            };
+        }
+
+
+
+        // code to add remove handlers to remove button on page reload 
+        if (document.getElementById("schemaMetadata").childElementCount > 1) {
+            let counter = 0;
+            let schemaMetadata = document.getElementById("schemaMetadata");
+            [...schemaMetadata.children].forEach( (row) => { 
+
+                row.id = `schemaRow-${counter}`;
+                let rowHandler = createRemoveRowHandler(`schemaRow-${counter}`); 
+                row.querySelector("button").addEventListener("click", rowHandler); 
+                counter++ } )
+        
+        }
+
+
+        // disable first button:
+       // document.getElementById("schema_metadata-remove").disabled = true;
+       // document.getElementById("non_schema_metadata-remove").disabled = true;
+
+        document.getElementById("schema_metadata-remove").remove()
+
+        document.getElementById("non_schema_metadata-remove").remove()
+
+
+
 
 
         //code to add fields to form dynamically : schema & non-schema
@@ -445,6 +461,7 @@ a.right {
         button.addEventListener("click", function() {
             let myList = document.querySelectorAll("#metadataFields #schemaMetadata .row");
             let row = document.createElement("div");
+            row.id = `schemaRow-${counterSchema}`
             optionsList = document.getElementById("schema_metadata-schema");
             row.classList.add("row");
 
@@ -536,7 +553,7 @@ a.right {
 
             //col3
             let col3 = document.createElement("div")
-            col3.classList.add("col-md-3")
+            col3.classList.add("col-md-4")
             let container3 = document.createElement("div")
             container3.classList.add("mb-0")
             const valueInputField = document.createElement("input")
@@ -548,18 +565,19 @@ a.right {
 
             // col 4 
             let col4 = document.createElement("div")
-            col4.classList.add("col-md-2")
+            col4.classList.add("col-md-1")
             let container4 = document.createElement("div")
             container4.classList.add("mb-0")
-            const requiredCheckbox = document.createElement("input")
-            requiredCheckbox.classList.add("form-check-input");
-            requiredCheckbox.setAttribute("name", `schema_metadata_no_label-${counterSchema}-required`)
-            requiredCheckbox.id = `schema_metadata_no_label-${counterSchema}-required`;
-            requiredCheckbox.type = "checkbox";
-            requiredCheckbox.value = "y"
-            requiredCheckbox.disabled = true;
-            requiredCheckbox.checked = true;
-            container4.appendChild(requiredCheckbox);
+            const removeButtonSchema = document.createElement("button")
+            removeButtonSchema.classList.add("form-control");
+            removeButtonSchema.setAttribute("name", `schema_metadata_no_label-${counterSchema}-remove`)
+            removeButtonSchema.id = `schema_metadata_no_label-${counterSchema}-remove`;
+            removeButtonSchema.type = "button";
+            let rowHandler = createRemoveRowHandler(`schemaRow-${counterSchema}`); //use a closure to freeze function parameters
+            removeButtonSchema.addEventListener("click", rowHandler);
+            removeButtonSchema.innerHTML = '<i class="bi bi-trash"></i>'
+        //    removeButtonSchema.value = "y"
+            container4.appendChild(removeButtonSchema);
             col4.appendChild(container4);
 
             row.appendChild(col1)
@@ -569,7 +587,7 @@ a.right {
 
             myList[myList.length - 1].after(row);
 
-            counterSchema++
+            counterSchema++ 
 
 
         })
@@ -581,6 +599,8 @@ a.right {
             let myList = document.querySelectorAll("#metadataFields #nonSchemaMetadata .row");
             let row = document.createElement("div");
             row.classList.add("row");
+            row.id = `nonSchemaRow-${counterNonSchema}`
+
             //col 1 attribute name
 
             console.log(counterNonSchema)
@@ -607,25 +627,32 @@ a.right {
             valueContainer.appendChild(valueInput);
             valueCol.appendChild(valueContainer);
 
-            //col 3 required
-            let requiredCol = document.createElement("div");
-            requiredCol.classList.add("col-md-2")
-            let requiredContainer = document.createElement("div")
-            requiredContainer.classList.add("mb-0");
-            const requiredInput = document.createElement("input")
-            requiredInput.classList.add("form-check-input");
-            requiredInput.id = `non_schema_metadata_no_label-${counterNonSchema}-required`;
-            requiredInput.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-required`)
-            requiredInput.type = "checkbox";
-            requiredInput.value = "y";
-            requiredInput.disabled = true;
-            requiredInput.checked = true;
-            requiredContainer.appendChild(requiredInput);
-            requiredCol.appendChild(requiredContainer);
+
+
+
+
+
+
+            //col 3 remove
+            let removeCol = document.createElement("div");
+            removeCol.classList.add("col-md-2")
+            let removeContainer = document.createElement("div")
+            removeContainer.classList.add("mb-0");
+            const removeButton = document.createElement("button")
+            removeButton.classList.add("form-control");
+            removeButton.id = `non_schema_metadata_no_label-${counterNonSchema}-remove`;
+            removeButton.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-remove`)
+            removeButton.type = "button";
+            removeButton.innerHTML = '<i class="bi bi-trash"></i>'
+            let rowHandler = createRemoveRowHandler(`nonSchemaRow-${counterNonSchema}`); //use a closure to freeze function parameters
+            removeButton.addEventListener("click", rowHandler);
+           // removeButton.value = "y";
+            removeContainer.appendChild(removeButton);
+            removeCol.appendChild(removeContainer);
 
             row.appendChild(attributeCol)
             row.appendChild(valueCol)
-            row.appendChild(requiredCol)
+            row.appendChild(removeCol)
 
             myList[myList.length - 1].after(row);
             counterNonSchema++
