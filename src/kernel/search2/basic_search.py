@@ -462,8 +462,6 @@ def catalog_search2():
         meta_attribute = StringField("Attribute name")  # , [validators.Length(min=2)])
         meta_value = StringField("Attribute value")  # , [validators.Length(min=2)])
         meta_unit = StringField("Unit value")  # , [validators.Length(min=2)])
-
-        # remove = BooleanField("", render_kw = {'checked': '', 'disabled': ''})
         remove = ButtonField("      ")
 
         # data object variant with <data> search suggestions
@@ -473,7 +471,7 @@ def catalog_search2():
 
         meta_attribute = StringField("")
         meta_value = StringField("")
-        # remove = BooleanField("",  render_kw = {'checked': '', 'disabled': ''})
+        meta_unit = StringField("")  # , [validators.Length(min=2)])
         remove = ButtonField("")
 
     class AVUSchema(Form):
@@ -490,7 +488,6 @@ def catalog_search2():
             "Attribute name", validate_choice=False
         )  # we don't validate because choices will be created dynamically
         meta_v = StringField("Attribute value")
-        # remove = BooleanField("", default=True, render_kw = {'checked': '', 'disabled': ''})
         remove = ButtonField("      ")
 
     class AVUSchemaNoLabel(Form):
@@ -505,7 +502,6 @@ def catalog_search2():
         # meta_a = StringField("", render_kw={"list": "search_meta_names"})
         meta_a = SelectField("", validate_choice=False)
         meta_v = StringField("")
-        # remove = BooleanField("", render_kw={"checked": "", "disabled": ""})
         remove = ButtonField("")
 
 
@@ -583,12 +579,12 @@ def catalog_search2():
         schema_metadata = FormField(AVUSchema, label="Metadata")
         schema_metadata_no_label = FieldList(
             FormField(AVUSchemaNoLabel),
-            min_entries=0,
+            min_entries=2,
         )
         non_schema_metadata = FormField(AVUForm, label="Non schema metadata")
         non_schema_metadata_no_label = FieldList(
             FormField(AVUFormNoLabel),
-            min_entries=0,
+            min_entries=2,
         )
 
         per_page = HiddenField("per_page")

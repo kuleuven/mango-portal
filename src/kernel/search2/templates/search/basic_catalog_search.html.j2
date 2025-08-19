@@ -100,18 +100,21 @@ a.right {
             <div class="row">
                 <h5>Non-schema metadata</h5>
                 <div id="nonSchemaMetadata">
-                    {{ render_form_row([search_form.non_schema_metadata.meta_attribute, search_form.non_schema_metadata.meta_value, search_form.non_schema_metadata.remove],
+                    {{ render_form_row([search_form.non_schema_metadata.meta_attribute, search_form.non_schema_metadata.meta_value, search_form.non_schema_metadata.meta_unit,
+                     search_form.non_schema_metadata.remove],
                                         col_map = {
-                                        "non_schema_metadata-meta_attribute" : 'col-md-5',
-                                        "non_schema_metadata-meta_value": 'col-md-5',
-                                        "non_schema_metadata-remove": 'col-md-2 checkbox'},
+                                        "non_schema_metadata-meta_attribute" : 'col-md-4',
+                                        "non_schema_metadata-meta_value": 'col-md-4',
+                                        "non_schema_metadata-meta-unit": 'col-md-3',
+                                        "non_schema_metadata-remove": 'col-md-1 remove'},
                                         form_group_classes="col-mb-0") }}
                     {% for subform in search_form.non_schema_metadata_no_label %}
-                        {{ render_form_row([subform.meta_attribute, subform.meta_value, subform.remove],
+                        {{ render_form_row([subform.meta_attribute, subform.meta_value, subform.meta_unit, subform.remove],
                                                 col_map = {
-                                                subform.id ~ '-meta_attribute': 'col-md-5',
-                                                subform.id ~ '-meta_value' : 'col-md-5',
-                                                subform.id ~ '-remove': 'col-md-2 checkbox'},
+                                                subform.id ~ '-meta_attribute': 'col-md-4',
+                                                subform.id ~ '-meta_value' : 'col-md-4',
+                                                subform.id ~ '-meta_unit' : 'col-md-3',
+                                                subform.id ~ '-remove': 'col-md-1 remove'},
                                                 form_group_classes="col-mb-0") }}
                     {% endfor %}
                 </div>
@@ -427,14 +430,29 @@ a.right {
 
 
 
-        // code to add remove handlers to remove button on page reload 
+        // code to add remove-handlers to remove button on page reload 
+
+        //schema metadata
         if (document.getElementById("schemaMetadata").childElementCount > 1) {
-            let counter = 0;
+            let counter = 1;
             let schemaMetadata = document.getElementById("schemaMetadata");
             [...schemaMetadata.children].forEach( (row) => { 
 
                 row.id = `schemaRow-${counter}`;
                 let rowHandler = createRemoveRowHandler(`schemaRow-${counter}`); 
+                row.querySelector("button").addEventListener("click", rowHandler); 
+                counter++ } )
+        
+        }
+
+        // non-schema metadata
+        if (document.getElementById("nonSchemaMetadata").childElementCount > 1) {
+            let counter = 1;
+            let nonSchemaMetadata = document.getElementById("nonSchemaMetadata");
+            [...nonSchemaMetadata.children].forEach( (row) => { 
+
+                row.id = `nonSchemaRow-${counter}`;
+                let rowHandler = createRemoveRowHandler(`nonSchemaRow-${counter}`); 
                 row.querySelector("button").addEventListener("click", rowHandler); 
                 counter++ } )
         
@@ -446,7 +464,6 @@ a.right {
        // document.getElementById("non_schema_metadata-remove").disabled = true;
 
         document.getElementById("schema_metadata-remove").remove()
-
         document.getElementById("non_schema_metadata-remove").remove()
 
 
@@ -455,7 +472,6 @@ a.right {
 
         //code to add fields to form dynamically : schema & non-schema
         let counterSchema = document.getElementById("schemaMetadata").childElementCount - 1;
-        let counterNonSchema = 0;
         //schema
         button = document.getElementById("addSchemaField");
         button.addEventListener("click", function() {
@@ -594,6 +610,9 @@ a.right {
 
 
         // non-schema
+
+        let counterNonSchema = document.getElementById("nonSchemaMetadata").childElementCount - 1;
+
         buttonNonSchema = document.getElementById("addNonSchemaField");
         buttonNonSchema.addEventListener("click", function() {
             let myList = document.querySelectorAll("#metadataFields #nonSchemaMetadata .row");
@@ -605,7 +624,7 @@ a.right {
 
             console.log(counterNonSchema)
             let attributeCol = document.createElement("div");
-            attributeCol.classList.add("col-md-5")
+            attributeCol.classList.add("col-md-4")
             let attributeContainer = document.createElement("div")
             attributeContainer.classList.add("mb-0")
             const attributeInput = document.createElement("input")
@@ -617,7 +636,7 @@ a.right {
 
             //col 2 attribute value
             let valueCol = document.createElement("div");
-            valueCol.classList.add("col-md-5")
+            valueCol.classList.add("col-md-4")
             let valueContainer = document.createElement("div")
             valueContainer.classList.add("mb-0")
             const valueInput = document.createElement("input")
@@ -627,15 +646,23 @@ a.right {
             valueContainer.appendChild(valueInput);
             valueCol.appendChild(valueContainer);
 
+            //col 3 Unit value
+            let unitCol = document.createElement("div");
+            unitCol.classList.add("col-md-3")
+            let unitContainer = document.createElement("div")
+            unitContainer.classList.add("mb-0")
+            const unitInput = document.createElement("input")
+            unitInput.classList.add("form-control");
+            unitInput.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-meta_unit`)
+            unitInput.id = `non_schema_metadata_no_label-${counterNonSchema}-meta_unit`;
+            unitContainer.appendChild(unitInput);
+            unitCol.appendChild(unitContainer);
 
 
 
-
-
-
-            //col 3 remove
+            //col 4 remove
             let removeCol = document.createElement("div");
-            removeCol.classList.add("col-md-2")
+            removeCol.classList.add("col-md-1")
             let removeContainer = document.createElement("div")
             removeContainer.classList.add("mb-0");
             const removeButton = document.createElement("button")
@@ -652,6 +679,7 @@ a.right {
 
             row.appendChild(attributeCol)
             row.appendChild(valueCol)
+            row.appendChild(unitCol)
             row.appendChild(removeCol)
 
             myList[myList.length - 1].after(row);
