@@ -1,3 +1,6 @@
+
+{% import "dialogs.html.j2" as dialogs %}
+
 <div class="float-end">
     <p class="mt-3">
         <form method="post"
@@ -45,62 +48,48 @@
                             </button>
                         </p>
                     {% elif 'own' in current_user_rights %}
-                        <form method="post"
-                              id="delete-{{ permission.user_name }}"
-                              action="{{ url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ) }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            <input type="hidden" name="groups" value="{{ permission.user_name }}" />
-                            <input type="hidden" name="permission_type" value="null" />
-                            <input type="hidden" name="redirect_hash" value="#permissions" />
-                        </form>
                         <button type="button"
-                                onclick="sendPermissionsToModal('{{ permission.user_name }}',  {{ current_user_rights }},  '{{ permission.access_name }}', {{ acl_counts['own'] }} )"
                                 class="btn btn-link"
                                 data-bs-toggle="modal"
-                                data-bs-target="#permission-remove-modal">
+                                data-bs-target="#delete-{{permission.user_name}}">
                             <i class="bi bi-trash text-danger"></i>
                         </button>
                     {% endif %}
                 </td>
             </tr>
+
+
+
+{% set show_recursive = ('own' in current_user_rights and ((permission.access_name == 'own' and acl_counts['own'] > 1) or permission.access_name != 'own')) | default(false) %}
+
+{% if show_recursive %}
+  {% set fields = [{"type" : "checkbox" , "label": "Remove recursively for all items in this collection", "name": "recursive", "value": "True", "checked": "True"}] %}
+{% else %}
+  {% set fields = [] %}
+{% endif %}
+
+
+{{ dialogs.general_dialog("delete-" ~ permission.user_name , url_for('browse_bp.set_permissions', item_path=collection.path.lstrip('/') ),
+title="Remove permissions for " ~permission.user_name ,
+mode="custom",
+btn_ok="I'm Sure", 
+btn_cancel="Cancel",
+fields = fields,
+hidden_fields=[{"name": "csrf_token", "value": csrf_token() }, {"name": "groups", "value": permission.user_name }, {"name": "redirect_hash", "value": "#permissions"} ]
+) 
+}}
+
+
+
         {% endfor %}
-        <!--  modal -->
-        <div class="modal" id="permission-remove-modal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h6 class="modal-title">Are you sure?</h6>
-                        <button type="button"
-                                class="btn-close"
-                                data-bs-dismiss="modal"
-                                aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p id="info"></p>
-                        <p>
-                            <input type="checkbox"
-                                   name="recursive"
-                                   id="set_recursive"
-                                   value="True"
-                                   title="Remove recursively for all  items in this collection"
-                                   checked />
-                            Remove recursively for all  items in this collection
-                        </p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit"
-                                class="btn btn-primary"
-                                name="removePermission"
-                                title="Remove permission">I'm sure</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-</tbody>
+<div> 
+
+
+
 </table>
+
+
+
 {% if 'own' in current_user_rights %}
     <div class="mt-5">
         <form method="post"
@@ -139,17 +128,6 @@
             </div>
         </form>
     </div>
+    </tbody> 
 {% endif %}
 <!--{{ acl_users_dict |pprint }}-->
-<script>
-    function sendPermissionsToModal(user_name, current_user_rights, permission, acl_counts_own) {
-        document.getElementById("info").innerHTML = `<p> Remove permissions for User / Group ${user_name} </p>`;
-        document.getElementsByName("removePermission")[0].setAttribute("form", `delete-${user_name}`);
-        document.getElementById("set_recursive").setAttribute("form", `delete-${user_name}`);
-        if (!(current_user_rights.includes('own') && ((permission === 'own' && acl_counts_own > 1) || permission !== 'own'))) {
-         //   document.getElementById("set_recursive").disabled = true;
-         //   document.getElementById("set_recursive").checked = false; // should this be checked or not?
-               document.getElementById("set_recursive").remove();
-        }
-    }
-</script>
