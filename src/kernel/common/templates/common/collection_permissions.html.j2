@@ -78,18 +78,9 @@ fields = fields,
 hidden_fields=[{"name": "csrf_token", "value": csrf_token() }, {"name": "groups", "value": permission.user_name }, {"name": "redirect_hash", "value": "#permissions"} ]
 ) 
 }}
-
-
-
         {% endfor %}
-<div> 
-
-
-
+    </tbody> 
 </table>
-
-
-
 {% if 'own' in current_user_rights %}
     <div class="mt-5">
         <form method="post"
@@ -128,6 +119,5 @@ hidden_fields=[{"name": "csrf_token", "value": csrf_token() }, {"name": "groups"
             </div>
         </form>
     </div>
-    </tbody> 
 {% endif %}
 <!--{{ acl_users_dict |pprint }}-->
