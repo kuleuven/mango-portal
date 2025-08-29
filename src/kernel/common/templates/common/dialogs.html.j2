@@ -150,6 +150,8 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
         </script>
     {% endif %}
 {% endmacro %}
+
+
 {% macro general_dialog(dialog_id, url, method= "POST", title="", body_text = "", mode="standalone", btn_ok="ok", btn_cancel="cancel",
     hidden_fields=[], fields=[], modal_class="", button_classes={"button_ok": "btn-primary", "button_cancel": "btn-secondary"}) %}
     {% if mode == "standalone" %}
@@ -192,14 +194,16 @@ if (button.hasAttribute('data-bs-field-{{field["name"]}}')) {
                                 {{ field['label'] if field['label'] else field['name']|capitalize }}
                             </label>
                             <input type={% if field['type'] %}"{{ field['type'] }}" {% else %}"text"{% endif %}
-                                   class="form-control"
+                                   class={% if field["type"] == "checkbox" or field["type"] == "radio" %} "form-check-input" {% else %} "form-control" {% endif %}
                                    id="{{ dialog_id + field['name'] }}"
                                    name="{{ field['name'] }}"
                                    value="{{ field['value'] }}"
                                    placeholder="{{ field['placeholder'] }}"
                                    {% if field['pattern'] %}pattern="{{ field['pattern'] }}"{% endif %}
                                    {% if field['readonly'] %}readonly{% endif %}
-                                   {% if field['required'] %}required{% endif %} />
+                                   {% if field['required'] %}required{% endif %} 
+                                   {% if field['disabled'] %}disabled{% endif %}
+                                   {% if field['checked'] %}checked{% endif %}/>
                             {% if field['required'] %}<div class="invalid-feedback">Please fill out this field</div>{% endif %}
                         {% endfor %}
                     </div>

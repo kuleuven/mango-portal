@@ -402,7 +402,7 @@ class SchemaForm {
           direct_children.forEach((child, i) => {
             const field_data = composite_field.minischema.fields[i];
             if (field_data.type != "object") {
-              const inputs = child.querySelectorAll("input,select");
+              const inputs = child.querySelectorAll("input,select,textarea");
               inputs.forEach((input) => {
                 input.name = `${field_data.name}__${new_unit}`;
                 field_data.activate_autocomplete();

@@ -1,4 +1,5 @@
 import os
+from cachelib import FileSystemCache
 
 MANGO_AUTH = os.environ.get("MANGO_AUTH", "login")  # "localdev" or "login"
 MANGO_LOGIN_ACTION = "data_platform_user_bp.login_openid"
@@ -71,7 +72,10 @@ MANGO_PLUGIN_BLUEPRINTS = [
     {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
     {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
     {"module": "plugins.mango_audit.audit_admin", "blueprint": "mango_audit_bp"},
-    {"module": "plugins.mango_audit.audit_history", "blueprint": "mango_audit_history_bp"},
+    {
+        "module": "plugins.mango_audit.audit_history",
+        "blueprint": "mango_audit_history_bp",
+    },
     {"module": "plugins.cold_storage.cs_routes", "blueprint": "cold_storage_bp"},
     # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
 ]
@@ -95,8 +99,22 @@ MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {
     "class": "GroupBasedSchemaPermissions",
 }
 
+MANGO_SCHEMA_MANAGER_CLASS = {
+    "module": "kernel.metadata_schema.schema_handler",
+    "class": "iRODSSchemaManager",
+}
+
 MANGO_ERROR_MESSAGES = {
     "-370000": "You are not allowed to perform this action.",
     "missing_paramenters": "Required parameters are missing",
     "illegal_characters": "Illegal characters have been used: request rejected.",
 }
+
+### Session backend
+
+SESSION_TYPE = "cachelib"
+SESSION_PERMANENT = True  # default True
+SESSION_SERIALIZATION_FORMAT = "json"  # defaults to 'msgpack'
+SESSION_CACHELIB = FileSystemCache(threshold=100000, cache_dir="/tmp/sessions")
+PERMANENT_SESSION_LIFETIME = 1 * 24 * 60 * 60  # 1 days
+SESSION_KEY_PREFIX = "mango_portal_session:"
