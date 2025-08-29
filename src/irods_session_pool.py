@@ -31,6 +31,25 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.user = self.user = irods_session.users.get(
             irods_session.username
         )
+
+        self.init_or_refresh_groups()
+
+        if openid_user_name:
+            self.irods_session.openid_user_name = self.openid_user_name = (
+                openid_user_name
+            )
+        if openid_user_email:
+            self.irods_session.openid_user_email = self.openid_user_email = (
+                openid_user_email
+            )
+
+    def __del__(self):
+        # release connections upon object destruction
+        logging.info(f"Session {self.irods_session.username} going away, bye!")
+        self.irods_session.cleanup()
+
+    def init_or_refresh_groups(self):
+        irods_session = self.irods_session
         my_groups = [
             iRODSGroup(irods_session.user_groups, item)
             for item in irods_session.query(Group)
@@ -48,20 +67,6 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.my_group_names = self.my_group_names = [
             group.name for group in self.my_groups
         ]
-
-        if openid_user_name:
-            self.irods_session.openid_user_name = self.openid_user_name = (
-                openid_user_name
-            )
-        if openid_user_email:
-            self.irods_session.openid_user_email = self.openid_user_email = (
-                openid_user_email
-            )
-
-    def __del__(self):
-        # release connections upon object destruction
-        logging.info(f"Session {self.irods_session.username} going away, bye!")
-        self.irods_session.cleanup()
 
 
 class SessionCleanupThread(Thread):

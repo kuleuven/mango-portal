@@ -879,7 +879,7 @@ class Schema extends ComplexField {
           );
         }
       );
-    } else if (this.status == "published") {
+    } else {
       // get the object-version of the current fields
       this.fields_to_json();
 
@@ -896,23 +896,27 @@ class Schema extends ComplexField {
       // add a json view
       this.prepare_json_download();
 
-      // add and define the 'archive' button
-      this.nav_bar_btn_ids["archive_schema"] = this.nav_bar.add_action_button(
-        "Archive",
-        "danger",
-        () => {
-          // Fill the confirmation modal with the hidden fields to archive this schema version
-          Modal.submit_confirmation(
-            "Archived schemas cannot be implemented.",
-            this.urls.archive,
-            {
-              realm: realm,
-              schema_name: this.name,
-              with_status: "published",
-            }
-          );
-        }
-      );
+      if (this.status == "published") {
+        // add and define the 'archive' button
+        this.nav_bar_btn_ids["archive_schema"] = this.nav_bar.add_action_button(
+          "Archive",
+          "danger",
+          () => {
+            // Fill the confirmation modal with the hidden fields to archive this schema version
+            Modal.submit_confirmation(
+              "Archived schemas cannot be implemented.",
+              this.urls.archive,
+              {
+                realm: realm,
+                schema_name: this.name,
+                with_status: "published",
+              }
+            );
+          }
+        );
+      }
+
+      
     }
   }
 
@@ -1006,7 +1010,7 @@ class Schema extends ComplexField {
     // show all existing fields
     this.fields.forEach((field) => field.view_field());
 
-    if (this.status == "published") {
+    if (this.status == "published" || this.status == "archived") {
       this.child.fields.forEach((field) => field.view_field());
       if (this.temp) {
         this.temp.fields.forEach((field) => field.view_field());
@@ -1248,7 +1252,9 @@ class SchemaGroup {
     let active =
       this.statuses.indexOf("published") > -1
         ? version.status == "published"
-        : version.status == "draft";
+        : this.statuses.indexOf("draft") > -1
+        ? version.status == "draft":
+        this.statuses[0];
     // this does not account for a case with only archived versions and a draft
 
     // remove dots from the versio number so it can be used in DOM ids

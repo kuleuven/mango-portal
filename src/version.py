@@ -1,2 +1,2 @@
-__version__ = "0.20.1"
-__comment__ = "imgage for mango flow in production"
+__version__ = "0.22.0"
+__comment__ = "Metadata schemas are now native irods data objects"
