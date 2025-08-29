@@ -218,6 +218,8 @@ a.right {
         const resultsObject = {{ search_fields | tojson }}  // get the results
         const schemasObject = {{ schemas_dict | tojson }} // get the schema metadata
 
+        console.log(resultsObject);
+
         function prependPlaceholder(schema, placeholder_text) { // create a placeholder for select fields
             let basicOption = document.createElement("option");
             basicOption.innerHTML = placeholder_text;
@@ -227,14 +229,19 @@ a.right {
         };
 
         document.addEventListener("DOMContentLoaded", function() { // update the schema & attribute fields after search
-            // fixed schema metadata
+            // fixed schema metadata (label)
             document.getElementById("schema_metadata-schema").value = resultsObject["schema_metadata-schema"];
             document.getElementById("schema_metadata-schema").dispatchEvent(new Event("change", { // fake change event
                 bubbles: true
             }));
-            document.getElementById("schema_metadata-meta_a").value = resultsObject["schema_metadata-meta_a"]
+            document.getElementById("schema_metadata-meta_a").value = resultsObject["schema_metadata-meta_a"];
+            document.getElementById("schema_metadata-meta_a").dispatchEvent(new Event("change", { // fake change event
+                bubbles: true
+            }));
+            document.getElementById("schema_metadata-meta_v").value = resultsObject["schema_metadata-meta_v"];
 
-            // dynamic schema metadata
+
+            // dynamic schema metadata (no label)
             let counterMd = 0;
             while (`schema_metadata_no_label-${counterMd}-schema` in resultsObject) {
                 document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).value = resultsObject[`schema_metadata_no_label-${counterMd}-schema`];
@@ -242,6 +249,11 @@ a.right {
                     bubbles: true
                 }));
                 document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_a`];
+                document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).dispatchEvent(new Event("change", { // fake change event
+                    bubbles: true
+                }));
+                document.getElementById(`schema_metadata_no_label-${counterMd}-meta_v`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_v`];
+                
                 counterMd += 1;
             };
         });

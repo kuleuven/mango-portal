@@ -579,12 +579,12 @@ def catalog_search2():
         schema_metadata = FormField(AVUSchema, label="Metadata")
         schema_metadata_no_label = FieldList(
             FormField(AVUSchemaNoLabel),
-            min_entries=2,
+            min_entries=0,
         )
         non_schema_metadata = FormField(AVUForm, label="Non schema metadata")
         non_schema_metadata_no_label = FieldList(
             FormField(AVUFormNoLabel),
-            min_entries=2,
+            min_entries=0,
         )
 
         per_page = HiddenField("per_page")
