@@ -80,15 +80,17 @@ a.right {
                                         "schema_metadata-meta_v": 'col-md-4',
                                         "schema_metadata-remove": 'col-md-1 remove'},
                                         form_group_classes="col-mb-0") }}
+                <div id="labelMetadata">
                     {% for subform in search_form.schema_metadata_no_label %}
                         {{ render_form_row([subform.schema, subform.meta_a, subform.meta_v, subform.remove],
                                                 col_map = {
-                                                subform.id ~ '-schema': 'col-md-4',
-                                                subform.id ~ '-meta_a' : 'col-md-3',
-                                                subform.id ~ '-meta_v': 'col-md-4',
+                                                subform.id ~ '-schema': 'col-md-4 meta_schema',
+                                                subform.id ~ '-meta_a' : 'col-md-3 meta_attribute',
+                                                subform.id ~ '-meta_v': 'col-md-4 meta_value',
                                                 subform.id ~ '-remove': 'col-md-1 remove'},
                                                 form_group_classes="col-mb-0") }}
                     {% endfor %}
+                    </div>
                 </div>
       
      <div class="d-flex justify-content-end">
@@ -217,10 +219,15 @@ a.right {
 
         const resultsObject = {{ search_fields | tojson }}  // get the results
         const schemasObject = {{ schemas_dict | tojson }} // get the schema metadata
+        const noLabelFields = {{ no_label_fields_dict | tojson }}
 
+
+        console.log(noLabelFields);
         console.log(resultsObject);
 
-        function prependPlaceholder(schema, placeholder_text) { // create a placeholder for select fields
+
+        function prependPlaceholder(schema, placeholder_text) { 
+            // create a placeholder for select fields
             let basicOption = document.createElement("option");
             basicOption.innerHTML = placeholder_text;
             basicOption.disabled = true;
@@ -242,8 +249,8 @@ a.right {
 
 
             // dynamic schema metadata (no label)
-            let counterMd = 0;
-            while (`schema_metadata_no_label-${counterMd}-schema` in resultsObject) {
+            Object.entries(noLabelFields).forEach(([k,counterMd]) => {
+                console.log(k, counterMd);
                 document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).value = resultsObject[`schema_metadata_no_label-${counterMd}-schema`];
                 document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).dispatchEvent(new Event("change", {
                     bubbles: true
@@ -253,15 +260,19 @@ a.right {
                     bubbles: true
                 }));
                 document.getElementById(`schema_metadata_no_label-${counterMd}-meta_v`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_v`];
-                
-                counterMd += 1;
-            };
+        })
+
+
+            //code to add remove function on page reload
+        removeList = document.getElementById("labelMetadata").querySelectorAll(".remove");
+        removeList.forEach((element) => element.addEventListener("click", (event) => {removeRow(event.target)}));
+
+    
         });
 
         // make a list of all select elements : even = schema, odd = attributes
         const selectElements = document.querySelectorAll("#metadataFields .form-select");
 
-        // console.log(document.querySelectorAll("#metadataFields .form-select"));
 
         [...selectElements].forEach(function(schema, index) {
             if (index % 2 === 0) { // loop over the even select elements that contain the schemas
@@ -308,9 +319,9 @@ a.right {
         });
 
         function getAttributeValueElement(attribute) { // get attribute value element 
-            if (attribute.id === "schema_metadata-meta_a") {
+            if (attribute.id === "schema_metadata-meta_a") {        // first one
                 return (document.getElementById("schema_metadata-meta_v"))
-            } else {
+            } else {                                                // no label
                 let i = 0;
                 while (!attribute.id.includes(i)) {
                     i++
@@ -319,7 +330,7 @@ a.right {
             }
         }
 
-        function createField(type, elementName, elementID) { // function to create field based type
+        function createField(type, elementName, elementID) { // function to create field based on type
             let element;
             if (type === "select") {
                 element = document.createElement("select")
@@ -330,15 +341,21 @@ a.right {
             }
             element.id = elementID;
             element.setAttribute("name", elementName);
+            element.dataset["target"] = "meta-value"
+
             return element
         }
 
 
-
-        let attribute = document.getElementById("schema_metadata-meta_a");
-
-        function checkTypeLabel() {
+        function checkTypeLabel(event) {
+            // function to check  the type for row with labels 
+            const attribute = event?.target;
+            if (!attribute) return;
+            console.log(attribute)
             let selectedOption = attribute.options[attribute.selectedIndex];
+    
+            if (!selectedOption) return; // safely exit if no option is selected
+
             let value = getAttributeValueElement(attribute);
             switch (selectedOption.getAttribute("type")) {
                 case "select":
@@ -367,10 +384,15 @@ a.right {
                     input.type = "text";
             }
         }
+
+
+        //assign eventlistener
+        let attribute = document.getElementById("schema_metadata-meta_a");
         attribute.addEventListener("change", checkTypeLabel);
 
 
         function checkTypeNoLabel(counter, attributeSelectElement) {
+            // function to check type with row with no labels
             let selectedOption = attributeSelectElement.options[attributeSelectElement.selectedIndex];
             let value = getAttributeValueElement(attributeSelectElement);
             switch (selectedOption.getAttribute("type")) {
@@ -429,65 +451,64 @@ a.right {
         }
 
 
-        function removeRow(rowId) {
-            document.getElementById(rowId).remove()
+    
+        function removeRow(button) {
+            //function to remove a row
+            const row = button.closest(".row")
+            console.log(row)
+            row.parentNode.removeChild(row);
+            resetIndex();
+
         }
 
 
-        function createRemoveRowHandler(rowId) {
-            return function() {
-                return removeRow(rowId);
-            };
+        function resetIndex() {  // -schema -meta_a -meta_v
+            //this function resets the index when a row is removed so that the indexes always go 0,1,2,...
+                console.log("resetting index...")
+
+                const container = document.getElementById("labelMetadata");
+
+                if (!container) {
+                    console.warn("labelMetadata container not found.");
+                    return;
+                }
+
+                const inputList = container.querySelectorAll(".row");
+                console.log("Found rows:", inputList.length);
+
+                // now we loop over the inputs and reset them all :)
+                console.log(inputList)
+                inputList.forEach(function(row, index) {
+                    row.querySelector("[data-target='meta-schema']").name = `schema_metadata_no_label-${index}-schema`;
+                    row.querySelector("[data-target='meta-schema']").id = `schema_metadata_no_label-${index}-schema`;
+                    row.querySelector("[data-target='meta-attribute']").name = `schema_metadata_no_label-${index}-meta_a`;
+                    row.querySelector("[data-target='meta-attribute']").id = `schema_metadata_no_label-${index}-meta_a`;
+                    row.querySelector("[data-target='meta-value']").name = `schema_metadata_no_label-${index}-meta_v`
+                    row.querySelector("[data-target='meta-value']").id = `schema_metadata_no_label-${index}-meta_v`;
+
+                }); 
+                console.log("...index resetted")
         }
 
 
-
-        // code to add remove-handlers to remove button on page reload 
-
-        //schema metadata
-        if (document.getElementById("schemaMetadata").childElementCount > 1) {
-            let counter = 1;
-            let schemaMetadata = document.getElementById("schemaMetadata");
-            [...schemaMetadata.children].forEach( (row) => { 
-
-                row.id = `schemaRow-${counter}`;
-                let rowHandler = createRemoveRowHandler(`schemaRow-${counter}`); 
-                row.querySelector("button").addEventListener("click", rowHandler); 
-                counter++ } )
-        
-        }
-
-        // non-schema metadata
-        if (document.getElementById("nonSchemaMetadata").childElementCount > 1) {
-            let counter = 1;
-            let nonSchemaMetadata = document.getElementById("nonSchemaMetadata");
-            [...nonSchemaMetadata.children].forEach( (row) => { 
-
-                row.id = `nonSchemaRow-${counter}`;
-                let rowHandler = createRemoveRowHandler(`nonSchemaRow-${counter}`); 
-                row.querySelector("button").addEventListener("click", rowHandler); 
-                counter++ } )
-        
-        }
 
 
         // disable first button:
        // document.getElementById("schema_metadata-remove").disabled = true;
        // document.getElementById("non_schema_metadata-remove").disabled = true;
-
+        // remove first button
         document.getElementById("schema_metadata-remove").remove()
         document.getElementById("non_schema_metadata-remove").remove()
 
 
 
-
-
         //code to add fields to form dynamically : schema & non-schema
-        let counterSchema = document.getElementById("schemaMetadata").childElementCount - 1;
+        let counterSchema = document.getElementById("labelMetadata").childElementCount;
+        console.log("non schema counter:", counterSchema)
+
         //schema
         button = document.getElementById("addSchemaField");
         button.addEventListener("click", function() {
-            let myList = document.querySelectorAll("#metadataFields #schemaMetadata .row");
             let row = document.createElement("div");
             row.id = `schemaRow-${counterSchema}`
             optionsList = document.getElementById("schema_metadata-schema");
@@ -496,13 +517,15 @@ a.right {
 
             //col1
             let col1 = document.createElement("div")
-            col1.classList.add("col-md-4")
+            col1.classList.add("col-md-4", "meta_schema")
             let container1 = document.createElement("div")
             container1.classList.add("mb-0")
             const schemaSelectElement = document.createElement("select")
             schemaSelectElement.classList.add("form-select");
+            schemaSelectElement.dataset['target'] = "meta-schema"
             schemaSelectElement.setAttribute("name", `schema_metadata_no_label-${counterSchema}-schema`)
             schemaSelectElement.id = `schema_metadata_no_label-${counterSchema}-schema`;
+
             [...optionsList.children].forEach((x) => { // clone the schemas
                 const clone = x.cloneNode(true);
                 schemaSelectElement.appendChild(clone);
@@ -518,11 +541,12 @@ a.right {
 
             //col2
             let col2 = document.createElement("div")
-            col2.classList.add("col-md-3")
+            col2.classList.add("col-md-3" ,"meta_attribute")
             let container2 = document.createElement("div")
             container2.classList.add("mb-0")
             const attributeSelectElement = document.createElement("select")
             attributeSelectElement.classList.add("form-select");
+            attributeSelectElement.dataset['target'] = "meta-attribute";
             attributeSelectElement.setAttribute("name", `schema_metadata_no_label-${counterSchema}-meta_a`)
             attributeSelectElement.id = `schema_metadata_no_label-${counterSchema}-meta_a`;
             container2.appendChild(attributeSelectElement);
@@ -581,11 +605,12 @@ a.right {
 
             //col3
             let col3 = document.createElement("div")
-            col3.classList.add("col-md-4")
+            col3.classList.add("col-md-4", "meta_value")
             let container3 = document.createElement("div")
             container3.classList.add("mb-0")
-            const valueInputField = document.createElement("input")
+            const valueInputField = document.createElement('input')
             valueInputField.classList.add("form-control");
+            valueInputField.dataset['target'] = 'meta-value'
             valueInputField.setAttribute("name", `schema_metadata_no_label-${counterSchema}-meta_v`)
             valueInputField.id = `schema_metadata_no_label-${counterSchema}-meta_v`;
             container3.appendChild(valueInputField);
@@ -601,8 +626,7 @@ a.right {
             removeButtonSchema.setAttribute("name", `schema_metadata_no_label-${counterSchema}-remove`)
             removeButtonSchema.id = `schema_metadata_no_label-${counterSchema}-remove`;
             removeButtonSchema.type = "button";
-            let rowHandler = createRemoveRowHandler(`schemaRow-${counterSchema}`); //use a closure to freeze function parameters
-            removeButtonSchema.addEventListener("click", rowHandler);
+            removeButtonSchema.addEventListener("click", (event) => {removeRow(event.target)});
             removeButtonSchema.innerHTML = '<i class="bi bi-trash"></i>'
         //    removeButtonSchema.value = "y"
             container4.appendChild(removeButtonSchema);
@@ -613,7 +637,8 @@ a.right {
             row.appendChild(col3)
             row.appendChild(col4)
 
-            myList[myList.length - 1].after(row);
+         //   myList[myList.length - 1].after(row);
+            document.getElementById("labelMetadata").appendChild(row);
 
             counterSchema++ 
 
@@ -623,7 +648,7 @@ a.right {
 
         // non-schema
 
-        let counterNonSchema = document.getElementById("nonSchemaMetadata").childElementCount - 1;
+        let counterNonSchema = document.getElementById("labelMetadata").childElementCount;
 
         buttonNonSchema = document.getElementById("addNonSchemaField");
         buttonNonSchema.addEventListener("click", function() {
@@ -683,7 +708,7 @@ a.right {
             removeButton.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-remove`)
             removeButton.type = "button";
             removeButton.innerHTML = '<i class="bi bi-trash"></i>'
-            let rowHandler = createRemoveRowHandler(`nonSchemaRow-${counterNonSchema}`); //use a closure to freeze function parameters
+            removeButton.addEventListener("click", (event) => {removeRow(event.target)});
             removeButton.addEventListener("click", rowHandler);
            // removeButton.value = "y";
             removeContainer.appendChild(removeButton);

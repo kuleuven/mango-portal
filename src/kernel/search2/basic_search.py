@@ -449,7 +449,7 @@ def catalog_search2():
             if "value" not in kwargs:
                 kwargs["value"] = field._value()
             params = self.html_params(name=field.name, **kwargs)
-            label = '<i class="bi bi-trash"></i>' # field.label.text
+            label = '<i class="bi bi-trash"></i>'  # field.label.text
 
             return f"""<button {params}>{label}</button>"""
 
@@ -497,13 +497,15 @@ def catalog_search2():
             "",
             validate_choice=False,
             choices=list(existing_schemas.items()),
+            render_kw={"data-target": "meta-schema"},
         )
 
         # meta_a = StringField("", render_kw={"list": "search_meta_names"})
-        meta_a = SelectField("", validate_choice=False)
-        meta_v = StringField("")
+        meta_a = SelectField(
+            "", validate_choice=False, render_kw={"data-target": "meta-attribute"}
+        )
+        meta_v = StringField("", render_kw={"data-target": "meta-value"})
         remove = ButtonField("")
-
 
     # # data object variant with <data> search suggestions
     # class AVUFormSuggestionListDO(Form):
@@ -636,7 +638,16 @@ def catalog_search2():
 
     # ----------------------- run search -------------------- #
 
-    print(request.values)
+    # print(request.values)
+
+    print(request.values.to_dict())
+
+    #this dictionary is used to create the fields on page reload
+    no_label_fields = list(
+        set([k[-8] for k in request.values.to_dict() if "no_label" in k])
+    )
+    #TODO: make more robust: currently it filters string -8 (-schema, -meta_a, -meta_v) and then removes duplicates by creating a set
+    no_label_fields_dict = {f"no_label_{v}": v for v in no_label_fields}
 
     if request.values.get("submit", False) == "Search" and search_form.validate():
         import time
@@ -784,6 +795,7 @@ def catalog_search2():
             schemas_dict=schemas_dict,
             existing_schemas=existing_schemas,
             search_fields=request.values.to_dict(),
+            no_label_fields_dict=no_label_fields_dict,
         )
 
     else:
@@ -797,4 +809,5 @@ def catalog_search2():
             schemas_dict=schemas_dict,
             existing_schemas=existing_schemas,
             search_fields={},
+            no_label_fields_dict={},
         )
