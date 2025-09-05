@@ -360,7 +360,7 @@ def transform_schema(schema, schema_manager):
                     if value["level"] == 0
                     else flattened_schema[".".join(str(key).split(".")[:-1])]["label"]
                 ),
-                "title": f"{value['label']}",  # actual title
+                "title": value["label"],  # actual title
                 "display_label": (
                     create_path_label(key) if value["type"] == "object" else "none"
                 ),  # label with hierarchy for display in select
