@@ -325,6 +325,52 @@ def build_basic_query_filters(form):
     return filters
 
 
+def transform_schema(schema, schema_manager):
+    schema_dict = json.loads(schema_manager.load_schema(schema))
+
+    flattened_schema = flatten_schema(
+        schema_dict,
+        level=0,
+        prefix=f"mgs.{schema}",
+        result_dict={},
+        add_enum=True,
+    )
+
+    # print("this is the schema:", flattened_schema)
+    def create_path_label(key):
+        parts = key.split(".")
+        ids = parts[2:]
+        label_list = [
+            flattened_schema[".".join(parts[:2] + ids[: i + 1])][
+                "label"
+            ]  # add +1 here because range starts from 0
+            for i in range(len(ids))
+        ]
+        return " / ".join(label_list)
+
+    def restructure_item(item):
+        key, value = item
+        restructured_item = {
+            key: {
+                "type": ("label" if value["type"] == "object" else value["type"]),
+                "enum": (value.get("enum", None)),
+                "level": value["level"],
+                "parent": (
+                    None
+                    if value["level"] == 0
+                    else flattened_schema[".".join(str(key).split(".")[:-1])]["label"]
+                ),
+                "title": f"{value['label']}",  # actual title
+                "display_label": (
+                    create_path_label(key) if value["type"] == "object" else "none"
+                ),  # label with hierarchy for display in select
+            }
+        }
+        return restructured_item
+
+    return [restructure_item(item) for item in flattened_schema.items()]
+
+
 def get_realm_schemas(realm):
 
     schema_manager: SchemaManager = get_schema_manager(
@@ -342,57 +388,9 @@ def get_realm_schemas(realm):
         return None
 
     schemas_dict = {
-        k: [] for k in existing_schemas.keys()
+        k: transform_schema(k, schema_manager) for k in existing_schemas.keys()
     }  # transformed schemas dictionary to feed Advanced Search
 
-    for schema in existing_schemas.keys():
-        schema_dict = json.loads(schema_manager.load_schema(schema))
-
-        flattened_schema = flatten_schema(
-            schema_dict,
-            level=0,
-            prefix=f"mgs.{schema}",
-            result_dict={},
-            add_enum=True,
-        )
-
-        # print("this is the schema:", flattened_schema)
-        def create_path_label(key):
-            parts = key.split(".")
-            ids = parts[2:]
-            label_list = [
-                flattened_schema[".".join(parts[:2] + ids[: i + 1])][
-                    "label"
-                ]  # add +1 here because range starts from 0
-                for i in range(len(ids))
-            ]
-            return " / ".join(label_list)
-
-        for key, value in flattened_schema.items():
-
-            restructured_item = {
-                key: {
-                    "type": ("label" if value["type"] == "object" else value["type"]),
-                    "enum": (value.get("enum", None)),
-                    "level": value["level"],
-                    "parent": (
-                        None
-                        if value["level"] == 0
-                        else flattened_schema[".".join(str(key).split(".")[:-1])][
-                            "label"
-                        ]
-                    ),
-                    "title": f"{value['label']}",  # actual title
-                    "display_label": (
-                        create_path_label(key) if value["type"] == "object" else "none"
-                    ),  # label with hierarchy for display in select
-                }
-            }
-            schemas_dict[schema].append(
-                restructured_item
-            )  # put all schemas together in one schemas_dict
-
-    # print(f"These are all schemas dictionaries:: {json.dumps(schemas_dict)}")
     if len(existing_schemas) == 0:
         existing_schemas = {"no_schemas": "no schemas found"}
     return existing_schemas, schemas_dict
