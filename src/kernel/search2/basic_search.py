@@ -335,16 +335,9 @@ def get_realm_schemas(realm):
         filters=["published"]
     )  # TODO archived schemas should also be searchable ...
 
-    schema_list_name = [
-        schema for schema in my_schemas
-    ]  # temporary list of schema names
-    schema_list_label = []  # temporary list of schema labels (titles)
-    for key, value in my_schemas.items():
-        schema_list_label.append(value["title"])
-
-    existing_schemas = dict(
-        sorted(zip(schema_list_name, schema_list_label))
-    )  # dictionary with schema name as key and schema label as value
+    existing_schemas = {
+        schema_name: schema["title"] for schema_name, schema in my_schemas.items()
+    }
     if not existing_schemas:
         return None
 
