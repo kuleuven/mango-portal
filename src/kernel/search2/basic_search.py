@@ -325,6 +325,86 @@ def build_basic_query_filters(form):
     return filters
 
 
+def get_realm_schemas(realm):
+
+    schema_manager: SchemaManager = get_schema_manager(
+        zone=g.irods_session.zone, realm=realm
+    )
+
+    my_schemas = schema_manager.list_schemas(
+        filters=["published"]
+    )  # TODO archived schemas should also be searchable ...
+
+    schema_list_name = [
+        schema for schema in my_schemas
+    ]  # temporary list of schema names
+    schema_list_label = []  # temporary list of schema labels (titles)
+    for key, value in my_schemas.items():
+        schema_list_label.append(value["title"])
+
+    existing_schemas = dict(
+        sorted(zip(schema_list_name, schema_list_label))
+    )  # dictionary with schema name as key and schema label as value
+    if not existing_schemas:
+        return None
+
+    schemas_dict = {
+        k: [] for k in existing_schemas.keys()
+    }  # transformed schemas dictionary to feed Advanced Search
+
+    for schema in existing_schemas.keys():
+        schema_dict = json.loads(schema_manager.load_schema(schema))
+
+        flattened_schema = flatten_schema(
+            schema_dict,
+            level=0,
+            prefix=f"mgs.{schema}",
+            result_dict={},
+            add_enum=True,
+        )
+
+        # print("this is the schema:", flattened_schema)
+        def create_path_label(key):
+            parts = key.split(".")
+            ids = parts[2:]
+            label_list = [
+                flattened_schema[".".join(parts[:2] + ids[: i + 1])][
+                    "label"
+                ]  # add +1 here because range starts from 0
+                for i in range(len(ids))
+            ]
+            return " / ".join(label_list)
+
+        for key, value in flattened_schema.items():
+
+            restructured_item = {
+                key: {
+                    "type": ("label" if value["type"] == "object" else value["type"]),
+                    "enum": (value.get("enum", None)),
+                    "level": value["level"],
+                    "parent": (
+                        None
+                        if value["level"] == 0
+                        else flattened_schema[".".join(str(key).split(".")[:-1])][
+                            "label"
+                        ]
+                    ),
+                    "title": f"{value['label']}",  # actual title
+                    "display_label": (
+                        create_path_label(key) if value["type"] == "object" else "none"
+                    ),  # label with hierarchy for display in select
+                }
+            }
+            schemas_dict[schema].append(
+                restructured_item
+            )  # put all schemas together in one schemas_dict
+
+    # print(f"These are all schemas dictionaries:: {json.dumps(schemas_dict)}")
+    if len(existing_schemas) == 0:
+        existing_schemas = {"no_schemas": "no schemas found"}
+    return existing_schemas, schema_dict
+
+
 @basic_search2_bp.route("/catalog/search2", methods=["GET", "POST"])
 def catalog_search2():
 
@@ -338,103 +418,25 @@ def catalog_search2():
 
     # -------------------------- schemas --------------------------- #
 
-    def create_path_label(key):
-        parts = key.split(".")
-        ids = parts[2:]
-        label_list = [
-            flattened_schema[".".join(parts[:2] + ids[: i + 1])][
-                "label"
-            ]  # add +1 here because range starts from 0
-            for i in range(len(ids))
-        ]
-        return " / ".join(label_list)
-
     home = f"/{g.irods_session.zone}/home"
     # allow querying for schemas of any realm the user has access to
-    realms = [
-        coll.name for coll in g.irods_session.collections.get(home).subcollections
-    ]
-
-    all_existing_schemas = []
-    all_schemas_dict = []
-    for realm in realms:
-
-        schema_manager: SchemaManager = get_schema_manager(
-            zone=g.irods_session.zone, realm=realm
-        )
-
-        my_schemas = schema_manager.list_schemas(
-            filters=["published"]
-        )  # TODO archived schemas should also be searchable ...
-
-        schema_list_name = [
-            schema for schema in my_schemas
-        ]  # temporary list of schema names
-        schema_list_label = []  # temporary list of schema labels (titles)
-        for key, value in my_schemas.items():
-            schema_list_label.append(value["title"])
-
-        existing_schemas = dict(
-            sorted(zip(schema_list_name, schema_list_label))
-        )  # dictionary with schema name as key and schema label as value
-
-        schemas_dict = {
-            k: [] for k in existing_schemas.keys()
-        }  # transformed schemas dictionary to feed Advanced Search
-
-        for schema in existing_schemas.keys():
-            schema_dict = json.loads(schema_manager.load_schema(schema))
-
-            flattened_schema = flatten_schema(
-                schema_dict,
-                level=0,
-                prefix=f"mgs.{schema}",
-                result_dict={},
-                add_enum=True,
-            )
-            # print("this is the schema:", flattened_schema)
-
-            for key, value in flattened_schema.items():
-
-                restructured_item = {
-                    key: {
-                        "type": (
-                            "label" if value["type"] == "object" else value["type"]
-                        ),
-                        "enum": (value.get("enum", None)),
-                        "level": value["level"],
-                        "parent": (
-                            None
-                            if value["level"] == 0
-                            else flattened_schema[".".join(str(key).split(".")[:-1])][
-                                "label"
-                            ]
-                        ),
-                        "title": f"{value['label']}",  # actual title
-                        "display_label": (
-                            create_path_label(key)
-                            if value["type"] == "object"
-                            else "none"
-                        ),  # label with hierarchy for display in select
-                    }
-                }
-                schemas_dict[schema].append(
-                    restructured_item
-                )  # put all schemas together in one schemas_dict
-
-        # print(f"These are all schemas dictionaries:: {json.dumps(schemas_dict)}")
-        if len(existing_schemas) == 0:
-            existing_schemas = {"no_schemas": "no schemas found"}
-        all_existing_schemas.append(existing_schemas)
-        all_schemas_dict.append(schemas_dict)
-
-    # else:
-    #     existing_schemas = {"no_schemas": "no schemas found"}
-    #     schemas_dict = {}
-    existing_schemas = {
-        k: v for schema in all_existing_schemas for k, v in schema.items()
+    realm_schemas = {
+        coll.name: get_realm_schemas(coll.name)
+        for coll in g.irods_session.collections.get(home).subcollections
     }
-    schemas_dict = {k: v for schema in all_schemas_dict for k, v in schema.items()}
+
+    existing_schemas = {
+        k: v
+        for schema in realm_schemas.values()
+        if schema is not None
+        for k, v in schema[0].items()
+    }
+    schemas_dict = {
+        k: v
+        for schema in realm_schemas.values()
+        if schema is not None
+        for k, v in schema[1].items()
+    }
 
     # -------------------------- form --------------------------- #
 
