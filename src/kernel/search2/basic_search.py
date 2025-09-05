@@ -338,13 +338,6 @@ def catalog_search2():
 
     # -------------------------- schemas --------------------------- #
 
-    def get_schema_realm(path):
-        try:
-            realm = str(path).split("/")[3]
-        except:
-            realm = None
-        return realm
-
     def create_path_label(key):
         parts = key.split(".")
         ids = parts[2:]
@@ -356,9 +349,15 @@ def catalog_search2():
         ]
         return " / ".join(label_list)
 
-    if realm := get_schema_realm(
-        request.values.get("collection_subtree-collection", "")
-    ):
+    home = f"/{g.irods_session.zone}/home"
+    # allow querying for schemas of any realm the user has access to
+    realms = [
+        coll.name for coll in g.irods_session.collections.get(home).subcollections
+    ]
+
+    all_existing_schemas = []
+    all_schemas_dict = []
+    for realm in realms:
 
         schema_manager: SchemaManager = get_schema_manager(
             zone=g.irods_session.zone, realm=realm
@@ -426,10 +425,16 @@ def catalog_search2():
         # print(f"These are all schemas dictionaries:: {json.dumps(schemas_dict)}")
         if len(existing_schemas) == 0:
             existing_schemas = {"no_schemas": "no schemas found"}
+        all_existing_schemas.append(existing_schemas)
+        all_schemas_dict.append(schemas_dict)
 
-    else:
-        existing_schemas = {"no_schemas": "no schemas found"}
-        schemas_dict = {}
+    # else:
+    #     existing_schemas = {"no_schemas": "no schemas found"}
+    #     schemas_dict = {}
+    existing_schemas = {
+        k: v for schema in all_existing_schemas for k, v in schema.items()
+    }
+    schemas_dict = {k: v for schema in all_schemas_dict for k, v in schema.items()}
 
     # -------------------------- form --------------------------- #
 
