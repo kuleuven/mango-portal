@@ -7,7 +7,7 @@ bleach==6.2.0
 blinker==1.9.0
 Bootstrap-Flask==2.4.1
 cachelib==0.9.0
-celery==5.4.0
+celery==5.5.3
 celery-redbeat==2.2.0
 certifi==2024.8.30
 cffi==1.17.1
@@ -33,6 +33,7 @@ Flask-Caching==2.3.0
 Flask-Cors==5.0.0
 Flask-DebugToolbar==0.16.0
 flask-paginate==2024.4.12
+Flask-Session==0.8.0
 Flask-WTF==1.2.2
 flower==2.0.1
 fonttools==4.55.1
@@ -50,11 +51,13 @@ Jinja2==3.1.4
 jsbeautifier==1.15.1
 json5==0.10.0
 kiwisolver==1.4.7
-kombu==5.4.2
+kombu==5.5.4
 Mako==1.3.7
 mango-mdconverter==0.0.10
+mango-mdschema==1.0.3
 MarkupSafe==3.0.2
 matplotlib==3.9.3
+msgspec==0.19.0
 multidict==6.1.0
 numpy==2.1.3
 oic==1.7.0
@@ -83,7 +86,7 @@ pyparsing==3.2.0
 pytest==8.3.4
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
-python-irodsclient @ git+https://github.com/kuleuven/python-irodsclient.git@9a17a3274b27b7a9384e168b9281584f00138fdc
+python-irodsclient @ git+https://github.com/kuleuven/python-irodsclient.git@69cda334c3448de9ed5b0b98d0b283561f00bcc8
 python-magic==0.4.27
 python-slugify==8.0.4
 pytz==2024.2
@@ -102,8 +105,9 @@ tornado==6.5
 tqdm==4.67.1
 types-cryptography==3.3.23.2
 typing_extensions==4.12.2
-tzdata==2024.2
+tzdata==2025.2
 urllib3==2.2.3
+validators==0.34.0
 vine==5.1.0
 waitress==3.0.2
 wcwidth==0.2.13

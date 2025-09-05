@@ -663,10 +663,13 @@ def view_object(data_object_path):
     tika_result = {}
     tika_storage = f"storage/{g.irods_session.zone}/tika_output"
     tika_file_path = f"{tika_storage}/{data_object.id}.tika.json"
+    ## Take into account tz info in a BC way, this was added in recent iRODS versions
+    do_modtime = data_object.modify_time
+    use_tz = do_modtime.tzinfo is not None and do_modtime.tzinfo.utcoffset(do_modtime) is not None
 
-    if os.path.exists(tika_file_path) and data_object.modify_time < (
+    if os.path.exists(tika_file_path) and do_modtime < (
         analysis_timestamp := datetime.datetime.fromtimestamp(
-            os.path.getmtime(tika_file_path)
+            os.path.getmtime(tika_file_path), tz=do_modtime.tzinfo if use_tz else None
         )
     ):
         with open(tika_file_path, mode="r") as tika_file:
