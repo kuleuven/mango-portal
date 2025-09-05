@@ -58,7 +58,7 @@ import lib.util
 from lib.util import flatten_josse_schema, flatten_schema
 from .editor import get_metadata_schema_dir
 
-from kernel.metadata_schema import get_schema_manager, FileSystemSchemaManager
+from kernel.metadata_schema import get_schema_manager, SchemaManager
 import logging
 
 import signals
@@ -149,7 +149,7 @@ def edit_schema_metadata_for_item():
     realm = _parameters["realm"]
     prefix = get_schema_prefix(schema_identifier=schema)
 
-    schema_manager: FileSystemSchemaManager = get_schema_manager(
+    schema_manager: SchemaManager = get_schema_manager(
         zone=g.irods_session.zone, realm=realm
     )
     logging.info(f"Using metadata schema {schema}")
