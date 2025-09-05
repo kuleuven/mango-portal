@@ -395,7 +395,7 @@ def get_realm_schemas(realm):
     # print(f"These are all schemas dictionaries:: {json.dumps(schemas_dict)}")
     if len(existing_schemas) == 0:
         existing_schemas = {"no_schemas": "no schemas found"}
-    return existing_schemas, schema_dict
+    return existing_schemas, schemas_dict
 
 
 @basic_search2_bp.route("/catalog/search2", methods=["GET", "POST"])
