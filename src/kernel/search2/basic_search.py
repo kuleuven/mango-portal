@@ -434,13 +434,9 @@ def catalog_search2():
     # -------------------------- form --------------------------- #
 
     class ButtonWidget(object):
-        """
-        Renders a multi-line text area.
-        `rows` and `cols` ought to be passed as keyword args when rendering.
-        """
+        """render a button"""
 
         input_type = "button"
-
         html_params = staticmethod(html_params)
 
         def __call__(self, field, **kwargs):
