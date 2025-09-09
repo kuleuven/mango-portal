@@ -54,6 +54,7 @@ from flask_paginate import Pagination, get_page_parameter
 from kernel.template_overrides import get_template_override_manager
 
 from kernel.metadata_schema import get_schema_manager  # , SchemaManager
+from kernel.metadata_schema.editor import get_realms_for_current_user
 from mango_mdschema import helpers
 from multidict import MultiDict
 from wtforms.widgets import html_params
@@ -411,10 +412,7 @@ def catalog_search2():
 
     home = f"/{g.irods_session.zone}/home"
     # allow querying for schemas of any realm the user has access to
-    realm_schemas = {
-        coll.name: get_realm_schemas(coll.name)
-        for coll in g.irods_session.collections.get(home).subcollections
-    }
+    realm_schemas = get_realms_for_current_user(g.irods.session, home)
 
     existing_schemas = {
         k: v
