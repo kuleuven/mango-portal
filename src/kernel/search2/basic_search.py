@@ -338,7 +338,7 @@ def transform_schema(schema, schema_manager):
     )
 
     # print("this is the schema:", flattened_schema)
-    def create_path_label(key):
+    def create_nested_label(key):
         parts = key.split(".")
         ids = parts[2:]
         label_list = [
@@ -363,7 +363,7 @@ def transform_schema(schema, schema_manager):
                 ),
                 "title": value["label"],  # actual title
                 "display_label": (
-                    create_path_label(key) if value["type"] == "object" else "none"
+                    create_nested_label(key) if value["type"] == "object" else "none"
                 ),  # label with hierarchy for display in select
             }
         }
