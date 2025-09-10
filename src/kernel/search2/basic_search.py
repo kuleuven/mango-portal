@@ -16,21 +16,7 @@ from flask import (
 )
 import json
 from flask_wtf import Form, FlaskForm
-from wtforms import (
-    StringField,
-    SelectField,
-    validators,
-    SubmitField,
-    HiddenField,
-    FieldList,
-    FormField,
-    DateField,
-    Form,
-    SelectMultipleField,
-    RadioField,
-    BooleanField,
-)
-
+from kernel.search2.search_form import CatalogSearchForm
 from cache import cache
 from lib.util import (
     collection_tree_to_dict,
@@ -57,7 +43,6 @@ from kernel.metadata_schema import get_schema_manager  # , SchemaManager
 from kernel.metadata_schema.editor import get_realms_for_current_user
 from mango_mdschema import helpers
 from multidict import MultiDict
-from wtforms.widgets import html_params
 
 
 basic_search2_bp = Blueprint("basic_search2_bp", __name__, template_folder="templates")
@@ -134,21 +119,6 @@ def build_basic_query_filters(form):
         if form["item_name-item_type"] == "data_object"
         else CollectionMeta
     )
-
-    # if form["any_avu-meta_a"]:
-    #     filters += [Criterion("=", column_meta_base.name, form["any_avu-meta_a"])]
-
-    # if form["any_avu-meta_v"]:
-    #     comparison = "like" if form["any_avu-meta_v"].find("%") != -1 else "="
-    #     filters += [
-    #         Criterion(comparison, column_meta_base.value, form["any_avu-meta_v"])
-    #     ]
-
-    # if form["any_avu-meta_u"]:
-    #     comparison = "like" if form["any_avu-meta_u"].find("%") != -1 else "="
-    #     filters += [
-    #         Criterion(comparison, column_meta_base.units, form["any_avu-meta_u"])
-    #     ]
 
     try:
         if form[f"schema_metadata-meta_a"]:
@@ -256,35 +226,6 @@ def build_basic_query_filters(form):
         except:
             break
 
-    # if form["collection_avu-meta_a"]:
-    #     filters += [Criterion("=", CollectionMeta.name, form["collection_avu-meta_a"])]
-
-    # if form["collection_avu-meta_v"]:
-    #     comparison = "like" if form["collection_avu-meta_v"].find("%") != -1 else "="
-    #     filters += [
-    #         Criterion(comparison, CollectionMeta.value, form["collection_avu-meta_v"])
-    #     ]
-
-    # if form["collection_avu-meta_u"]:
-    #     comparison = "like" if form["collection_avu-meta_u"].find("%") != -1 else "="
-    #     filters += [
-    #         Criterion(comparison, CollectionMeta.units, form["collection_avu-meta_u"])
-    #     ]
-
-    # if form["data_object_avu-meta_a"]:
-    #     filters += [Criterion("=", DataObjectMeta.name, form["data_object_avu-meta_a"])]
-
-    # if form["data_object_avu-meta_v"]:
-    #     comparison = "like" if form["data_object_avu-meta_v"].find("%") != -1 else "="
-    #     filters += [
-    #         Criterion(comparison, DataObjectMeta.value, form["data_object_avu-meta_v"])
-    #     ]
-
-    # if form["data_object_avu-meta_u"]:
-    #     comparison = "like" if form["data_object_avu-meta_u"].find("%") != -1 else "="
-    #     filters += [
-    #         Criterion(comparison, DataObjectMeta.value, form["data_object_avu-meta_u"])
-    #     ]
 
     if form["create_date-date"]:
         column = (
@@ -409,8 +350,6 @@ def catalog_search2():
         )
         return g.irods_session.query(type).all()
 
-    # -------------------------- schemas --------------------------- #
-
     home = f"/{g.irods_session.zone}/home"
     # allow querying for schemas of any realm the user has access to
     realm_schemas = {realm: get_realm_schemas(realm) for realm in get_realms_for_current_user(g.irods_session, home)}
@@ -428,157 +367,11 @@ def catalog_search2():
         for k, v in schema[1].items()
     }
 
-    # -------------------------- form --------------------------- #
-
-    class ButtonWidget(object):
-        """render a button"""
-
-        input_type = "button"
-        html_params = staticmethod(html_params)
-
-        def __call__(self, field, **kwargs):
-            kwargs.setdefault("id", field.id)
-            kwargs.setdefault("type", self.input_type)
-            if "value" not in kwargs:
-                kwargs["value"] = field._value()
-            params = self.html_params(name=field.name, **kwargs)
-            label = '<i class="bi bi-trash"></i>'  # field.label.text
-
-            return f"""<button {params}>{label}</button>"""
-
-    class ButtonField(StringField):
-        """Remove row button"""
-        widget = ButtonWidget()
-
-    class AVUForm(Form):
-        """AVU input no schema with label"""
-
-        meta_attribute = StringField("Attribute name")  
-        meta_value = StringField("Attribute value")  
-        meta_unit = StringField("Unit value")  
-        remove = ButtonField("      ")
-
-
-    class AVUFormNoLabel(Form):
-        """AVU input no schema and no label"""
-
-        meta_attribute = StringField("")
-        meta_value = StringField("")
-        meta_unit = StringField("")  
-        remove = ButtonField("")
-
-    class AVUSchema(Form):
-        """Input field for schema metadata with suggestion list and label"""
-
-        schema = SelectField(
-            "Schema",
-            validate_choice=False,
-            choices=list(existing_schemas.items()),
-            render_kw={"data-target": "meta-schema-label"}
-        )
-        meta_a = SelectField(
-            "Attribute name", validate_choice=False,
-               render_kw={"data-target": "meta-attribute-label"}   # we don't validate because choices will be created dynamically
-        )  
-        meta_v = StringField("Attribute value")
-        remove = ButtonField("      ")
-
-
-
-    class AVUSchemaNoLabel(Form):
-        """AVU field for schema metadata with suggestion list and no label"""
-
-        schema = SelectField(
-            "",
-            validate_choice=False,
-            choices=list(existing_schemas.items()),
-            render_kw={"data-target": "meta-schema"},
-        )
-        meta_a = SelectField(
-            "", validate_choice=False, render_kw={"data-target": "meta-attribute"}
-        )
-        meta_v = StringField("", render_kw={"data-target": "meta-value"})
-        remove = ButtonField("")
-
-
-    class ItemDateForm(Form):
-        """Fields for date."""
-
-        comparison = SelectField(
-            "Comparison",
-            choices=[("before", "Before"), ("after", "After")],
-            validate_choice=False,
-        )
-        date = DateField(
-            label="Date", format="%Y-%m-%d", validators=[validators.Optional()]
-        )
-
-    class ItemTypeNameForm(Form):
-        """Fields for Type, Name and Exact Match."""
-
-        item_name = StringField(
-            "Specify name",
-            render_kw={
-                "placeholder": "Enter the name of the data object or collection"
-            },
-        )
-
-        item_type = RadioField(
-            "Choose data type",  # add any option
-            choices=[
-                ("data_object", "Data object"),
-                ("collection", "Collection"),
-            ],
-            default="data_object",
-            # validate_choice=False,
-        )
-
-        comparison = BooleanField("Exact match")
-
     # create a list of first level collections to refine the search
+
     base = g.irods_session.collections.get(f"/{g.irods_session.zone}/home")
     subtrees = [base.path] + [collection.path for collection in base.subcollections]
     user_home = f"{g.irods_session.zone}/home/{g.irods_session.username}"
-
-    class CollectionForm(Form):
-        """Select field with possible collections."""
-
-        collection = SelectField(
-            "Choose collection",
-            validate_choice=False,
-            choices=subtrees,
-        )
-
-    class CatalogSearchForm(Form):
-        """Class for catalog search form."""
-
-        item_name = FormField(ItemTypeNameForm, label="Name")
-        collection_subtree = FormField(CollectionForm, label="Subtree filter")
-        create_date = FormField(ItemDateForm, label="Created")
-        mod_date = FormField(ItemDateForm, label="Modified")
-        schema_metadata = FormField(AVUSchema, label="Metadata")
-        schema_metadata_no_label = FieldList(
-            FormField(AVUSchemaNoLabel),
-            min_entries=0,
-        )
-        non_schema_metadata = FormField(AVUForm, label="Non schema metadata")
-        non_schema_metadata_no_label = FieldList(
-            FormField(AVUFormNoLabel),
-            min_entries=0,
-        )
-
-        per_page = HiddenField("per_page")
-        total = HiddenField("total")
-        submit = SubmitField("Search")
-
-        # data_object_avu = FormField(
-        #     AVUFormSuggestionListDO, label="Data object metadata"
-        # )
-        # collection_avu = FormField(
-        #     AVUFormSuggestionListCO, label="Collection metadata"
-        # )
-
-    # ------------------ ??????????? --------------------- #
 
     current_app.logger.info(request.values)
     data_object_meta_names = get_meta_attribute_names(
@@ -610,7 +403,7 @@ def catalog_search2():
     # )
 
     # pprint(cache)
-    search_form = CatalogSearchForm(formdata=request.values, per_page=20)
+    search_form = CatalogSearchForm(formdata=request.values, per_page=20, schemas=list(existing_schemas.items()), subtrees=subtrees)
 
     # import pdb
     # pdb.set_trace()
@@ -635,7 +428,7 @@ def catalog_search2():
     #TODO: make more robust: currently it filters string -8 (-schema, -meta_a, -meta_v) and then removes duplicates by creating a set
     no_label_fields_dict = {f"no_label_{v}": v for v in no_label_fields}
 
-    
+
 
     if request.values.get("submit", False) == "Search" and search_form.validate():
         import time
