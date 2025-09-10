@@ -267,6 +267,40 @@ def build_basic_query_filters(form):
     return filters
 
 
+
+def create_nested_label(key, flattened_schema):
+    parts = key.split(".")
+    ids = parts[2:]
+    label_list = [
+        flattened_schema[".".join(parts[:2] + ids[: i + 1])][
+            "label"
+        ]  # add +1 here because range starts from 0
+        for i in range(len(ids))
+    ]
+    print(label_list)
+    return " / ".join(label_list)
+
+
+def restructure_item(item, flattened_schema):
+    key, value = item
+    restructured_item = {
+        key: {
+            "type": ("label" if value["type"] == "object" else value["type"]),
+            "enum": (value.get("enum", None)),
+            "level": value["level"],
+            "parent": (
+                None
+                if value["level"] == 0
+                else flattened_schema[".".join(str(key).split(".")[:-1])]["label"]
+            ),
+            "title": value["label"],  # actual title
+            "display_label": (
+                create_nested_label(key, flattened_schema) if value["type"] == "object" else "none"
+            ),  # label with hierarchy for display in select
+        }
+    }
+    return restructured_item
+
 def transform_schema(schema, schema_manager):
     schema_dict = json.loads(schema_manager.load_schema(schema))
 
@@ -279,39 +313,9 @@ def transform_schema(schema, schema_manager):
     )
 
     # print("this is the schema:", flattened_schema)
-    def create_nested_label(key):
-        parts = key.split(".")
-        ids = parts[2:]
-        label_list = [
-            flattened_schema[".".join(parts[:2] + ids[: i + 1])][
-                "label"
-            ]  # add +1 here because range starts from 0
-            for i in range(len(ids))
-        ]
-        print(label_list)
-        return " / ".join(label_list)
-
-    def restructure_item(item):
-        key, value = item
-        restructured_item = {
-            key: {
-                "type": ("label" if value["type"] == "object" else value["type"]),
-                "enum": (value.get("enum", None)),
-                "level": value["level"],
-                "parent": (
-                    None
-                    if value["level"] == 0
-                    else flattened_schema[".".join(str(key).split(".")[:-1])]["label"]
-                ),
-                "title": value["label"],  # actual title
-                "display_label": (
-                    create_nested_label(key) if value["type"] == "object" else "none"
-                ),  # label with hierarchy for display in select
-            }
-        }
-        return restructured_item
-
-    return [restructure_item(item) for item in flattened_schema.items()]
+    # create_nested_label(flattened_schema)
+    # restructure_item(flattened_schema)
+    return [restructure_item(item, flattened_schema) for item in flattened_schema.items()]
 
 
 def get_realm_schemas(realm):
@@ -324,19 +328,19 @@ def get_realm_schemas(realm):
         filters=["published"]
     )  # TODO archived schemas should also be searchable ...
 
-    existing_schemas = {
+    schemas_titles = {
         schema_name: schema["title"] for schema_name, schema in my_schemas.items()
     }
-    if not existing_schemas:
+    if not schemas_titles:
         return None
 
     schemas_dict = {
-        k: transform_schema(k, schema_manager) for k in existing_schemas.keys()
+        k: transform_schema(k, schema_manager) for k in schemas_titles.keys()
     }  # transformed schemas dictionary to feed Advanced Search
 
-    if len(existing_schemas) == 0:
-        existing_schemas = {"no_schemas": "no schemas found"}
-    return existing_schemas, schemas_dict
+    if len(schemas_titles) == 0:
+        schemas_titles = {"no_schemas": "no schemas found"}
+    return schemas_titles, schemas_dict
 
 
 @basic_search2_bp.route("/catalog/search2", methods=["GET", "POST"])
@@ -353,14 +357,15 @@ def catalog_search2():
     home = f"/{g.irods_session.zone}/home"
     # allow querying for schemas of any realm the user has access to
     realm_schemas = {realm: get_realm_schemas(realm) for realm in get_realms_for_current_user(g.irods_session, home)}
-
-    existing_schemas = {
+    #get_realm_schemas returns a tuple with [0] -> titles and [1] -> transformed schemas
+ 
+    schemas_titles = {
         k: v
         for schema in realm_schemas.values()
         if schema is not None
-        for k, v in schema[0].items()
+        for k, v in schema[0].items()  
     }
-    schemas_dict = {
+    schemas_transformed = {
         k: v
         for schema in realm_schemas.values()
         if schema is not None
@@ -403,7 +408,7 @@ def catalog_search2():
     # )
 
     # pprint(cache)
-    search_form = CatalogSearchForm(formdata=request.values, per_page=20, schemas=list(existing_schemas.items()), subtrees=subtrees)
+    search_form = CatalogSearchForm(formdata=request.values, per_page=20, schemas=list(schemas_titles.items()), subtrees=subtrees)
 
     # import pdb
     # pdb.set_trace()
@@ -554,7 +559,7 @@ def catalog_search2():
 
 
         no_label_schema = search_form.schema_metadata.schema.data
-        choices_tuple = [(key, value["title"]) for schema in schemas_dict[no_label_schema] for key, value in schema.items()]
+        choices_tuple = [(key, value["title"]) for schema in schemas_transformed[no_label_schema] for key, value in schema.items()]
         choices_list = [choice[1] for choice in choices_tuple]
         search_form.schema_metadata.meta_a.choices = choices_list
 
@@ -581,8 +586,8 @@ def catalog_search2():
             search_time=end - start,
             meta_names=meta_names,
             pagination=pagination,
-            schemas_dict=schemas_dict,
-            existing_schemas=existing_schemas,
+            schemas_dict=schemas_transformed,
+            existing_schemas=schemas_titles,
             search_fields=request.values.to_dict(),
             no_label_fields_dict=no_label_fields_dict,
         )
@@ -595,8 +600,8 @@ def catalog_search2():
             results=[],
             meta_names=meta_names,
             # collection_tree=collection_tree,
-            schemas_dict=schemas_dict,
-            existing_schemas=existing_schemas,
+            schemas_dict=schemas_transformed,
+            existing_schemas=schemas_titles,
             search_fields={},
             no_label_fields_dict={},
         )
