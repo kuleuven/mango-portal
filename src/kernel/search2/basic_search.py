@@ -347,6 +347,7 @@ def transform_schema(schema, schema_manager):
             ]  # add +1 here because range starts from 0
             for i in range(len(ids))
         ]
+        print(label_list)
         return " / ".join(label_list)
 
     def restructure_item(item):
@@ -412,7 +413,7 @@ def catalog_search2():
 
     home = f"/{g.irods_session.zone}/home"
     # allow querying for schemas of any realm the user has access to
-    realm_schemas = get_realms_for_current_user(g.irods.session, home)
+    realm_schemas = {realm: get_realm_schemas(realm) for realm in get_realms_for_current_user(g.irods_session, home)}
 
     existing_schemas = {
         k: v
@@ -446,44 +447,46 @@ def catalog_search2():
             return f"""<button {params}>{label}</button>"""
 
     class ButtonField(StringField):
+        """Remove row button"""
         widget = ButtonWidget()
 
     class AVUForm(Form):
-        """AVU input field basic and label."""
+        """AVU input no schema with label"""
 
-        meta_attribute = StringField("Attribute name")  # , [validators.Length(min=2)])
-        meta_value = StringField("Attribute value")  # , [validators.Length(min=2)])
-        meta_unit = StringField("Unit value")  # , [validators.Length(min=2)])
+        meta_attribute = StringField("Attribute name")  
+        meta_value = StringField("Attribute value")  
+        meta_unit = StringField("Unit value")  
         remove = ButtonField("      ")
 
-        # data object variant with <data> search suggestions
 
     class AVUFormNoLabel(Form):
-        """AVU input no label."""
+        """AVU input no schema and no label"""
 
         meta_attribute = StringField("")
         meta_value = StringField("")
-        meta_unit = StringField("")  # , [validators.Length(min=2)])
+        meta_unit = StringField("")  
         remove = ButtonField("")
 
     class AVUSchema(Form):
-        """Input field for schema metadata with suggestion list and label."""
+        """Input field for schema metadata with suggestion list and label"""
 
         schema = SelectField(
             "Schema",
             validate_choice=False,
             choices=list(existing_schemas.items()),
+            render_kw={"data-target": "meta-schema-label"}
         )
-
-        # meta_a = StringField("Attribute name", render_kw={"list": "search_meta_names"})
         meta_a = SelectField(
-            "Attribute name", validate_choice=False
-        )  # we don't validate because choices will be created dynamically
+            "Attribute name", validate_choice=False,
+               render_kw={"data-target": "meta-attribute-label"}   # we don't validate because choices will be created dynamically
+        )  
         meta_v = StringField("Attribute value")
         remove = ButtonField("      ")
 
+
+
     class AVUSchemaNoLabel(Form):
-        """AVU field for schema metadata with suggestion list and no label."""
+        """AVU field for schema metadata with suggestion list and no label"""
 
         schema = SelectField(
             "",
@@ -491,29 +494,12 @@ def catalog_search2():
             choices=list(existing_schemas.items()),
             render_kw={"data-target": "meta-schema"},
         )
-
-        # meta_a = StringField("", render_kw={"list": "search_meta_names"})
         meta_a = SelectField(
             "", validate_choice=False, render_kw={"data-target": "meta-attribute"}
         )
         meta_v = StringField("", render_kw={"data-target": "meta-value"})
         remove = ButtonField("")
 
-    # # data object variant with <data> search suggestions
-    # class AVUFormSuggestionListDO(Form):
-    #     meta_a = StringField(
-    #         "Attribute name", render_kw={"list": "do_search_meta_names"}
-    #     )
-    #     meta_v = StringField("Attribute value")
-    #     meta_u = StringField("Attribute unit")
-
-    # # collection variant with <data> search suggestions
-    # class AVUFormSuggestionListCO(Form):
-    #     meta_a = StringField(
-    #         "Attribute name", render_kw={"list": "co_search_meta_names"}
-    #     )
-    #     meta_v = StringField("Attribute value")
-    #     meta_u = StringField("Attribute unit")
 
     class ItemDateForm(Form):
         """Fields for date."""
@@ -626,6 +612,14 @@ def catalog_search2():
     # pprint(cache)
     search_form = CatalogSearchForm(formdata=request.values, per_page=20)
 
+    # import pdb
+    # pdb.set_trace()
+
+    # schema_value = search_form.schema_metadata.schema.data
+    # search_form.schema_metadata.meta_a.choices = [schema_dict[schema_value]
+
+
+
     # print(search_form.validate())
 
     # ----------------------- run search -------------------- #
@@ -641,8 +635,11 @@ def catalog_search2():
     #TODO: make more robust: currently it filters string -8 (-schema, -meta_a, -meta_v) and then removes duplicates by creating a set
     no_label_fields_dict = {f"no_label_{v}": v for v in no_label_fields}
 
+    
+
     if request.values.get("submit", False) == "Search" and search_form.validate():
         import time
+
 
         start = time.time()
         filters = build_basic_query_filters(request.values)
@@ -761,6 +758,13 @@ def catalog_search2():
             # show_single_page=True,
         )
         # pprint(pagination)
+
+
+        no_label_schema = search_form.schema_metadata.schema.data
+        choices_tuple = [(key, value["title"]) for schema in schemas_dict[no_label_schema] for key, value in schema.items()]
+        choices_list = [choice[1] for choice in choices_tuple]
+        search_form.schema_metadata.meta_a.choices = choices_list
+
 
         search_template = "search/basic_catalog_search.html.j2"
 

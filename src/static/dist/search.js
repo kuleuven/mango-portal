@@ -19,30 +19,26 @@
 
         document.addEventListener("DOMContentLoaded", function() { // update the schema & attribute fields after search
             // fixed schema metadata (label)
-            document.getElementById("schema_metadata-schema").value = resultsObject["schema_metadata-schema"];
-            document.getElementById("schema_metadata-schema").dispatchEvent(new Event("change", { // fake change event
-                bubbles: true
-            }));
-            document.getElementById("schema_metadata-meta_a").value = resultsObject["schema_metadata-meta_a"];
-            document.getElementById("schema_metadata-meta_a").dispatchEvent(new Event("change", { // fake change event
-                bubbles: true
-            }));
-            document.getElementById("schema_metadata-meta_v").value = resultsObject["schema_metadata-meta_v"];
+
+            // document.getElementById("schema_metadata-meta_a").dispatchEvent(new Event("change", { // fake change event
+            //     bubbles: true
+            // }));
+            // document.getElementById("schema_metadata-meta_v").value = resultsObject["schema_metadata-meta_v"];
 
 
-            // dynamic schema metadata (no label)
-            Object.entries(noLabelFields).forEach(([k, counterMd]) => {
-                console.log(k, counterMd);
-                document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).value = resultsObject[`schema_metadata_no_label-${counterMd}-schema`];
-                document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).dispatchEvent(new Event("change", {
-                    bubbles: true
-                }));
-                document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_a`];
-                document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).dispatchEvent(new Event("change", { // fake change event
-                    bubbles: true
-                }));
-                document.getElementById(`schema_metadata_no_label-${counterMd}-meta_v`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_v`];
-            })
+            // // dynamic schema metadata (no label)
+            // Object.entries(noLabelFields).forEach(([k, counterMd]) => {
+            //     console.log(k, counterMd);
+            //     // document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).value = resultsObject[`schema_metadata_no_label-${counterMd}-schema`];
+            //     // document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).dispatchEvent(new Event("change", {
+            //     //     bubbles: true
+            //     // }));
+            //     // document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_a`];
+            //     document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).dispatchEvent(new Event("change", { // fake change event
+            //         bubbles: true
+            //     }));
+            //     document.getElementById(`schema_metadata_no_label-${counterMd}-meta_v`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_v`];
+            // })
 
 
             //code to add remove function on page reload
@@ -52,14 +48,18 @@
             }));
         });
 
-        // make a list of all select elements : even = schema, odd = attributes
-        const selectElements = document.querySelectorAll("#metadataFields .form-select");
 
 
-        [...selectElements].forEach(function(schema, index) {
-            if (index % 2 === 0) { // loop over the even select elements that contain the schemas
+
+    const selectSchemas = document.querySelectorAll('[data-target="meta-schema-label"], [data-target="meta-schema"]');
+    const selectAttributes = document.querySelectorAll('[data-target="meta-attribute-label"], [data-target="meta-attribute"]');
+
+    console.log(selectAttributes);
+
+
+        [...selectSchemas].forEach(function(schema, index) {
                 schema.addEventListener('change', function() {
-                    let attribute = [...selectElements][index + 1];
+                    let attribute = [...selectAttributes][index];
                     attribute.innerHTML = "";
                     const optgroups = {} // create optgroups obj to store optgroups in
                     if (schema.value == "") { // if no schema is selected 
@@ -97,7 +97,6 @@
                     });
                     prependPlaceholder(attribute, "choose an attribute");
                 });
-            };
         });
 
         function getAttributeValueElement(attribute) { // get attribute value element 
@@ -209,17 +208,16 @@
         //  code to add type handler to attributes on page reload
         if (document.getElementById("schemaMetadata").childElementCount > 1) {
             let noLabelCounter;
-            [...selectElements].forEach(function(schema, index) {
-                if (index % 2 !== 0) { // get odd select elements (= attributes)
-                    if (index === 1) { // skip the first one
+            [...selectAttributes].forEach(function(schema, index) {
+                    if (index === 0) { // skip the first one
                         return;
                     }
-                    if (index === 3) {
+                    if (index === 1) {
                         noLabelCounter = 0;
                     } else {
                         noLabelCounter += 1;
                     }
-                    let attributeSelectElement = [...selectElements][index];
+                    let attributeSelectElement = [...selectAttributes][index];
 
                     function createCheckTypeHandler2(noLabelCounter) {
                         return function() {
@@ -228,7 +226,6 @@
                     }
                     let handler = createCheckTypeHandler2(noLabelCounter); //use a closure to freeze function parameters
                     attributeSelectElement.addEventListener("change", handler);
-                }
             })
         }
 
@@ -237,7 +234,6 @@
         function removeRow(button) {
             //function to remove a row
             const row = button.closest(".row")
-            console.log(row)
             row.parentNode.removeChild(row);
             resetIndex();
 
