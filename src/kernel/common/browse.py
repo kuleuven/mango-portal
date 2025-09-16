@@ -1,5 +1,8 @@
 from curses import meta
 import flask
+
+from collections.abc import Mapping
+
 from flask import (
     Blueprint,
     render_template,
@@ -373,7 +376,25 @@ def collection_browse(collection=None):
         # json_template_dir = get_metadata_schema_dir(g.irods_session)
 
         for schema in grouped_metadata["schema"]:  # schema_labels[schema][item.name]:
+
             if schema_manager:
+
+                if schema not in schemas:
+                    if schema == "other":
+                        pass
+                    else:
+                        def flatten_nonexistent(schema):
+                            flattened = {}
+                            for key, value in schema.items():
+                                if isinstance(value, (dict, Mapping)):
+                                    nested = flatten_nonexistent(value)
+                                    flattened.update(nested)
+                                else:
+                                    flattened[key] = value
+                            return flattened
+                        
+                        grouped_metadata["schema"][schema] = flatten_nonexistent(grouped_metadata["schema"][schema])
+                        
                 try:
                     if version := grouped_metadata["schema"][schema].get(
                         f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}.__version__",
@@ -392,6 +413,8 @@ def collection_browse(collection=None):
                             schema_manager.load_schema(schema, status="published")
                         )
 
+                    print(schema_dict)
+
                     if schema_dict:
                         schema_labels[schema] = flatten_schema(
                             schema_dict,
@@ -405,6 +428,9 @@ def collection_browse(collection=None):
                         )
                     else:
                         logging.info(f"No labels found for {schema}")
+                    
+  
+
                 except Exception as e:
                     flash_error(
                         e,
@@ -414,6 +440,7 @@ def collection_browse(collection=None):
                         f"Encountered error loading schema {schema} for fetching labels {e}"
                     )
                     pass
+
 
         # now re-order the grouped entries according to the order from the flattened file
         # for schema in schema_labels:
