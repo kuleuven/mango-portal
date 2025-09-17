@@ -8,7 +8,7 @@ function prependPlaceholder(schema, placeholder_text) {
     schema.selectedIndex = "0";
 };
 
-document.addEventListener("DOMContentLoaded", function() { // update the schema & attribute fields after search
+document.addEventListener("DOMContentLoaded", function () { // update the schema & attribute fields after search
     // fixed schema metadata (label)
 
     // document.getElementById("schema_metadata-meta_a").dispatchEvent(new Event("change", { // fake change event
@@ -39,9 +39,6 @@ document.addEventListener("DOMContentLoaded", function() { // update the schema 
     // }));
 });
 
-function addRow() {
-    document.getElementById("schemaMetadata").appendChild(document.getElementById("schemaMetadata").lastElementChild.cloneNode(true))
-}
 
 //  if (schema.value == "") { // if no schema is selected 
 //         prependPlaceholder(schema, "choose a schema");
@@ -62,23 +59,18 @@ const selectSchemas = document.querySelectorAll("[name$='-schema']");
 
 function updateAttributeChoice(schemaDropdown, schemasObject) {
     let attribute = schemaDropdown.closest(".row").querySelector("[name$='meta_a']")
-    attribute.innerHTML = "" //clear the attribute dropdown
-    const optgroups = {} 
+    attribute.innerHTML = "" // clear the attribute select field each time 
+    const optgroups = {}
     for (const [key, value] of Object.entries(schemasObject[schemaDropdown.value])) {
         console.log(key)
-        if (key.startsWith("mgs", 1)) {
-            console.log(value);
-            console.log("this is undefined")
-            continue;
-        }
-        if (value.type === "label") { 
+        if (value.type === "label") {
             console.log(value.type)
-            let optgroup = document.createElement("optgroup"); 
+            let optgroup = document.createElement("optgroup");
             optgroup.setAttribute("label", value.display_label);
             attribute.add(optgroup);
-            optgroups[value.title] = optgroup; 
-        } else { 
-            let option = document.createElement("option"); 
+            optgroups[value.title] = optgroup;
+        } else {
+            let option = document.createElement("option");
             option.innerHTML = value.title;
             option.setAttribute("value", key);
             option.setAttribute("type", value.type);
@@ -86,17 +78,13 @@ function updateAttributeChoice(schemaDropdown, schemasObject) {
                 option.setAttribute("enum", value.enum)
             }
             if (!value.parent) {
-                attribute.add(option); 
-            } 
+                attribute.add(option);
+            }
             else {
-                optgroups[value.parent].appendChild(option) 
+                optgroups[value.parent].appendChild(option)
             };
         };
-
-        }
-        //});
-    
-
+    };
 };
 
 selectSchemas.forEach((schemaDropdown) => {
@@ -276,7 +264,10 @@ function removeRow(button) {
 // }
 
 
+function changeIds() {
 
+
+}
 
 // disable first button:
 // document.getElementById("schema_metadata-remove").disabled = true;
@@ -293,6 +284,23 @@ function removeRow(button) {
 // console.log("non schema counter:", counterSchema)
 
 
+
+button = document.getElementById("addSchemaField");
+button.addEventListener("click", function () {
+    addRow();
+    
+})
+
+
+
+function addRow() {
+    let container = document.getElementById("schemaMetadata")
+    let lastRow = container.lastElementChild
+    let clonedRow = lastRow.cloneNode(true)
+    let clonedSchema = clonedRow.querySelector("[id$='-schema']")
+    clonedSchema.addEventListener('change', () => updateAttributeChoice(clonedSchema, schemasObject))
+    container.appendChild(clonedRow)
+}
 
 // //schema
 // button = document.getElementById("addSchemaField");
