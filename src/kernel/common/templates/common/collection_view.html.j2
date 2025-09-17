@@ -66,6 +66,31 @@
                 data-bs-target="#addCollection">Add collection</button>
       </div>
       <div class="col-8 mr-auto">
+        <div class="row">
+        <form action="{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}"
+                  method="post" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="input-group">
+            <input type="file" class="form-control" id="uploadFolder" name="uploadFolder" aria-describedby="submitFolder" webkitdirectory multiple/>
+            <button class="btn btn-primary" id="submitFolder" type="submit">
+              <span class="spinner-border spinner-border-sm visually-hidden" aria-hidden="true"></span>
+              <span role="status">Upload folders...</span>
+            </button>
+          </div>
+          <script>
+          document.getElementById("uploadFolder").addEventListener("change", (event) => {
+            for (const file of event.target.files) {
+              console.log("I found this file: ", file.webkitRelativePath)
+            }
+          const submitButton = document.querySelector("button#submitFolder")
+            submitButton.addEventListener("click", () => {
+              submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
+            });
+          })
+          </script>
+        </form>
+        </div>
+        <div class="row">
         {# <form action="{{ url_for('browse_bp.collection_upload_file')}}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <div class="input-group mb-3">
@@ -87,6 +112,7 @@
             {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /> #}
           </form>
           <button class="btn btn-primary mt-2 float-end" id="submit-all">Start uploading all files</button>
+        </div>
         </div>
       </div>
     </div>

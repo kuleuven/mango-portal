@@ -867,6 +867,44 @@ def delete_data_object():
     return redirect(request.referrer)
 
 
+@browse_bp.route("/collection/upload/folder/<path:collection>", methods=["POST", "PUT"])
+def test_folder_upload(collection: str):
+    collection = unquote(collection)
+    logging.info(f"Request for file upload {collection}")
+    if not collection.startswith("/"):
+        collection = "/" + collection
+    for file in request.files.getlist("uploadFolder"):
+        pathlib_file = Path(file.filename)
+        subcollection = Path(collection) / pathlib_file.parent
+        upload_with_stream(str(subcollection), pathlib_file.name, file.stream)
+    return redirect(request.referrer)
+
+
+def upload_with_stream(collection: str, filename: str, stream):
+    irods_session: iRODSSession = g.irods_session
+    if not irods_session.collections.exists(collection):
+        irods_session.collections.create(collection, recurse=True)
+    data_object = irods_session.data_objects.create(
+        f"{collection}/{filename}", force=True
+    )
+    with data_object.open(mode="w") as do_handle:
+        total_bytes = 0
+        start = time.perf_counter()
+        while True:
+            CHUNK_SIZE = 4 * 1024 * 1024
+            chunk = stream.read(CHUNK_SIZE)
+            actual_chunk_length = len(chunk)
+            total_bytes += actual_chunk_length
+            if actual_chunk_length == 0:
+                break
+            do_handle.write(chunk)
+        delta = time.perf_counter() - start
+        logging.info(
+            f"Wrote in total {total_bytes} bytes to irods in {delta} secs or {total_bytes/delta} bytes per second"
+        )
+    return {}
+
+
 @browse_bp.route("/collection/upload/stream/<path:collection>", methods=["POST", "PUT"])
 @csrf.exempt
 def collection_upload_stream(collection: str):
@@ -876,40 +914,18 @@ def collection_upload_stream(collection: str):
     if not collection.startswith("/"):
         collection = "/" + collection
 
-    if filename := request.headers.get("filename", None):
+    if filename := request.headers.get("Filename", None):
         logging.info(f"Request to upload file {filename}")
 
-        def do_upload():
-            irods_session: iRODSSession = g.irods_session
-            data_object = irods_session.data_objects.create(
-                f"{collection}/{filename}", force=True
-            )
-            with data_object.open(mode="w") as do_handle:
-                total_bytes = 0
-                start = time.perf_counter()
-                while True:
-                    CHUNK_SIZE = 4 * 1024 * 1024
-                    chunk = request.stream.read(CHUNK_SIZE)
-                    actual_chunk_length = len(chunk)
-                    total_bytes += actual_chunk_length
-                    if actual_chunk_length == 0:
-                        break
-                    do_handle.write(chunk)
-                delta = time.perf_counter() - start
-                logging.info(
-                    f"Wrote in total {total_bytes} bytes to irods in {delta} secs or {total_bytes/delta} bytes per second"
-                )
-            return {}
-
-        return do_upload()
+        return upload_with_stream(collection, filename, request.stream)
     else:
-        logging.info(f"No file name present")
+        logging.info("No file name present")
         return make_response(flask.jsonify({"message": "missing filename"}), 400)
 
 
 @browse_bp.route("/collection/upload/file", methods=["POST", "PUT"])
 def collection_upload_file():
-    """ 
+    """
     Deprecated, use collection_upload_stream route instead
     """
     MANGO_STORAGE_BASE_PATH = Path("storage")
