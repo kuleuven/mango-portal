@@ -72,15 +72,8 @@ a.right {
             <div class="row">
                 <h5>Schema metadata</h5>
                 <div id="schemaMetadata">
-                    {{ render_form_row([search_form.schema_metadata.schema , search_form.schema_metadata.meta_a, search_form.schema_metadata.meta_v, search_form.schema_metadata.remove],
-                                        col_map = {
-                                        "schema_metadata-schema": 'col-md-4',
-                                        "schema_metadata-meta_a" : 'col-md-3',
-                                        "schema_metadata-meta_v": 'col-md-4',
-                                        "schema_metadata-remove": 'col-md-1 remove'},
-                                        form_group_classes="col-mb-0") }}
-                    <div id="labelMetadata">
-                        {% for subform in search_form.schema_metadata_no_label %}
+                
+                        {% for subform in search_form.schema_metadata %}
                             {{ render_form_row([subform.schema, subform.meta_a, subform.meta_v, subform.remove],
                                                         col_map = {
                                                         subform.id ~ '-schema': 'col-md-4 meta_schema',
@@ -89,7 +82,6 @@ a.right {
                                                         subform.id ~ '-remove': 'col-md-1 remove'},
                                                         form_group_classes="col-mb-0") }}
                         {% endfor %}
-                    </div>
                 </div>
                 <div class="d-flex justify-content-end">
                     <button type="button" id="addSchemaField" class="btn btn-secondary me-3">

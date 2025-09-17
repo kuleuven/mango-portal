@@ -1,51 +1,50 @@
 from wtforms import (
-    StringField,
-    SelectField,
-    validators,
-    SubmitField,
-    HiddenField,
-    FieldList,
-    FormField,
-    DateField,
-    Form,
-    SelectMultipleField,
-    RadioField,
     BooleanField,
+    DateField,
+    FieldList,
+    Form,
+    FormField,
+    HiddenField,
+    RadioField,
+    SelectField,
+    SelectMultipleField,
+    StringField,
+    SubmitField,
+    validators,
 )
 from wtforms.widgets import html_params
 
 
-
 class ButtonWidget(object):
-        """render a button"""
+    """render a button"""
 
-        input_type = "button"
-        html_params = staticmethod(html_params)
+    input_type = "button"
+    html_params = staticmethod(html_params)
 
-        def __call__(self, field, **kwargs):
-            kwargs.setdefault("id", field.id)
-            kwargs.setdefault("type", self.input_type)
-            if "value" not in kwargs:
-                kwargs["value"] = field._value()
-            params = self.html_params(name=field.name, **kwargs)
-            label = '<i class="bi bi-trash"></i>'  # field.label.text
+    def __call__(self, field, **kwargs):
+        kwargs.setdefault("id", field.id)
+        kwargs.setdefault("type", self.input_type)
+        if "value" not in kwargs:
+            kwargs["value"] = field._value()
+        params = self.html_params(name=field.name, **kwargs)
+        label = '<i class="bi bi-trash"></i>'  # field.label.text
 
-            return f"""<button {params}>{label}</button>"""
+        return f"""<button {params}>{label}</button>"""
+
 
 class ButtonField(StringField):
     """Remove row button"""
-    widget = ButtonWidget()
 
+    widget = ButtonWidget()
 
 
 class AVUForm(Form):
     """AVU input no schema with label"""
 
-    meta_attribute = StringField("Attribute name")  
-    meta_value = StringField("Attribute value")  
-    meta_unit = StringField("Unit value")  
+    meta_attribute = StringField("Attribute name")
+    meta_value = StringField("Attribute value")
+    meta_unit = StringField("Unit value")
     remove = ButtonField("      ")
-
 
 
 class AVUFormNoLabel(Form):
@@ -53,9 +52,8 @@ class AVUFormNoLabel(Form):
 
     meta_attribute = StringField("")
     meta_value = StringField("")
-    meta_unit = StringField("")  
+    meta_unit = StringField("")
     remove = ButtonField("")
-
 
 
 class AVUSchema(Form):
@@ -65,31 +63,18 @@ class AVUSchema(Form):
         "Schema",
         validate_choice=False,
         choices=[],
-        render_kw={"data-target": "meta-schema-label"}
+        render_kw={"data-target": "meta-schema-label"},
     )
     meta_a = SelectField(
-        "Attribute name", validate_choice=False,
-            render_kw={"data-target": "meta-attribute-label"}   # we don't validate because choices will be created dynamically
-    )  
+        "Attribute name",
+        validate_choice=False,
+        render_kw={
+            "data-target": "meta-attribute-label"
+        },  # we don't validate because choices will be created dynamically
+    )
     meta_v = StringField("Attribute value")
     remove = ButtonField("      ")
 
-
-
-class AVUSchemaNoLabel(Form):
-    """AVU field for schema metadata with suggestion list and no label"""
-
-    schema = SelectField(
-        "",
-        validate_choice=False,
-        choices=[],
-        render_kw={"data-target": "meta-schema"},
-    )
-    meta_a = SelectField(
-        "", validate_choice=False, render_kw={"data-target": "meta-attribute"}
-    )
-    meta_v = StringField("", render_kw={"data-target": "meta-value"})
-    remove = ButtonField("")
 
 
 class ItemDateForm(Form):
@@ -104,14 +89,13 @@ class ItemDateForm(Form):
         label="Date", format="%Y-%m-%d", validators=[validators.Optional()]
     )
 
+
 class ItemTypeNameForm(Form):
     """Fields for Type, Name and Exact Match."""
 
     item_name = StringField(
         "Specify name",
-        render_kw={
-            "placeholder": "Enter the name of the data object or collection"
-        },
+        render_kw={"placeholder": "Enter the name of the data object or collection"},
     )
 
     item_type = RadioField(
@@ -127,14 +111,8 @@ class ItemTypeNameForm(Form):
     comparison = BooleanField("Exact match")
 
 
-
 class CollectionForm(Form):
     """Select field with possible collections."""
-
-    # def __init__(self, subtrees=None, *args, **kwargs):
-    #         super().__init__(*args, **kwargs)
-    #         if subtrees:
-    #             self.collection.choices = subtrees
 
     collection = SelectField(
         "Choose collection",
@@ -143,34 +121,26 @@ class CollectionForm(Form):
     )
 
 
-
-
 class CatalogSearchForm(Form):
     """Class for catalog search form."""
 
     def __init__(self, subtrees=None, schemas=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if subtrees:
-              self.collection_subtree.collection.choices = subtrees
+            self.collection_subtree.collection.choices = subtrees
         #  else:
         #       self.collection_subtree.choices = []
         if schemas:
-            self.schema_metadata.schema.choices = schemas 
-            #  self.schema_metadata_no_label.schema.choices = schemas
-             
-            
-            for field in self.schema_metadata_no_label:
+            for field in self.schema_metadata:
                 field.schema.choices = schemas
 
-             
     item_name = FormField(ItemTypeNameForm, label="Name")
     collection_subtree = FormField(CollectionForm, label="Subtree filter")
     create_date = FormField(ItemDateForm, label="Created")
     mod_date = FormField(ItemDateForm, label="Modified")
-    schema_metadata = FormField(AVUSchema, label="Metadata")
-    schema_metadata_no_label = FieldList(
-        FormField(AVUSchemaNoLabel),
-        min_entries=0,
+    schema_metadata = FieldList(
+        FormField(AVUSchema, label="metadata"),
+        min_entries=1,
     )
     non_schema_metadata = FormField(AVUForm, label="Non schema metadata")
     non_schema_metadata_no_label = FieldList(

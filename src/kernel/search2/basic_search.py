@@ -226,7 +226,6 @@ def build_basic_query_filters(form):
         except:
             break
 
-
     if form["create_date-date"]:
         column = (
             DataObject.create_time
@@ -267,7 +266,6 @@ def build_basic_query_filters(form):
     return filters
 
 
-
 def create_nested_label(key, flattened_schema):
     parts = key.split(".")
     ids = parts[2:]
@@ -295,11 +293,14 @@ def restructure_item(item, flattened_schema):
             ),
             "title": value["label"],  # actual title
             "display_label": (
-                create_nested_label(key, flattened_schema) if value["type"] == "object" else "none"
+                create_nested_label(key, flattened_schema)
+                if value["type"] == "object"
+                else "none"
             ),  # label with hierarchy for display in select
         }
     }
     return restructured_item
+
 
 def transform_schema(schema, schema_manager):
     schema_dict = json.loads(schema_manager.load_schema(schema))
@@ -312,10 +313,16 @@ def transform_schema(schema, schema_manager):
         add_enum=True,
     )
 
+    for item in flattened_schema.items():
+        schema_dict |= restructure_item(item, flattened_schema)  
+    
+    return schema_dict
+
     # print("this is the schema:", flattened_schema)
-    # create_nested_label(flattened_schema)
-    # restructure_item(flattened_schema)
-    return [restructure_item(item, flattened_schema) for item in flattened_schema.items()]
+
+    # return {k : v for k,v in 
+    #     restructure_item(item, flattened_schema) for item in flattened_schema.items()
+    # }
 
 
 def get_realm_schemas(realm):
@@ -356,14 +363,17 @@ def catalog_search2():
 
     home = f"/{g.irods_session.zone}/home"
     # allow querying for schemas of any realm the user has access to
-    realm_schemas = {realm: get_realm_schemas(realm) for realm in get_realms_for_current_user(g.irods_session, home)}
-    #get_realm_schemas returns a tuple with [0] -> titles and [1] -> transformed schemas
- 
+    realm_schemas = {
+        realm: get_realm_schemas(realm)
+        for realm in get_realms_for_current_user(g.irods_session, home)
+    }
+    # get_realm_schemas returns a tuple with [0] -> titles and [1] -> transformed schemas
+
     schemas_titles = {
         k: v
         for schema in realm_schemas.values()
         if schema is not None
-        for k, v in schema[0].items()  
+        for k, v in schema[0].items()
     }
     schemas_transformed = {
         k: v
@@ -407,16 +417,24 @@ def catalog_search2():
     #     [collection_tree_to_dict(g.irods_session.collections.get(g.user_home))]
     # )
 
-    # pprint(cache)
-    search_form = CatalogSearchForm(formdata=request.values, per_page=20, schemas=list(schemas_titles.items()), subtrees=subtrees)
-
     # import pdb
     # pdb.set_trace()
+    # pprint(cache)
 
+    # breakpoint()
+    
+    search_form = CatalogSearchForm(
+        formdata=request.values,
+        per_page=20,
+        schemas=list(schemas_titles.items()),
+        subtrees=subtrees,
+    )
+
+
+    # breakpoint()
+#
     # schema_value = search_form.schema_metadata.schema.data
     # search_form.schema_metadata.meta_a.choices = [schema_dict[schema_value]
-
-
 
     # print(search_form.validate())
 
@@ -424,20 +442,19 @@ def catalog_search2():
 
     # print(request.values)
 
+
+
     print(request.values.to_dict())
 
-    #this dictionary is used to create the fields on page reload
+    # this dictionary is used to create the fields on page reload
     no_label_fields = list(
         set([k[-8] for k in request.values.to_dict() if "no_label" in k])
     )
-    #TODO: make more robust: currently it filters string -8 (-schema, -meta_a, -meta_v) and then removes duplicates by creating a set
+    # TODO: make more robust: currently it filters string -8 (-schema, -meta_a, -meta_v) and then removes duplicates by creating a set
     no_label_fields_dict = {f"no_label_{v}": v for v in no_label_fields}
-
-
 
     if request.values.get("submit", False) == "Search" and search_form.validate():
         import time
-
 
         start = time.time()
         filters = build_basic_query_filters(request.values)
@@ -557,11 +574,16 @@ def catalog_search2():
         )
         # pprint(pagination)
 
-
-        no_label_schema = search_form.schema_metadata.schema.data
-        choices_tuple = [(key, value["title"]) for schema in schemas_transformed[no_label_schema] for key, value in schema.items()]
-        choices_list = [choice[1] for choice in choices_tuple]
-        search_form.schema_metadata.meta_a.choices = choices_list
+        for row in search_form.schema_metadata:
+            
+        # no_label_schema = search_form.schema_metadata.schema.data
+            choices_list = [
+                value["title"]
+                for schema in schemas_transformed[row.schema.data]
+                for value in schema.values()
+            ]
+            # choices_list = [choice[1] for choice in choices_tuple]
+            row.meta_a.choices = choices_list
 
 
         search_template = "search/basic_catalog_search.html.j2"
