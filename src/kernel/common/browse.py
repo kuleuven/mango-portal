@@ -378,22 +378,19 @@ def collection_browse(collection=None):
         for schema in grouped_metadata["schema"]:  # schema_labels[schema][item.name]:
 
             if schema_manager:
-
                 if schema not in schemas:
                     if schema == "other":
                         pass
                     else:
-                        def flatten_nonexistent(schema):
-                            flattened = {}
+                        result_dict = MultiDict()
+                        def flatten_nonexistent(schema, result_dict):
                             for key, value in schema.items():
                                 if isinstance(value, (dict, Mapping)):
-                                    nested = flatten_nonexistent(value)
-                                    flattened.update(nested)
+                                    flatten_nonexistent(value, result_dict)
                                 else:
-                                    flattened[key] = value
-                            return flattened
-                        
-                        grouped_metadata["schema"][schema] = flatten_nonexistent(grouped_metadata["schema"][schema])
+                                    result_dict.add(key, value)
+                        flatten_nonexistent(grouped_metadata["schema"][schema], result_dict)
+                        grouped_metadata["schema"][schema] = result_dict
                         
                 try:
                     if version := grouped_metadata["schema"][schema].get(
@@ -412,9 +409,6 @@ def collection_browse(collection=None):
                         schema_dict = json.loads(
                             schema_manager.load_schema(schema, status="published")
                         )
-
-                    print(schema_dict)
-
                     if schema_dict:
                         schema_labels[schema] = flatten_schema(
                             schema_dict,
