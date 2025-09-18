@@ -32,11 +32,11 @@ document.addEventListener("DOMContentLoaded", function () { // update the schema
     // })
 
 
-    // //code to add remove function on page reload
-    // removeList = document.getElementById("labelMetadata").querySelectorAll(".remove");
-    // removeList.forEach((element) => element.addEventListener("click", (event) => {
-    //     removeRow(event.target)
-    // }));
+    //code to add remove function on page reload
+    removeList = document.getElementById("labelMetadata").querySelectorAll(".remove");
+    removeList.forEach((element) => element.addEventListener("click", (event) => {
+        removeRow(event.target)
+    }));
 });
 
 
@@ -230,218 +230,50 @@ function removeRow(button) {
     //function to remove a row
     const row = button.closest(".row")
     row.parentNode.removeChild(row);
-    // resetIndex();
+    resetIndex();
 
 }
 
 
-// function resetIndex() { // -schema -meta_a -meta_v
-//     //this function resets the index when a row is removed so that the indexes always go 0,1,2,...
-//     console.log("resetting index...")
-
-//     const container = document.getElementById("labelMetadata");
-
-//     if (!container) {
-//         console.warn("labelMetadata container not found.");
-//         return;
-//     }
-
-//     const inputList = container.querySelectorAll(".row");
-//     console.log("Found rows:", inputList.length);
-
-//     // now we loop over the inputs and reset them all :)
-//     console.log(inputList)
-//     inputList.forEach(function(row, index) {
-//         row.querySelector("[data-target='meta-schema']").name = `schema_metadata_no_label-${index}-schema`;
-//         row.querySelector("[data-target='meta-schema']").id = `schema_metadata_no_label-${index}-schema`;
-//         row.querySelector("[data-target='meta-attribute']").name = `schema_metadata_no_label-${index}-meta_a`;
-//         row.querySelector("[data-target='meta-attribute']").id = `schema_metadata_no_label-${index}-meta_a`;
-//         row.querySelector("[data-target='meta-value']").name = `schema_metadata_no_label-${index}-meta_v`
-//         row.querySelector("[data-target='meta-value']").id = `schema_metadata_no_label-${index}-meta_v`;
-
-//     });
-//     console.log("...index resetted")
-// }
 
 
-function changeIds() {
+function resetIndex() { 
+    //this function resets the index when a row is removed so that the indexes always go 0,1,2,...
+    const container = document.getElementById("schemaMetadata");
+    const inputList = container.querySelectorAll(".row");
+    inputList.forEach(function (row, index) {
+        row.querySelector("[data-target='meta-schema-label']").name = `schema_metadata-${index}-schema`;
+        row.querySelector("[data-target='meta-schema-label']").id = `schema_metadata-${index}-schema`;
+        row.querySelector("[data-target='meta-attribute-label']").name = `schema_metadata-${index}-meta_a`;
+        row.querySelector("[data-target='meta-attribute-label']").id = `schema_metadata-${index}-meta_a`;
+        row.querySelector("[data-target='meta-value-label']").name = `schema_metadata-${index}-meta_v`
+        row.querySelector("[data-target='meta-value-label']").id = `schema_metadata-${index}-meta_v`;
 
-
+    });
 }
 
-// disable first button:
-// document.getElementById("schema_metadata-remove").disabled = true;
-// document.getElementById("non_schema_metadata-remove").disabled = true;
-
-// remove first button
-// document.getElementById("schema_metadata-remove").remove()
-// document.getElementById("non_schema_metadata-remove").remove()
 
 
-
-//code to add fields to form dynamically : schema & non-schema
-// let counterSchema = document.getElementById("labelMetadata").childElementCount;
-// console.log("non schema counter:", counterSchema)
 
 
 
 button = document.getElementById("addSchemaField");
 button.addEventListener("click", function () {
     addRow();
-    
+
 })
 
 
 
 function addRow() {
-    let container = document.getElementById("schemaMetadata")
-    let lastRow = container.lastElementChild
-    let clonedRow = lastRow.cloneNode(true)
-    let clonedSchema = clonedRow.querySelector("[id$='-schema']")
-    clonedSchema.addEventListener('change', () => updateAttributeChoice(clonedSchema, schemasObject))
-    container.appendChild(clonedRow)
+    let container = document.getElementById("schemaMetadata");
+    let lastRow = container.lastElementChild;
+    let clonedRow = lastRow.cloneNode(true);
+    let clonedSchema = clonedRow.querySelector("[id$='-schema']");
+    clonedSchema.addEventListener('change', () => updateAttributeChoice(clonedSchema, schemasObject));
+    container.appendChild(clonedRow);
+    resetIndex();
 }
-
-// //schema
-// button = document.getElementById("addSchemaField");
-// button.addEventListener("click", function() {
-//     let row = document.createElement("div");
-//     row.id = `schemaRow-${counterSchema}`
-//     optionsList = document.getElementById("schema_metadata-schema");
-//     row.classList.add("row");
-
-
-//     //col1
-//     let col1 = document.createElement("div")
-//     col1.classList.add("col-md-4", "meta_schema")
-//     let container1 = document.createElement("div")
-//     container1.classList.add("mb-0")
-//     const schemaSelectElement = document.createElement("select")
-//     schemaSelectElement.classList.add("form-select");
-//     schemaSelectElement.dataset['target'] = "meta-schema"
-//     schemaSelectElement.setAttribute("name", `schema_metadata_no_label-${counterSchema}-schema`)
-//     schemaSelectElement.id = `schema_metadata_no_label-${counterSchema}-schema`;
-
-//     [...optionsList.children].forEach((x) => { // clone the schemas
-//         const clone = x.cloneNode(true);
-//         schemaSelectElement.appendChild(clone);
-//     })
-//     if ([...optionsList.children][0].innerHTML !== "choose a schema") {
-//         prependPlaceholder(schemaSelectElement, "choose a schema");
-
-//     }
-//     schemaSelectElement.selectedIndex = 0;
-//     container1.appendChild(schemaSelectElement);
-//     col1.appendChild(container1);
-
-
-//     //col2
-//     let col2 = document.createElement("div")
-//     col2.classList.add("col-md-3", "meta_attribute")
-//     let container2 = document.createElement("div")
-//     container2.classList.add("mb-0")
-//     const attributeSelectElement = document.createElement("select")
-//     attributeSelectElement.classList.add("form-select");
-//     attributeSelectElement.dataset['target'] = "meta-attribute";
-//     attributeSelectElement.setAttribute("name", `schema_metadata_no_label-${counterSchema}-meta_a`)
-//     attributeSelectElement.id = `schema_metadata_no_label-${counterSchema}-meta_a`;
-//     container2.appendChild(attributeSelectElement);
-//     col2.appendChild(container2);
-
-//     schemaSelectElement.addEventListener('change', function() {
-//         let attribute = attributeSelectElement
-//         attribute.innerHTML = "";
-//         const optgroups = {} // create optgroups obj to store optgroups in
-//         schemasObject[schemaSelectElement.value].forEach(dict => { // get the values for the select schema 
-//             for (const [key, value] of Object.entries(dict)) {
-//                 if (value.type === "label") { // if it is a label
-//                     let optgroup = document.createElement("optgroup"); // create an optgroup
-//                     optgroup.setAttribute("label", value.display_label);
-//                     attribute.add(optgroup);
-//                     optgroups[value.title] = optgroup; // add optgroup element to optgroup obj 
-//                 } else { // if it is a field
-//                     let option = document.createElement("option"); // create an option 
-//                     option.innerHTML = value.title;
-//                     option.setAttribute("value", key);
-//                     console.log(value.enum)
-//                     if (value.enum) {
-//                         option.setAttribute("enum", value.enum)
-//                     }
-//                     option.setAttribute("type", value.type);
-
-//                     if (!value.parent) {
-//                         attribute.add(option); // add the option to attribute
-//                     } else {
-//                         optgroups[value.parent].appendChild(option) // if the parent is in the optgroup obj then we add the field to this group
-//                     };
-//                 };
-//             };
-//         });
-
-//         let groups = attribute.querySelectorAll("optgroup"); // remove optgroup if it is empty
-//         groups.forEach((x) => {
-//             if (x.children.length === 0) {
-//                 x.remove()
-//             }
-//         });
-//         prependPlaceholder(attribute, "choose an attribute");
-//     });
-
-
-
-//     function createCheckTypeHandler(counterSchema) {
-//         return function() {
-//             return checkTypeNoLabel(counterSchema, attributeSelectElement);
-//         };
-//     }
-
-
-//     let handler = createCheckTypeHandler(counterSchema); //use a closure to freeze function parameters
-//     attributeSelectElement.addEventListener("change", handler);
-
-//     //col3
-//     let col3 = document.createElement("div")
-//     col3.classList.add("col-md-4", "meta_value")
-//     let container3 = document.createElement("div")
-//     container3.classList.add("mb-0")
-//     const valueInputField = document.createElement('input')
-//     valueInputField.classList.add("form-control");
-//     valueInputField.dataset['target'] = 'meta-value'
-//     valueInputField.setAttribute("name", `schema_metadata_no_label-${counterSchema}-meta_v`)
-//     valueInputField.id = `schema_metadata_no_label-${counterSchema}-meta_v`;
-//     container3.appendChild(valueInputField);
-//     col3.appendChild(container3);
-
-//     // col 4 
-//     let col4 = document.createElement("div")
-//     col4.classList.add("col-md-1")
-//     let container4 = document.createElement("div")
-//     container4.classList.add("mb-0")
-//     const removeButtonSchema = document.createElement("button")
-//     removeButtonSchema.classList.add("form-control");
-//     removeButtonSchema.setAttribute("name", `schema_metadata_no_label-${counterSchema}-remove`)
-//     removeButtonSchema.id = `schema_metadata_no_label-${counterSchema}-remove`;
-//     removeButtonSchema.type = "button";
-//     removeButtonSchema.addEventListener("click", (event) => {
-//         removeRow(event.target)
-//     });
-//     removeButtonSchema.innerHTML = '<i class="bi bi-trash"></i>'
-//     //    removeButtonSchema.value = "y"
-//     container4.appendChild(removeButtonSchema);
-//     col4.appendChild(container4);
-
-//     row.appendChild(col1)
-//     row.appendChild(col2)
-//     row.appendChild(col3)
-//     row.appendChild(col4)
-
-//     //   myList[myList.length - 1].after(row);
-//     document.getElementById("labelMetadata").appendChild(row);
-
-//     counterSchema++
-
-
-// })
 
 
 // // non-schema

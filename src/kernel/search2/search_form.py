@@ -72,7 +72,7 @@ class AVUSchema(Form):
             "data-target": "meta-attribute-label"
         },  # we don't validate because choices will be created dynamically
     )
-    meta_v = StringField("Attribute value")
+    meta_v = StringField("Attribute value", render_kw={"data-target": "meta-value-label"})
     remove = ButtonField("      ")
 
 
