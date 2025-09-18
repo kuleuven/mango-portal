@@ -2,6 +2,16 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.23.0 [2025-09-18]
+
+### Bug fixes
+
+- minor
+
+#### Changed configs
+
+- ManGO Flow (mostly not in this repo)
+
 ## Release 0.22.0 [2025-08-04]
 
 ### New features
