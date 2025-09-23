@@ -1,64 +1,12 @@
 
-function prependPlaceholder(schema, placeholder_text) {
-    // create a placeholder for select fields
-    let basicOption = document.createElement("option");
-    basicOption.innerHTML = placeholder_text;
-    basicOption.disabled = true;
-    schema.prepend(basicOption);
-    schema.selectedIndex = "0";
-};
-
-document.addEventListener("DOMContentLoaded", function () { // update the schema & attribute fields after search
-    // fixed schema metadata (label)
-
-    // document.getElementById("schema_metadata-meta_a").dispatchEvent(new Event("change", { // fake change event
-    //     bubbles: true
-    // }));
-    // document.getElementById("schema_metadata-meta_v").value = resultsObject["schema_metadata-meta_v"];
-
-
-    // // dynamic schema metadata (no label)
-    // Object.entries(noLabelFields).forEach(([k, counterMd]) => {
-    //     console.log(k, counterMd);
-    //     // document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).value = resultsObject[`schema_metadata_no_label-${counterMd}-schema`];
-    //     // document.getElementById(`schema_metadata_no_label-${counterMd}-schema`).dispatchEvent(new Event("change", {
-    //     //     bubbles: true
-    //     // }));
-    //     // document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_a`];
-    //     document.getElementById(`schema_metadata_no_label-${counterMd}-meta_a`).dispatchEvent(new Event("change", { // fake change event
-    //         bubbles: true
-    //     }));
-    //     document.getElementById(`schema_metadata_no_label-${counterMd}-meta_v`).value = resultsObject[`schema_metadata_no_label-${counterMd}-meta_v`];
-    // })
-
-
-    //code to add remove function on page reload
-    removeList = document.getElementById("labelMetadata").querySelectorAll(".remove");
-    removeList.forEach((element) => element.addEventListener("click", (event) => {
-        removeRow(event.target)
-    }));
-});
-
-
-//  if (schema.value == "") { // if no schema is selected 
-//         prependPlaceholder(schema, "choose a schema");
-//     } 
-
-
-// let groups = attribute.querySelectorAll("optgroup"); 
-// groups.forEach((x) => {
-//     if (x.children.length === 0) {
-//         x.remove()
-//     }
-// });
-
 console.log(schemasObject)
 
 const selectSchemas = document.querySelectorAll("[name$='-schema']");
-//const selectAttributes = document.querySelectorAll('[data-target="meta-attribute-label"], [data-target="meta-attribute"]');
 
 function updateAttributeChoice(schemaDropdown, schemasObject) {
-    let attribute = schemaDropdown.closest(".row").querySelector("[name$='meta_a']")
+    let attribute = schemaDropdown.closest(".row").querySelector("[name$='meta_a']");
+    let selectedValue = attribute.value;
+
     attribute.innerHTML = "" // clear the attribute select field each time 
     const optgroups = {}
     for (const [key, value] of Object.entries(schemasObject[schemaDropdown.value])) {
@@ -66,17 +14,16 @@ function updateAttributeChoice(schemaDropdown, schemasObject) {
         if (value.type === "label") {
             console.log(value.type)
             let optgroup = document.createElement("optgroup");
-            optgroup.setAttribute("label", value.display_label);
+            optgroup.setAttribute("label", value.title);
             attribute.add(optgroup);
-            optgroups[value.title] = optgroup;
+            optgroups[key] = optgroup;
         } else {
             let option = document.createElement("option");
             option.innerHTML = value.title;
-            option.setAttribute("value", key);
-            option.setAttribute("type", value.type);
-            if (value.enum) {
-                option.setAttribute("enum", value.enum)
+            if (key == selectedValue) {
+                option.setAttribute("selected", true)
             }
+            option.value = key
             if (!value.parent) {
                 attribute.add(option);
             }
@@ -85,10 +32,25 @@ function updateAttributeChoice(schemaDropdown, schemasObject) {
             };
         };
     };
+    if (selectedValue) {
+        let value = schemaDropdown.closest(".row").querySelector("[name$='meta_v']");
+        let data = schemasObject[schemaDropdown.value][attribute.value];
+        changeValueType(value, data);
+    }
+
+    attribute.addEventListener("change", () => {
+        let value = schemaDropdown.closest(".row").querySelector("[name$='meta_v']");
+        let data = schemasObject[schemaDropdown.value][attribute.value];
+        changeValueType(value, data);
+    })
+
 };
 
 selectSchemas.forEach((schemaDropdown) => {
     console.log(schemaDropdown);
+    if (schemaDropdown.value) {
+    updateAttributeChoice(schemaDropdown, schemasObject)
+    }
     schemaDropdown.addEventListener('change', () => updateAttributeChoice(schemaDropdown, schemasObject))
 });
 
@@ -110,151 +72,53 @@ function createField(type, elementName, elementID) { // function to create field
         element = document.createElement("select")
         element.classList.add("form-select");
     } else {
-        element = document.createElement("input")
+        element = document.createElement("input");
+        element.type = type == "integer" ? "number" : type;
         element.classList.add("form-control");
     }
     element.id = elementID;
     element.setAttribute("name", elementName);
     element.dataset["target"] = "meta-value"
-
     return element
 }
 
-
-function checkTypeLabel(event) {
+function changeValueType(value, data) {
+    let currentName = value.name
+    let currentId = value.id
     // function to check  the type for row with labels 
-    const attribute = event?.target;
-    if (!attribute) return;
-    console.log(attribute)
-    let selectedOption = attribute.options[attribute.selectedIndex];
-
-    if (!selectedOption) return; // safely exit if no option is selected
-
-    let value = getAttributeValueElement(attribute);
-    switch (selectedOption.getAttribute("type")) {
-        case "select":
-            let select = createField("select", "schema_metadata-meta_v", "schema_metadata-meta_v");
-            let options = selectedOption.getAttribute("enum").split(",")
-            options.forEach((optionText) => {
-                let option = document.createElement("option");
-                option.textContent = optionText;
-                select.appendChild(option)
-            })
-            value.replaceWith(select);
-            break;
-        case "integer":
-            let integer = createField("integer", "schema_metadata-meta_v", "schema_metadata-meta_v");
-            value.replaceWith(integer);
-            integer.type = "number";
-            break;
-        case "date":
-            let date = createField("date", "schema_metadata-meta_v", "schema_metadata-meta_v");
-            value.replaceWith(date);
-            date.type = "date";
-            break;
-        default:
-            let input = createField("default", "schema_metadata-meta_v", "schema_metadata-meta_v");
-            value.replaceWith(input);
-            input.type = "text";
+    let newField = createField(data.type, currentName, currentId);
+    if (data.type == "select") {
+        data.enum.forEach((optionText) => {
+            let option = document.createElement("option");
+            option.textContent = optionText;
+            newField.appendChild(option)
+        })
     }
-}
-
-
-document.querySelectorAll("[id$='meta_a']").forEach((x) => x.addEventListener("change", checkTypeLabel));
-
-//assign eventlistener
-// let attribute = document.getElementById("schema_metadata-meta_a");
-// attribute.addEventListener("change", checkTypeLabel);
-
-
-// function checkTypeNoLabel(counter, attributeSelectElement) {
-//     // function to check type with row with no labels
-//     let selectedOption = attributeSelectElement.options[attributeSelectElement.selectedIndex];
-//     let value = getAttributeValueElement(attributeSelectElement);
-//     switch (selectedOption.getAttribute("type")) {
-//         case "select":
-//             let select = createField("select", `schema_metadata_no_label-${counter}-meta_v`, `schema_metadata_no_label-${counter}-meta_v`);
-//             let options = selectedOption.getAttribute("enum").split(",")
-//             options.forEach((optionText) => {
-//                 let option = document.createElement("option");
-//                 option.textContent = optionText;
-//                 select.appendChild(option)
-//             })
-//             value.replaceWith(select);
-//             break;
-//         case "integer":
-//             let integer = createField("integer", `schema_metadata_no_label-${counter}-meta_v`, `schema_metadata_no_label-${counter}-meta_v`);
-//             value.replaceWith(integer);
-//             integer.type = "number";
-//             break;
-//         case "date":
-//             let date = createField("date", `schema_metadata_no_label-${counter}-meta_v`, `schema_metadata_no_label-${counter}-meta_v`);
-//             value.replaceWith(date);
-//             date.type = "date";
-//             break;
-//         default:
-//             let input = createField("default", `schema_metadata_no_label-${counter}-meta_v`, `schema_metadata_no_label-${counter}-meta_v`);
-//             value.replaceWith(input);
-//             input.type = "text";
-//     }
-// }
-
-
-// //  code to add type handler to attributes on page reload
-// if (document.getElementById("schemaMetadata").childElementCount > 1) {
-//     let noLabelCounter;
-//     [...selectAttributes].forEach(function(schema, index) {
-//             if (index === 0) { // skip the first one
-//                 return;
-//             }
-//             if (index === 1) {
-//                 noLabelCounter = 0;
-//             } else {
-//                 noLabelCounter += 1;
-//             }
-//             let attributeSelectElement = [...selectAttributes][index];
-
-//             function createCheckTypeHandler2(noLabelCounter) {
-//                 return function() {
-//                     return checkTypeNoLabel(noLabelCounter, attributeSelectElement);
-//                 };
-//             }
-//             let handler = createCheckTypeHandler2(noLabelCounter); //use a closure to freeze function parameters
-//             attributeSelectElement.addEventListener("change", handler);
-//     })
-// }
-
-
-
-function removeRow(button) {
-    //function to remove a row
-    const row = button.closest(".row")
-    row.parentNode.removeChild(row);
-    resetIndex();
-
+    value.replaceWith(newField);
 }
 
 
 
-
-function resetIndex() { 
-    //this function resets the index when a row is removed so that the indexes always go 0,1,2,...
-    const container = document.getElementById("schemaMetadata");
-    const inputList = container.querySelectorAll(".row");
-    inputList.forEach(function (row, index) {
-        row.querySelector("[data-target='meta-schema-label']").name = `schema_metadata-${index}-schema`;
-        row.querySelector("[data-target='meta-schema-label']").id = `schema_metadata-${index}-schema`;
-        row.querySelector("[data-target='meta-attribute-label']").name = `schema_metadata-${index}-meta_a`;
-        row.querySelector("[data-target='meta-attribute-label']").id = `schema_metadata-${index}-meta_a`;
-        row.querySelector("[data-target='meta-value-label']").name = `schema_metadata-${index}-meta_v`
-        row.querySelector("[data-target='meta-value-label']").id = `schema_metadata-${index}-meta_v`;
-
-    });
+function updateId(indexString) {
+    let splitString = indexString.split("-");
+    let newIndex = String(parseInt(splitString[1]) + 1);
+    splitString[1] = newIndex;
+    return splitString.join("-");
 }
 
+function updateIndex(row) {
 
+    row.querySelectorAll("[name],[id],[for]").forEach((item) => {
+        if (item.hasAttribute("name")) {
+            item.name = updateId(item.name);
+            item.id = updateId(item.id);
+        }
+        else {
+            item.setAttribute("for", updateId(item.getAttribute("for")));
+        }
+    })
 
-
+}
 
 
 button = document.getElementById("addSchemaField");
@@ -263,8 +127,6 @@ button.addEventListener("click", function () {
 
 })
 
-
-
 function addRow() {
     let container = document.getElementById("schemaMetadata");
     let lastRow = container.lastElementChild;
@@ -272,8 +134,11 @@ function addRow() {
     let clonedSchema = clonedRow.querySelector("[id$='-schema']");
     clonedSchema.addEventListener('change', () => updateAttributeChoice(clonedSchema, schemasObject));
     container.appendChild(clonedRow);
-    resetIndex();
+    updateIndex(clonedRow);
+    clonedRow.querySelectorAll("label").forEach((label) => label.remove());
 }
+
+
 
 
 // // non-schema

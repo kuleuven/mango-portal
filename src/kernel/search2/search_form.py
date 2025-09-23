@@ -132,7 +132,7 @@ class CatalogSearchForm(Form):
         #       self.collection_subtree.choices = []
         if schemas:
             for field in self.schema_metadata:
-                field.schema.choices = schemas
+                field.schema.choices = [("", "Please select a schema")] + schemas
 
     item_name = FormField(ItemTypeNameForm, label="Name")
     collection_subtree = FormField(CollectionForm, label="Subtree filter")

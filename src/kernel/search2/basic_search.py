@@ -289,14 +289,12 @@ def restructure_item(item, flattened_schema):
             "parent": (
                 None
                 if value["level"] == 0
-                else flattened_schema[".".join(str(key).split(".")[:-1])]["label"]
+                else ".".join(str(key).split(".")[:-1])
             ),
-            "title": value["label"],  # actual title
-            "display_label": (
-                create_nested_label(key, flattened_schema)
+            "title": create_nested_label(key, flattened_schema)
                 if value["type"] == "object"
-                else "none"
-            ),  # label with hierarchy for display in select
+                 else value["label"],  # actual title
+                     # label with hierarchy for display in select
         }
     }
     return restructured_item
@@ -313,14 +311,15 @@ def transform_schema(schema, schema_manager):
         add_enum=True,
     )
 
+    transformed_schema = {}
     for item in flattened_schema.items():
-        schema_dict |= restructure_item(item, flattened_schema)  
-    
-    return schema_dict
+        transformed_schema |= restructure_item(item, flattened_schema)
+
+    return transformed_schema
 
     # print("this is the schema:", flattened_schema)
 
-    # return {k : v for k,v in 
+    # return {k : v for k,v in
     #     restructure_item(item, flattened_schema) for item in flattened_schema.items()
     # }
 
@@ -422,7 +421,7 @@ def catalog_search2():
     # pprint(cache)
 
     # breakpoint()
-    
+
     search_form = CatalogSearchForm(
         formdata=request.values,
         per_page=20,
@@ -430,9 +429,8 @@ def catalog_search2():
         subtrees=subtrees,
     )
 
-
     # breakpoint()
-#
+    #
     # schema_value = search_form.schema_metadata.schema.data
     # search_form.schema_metadata.meta_a.choices = [schema_dict[schema_value]
 
@@ -441,8 +439,6 @@ def catalog_search2():
     # ----------------------- run search -------------------- #
 
     # print(request.values)
-
-
 
     print(request.values.to_dict())
 
@@ -575,16 +571,14 @@ def catalog_search2():
         # pprint(pagination)
 
         for row in search_form.schema_metadata:
-            
-        # no_label_schema = search_form.schema_metadata.schema.data
+            # no_label_schema = search_form.schema_metadata.schema.data
+            # breakpoint()
             choices_list = [
-                value["title"]
-                for schema in schemas_transformed[row.schema.data]
-                for value in schema.values()
+                key
+                for key in schemas_transformed[row.schema.data].keys()
             ]
             # choices_list = [choice[1] for choice in choices_tuple]
             row.meta_a.choices = choices_list
-
 
         search_template = "search/basic_catalog_search.html.j2"
 
