@@ -415,6 +415,7 @@ def collection_browse(collection=None):
                                     }
 
                         add_labels(grouped_metadata["schema"][schema], result_dict)
+                        result_dict["title"] = schema
                         schema_labels[schema] = result_dict
 
                 try:
