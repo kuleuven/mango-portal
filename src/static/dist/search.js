@@ -1,6 +1,21 @@
 
 console.log(schemasObject)
 
+
+function removeLabels() {
+    let rows = document.querySelectorAll("#schemaMetadata .row");
+    let rowsArray = [...rows]
+    if (rows.length > 1) {
+        rowsArray.shift();
+        rowsArray.forEach((row) => {
+            row.querySelectorAll("label").forEach((label) => label.remove())
+        })
+    } 
+
+}
+
+removeLabels()
+
 const selectSchemas = document.querySelectorAll("[name$='-schema']");
 
 function updateAttributeChoice(schemaDropdown, schemasObject) {
@@ -136,9 +151,15 @@ function addRow() {
     container.appendChild(clonedRow);
     updateIndex(clonedRow);
     clonedRow.querySelectorAll("label").forEach((label) => label.remove());
+    clonedSchema.selectedIndex = 0;
+    clonedRow.querySelector("[id$='-meta_a']").innerHTML = ""
 }
 
+function removeRow() {
 
+
+
+}
 
 
 // // non-schema

@@ -142,26 +142,26 @@ def build_basic_query_filters(form):
     num = 0
     while True:
         try:
-            if form[f"schema_metadata_no_label-{num}-meta_a"]:
+            if form[f"schema_metadata-{num}-meta_a"]:
                 filters += [
                     Criterion(
                         "=",
                         column_meta_base.name,
-                        form[f"schema_metadata_no_label-{num}-meta_a"],
+                        form[f"schema_metadata-{num}-meta_a"],
                     )
                 ]
 
-            if form[f"schema_metadata_no_label-{num}-meta_v"]:
+            if form[f"schema_metadata-{num}-meta_v"]:
                 comparison = (
                     "like"
-                    if form[f"schema_metadata_no_label-{num}-meta_v"].find("%") != -1
+                    if form[f"schema_metadata-{num}-meta_v"].find("%") != -1
                     else "="
                 )
                 filters += [
                     Criterion(
                         comparison,
                         column_meta_base.value,
-                        form[f"schema_metadata_no_label-{num}-meta_v"],
+                        form[f"schema_metadata-{num}-meta_v"],
                     )
                 ]
 
