@@ -386,8 +386,6 @@ def collection_browse(collection=None):
 
                         def add_labels(schema, result_dict):
                             for key, value in schema.items():
-                                print("look at this:")
-                                print(key, value)
                                 if "__version__" in key:
                                     continue
                                 if isinstance(value, (dict, Mapping)):
