@@ -48,6 +48,11 @@ cold_sidebar:
   target: cold_storage/cold_sidebar.html.j2
   matches: always
 
+cold_index:
+  source: user_tantra/index.html.j2
+  target: cold_storage/index.html.j2
+  matches: always
+  
 ---
 zone: icts_demo
 
