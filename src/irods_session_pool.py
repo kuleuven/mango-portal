@@ -50,9 +50,9 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.cleanup()
 
     def init_or_refresh_groups(self):
-        irods_session = self.irods_session
+        irods_session: iRODSSession = self.irods_session
         my_groups = [
-            iRODSGroup(irods_session.user_groups, item)  # type: ignore
+            iRODSGroup(irods_session.groups, item)  # type: ignore
             for item in irods_session.query(Group)
             .filter(User.name == irods_session.username)
             .all()

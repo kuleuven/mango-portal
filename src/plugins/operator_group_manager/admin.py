@@ -215,7 +215,7 @@ def add_group(realm):
     operator_session = get_operator_session(g.irods_session.zone)
     group_name = f"{realm}_{request.form['group_name_suffix']}"
     try:
-        new_group: iRODSGroup = operator_session.user_groups.create(group_name)
+        new_group: iRODSGroup = operator_session.groups.create(group_name)
         new_group.metadata.add("mg.realm", realm)
         return redirect(
             url_for(
