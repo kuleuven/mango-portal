@@ -81,6 +81,7 @@
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="folderUploadFiles">
+                <div id="details"></div>
                 <table class="table table-striped">
                   <thead>
                     <tr>
@@ -103,12 +104,29 @@
             </div>
           </div>
           <script>
+          const sizeThreshold = 300 * 1024 * 1024; // 300 MB
           document.getElementById("uploadFolder").addEventListener("change", (event) => {
             const filesModal = new bootstrap.Modal('#folderUploadModal');
             filesModal.show();
             const tableBody = document.getElementById("folderUploadFiles").querySelector("tbody");
             const data = new FormData(document.querySelector("form#folderUpload"));
-            const listOfFiles = [...data.getAll("uploadFolder")];
+            const bigFiles = [...data.getAll("uploadFolder")].filter((file) => file.size >= sizeThreshold);
+            if (bigFiles.length > 0) {
+              const detailsDiv = document.getElementById("folderUploadFiles").querySelector("div#details");
+              const details = document.createElement("details");
+              const summary = document.createElement("summary");
+              summary.innerHTML = `Files larger than ${sizeThreshold} bytes will be ignored.`;
+              const ul = document.createElement("ul");
+              bigFiles.forEach((file) => {
+                const li = document.createElement("li");
+                li.innerHTML = `${file.webkitRelativePath} (${file.size} bytes)`;
+                ul.appendChild(li);
+              });
+              details.appendChild(summary);
+              details.appendChild(ul);
+              detailsDiv.appendChild(details);
+            }
+            const listOfFiles = [...data.getAll("uploadFolder")].filter((file) => file.size < sizeThreshold);
             data.delete("uploadFolder");
             console.log(data)
             const filesToIgnore = [];
@@ -135,6 +153,7 @@
               });
             })
           const submitButton = document.querySelector(".modal#folderUploadModal button#sendFile");
+          let processedFiles = 0;
           submitButton.addEventListener("click", () => {
               submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
               listOfFiles.forEach(async (file) => {
@@ -150,21 +169,28 @@
                   });
                   const result = await response.json();
                   const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
-                  if (result.status == "OK") {
-                    button.classList.replace("btn-danger", "btn-success");
-                    button.querySelector("i").classList.replace("bi-trash", "bi-check-lg");
+                  if (result) {
+                    if (result.status == "OK") {
+                      button.classList.replace("btn-danger", "btn-success");
+                      button.querySelector("i").classList.replace("bi-trash", "bi-check-lg");
 
-                  } else {
-                    button.querySelector("i").classList.replace("bi-trash", "bi-bug");
-                    console.log(result.status);
-                  }  
+                    } else {
+                      button.querySelector("i").classList.replace("bi-trash", "bi-bug");
+                      console.log(result.status);
+                    }  
+                    processedFiles += 1;
+                    if (processedFiles == listOfFiles.length) {
+                      submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
+                      submitButton.innerHTML = "Refresh page";
+                      submitButton.addEventListener("click", () => {
+                        location.reload();
+                      });
+                    }
+                  }
+                  
                 }                
               });
-              submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
-              submitButton.innerHTML = "Refresh page";
-              submitButton.addEventListener("click", () => {
-                location.reload();
-              })
+              
             });
           })
           </script>
