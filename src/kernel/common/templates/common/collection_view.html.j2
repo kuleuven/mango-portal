@@ -59,38 +59,118 @@
   </div>
   {% if (current_user_rights | intersection(own_or_write)) %}
     <div class="d-flex justify-content-end">
-      <div class="col-3 mr-auto">
+      <div class="col-2 mr-auto">
         <button type="button"
                 class="btn btn-primary"
                 data-bs-toggle="modal"
                 data-bs-target="#addCollection">Add collection</button>
       </div>
-      <div class="col-8 mr-auto">
-        <div class="row">
+      <div class="col-4 mr-auto">
         <form action="{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}"
-                  method="post" enctype="multipart/form-data">
+                  method="post" enctype="multipart/form-data" id="folderUpload">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <div class="input-group">
             <input type="file" class="form-control" id="uploadFolder" name="uploadFolder" aria-describedby="submitFolder" webkitdirectory multiple/>
-            <button class="btn btn-primary" id="submitFolder" type="submit">
-              <span class="spinner-border spinner-border-sm visually-hidden" aria-hidden="true"></span>
-              <span role="status">Upload folders...</span>
-            </button>
+
+          </div>
+          <div class="modal modal-lg" tabindex="-1" id="folderUploadModal">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Your folders</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="folderUploadFiles">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Filename</th>
+                      <th>Size</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="button" id="sendFile" class="btn btn-primary">
+                    <span class="spinner-border spinner-border-sm visually-hidden" aria-hidden="true"></span>
+                    <span role="status">Upload files</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           <script>
           document.getElementById("uploadFolder").addEventListener("change", (event) => {
-            for (const file of event.target.files) {
-              console.log("I found this file: ", file.webkitRelativePath)
-            }
-          const submitButton = document.querySelector("button#submitFolder")
-            submitButton.addEventListener("click", () => {
+            const filesModal = new bootstrap.Modal('#folderUploadModal');
+            filesModal.show();
+            const tableBody = document.getElementById("folderUploadFiles").querySelector("tbody");
+            const data = new FormData(document.querySelector("form#folderUpload"));
+            const listOfFiles = [...data.getAll("uploadFolder")];
+            data.delete("uploadFolder");
+            console.log(data)
+            const filesToIgnore = [];
+            
+            listOfFiles.forEach((file) => {
+              const row = document.createElement("tr");
+              row.setAttribute("data-filename", file.webkitRelativePath);
+              const fnameCell = document.createElement("td");
+              fnameCell.className = "text-truncate";
+              fnameCell.innerHTML = file.webkitRelativePath;
+              const sizeCell =  document.createElement("td");
+              sizeCell.innerHTML = file.size;
+              const deleteButtonCell = document.createElement("td");
+              const deleteButton = document.createElement("button");
+              deleteButton.className = "btn btn-danger"
+              deleteButton.type = "button"
+              deleteButton.innerHTML = "<i class='bi bi-trash'></i>";
+              deleteButtonCell.appendChild(deleteButton);
+              [fnameCell, sizeCell, deleteButtonCell].forEach((cell) => row.appendChild(cell));
+              tableBody.appendChild(row);
+              deleteButton.addEventListener("click", () => {
+                row.remove();
+                filesToIgnore.push(file.webkitRelativePath);
+              });
+            })
+          const submitButton = document.querySelector(".modal#folderUploadModal button#sendFile");
+          submitButton.addEventListener("click", () => {
               submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
+              listOfFiles.forEach(async (file) => {
+                if (filesToIgnore.indexOf(file.webkitRelativePath) == -1) {
+                  console.log(file)
+                  const fileData = new FormData();
+                  fileData.append("csrf_token", data.get("csrf_token"));
+                  fileData.append("uploadFolder", file, file.webkitRelativePath);
+
+                  const response = await fetch("{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}", {
+                    method: "POST",
+                    body: fileData
+                  });
+                  const result = await response.json();
+                  const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
+                  if (result.status == "OK") {
+                    button.classList.replace("btn-danger", "btn-success");
+                    button.querySelector("i").classList.replace("bi-trash", "bi-check-lg");
+
+                  } else {
+                    button.querySelector("i").classList.replace("bi-trash", "bi-bug");
+                    console.log(result.status);
+                  }  
+                }                
+              });
+              submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
+              submitButton.innerHTML = "Refresh page";
+              submitButton.addEventListener("click", () => {
+                location.reload();
+              })
             });
           })
           </script>
         </form>
         </div>
-        <div class="row">
+        <div class="col-6 mr-auto">
         {# <form action="{{ url_for('browse_bp.collection_upload_file')}}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <div class="input-group mb-3">
@@ -115,7 +195,6 @@
         </div>
         </div>
       </div>
-    </div>
   {% endif %}
   <ul class="nav nav-tabs mb-4" id="collection_tab" role="tablist">
     {% for tab in tabs %}
