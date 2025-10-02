@@ -554,12 +554,16 @@ def catalog_search2():
         for row in search_form.schema_metadata:
             # no_label_schema = search_form.schema_metadata.schema.data
             # breakpoint()
-            choices_list = [
-                key
-                for key in schemas_transformed[row.schema.data].keys()
-            ]
-            # choices_list = [choice[1] for choice in choices_tuple]
-            row.meta_a.choices = choices_list
+            print(row.schema.data)
+            if row.schema.data == "":
+                continue
+            if row.schema.data:
+                choices_list = [
+                    key
+                    for key in schemas_transformed[row.schema.data].keys()
+                ]
+                # choices_list = [choice[1] for choice in choices_tuple]
+                row.meta_a.choices = choices_list
 
         search_template = "search/basic_catalog_search.html.j2"
 

@@ -162,8 +162,16 @@ function addRow(type, elementId) {
         let clonedSchema = clonedRow.querySelector("[id$='-schema']");
         clonedSchema.addEventListener('change', () => updateAttributeChoice(clonedSchema, schemasObject));
         clonedSchema.selectedIndex = 0;
-        clonedRow.querySelector("[id$='-meta_a']").innerHTML = ""
-        clonedRow.querySelector("[id$='-meta_v']").innerHTML = ""
+        clonedRow.querySelector("[id$='-meta_a']").innerHTML = "";
+        const newInput = document.createElement("input");
+        newInput.className = "form-control";
+        newInput.setAttribute("data-target", "meta-value-label");
+        newInput.id = "schema_metadata-0-meta_v";
+        newInput.name = "schema_metadata-0-meta_v";
+        newInput.type = "text";
+        newInput.value = "";
+        clonedRow.querySelector("[id$='-meta_v']").replaceWith(newInput);
+        console.log(clonedRow);
     }
     if (!clonedRow.querySelector("[id$=-remove]")) {
         createRemoveButton(clonedRow);
