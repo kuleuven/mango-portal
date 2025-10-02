@@ -2,26 +2,29 @@
 console.log(schemasObject)
 
 
-function removeLabels() {
-    let rows = document.querySelectorAll("#schemaMetadata .row");
+function updateRowsOnReload(containerId) {
+    let rows = document.querySelectorAll(containerId + " .row");
     let rowsArray = [...rows]
     if (rows.length > 1) {
-        rowsArray.shift();
+        rowsArray.shift();  // remove first element from array
         rowsArray.forEach((row) => {
             row.querySelectorAll("label").forEach((label) => label.remove())
+            createRemoveButton(row);
+            row.querySelector("[id$=-remove]").addEventListener("click", (event) => { removeRow(event) });
+            //TODO: update index
         })
-    } 
-
+    }
 }
 
-removeLabels()
+updateRowsOnReload("#schemaMetadata")
+updateRowsOnReload("#nonSchemaMetadata")
+
 
 const selectSchemas = document.querySelectorAll("[name$='-schema']");
 
 function updateAttributeChoice(schemaDropdown, schemasObject) {
     let attribute = schemaDropdown.closest(".row").querySelector("[name$='meta_a']");
     let selectedValue = attribute.value;
-
     attribute.innerHTML = "" // clear the attribute select field each time 
     const optgroups = {}
     for (const [key, value] of Object.entries(schemasObject[schemaDropdown.value])) {
@@ -47,27 +50,31 @@ function updateAttributeChoice(schemaDropdown, schemasObject) {
             };
         };
     };
-    if (selectedValue) {
+    if (selectedValue) {  // if an attribute name has been selected 
         let value = schemaDropdown.closest(".row").querySelector("[name$='meta_v']");
         let data = schemasObject[schemaDropdown.value][attribute.value];
         changeValueType(value, data);
     }
 
-    attribute.addEventListener("change", () => {
+
+    attribute.addEventListener("change", () => {  // listen for changes to attribute name
         let value = schemaDropdown.closest(".row").querySelector("[name$='meta_v']");
         let data = schemasObject[schemaDropdown.value][attribute.value];
+        console.log("changing")
+        console.log(value, data)
         changeValueType(value, data);
     })
-
 };
+
 
 selectSchemas.forEach((schemaDropdown) => {
     console.log(schemaDropdown);
     if (schemaDropdown.value) {
-    updateAttributeChoice(schemaDropdown, schemasObject)
+        updateAttributeChoice(schemaDropdown, schemasObject)
     }
     schemaDropdown.addEventListener('change', () => updateAttributeChoice(schemaDropdown, schemasObject))
 });
+
 
 function getAttributeValueElement(attribute) { // get attribute value element 
     if (attribute.id === "schema_metadata-meta_a") { // first one
@@ -81,7 +88,8 @@ function getAttributeValueElement(attribute) { // get attribute value element
     }
 }
 
-function createField(type, elementName, elementID) { // function to create field based on type
+
+function createField(type, elementName, elementID, inputValue) { // function to create field based on type
     let element;
     if (type === "select") {
         element = document.createElement("select")
@@ -90,6 +98,7 @@ function createField(type, elementName, elementID) { // function to create field
         element = document.createElement("input");
         element.type = type == "integer" ? "number" : type;
         element.classList.add("form-control");
+        element.value = inputValue; //TODO move this!
     }
     element.id = elementID;
     element.setAttribute("name", elementName);
@@ -97,21 +106,25 @@ function createField(type, elementName, elementID) { // function to create field
     return element
 }
 
+
 function changeValueType(value, data) {
     let currentName = value.name
     let currentId = value.id
+    let inputValue = value.value
     // function to check  the type for row with labels 
-    let newField = createField(data.type, currentName, currentId);
+    let newField = createField(data.type, currentName, currentId, inputValue);
     if (data.type == "select") {
         data.enum.forEach((optionText) => {
             let option = document.createElement("option");
             option.textContent = optionText;
+            if (inputValue == optionText) {
+            option.setAttribute("selected", true)  // set selected value
+            }
             newField.appendChild(option)
         })
     }
     value.replaceWith(newField);
 }
-
 
 
 function updateId(indexString) {
@@ -121,8 +134,8 @@ function updateId(indexString) {
     return splitString.join("-");
 }
 
-function updateIndex(row) {
 
+function updateIndex(row) {
     row.querySelectorAll("[name],[id],[for]").forEach((item) => {
         if (item.hasAttribute("name")) {
             item.name = updateId(item.name);
@@ -132,16 +145,13 @@ function updateIndex(row) {
             item.setAttribute("for", updateId(item.getAttribute("for")));
         }
     })
-
 }
 
 
 button = document.getElementById("addSchemaField");
 button.addEventListener("click", function () {
     addRow("schema", "schemaMetadata");
-
 })
-
 
 
 function addRow(type, elementId) {
@@ -158,12 +168,12 @@ function addRow(type, elementId) {
     if (!clonedRow.querySelector("[id$=-remove]")) {
         createRemoveButton(clonedRow);
     }
-    clonedRow.querySelector("[id$=-remove]").addEventListener("click", (event) => {removeRow(event)});
+    clonedRow.querySelector("[id$=-remove]").addEventListener("click", (event) => { removeRow(event) });
     updateIndex(clonedRow);
     container.appendChild(clonedRow);
-
     clonedRow.querySelectorAll("label").forEach((label) => label.remove());
 }
+
 
 function createRemoveButton(row) {
     let removeCol = document.createElement("div");
