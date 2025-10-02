@@ -138,106 +138,57 @@ function updateIndex(row) {
 
 button = document.getElementById("addSchemaField");
 button.addEventListener("click", function () {
-    addRow();
+    addRow("schema", "schemaMetadata");
 
 })
 
-function addRow() {
-    let container = document.getElementById("schemaMetadata");
+
+
+function addRow(type, elementId) {
+    let container = document.getElementById(elementId);
     let lastRow = container.lastElementChild;
     let clonedRow = lastRow.cloneNode(true);
-    let clonedSchema = clonedRow.querySelector("[id$='-schema']");
-    clonedSchema.addEventListener('change', () => updateAttributeChoice(clonedSchema, schemasObject));
-    container.appendChild(clonedRow);
+    if (type == "schema") {
+        let clonedSchema = clonedRow.querySelector("[id$='-schema']");
+        clonedSchema.addEventListener('change', () => updateAttributeChoice(clonedSchema, schemasObject));
+        clonedSchema.selectedIndex = 0;
+        clonedRow.querySelector("[id$='-meta_a']").innerHTML = ""
+        clonedRow.querySelector("[id$='-meta_v']").innerHTML = ""
+    }
+    if (!clonedRow.querySelector("[id$=-remove]")) {
+        createRemoveButton(clonedRow);
+    }
+    clonedRow.querySelector("[id$=-remove]").addEventListener("click", (event) => {removeRow(event)});
     updateIndex(clonedRow);
+    container.appendChild(clonedRow);
+
     clonedRow.querySelectorAll("label").forEach((label) => label.remove());
-    clonedSchema.selectedIndex = 0;
-    clonedRow.querySelector("[id$='-meta_a']").innerHTML = ""
 }
 
-function removeRow() {
-
-
+function createRemoveButton(row) {
+    let removeCol = document.createElement("div");
+    removeCol.classList.add("col-md-1");
+    let removeContainer = document.createElement("div");
+    removeContainer.classList.add("mb-0");
+    const removeButton = document.createElement("button");
+    removeButton.classList.add("form-control");
+    removeButton.id = "non_schema_metadata_no_label-0-remove";
+    removeButton.setAttribute("name", "non_schema_metadata_no_label-0-remove");
+    removeButton.type = "button";
+    removeButton.innerHTML = '<i class="bi bi-trash"></i>';
+    removeContainer.appendChild(removeButton);
+    removeCol.appendChild(removeContainer);
+    row.appendChild(removeCol)
 
 }
 
 
-// // non-schema
+function removeRow(event) {
+    event.target.closest(".row").remove();
+}
 
-// let counterNonSchema = document.getElementById("labelMetadata").childElementCount;
+button = document.getElementById("addNonSchemaField");
+button.addEventListener("click", function () {
+    addRow("nonSchema", "nonSchemaMetadata");
+})
 
-// buttonNonSchema = document.getElementById("addNonSchemaField");
-// buttonNonSchema.addEventListener("click", function() {
-//     let myList = document.querySelectorAll("#metadataFields #nonSchemaMetadata .row");
-//     let row = document.createElement("div");
-//     row.classList.add("row");
-//     row.id = `nonSchemaRow-${counterNonSchema}`
-
-//     //col 1 attribute name
-
-//     console.log(counterNonSchema)
-//     let attributeCol = document.createElement("div");
-//     attributeCol.classList.add("col-md-4")
-//     let attributeContainer = document.createElement("div")
-//     attributeContainer.classList.add("mb-0")
-//     const attributeInput = document.createElement("input")
-//     attributeInput.classList.add("form-control");
-//     attributeInput.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-meta_attribute`)
-//     attributeInput.id = `non_schema_metadata_no_label-${counterNonSchema}-meta_attribute`;
-//     attributeContainer.appendChild(attributeInput);
-//     attributeCol.appendChild(attributeContainer);
-
-//     //col 2 attribute value
-//     let valueCol = document.createElement("div");
-//     valueCol.classList.add("col-md-4")
-//     let valueContainer = document.createElement("div")
-//     valueContainer.classList.add("mb-0")
-//     const valueInput = document.createElement("input")
-//     valueInput.classList.add("form-control");
-//     valueInput.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-meta_value`)
-//     valueInput.id = `non_schema_metadata_no_label-${counterNonSchema}-meta_value`;
-//     valueContainer.appendChild(valueInput);
-//     valueCol.appendChild(valueContainer);
-
-//     //col 3 Unit value
-//     let unitCol = document.createElement("div");
-//     unitCol.classList.add("col-md-3")
-//     let unitContainer = document.createElement("div")
-//     unitContainer.classList.add("mb-0")
-//     const unitInput = document.createElement("input")
-//     unitInput.classList.add("form-control");
-//     unitInput.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-meta_unit`)
-//     unitInput.id = `non_schema_metadata_no_label-${counterNonSchema}-meta_unit`;
-//     unitContainer.appendChild(unitInput);
-//     unitCol.appendChild(unitContainer);
-
-
-
-//     //col 4 remove
-//     let removeCol = document.createElement("div");
-//     removeCol.classList.add("col-md-1")
-//     let removeContainer = document.createElement("div")
-//     removeContainer.classList.add("mb-0");
-//     const removeButton = document.createElement("button")
-//     removeButton.classList.add("form-control");
-//     removeButton.id = `non_schema_metadata_no_label-${counterNonSchema}-remove`;
-//     removeButton.setAttribute("name", `non_schema_metadata_no_label-${counterNonSchema}-remove`)
-//     removeButton.type = "button";
-//     removeButton.innerHTML = '<i class="bi bi-trash"></i>'
-//     removeButton.addEventListener("click", (event) => {
-//         removeRow(event.target)
-//     });
-//     removeButton.addEventListener("click", rowHandler);
-//     // removeButton.value = "y";
-//     removeContainer.appendChild(removeButton);
-//     removeCol.appendChild(removeContainer);
-
-//     row.appendChild(attributeCol)
-//     row.appendChild(valueCol)
-//     row.appendChild(unitCol)
-//     row.appendChild(removeCol)
-
-//     myList[myList.length - 1].after(row);
-//     counterNonSchema++
-
-// })
