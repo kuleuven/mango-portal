@@ -44,7 +44,7 @@ class AVUForm(Form):
     meta_attribute = StringField("Attribute name")
     meta_value = StringField("Attribute value")
     meta_unit = StringField("Unit value")
-    remove = ButtonField("      ")
+    # remove = ButtonField("      ")
 
 
 class AVUFormNoLabel(Form):
@@ -53,7 +53,7 @@ class AVUFormNoLabel(Form):
     meta_attribute = StringField("")
     meta_value = StringField("")
     meta_unit = StringField("")
-    remove = ButtonField("")
+    # remove = ButtonField("")
 
 
 class AVUSchema(Form):
@@ -73,7 +73,7 @@ class AVUSchema(Form):
         },  # we don't validate because choices will be created dynamically
     )
     meta_v = StringField("Attribute value", render_kw={"data-target": "meta-value-label"})
-    remove = ButtonField("      ")
+    # remove = ButtonField("      ")
 
 
 
@@ -142,10 +142,10 @@ class CatalogSearchForm(Form):
         FormField(AVUSchema, label="metadata"),
         min_entries=1,
     )
-    non_schema_metadata = FormField(AVUForm, label="Non schema metadata")
+    # non_schema_metadata = FormField(AVUForm, label="Non schema metadata")
     non_schema_metadata_no_label = FieldList(
-        FormField(AVUFormNoLabel),
-        min_entries=0,
+        FormField(AVUForm),
+        min_entries=1,
     )
 
     per_page = HiddenField("per_page")
