@@ -91,12 +91,12 @@ a.right {
             <div class="row">
                 <h5>Non-schema metadata</h5>
                 <div id="nonSchemaMetadata">
-                    {% for subform in search_form.non_schema_metadata_no_label %}
-                        {{ render_form_row([subform.meta_attribute, subform.meta_value, subform.meta_unit],
+                    {% for subform in search_form.non_schema_metadata %}
+                        {{ render_form_row([subform.meta_a, subform.meta_v, subform.meta_u],
                                                 col_map = {
-                                                subform.id ~ '-meta_attribute': 'col-md-4',
-                                                subform.id ~ '-meta_value' : 'col-md-4',
-                                                subform.id ~ '-meta_unit' : 'col-md-3'},
+                                                subform.id ~ '-meta_a': 'col-md-4',
+                                                subform.id ~ '-meta_v' : 'col-md-4',
+                                                subform.id ~ '-meta_u' : 'col-md-3'},
                                                 form_group_classes="col-mb-0") }}
                     {% endfor %}
                 </div>

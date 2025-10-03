@@ -1,48 +1,31 @@
-from crypt import methods
 from flask import (
     Blueprint,
     render_template,
     current_app,
-    url_for,
-    redirect,
     g,
-    send_file,
-    abort,
-    stream_with_context,
-    Response,
     request,
     flash,
-    jsonify,
 )
 import json
-from flask_wtf import Form, FlaskForm
 from kernel.search2.search_form import CatalogSearchForm
 from cache import cache
 from lib.util import (
-    collection_tree_to_dict,
     flatten_schema,
 )
-
 from pprint import pprint
 from irods.models import (
     Collection,
     DataObject,
     DataObjectMeta,
     CollectionMeta,
-    UserMeta,
 )
-from irods.session import iRODSSession
 from irods.query import Query
 from irods.column import Criterion, Like
 from datetime import datetime
-from flask_paginate import Pagination, get_page_parameter
-
+from flask_paginate import Pagination
 from kernel.template_overrides import get_template_override_manager
-
 from kernel.metadata_schema import get_schema_manager  # , SchemaManager
 from kernel.metadata_schema.editor import get_realms_for_current_user
-from mango_mdschema import helpers
-from multidict import MultiDict
 
 
 basic_search2_bp = Blueprint("basic_search2_bp", __name__, template_folder="templates")
@@ -179,19 +162,19 @@ def build_basic_query_filters(form):
     num = 0
     while True:
         try:
-            if form[f"non_schema_metadata_no_label-{num}-meta_attribute"]:
+            if form[f"non_schema_metadata-{num}-meta_a"]:
                 filters += [
                     Criterion(
                         "=",
                         column_meta_base.name,
-                        form[f"non_schema_metadata_no_label-{num}-meta_attribute"],
+                        form[f"non_schema_metadata-{num}-meta_a"],
                     )
                 ]
 
-            if form[f"non_schema_metadata_no_label-{num}-meta_value"]:
+            if form[f"non_schema_metadata-{num}-meta_v"]:
                 comparison = (
                     "like"
-                    if form[f"non_schema_metadata_no_label-{num}-meta_value"].find("%")
+                    if form[f"non_schema_metadata-{num}-meta_v"].find("%")
                     != -1
                     else "="
                 )
@@ -199,9 +182,26 @@ def build_basic_query_filters(form):
                     Criterion(
                         comparison,
                         column_meta_base.value,
-                        form[f"non_schema_metadata_no_label-{num}-meta_value"],
+                        form[f"non_schema_metadata-{num}-meta_v"],
                     )
                 ]
+
+            if form[f"non_schema_metadata-{num}-meta_u"]:
+                comparison = (
+                    "like"
+                    if form[f"non_schema_metadata-{num}-meta_u"].find("%")
+                    != -1
+                    else "="
+                )
+                filters += [
+                    Criterion(
+                        comparison,
+                        column_meta_base.value,
+                        form[f"non_schema_metadata-{num}-meta_u"],
+                    )
+                ]
+
+                
 
             num += 1
         except:
@@ -384,24 +384,7 @@ def catalog_search2():
     )
     for item in data_object_meta_names:
         meta_names.append(item[DataObjectMeta.name])
-        # pprint(item)
-    # pprint(meta_names)
-    # print(f"Got {collection_meta_names.length} items for collections")
-    # for item in collection_meta_names:
-    #     pprint(item)
-    # print(f"Got {user_meta_names.length} items for users")
-    # for item in user_meta_names:
-    #     pprint(item)
 
-    # collection_tree = json.dumps(
-    #     [collection_tree_to_dict(g.irods_session.collections.get(g.user_home))]
-    # )
-
-    # import pdb
-    # pdb.set_trace()
-    # pprint(cache)
-
-    # breakpoint()
 
     search_form = CatalogSearchForm(
         formdata=request.values,
@@ -411,15 +394,8 @@ def catalog_search2():
     )
 
     # breakpoint()
-    #
-    # schema_value = search_form.schema_metadata.schema.data
-    # search_form.schema_metadata.meta_a.choices = [schema_dict[schema_value]
-
-    # print(search_form.validate())
 
     # ----------------------- run search -------------------- #
-
-    # print(request.values)
 
     print(request.values.to_dict())
 
