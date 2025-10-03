@@ -76,18 +76,6 @@ selectSchemas.forEach((schemaDropdown) => {
 });
 
 
-function getAttributeValueElement(attribute) { // get attribute value element 
-    if (attribute.id === "schema_metadata-meta_a") { // first one
-        return (document.getElementById("schema_metadata-meta_v"))
-    } else { // no label
-        let i = 0;
-        while (!attribute.id.includes(i)) {
-            i++
-        };
-        return (document.getElementById("schema_metadata_no_label-" + i + "-meta_v"))
-    }
-}
-
 
 function createField(type, elementName, elementID, inputValue) { // function to create field based on type
     let element;
@@ -98,7 +86,7 @@ function createField(type, elementName, elementID, inputValue) { // function to 
         element = document.createElement("input");
         element.type = type == "integer" ? "number" : type;
         element.classList.add("form-control");
-        element.value = inputValue; //TODO move this!
+        element.value = inputValue; //TODO move this!?
     }
     element.id = elementID;
     element.setAttribute("name", elementName);
@@ -160,14 +148,15 @@ function addRow(type, elementId) {
     let clonedRow = lastRow.cloneNode(true);
     if (type == "schema") {
         let clonedSchema = clonedRow.querySelector("[id$='-schema']");
+        let index = clonedSchema.id.split("-")[1]
         clonedSchema.addEventListener('change', () => updateAttributeChoice(clonedSchema, schemasObject));
         clonedSchema.selectedIndex = 0;
         clonedRow.querySelector("[id$='-meta_a']").innerHTML = "";
         const newInput = document.createElement("input");
         newInput.className = "form-control";
         newInput.setAttribute("data-target", "meta-value-label");
-        newInput.id = "schema_metadata-0-meta_v";
-        newInput.name = "schema_metadata-0-meta_v";
+        newInput.id = `schema_metadata-${index}-meta_v`;
+        newInput.name = `schema_metadata-${index}-meta_v`;
         newInput.type = "text";
         newInput.value = "";
         clonedRow.querySelector("[id$='-meta_v']").replaceWith(newInput);
@@ -197,7 +186,6 @@ function createRemoveButton(row) {
     removeContainer.appendChild(removeButton);
     removeCol.appendChild(removeContainer);
     row.appendChild(removeCol)
-
 }
 
 
