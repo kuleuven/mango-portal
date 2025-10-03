@@ -153,12 +153,13 @@
               });
             })
           const submitButton = document.querySelector(".modal#folderUploadModal button#sendFile");
-          let processedFiles = 0;
           submitButton.addEventListener("click", () => {
+              let processedFiles = 0;
               submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
               listOfFiles.forEach(async (file) => {
-                if (filesToIgnore.indexOf(file.webkitRelativePath) == -1) {
-                  console.log(file)
+                if (filesToIgnore.indexOf(file.webkitRelativePath) > -1) {
+                  processedFiles += 1;
+                } else {
                   const fileData = new FormData();
                   fileData.append("csrf_token", data.get("csrf_token"));
                   fileData.append("uploadFolder", file, file.webkitRelativePath);
