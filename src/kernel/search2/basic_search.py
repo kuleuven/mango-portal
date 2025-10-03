@@ -56,6 +56,7 @@ irods_comparison_operator = {
 # ---------------------- filters ---------------------------- #
 
 
+
 def build_basic_query_filters(form):
     """
 
@@ -333,6 +334,9 @@ def get_realm_schemas(realm):
 @basic_search2_bp.route("/catalog/search2", methods=["GET", "POST"])
 def catalog_search2():
 
+
+
+
     # cache for 5 minutes using all the arguments as a key, user specific!
     @cache.memoize(300)
     def get_meta_attribute_names(type=DataObjectMeta.name, user=None, zone=None):
@@ -392,6 +396,14 @@ def catalog_search2():
         schemas=list(schemas_titles.items()),
         subtrees=subtrees,
     )
+
+
+    try: 
+        # set the choose collection to current realm if exists
+        current_realm = g.irods_session.realm
+        search_form.collection_subtree.collection.data = current_realm["path"]
+    except:
+        pass
 
     # breakpoint()
 
