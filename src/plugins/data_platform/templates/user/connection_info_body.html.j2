@@ -35,9 +35,13 @@
       <dd>
         {{ info['irods_environment']['irods_user_name'] }}
       </dd>
+      <dt>Login method</dt>
+      <dd>
+        <code>native</code> authentication with password below or <code>pam_interactive</code> with login URL
+      </dd>
       <dt>Password</dt>
       <dd>
-        <pre>{{ info['token'] }}</pre>
+        <pre>{{ info['token'] }}</pre> for <code>native</code> authentication
       </dd>
     </dl>
     <p>
@@ -47,31 +51,55 @@
   </div>
   <div class="tab-pane container fade p-1" id="linux">
     {% if 'hpc-irods-setup-zone' in info %}
-      <p class="mt-3">
-        On the HPC tier1 or tier2 clusters in Leuven, run the snippet below to
-        configure an irods client. The irods session itself will last for a
-        week, afterwards repeat the command.
-      </p>
-      <pre><code>irods-setup --zone {{ info['hpc-irods-setup-zone'] }} | bash</code></pre>
-      <p>
-        From other HPC clusters in flanders, you can run
-        <code>ssh login.hpc.kuleuven.be irods-setup --zone
-          {{ info['hpc-irods-setup-zone'] }} | bash</code>. If this command through ssh does not work, please run it without
+      <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxHPC" aria-expanded="true" aria-controls="linuxHPC">
+            <i class="bi bi-chevron-down"></i> On HPC infrastructure
+          </button></h6>
+      <div id="linuxHPC" class="collapse show">
+        <p>
+          On the HPC tier1 or tier2 clusters in Leuven, run the snippet below to
+          configure an irods client. The irods session itself will last for a
+          week, afterwards repeat the command.
+        </p>
+        <div class="code-container ms-2">
+          <pre><code>irods-setup --zone {{ info['hpc-irods-setup-zone'] }} | bash</code></pre>
+        </div>
+        <p>
+          From other HPC clusters in flanders, you can run
+          <code class="user-select-all">ssh login.hpc.kuleuven.be irods-setup --zone
+            {{ info['hpc-irods-setup-zone'] }} | bash</code>. If this command through ssh does not work, please run it without
           <code>| bash</code> to troubleshoot.
         </p>
+      </div>
+    {% endif %}
+      <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxPamInteractive" aria-expanded="true" aria-controls="linuxPamInteractive">
+            <i class="bi bi-chevron-down"></i> With interactive login
+          </button></h6>
+      <div id="linuxPamInteractive" class="collapse show">
         <p>
-          Alternatively, you can copy paste the snippet below to configure an irods client under Linux.
-          The irods session is valid
-          {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
-            for one week
-          {% else %}
-            until {{ info['expiration']|format_timestamp }}
-          {% endif %}
-          .
+          Run the snippet below to configure an irods client under Linux. Make sure that your irods icommands installation includes the <code>irods-auth-plugin-pam-interactive-client</code> package.
         </p>
-      {% else %}
-        <p class="mt-3">
-          Run the snippet below to configure an irods client under Linux. The
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">mkdir -p ~/.irods
+cat > ~/.irods/irods_environment.json <<'EOF'
+{{ setup_json['linux_pam_interactive'] }}
+EOF
+iinit --ttl 168 && echo You are now authenticated to irods.
+</code></pre>
+        </div>
+        <p>
+          The irods session remains valid for one week. Run <code>iinit --ttl 168</code> again to refresh.
+        </p>
+      </div>
+
+      <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxNative" aria-expanded="false" aria-controls="linuxNative">
+            <i class="bi bi-chevron-down"></i> Using native password
+          </button></h6>
+      <div id="linuxNative" class="collapse">
+        <p>
+          If your installation lacks the <code>irods-auth-plugin-pam-interactive-client</code> package, run the snippet below to configure an irods client under Linux. The
           irods session is valid
           {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
             for one week
@@ -80,19 +108,21 @@
           {% endif %}
           .
         </p>
-      {% endif %}
-      <pre class="ms-2"><code class="user-select-all">mkdir -p ~/.irods
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">mkdir -p ~/.irods
 cat > ~/.irods/irods_environment.json <<'EOF'
 {{ setup_json['linux'] }}
 EOF
-{% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' -%}
-iinit -h | grep Version | grep -v -q 4.2. || sed -i 's/"irods_authentication_scheme": "pam_password"/"irods_authentication_scheme": "PAM"/' ~/.irods/irods_environment.json
-{% endif -%}
 echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}--ttl 168{% endif %} >/dev/null && echo You are now authenticated to irods.
-      </code></pre>
+</code></pre>
+        </div>
+      </div>
     </div>
     <div class="tab-pane container fade p-1" id="windows">
-      <p style="margin-top: 10px">
+      <p style="mt-3">
         Start a python interactive shell, and paste the snippet below to setup
         the necessary files to authenticate against irods. The script assumes
         that you installed the <code>python-irodsclient</code>. It will write
@@ -105,7 +135,11 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
           The written password file will be valid until {{ info['expiration']|format_timestamp }}.
         {% endif %}
       </p>
-      <pre class="ms-2"><code class="user-select-all">config = """
+      <div class="code-container ms-2">
+        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+          <i class="bi bi-clipboard"></i> Copy
+        </button>
+        <pre><code class="user-select-all">config = """
 {{ setup_json['windows'] }}
 """
 password = "{{ info['token'] }}"
@@ -134,6 +168,7 @@ put(iRODSSession.get_irods_password_file(), encode(session.pam_pw_negotiated[0],
 put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
 {% endif -%}
 </code></pre>
+        </div>
       <!--
       <p>See below how to get started with the python client.</p>
 
@@ -152,20 +187,26 @@ put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
       -->
     </div>
     <div class="tab-pane container p-1" id="rirods">
-      <p style="margin-top: 10px">
+      <p style="mt-3">
         Run the snippet below in an interactive session in R:
-        <pre class="ms-2 user-select-all">
-library(rirods)
+      </p>
+      <div class="code-container ms-2">
+        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+          <i class="bi bi-clipboard"></i> Copy
+        </button>
+        <pre><code class="user-select-all">library(rirods)
 create_irods("https://{{ info["irods_environment"]["irods_host"] }}/irods-http-api/{{ info['http_api_version'] }}", overwrite=TRUE)
 iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}")
 # or alternatively:
 # iauth("{{ info['irods_environment']['irods_user_name'] }}") # and provide the password when prompted
-</pre>
+</code></pre>
+      </div>
+      <p>
         The written password file will be valid until {{ info['expiration']|format_timestamp }}.
       </p>
     </div>
     <div class="tab-pane container fade p-1" id="sftp">
-      <p style="margin-top: 10px">
+      <p style="mt-3">
         You can also use SFTP to connect to iRODS and use programs such as Filezilla, WinSCP or <code>lftp</code>.
         It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
       </p>

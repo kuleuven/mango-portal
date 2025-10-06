@@ -246,6 +246,8 @@ def connection_info_modal(zone):
     setup_json={
         'linux': json.dumps(info['irods_environment'], indent=4),
         'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
+        'linux_pam_interactive': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': "pam_interactive"}, indent=4),
+        'windows_pam_interactive': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': "pam_interactive", 'irods_authentication_uid': 1000}, indent=4),
     }
 
     if "-hpc-" in jobid:
