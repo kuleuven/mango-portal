@@ -1,0 +1,60 @@
+<style>
+  button[data-bs-toggle="collapse"] .bi-chevron-down {
+    transition: transform 0.3s ease;
+    display: inline-block;
+  }
+
+  button[data-bs-toggle="collapse"][aria-expanded="false"] .bi-chevron-down {
+    transform: rotate(-90deg);
+  }
+
+  .code-container {
+    position: relative;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.8);
+    transition: all 0.2s;
+  }
+  
+  .copy-btn:hover {
+    background-color: rgba(255, 255, 255, 1);
+  }
+  
+  .copy-btn.copied {
+    background-color: #198754;
+    color: white;
+  }
+</style>
+<script type="text/javascript">
+  function copyToClipboard(button) {
+    // Find the code element within the same container
+    const codeContainer = button.closest('.code-container');
+    const codeElement = codeContainer.querySelector('code');
+    const textToCopy = codeElement.textContent;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      // Change button appearance on success
+      const originalHTML = button.innerHTML;
+      button.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
+      button.classList.add('copied');
+      
+      // Reset button after 2 seconds
+      setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.classList.remove('copied');
+      }, 2000);
+    }).catch(err => {
+      // Fallback for older browsers
+      console.error('Failed to copy:', err);
+      alert('Failed to copy to clipboard');
+    });
+  }
+</script>
