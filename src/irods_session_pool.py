@@ -1,16 +1,16 @@
+import datetime
+import logging
+import time
+from threading import Event, Lock, Thread
+
+from flask import current_app
+from irods.models import Group, User
 from irods.session import iRODSSession
-import irods
 
 # Since PRC 1.1.7
 from irods.user import iRODSGroup
-from irods.models import Group, User
 
-
-from threading import Lock, Thread, Event
-import datetime, time
-import logging
 import signals
-from flask import session, current_app
 
 # global pool of irods session as a dict of wrapped iRODSUSerSession objects
 irods_user_sessions = {}
@@ -28,18 +28,19 @@ class iRODSUserSession(iRODSSession):
         self.lock = Lock()
         self.created = datetime.datetime.now()
         self.last_accessed = datetime.datetime.now()
-        self.irods_session.user = self.user = irods_session.users.get(
+        #  @deprecated self.irods_session.user is deprecated to avoid confusion, use g.irod_session.user_object instead
+        self.irods_session.user = self.irods_session.user_object = self.user = self.user_object = irods_session.users.get(  # type: ignore
             irods_session.username
         )
 
         self.init_or_refresh_groups()
 
         if openid_user_name:
-            self.irods_session.openid_user_name = self.openid_user_name = (
+            self.irods_session.openid_user_name = self.openid_user_name = (  # type: ignore
                 openid_user_name
             )
         if openid_user_email:
-            self.irods_session.openid_user_email = self.openid_user_email = (
+            self.irods_session.openid_user_email = self.openid_user_email = (  # type: ignore
                 openid_user_email
             )
 
@@ -49,22 +50,22 @@ class iRODSUserSession(iRODSSession):
         self.irods_session.cleanup()
 
     def init_or_refresh_groups(self):
-        irods_session = self.irods_session
+        irods_session: iRODSSession = self.irods_session
         my_groups = [
-            iRODSGroup(irods_session.user_groups, item)
+            iRODSGroup(irods_session.groups, item)  # type: ignore
             for item in irods_session.query(Group)
             .filter(User.name == irods_session.username)
             .all()
         ]
-        self.irods_session.my_groups = self.my_groups = [
+        self.irods_session.my_groups = self.my_groups = [  # type: ignore
             group for group in my_groups if group.name != irods_session.username
         ]
         self.my_groups.sort(key=lambda x: (x.name.lower() == "public", x.name.lower()))
 
-        self.irods_session.my_group_ids = self.my_group_ids = [
+        self.irods_session.my_group_ids = self.my_group_ids = [  # type: ignore
             group.id for group in self.my_groups
         ]
-        self.irods_session.my_group_names = self.my_group_names = [
+        self.irods_session.my_group_names = self.my_group_names = [  # type: ignore
             group.name for group in self.my_groups
         ]
 
@@ -124,7 +125,7 @@ def add_irods_session(
     )
     irods_user_sessions[session_id].lock.acquire()
     signals.session_pool_user_session_created.send(
-        current_app._get_current_object(),
+        current_app._get_current_object(),  # type: ignore
         zone=irods_session.zone,
         username=irods_session.username,
     )
