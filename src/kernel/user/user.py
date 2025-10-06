@@ -10,7 +10,6 @@ from flask import (
     session,
     url_for,
 )
-from irods.user import iRODSGroup
 from irods.session import iRODSSession
 from irods.exception import PAM_AUTH_PASSWORD_FAILED
 from kernel.template_overrides import get_template_override_manager
