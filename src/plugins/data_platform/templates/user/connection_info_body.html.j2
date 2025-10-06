@@ -122,24 +122,44 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
       </div>
     </div>
     <div class="tab-pane container fade p-1" id="windows">
-      <p style="mt-3">
-        Start a python interactive shell, and paste the snippet below to setup
-        the necessary files to authenticate against irods. The script assumes
-        that you installed the <code>python-irodsclient</code>. It will write
-        the irods environment file and a password file.
-        {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
-          The validity period of the password depends on server configuration
-          and the version of python-irodsclient. For version 1.0.0, this is 60 hours,
-          for version 2.0.0 only 2 minutes.
-        {% else %}
-          The written password file will be valid until {{ info['expiration']|format_timestamp }}.
-        {% endif %}
-      </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">config = """
+      <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#pythonModule" aria-expanded="true" aria-controls="pythonModule">
+            <i class="bi bi-chevron-down"></i> With pip module
+          </button></h6>
+      <div id="pythonModule" class="collapse show">
+        <p>
+          Use the following command line commands to authenticate against irods.
+          This assumes you already installed a python pip environment.
+        </p>
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">pip install mango_auth
+mango_auth{% if info['irods_environment']['irods_host'] != info['irods_environment']['irods_zone_name'] + ".irods.icts.kuleuven.be" and info['irods_environment']['irods_host'] != info['irods_environment']['irods_zone_name'] + ".irods.hpc.kuleuven.be" %} --host {{ info['irods_environment']['irods_host'] }}{% endif %} {{ info['irods_environment']['irods_user_name'] }} {{ info['irods_environment']['irods_zone_name'] }}</code></pre>
+        </div>
+      </div>
+      <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#pythonScript" aria-expanded="false" aria-controls="pythonScript">
+            <i class="bi bi-chevron-down"></i> With python-irodsclient only and native password
+          </button></h6>
+      <div id="pythonScript" class="collapse">
+        <p>
+          Start a python interactive shell, and paste the snippet below to setup
+          the necessary files to authenticate against irods. The script assumes
+          that you installed the <code>python-irodsclient</code>. It will write
+          the irods environment file and a password file.
+          {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
+            The validity period of the password depends on server configuration
+            and the version of python-irodsclient. For version 1.0.0, this is 60 hours,
+            for version 2.0.0 only 2 minutes.
+          {% else %}
+            The written password file will be valid until {{ info['expiration']|format_timestamp }}.
+          {% endif %}
+        </p>
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">config = """
 {{ setup_json['windows'] }}
 """
 password = "{{ info['token'] }}"
@@ -169,6 +189,7 @@ put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
 {% endif -%}
 </code></pre>
         </div>
+      </div>
       <!--
       <p>See below how to get started with the python client.</p>
 
