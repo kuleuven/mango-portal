@@ -25,7 +25,7 @@ pip==24.3.1
 plotly==5.15.0
 pur==7.3.1
 PyJWT==2.8.0
-python-irodsclient @ git+https://github.com/kuleuven/python-irodsclient.git@69cda334c3448de9ed5b0b98d0b283561f00bcc8
+python-irodsclient=3.2.0
 python-magic==0.4.27
 python-slugify==8.0.1
 semver==3.0.2
