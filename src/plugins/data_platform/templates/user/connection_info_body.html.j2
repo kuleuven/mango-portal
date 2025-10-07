@@ -285,15 +285,23 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
     <div class="tab-pane container fade p-1" id="owncloud">
       <p style="mt-3">
         The Owncloud Desktop Sync application can be used to synchorize an iRODS folder to your local workstation.
-        The owncloud server to connect to is
       </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">https://{{ desktop_sync }}
-</code></pre>
-      </div>
+      <ol>
+        <li>Ensure the ownCloud desktop client for Windows or Linux is installed via your local IT-support, or via the installation instructions at <a href="https://owncloud.com/desktop-app">https://owncloud.com/desktop-app</a>.</li>
+        <li>Open ownCloud and click on "Add account". On the box to provide your server's address, enter a URL:
+          <div class="code-container ms-2 mt-2">
+            <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+              <i class="bi bi-clipboard"></i> Copy
+            </button>
+            <pre><code class="user-select-all">https://{{ desktop_sync }}</code></pre>
+          </div>
+        </li>
+        <li>Click on "Open Browser" to log in to ownCloud. To grant privileges to ownCloud click on "Agree and continue to the application".</li>
+        <li>In the client, you get "You're all set!" message and there is a checkbox to select advanced configuration. <strong>Check the "Advanced configuration" box.</strong></li>
+        <li>Additional options on the configuration show up. Options under advanced configuration Select "Configure synchronization manually" to manually determine what is synced, otherwise you pull-in all the files you have access to.</li>
+        <li>Pick a local folder on your computer to sync. Navigate to the ManGO Project you want to synchronize locally.</li>
+        <li>Keep checked the option to "Use virtual files instead of downloading content manually" and click on "Add sync connection".</li>
+      </ol>
     </div>
     <div class="tab-pane container fade p-1" id="sftp">
       <p style="mt-3">
