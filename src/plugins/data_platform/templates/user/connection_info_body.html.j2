@@ -13,6 +13,9 @@
     <a class="nav-link" data-bs-toggle="pill" href="#iron">iron CLI</a>
   </li>
   <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="pill" href="#owncloud">Onwcloud Desktop Sync</a>
+  </li>
+  <li class="nav-item">
     <a class="nav-link" data-bs-toggle="pill" href="#sftp">SFTP</a>
   </li>
   <li class="nav-item">
@@ -278,6 +281,19 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
       <p>
         The written password file will be valid until {{ info['expiration']|format_timestamp }}.
       </p>
+    </div>
+    <div class="tab-pane container fade p-1" id="owncloud">
+      <p style="mt-3">
+        The Owncloud Desktop Sync application can be used to synchorize an iRODS folder to your local workstation.
+        The owncloud server to connect to is
+      </p>
+      <div class="code-container ms-2">
+        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+          <i class="bi bi-clipboard"></i> Copy
+        </button>
+        <pre><code class="user-select-all">https://{{ desktop_sync }}
+</code></pre>
+      </div>
     </div>
     <div class="tab-pane container fade p-1" id="sftp">
       <p style="mt-3">
