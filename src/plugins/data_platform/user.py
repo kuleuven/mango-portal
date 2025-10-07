@@ -267,10 +267,10 @@ def connection_info_modal(zone):
     desktop_sync = f"icts-p-coz-desktop-sync-reva-{accounttype}.cloud.icts.kuleuven.be"
     if "-q-" in jobid:
         sftp_host = "rdmsftp.q.icts.kuleuven.be"
-        desktop_sync = "icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
+        desktop_sync = f"icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
     if "-t-" in jobid:
         sftp_host = "rdmsftp.t.icts.kuleuven.be"
-        desktop_sync = "icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
+        desktop_sync = f"icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
 
     return render_template("user/connection_info_body.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host, desktop_sync=desktop_sync)
 
@@ -318,10 +318,10 @@ def connection_info():
     desktop_sync = f"icts-p-coz-desktop-sync-reva-{accounttype}.cloud.icts.kuleuven.be"
     if "-q-" in jobid:
         sftp_host = "rdmsftp.q.icts.kuleuven.be"
-        desktop_sync = "icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
+        desktop_sync = f"icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
     if "-t-" in jobid:
         sftp_host = "rdmsftp.t.icts.kuleuven.be"
-        desktop_sync = "icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
+        desktop_sync = f"icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
 
     return render_template("user/connection_info.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host, desktop_sync=desktop_sync)
 
