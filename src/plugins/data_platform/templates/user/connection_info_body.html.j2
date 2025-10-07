@@ -4,13 +4,16 @@
     <a class="nav-link active" data-bs-toggle="pill" href="#password">Login data</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link" data-bs-toggle="pill" href="#linux">iCommands on Linux</a>
+    <a class="nav-link" data-bs-toggle="pill" href="#linux">iCommands</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link" data-bs-toggle="pill" href="#windows">Python Client on Windows</a>
+    <a class="nav-link" data-bs-toggle="pill" href="#windows">Python</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link" data-bs-toggle="pill" href="#sftp">SFTP Client</a>
+    <a class="nav-link" data-bs-toggle="pill" href="#iron">iron CLI</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="pill" href="#sftp">SFTP</a>
   </li>
   <li class="nav-item">
     <a class="nav-link" data-bs-toggle="pill" href="#rirods">rirods</a>
@@ -41,7 +44,12 @@
       </dd>
       <dt>Password</dt>
       <dd>
-        <pre>{{ info['token'] }}</pre> for <code>native</code> authentication
+        <div class="code-container">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <code>{{ info['token'] }}</code> for native authentication
+        </div>
       </dd>
     </dl>
     <p>
@@ -76,7 +84,9 @@
           </button></h6>
       <div id="linuxPamInteractive" class="collapse show">
         <p>
-          Run the snippet below to configure an irods client under Linux. Make sure that your irods icommands installation includes the <code>irods-auth-plugin-pam-interactive-client</code> package.
+          The irods icommands are only available for Linux operating systems. 
+          Make sure that your irods icommands installation includes the <code>irods-auth-plugin-pam-interactive-client</code> package.
+          Run the snippet below to configure an irods client under Linux.
         </p>
         <div class="code-container ms-2">
           <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
@@ -128,7 +138,7 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
       <div id="pythonModule" class="collapse show">
         <p>
           Use the following command line commands to authenticate against irods.
-          This assumes you already installed a python pip environment.
+          This assumes you already installed a python pip environment. The module should work both on Windows and Linux operating systems.
         </p>
         <div class="code-container ms-2">
           <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
@@ -137,9 +147,19 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
           <pre><code class="user-select-all">pip install 'mango_auth>=0.0.5'
 mango_auth {{ info['irods_environment']['irods_user_name'] }} {{ info['irods_environment']['irods_zone_name'] }} {{ info['irods_environment']['irods_host'] }}</code></pre>
         </div>
+        <p>
+          Or equivalently, in a python script/shell:
+        </p>
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">from mango_auth import iinit
+iinit("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['irods_environment']['irods_zone_name'] }}", "{{ info['irods_environment']['irods_host'] }}")</code></pre>
+        </div>
       </div>
       <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#pythonScript" aria-expanded="false" aria-controls="pythonScript">
-            <i class="bi bi-chevron-down"></i> With python-irodsclient only and native password
+            <i class="bi bi-chevron-down"></i> With python-irodsclient only and native password, on Windows
           </button></h6>
       <div id="pythonScript" class="collapse">
         <p>
@@ -206,6 +226,39 @@ put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
           coll = session.collections.get("/{{ info['irods_environment']['irods_zone_name'] }}/home/{{ info['irods_environment']['irods_user_name'] }}")
           print(coll.id)</code></pre>
       -->
+    </div>
+    <div class="tab-pane container p-1" id="iron">
+      <p style="mt-3">
+        At KU Leuven the <code>iron</code> command line utility was developped for user-friendly access to your iRODS files. 
+        Download the latest release at <a href="https://github.com/kuleuven/iron/releases">https://github.com/kuleuven/iron/releases</a>.
+        It is available both for Windows and Linux operating systems.
+      </p>
+      <p>
+        Run the snippet below to authenticate using <code>iron</code>:
+      </p>
+      <div class="code-container ms-2">
+        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+          <i class="bi bi-clipboard"></i> Copy
+        </button>
+        <pre><code class="user-select-all">iron auth {{ info['irods_environment']['irods_user_name'] }} {{ info['irods_environment']['irods_zone_name'] }} {{ info['irods_environment']['irods_host'] }}</code></pre>
+      </div>
+      <p>
+        Some example commands:
+      </p>
+      <div class="code-container ms-2">
+        <pre><code class="user-select-all"># Basic file operation
+iron ls
+iron cd /{{ info['irods_environment']['irods_zone_name'] }}/home/project
+iron pwd
+iron upload local/folder /{{ info['irods_environment']['irods_zone_name'] }}/home/project/path/to/collection/
+iron download /{{ info['irods_environment']['irods_zone_name'] }}/home/project/other/collection local/
+
+# Get an interactive shell with tab-completion
+iron shell
+
+# Find out all supported operations
+iron help</code></pre>
+      </div>
     </div>
     <div class="tab-pane container p-1" id="rirods">
       <p style="mt-3">
