@@ -134,8 +134,8 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
           <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
             <i class="bi bi-clipboard"></i> Copy
           </button>
-          <pre><code class="user-select-all">pip install mango_auth
-mango_auth{% if info['irods_environment']['irods_host'] != info['irods_environment']['irods_zone_name'] + ".irods.icts.kuleuven.be" and info['irods_environment']['irods_host'] != info['irods_environment']['irods_zone_name'] + ".irods.hpc.kuleuven.be" %} --host {{ info['irods_environment']['irods_host'] }}{% endif %} {{ info['irods_environment']['irods_user_name'] }} {{ info['irods_environment']['irods_zone_name'] }}</code></pre>
+          <pre><code class="user-select-all">pip install 'mango_auth>=0.0.5'
+mango_auth {{ info['irods_environment']['irods_user_name'] }} {{ info['irods_environment']['irods_zone_name'] }} {{ info['irods_environment']['irods_host'] }}</code></pre>
         </div>
       </div>
       <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#pythonScript" aria-expanded="false" aria-controls="pythonScript">
