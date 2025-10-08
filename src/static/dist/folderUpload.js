@@ -1,0 +1,120 @@
+const sizeThreshold = 300 * 1024 * 1024; // 300 MB
+
+// folderUploadURL is defined in the template
+// form constants
+const form = document.querySelector("form#folderUpload");
+const filesFieldName = "uploadFolder";
+
+// modal constants
+const filesModal = document.getElementById("folderUploadModal");
+const modalBody = filesModal.querySelector(".modal-body");
+const tableBody = modalBody.querySelector("tbody");
+const submitButton = filesModal.querySelector("button#sendFile");
+
+function listBigFiles(bigFiles) {
+    if (bigFiles.length > 0) {
+        const detailsDiv = modalBody.querySelector("div#details");
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        summary.innerHTML = `Files larger than ${sizeThreshold} bytes will be ignored.`;
+        const ul = document.createElement("ul");
+        bigFiles.forEach((file) => {
+            const li = document.createElement("li");
+            li.innerHTML = `${file.webkitRelativePath} (${file.size} bytes)`;
+            ul.appendChild(li);
+        });
+        details.appendChild(summary);
+        details.appendChild(ul);
+        detailsDiv.appendChild(details);
+    }
+}
+
+function createRowForFile(file, filesToIgnore) {
+    const row = document.createElement("tr");
+    row.setAttribute("data-filename", file.webkitRelativePath);
+    
+    const fnameCell = document.createElement("td");
+    fnameCell.className = "text-truncate";
+    fnameCell.innerHTML = file.webkitRelativePath;
+    
+    const sizeCell =  document.createElement("td");
+    sizeCell.innerHTML = file.size;
+    
+    const deleteButtonCell = document.createElement("td");
+    
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "btn btn-danger"
+    deleteButton.type = "button"
+    deleteButton.innerHTML = "<i class='bi bi-trash'></i>";
+    deleteButtonCell.appendChild(deleteButton);
+    
+    [fnameCell, sizeCell, deleteButtonCell].forEach((cell) => row.appendChild(cell));
+    
+    tableBody.appendChild(row);
+    
+    deleteButton.addEventListener("click", () => {
+        row.remove();
+        filesToIgnore.push(file.webkitRelativePath);
+    });
+}
+
+function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
+    processedFiles = 0;
+    listOfFiles.forEach(async (file) => {
+        if (filesToIgnore.indexOf(file.webkitRelativePath) > -1) {
+            processedFiles += 1;
+        } else {
+            const fileData = new FormData();
+            fileData.append("csrf_token", csrf_token);
+            fileData.append("uploadFolder", file, file.webkitRelativePath);
+
+            const response = await fetch(folderUploadURL, {
+                method: "POST",
+                body: fileData
+            });
+
+            const result = await response.json();
+            
+            const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
+            if (result) {
+                if (result.status == "OK") {
+                    button.classList.replace("btn-danger", "btn-success");
+                    button.querySelector("i").classList.replace("bi-trash", "bi-check-lg");
+
+                } else {
+                    button.querySelector("i").classList.replace("bi-trash", "bi-bug");
+                    console.log(result.status);
+                }  
+                processedFiles += 1;
+                if (processedFiles == listOfFiles.length) {
+                    submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
+                    submitButton.innerHTML = "Refresh page";
+                    submitButton.addEventListener("click", () => {
+                        location.reload();
+                    });
+                }
+            }
+        }
+    });
+}
+
+function listFilesToUpload() {
+    const modal = new bootstrap.Modal(filesModal);
+    modal.show();
+
+    const data = new FormData(form);
+    const bigFiles = [...data.getAll(filesFieldName)].filter((file) => file.size >= sizeThreshold);
+    listBigFiles(bigFiles);
+    
+    const listOfFiles = [...data.getAll(filesFieldName)].filter((file) => file.size < sizeThreshold);
+    const filesToIgnore = [];
+
+    listOfFiles.forEach((file) => createRowForFile(file, filesToIgnore));
+
+    submitButton.addEventListener("click", () => {
+        submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
+        submitFiles(listOfFiles, filesToIgnore, data.get("csrf_token"));
+    });
+}
+
+document.getElementById("uploadFolder").addEventListener("change", listFilesToUpload);
