@@ -448,10 +448,6 @@ def collection_browse(collection=None):
                         logging.info(f"No labels found for {schema}")
 
                 except Exception as e:
-                    flash_error(
-                        e,
-                        default_message=f"Encountered error loading schema {schema} for fetching labels {e}",
-                    )
                     logging.info(
                         f"Encountered error loading schema {schema} for fetching labels {e}"
                     )
