@@ -1,5 +1,8 @@
 from curses import meta
 import flask
+
+from collections.abc import Mapping
+
 from flask import (
     Blueprint,
     render_template,
@@ -373,7 +376,46 @@ def collection_browse(collection=None):
         # json_template_dir = get_metadata_schema_dir(g.irods_session)
 
         for schema in grouped_metadata["schema"]:  # schema_labels[schema][item.name]:
+
             if schema_manager:
+                if schema not in schemas:
+                    if schema == "other":
+                        pass
+                    else:
+                        result_dict = {}
+
+                        def add_labels(schema, result_dict):
+                            for key, value in schema.items():
+                                if "__version__" in key:
+                                    continue
+                                if isinstance(value, (dict, Mapping)):
+                                    result_dict[key] = {
+                                        "label": key.split(".")[-1],
+                                        "type": "object",
+                                        "level": (len(key.split(".")) - 3),
+                                        "properties": [],
+                                    }
+                                    for nested_value in value.values():
+                                        for element in nested_value:
+                                            if (
+                                                element
+                                                not in result_dict[key]["properties"]
+                                            ):
+                                                result_dict[key]["properties"].append(
+                                                    element
+                                                )
+                                        add_labels(nested_value, result_dict)
+                                else:
+                                    result_dict[key] = {
+                                        "label": key.split(".")[-1],
+                                        "type": "text",
+                                        "level": (len(key.split(".")) - 3),
+                                    }
+
+                        add_labels(grouped_metadata["schema"][schema], result_dict)
+                        result_dict["title"] = schema
+                        schema_labels[schema] = result_dict
+
                 try:
                     if version := grouped_metadata["schema"][schema].get(
                         f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}.__version__",
@@ -391,7 +433,6 @@ def collection_browse(collection=None):
                         schema_dict = json.loads(
                             schema_manager.load_schema(schema, status="published")
                         )
-
                     if schema_dict:
                         schema_labels[schema] = flatten_schema(
                             schema_dict,
@@ -405,11 +446,8 @@ def collection_browse(collection=None):
                         )
                     else:
                         logging.info(f"No labels found for {schema}")
+
                 except Exception as e:
-                    flash_error(
-                        e,
-                        default_message=f"Encountered error loading schema {schema} for fetching labels {e}",
-                    )
                     logging.info(
                         f"Encountered error loading schema {schema} for fetching labels {e}"
                     )
@@ -466,11 +504,15 @@ def collection_browse(collection=None):
     ).get_template_for_catalog_item(
         current_collection, "common/collection_view.html.j2"
     )
-    logging.info(f"Collection view: using template {view_template} for {current_collection.path}")
+    logging.info(
+        f"Collection view: using template {view_template} for {current_collection.path}"
+    )
     user_trash_path = f"/{g.irods_session.zone}/trash/home/{g.irods_session.username}"
 
-    reorganized_dict = json.dumps(md2dict.convert_metadata_to_dict(current_collection.metadata.items()))
-    #print(reorganized_dict)
+    reorganized_dict = json.dumps(
+        md2dict.convert_metadata_to_dict(current_collection.metadata.items())
+    )
+    # print(reorganized_dict)
 
     return render_template(
         view_template,
@@ -496,11 +538,8 @@ def collection_browse(collection=None):
         user_trash_path=user_trash_path,
         tabs=collection_view_tabs,
         extra_tabs=collection_extra_tabs,
-        reorganized_dict = reorganized_dict,
+        reorganized_dict=reorganized_dict,
     )
-
-
-
 
 
 @browse_bp.route("/data-object/view/<path:data_object_path>")
@@ -665,7 +704,10 @@ def view_object(data_object_path):
     tika_file_path = f"{tika_storage}/{data_object.id}.tika.json"
     ## Take into account tz info in a BC way, this was added in recent iRODS versions
     do_modtime = data_object.modify_time
-    use_tz = do_modtime.tzinfo is not None and do_modtime.tzinfo.utcoffset(do_modtime) is not None
+    use_tz = (
+        do_modtime.tzinfo is not None
+        and do_modtime.tzinfo.utcoffset(do_modtime) is not None
+    )
 
     if os.path.exists(tika_file_path) and do_modtime < (
         analysis_timestamp := datetime.datetime.fromtimestamp(
@@ -684,7 +726,9 @@ def view_object(data_object_path):
     logging.info(f"Object view: using template {view_template}")
     logging.info(f"Realm: {realm}")
 
-    reorganized_dict = json.dumps(md2dict.convert_metadata_to_dict(data_object.metadata.items()))
+    reorganized_dict = json.dumps(
+        md2dict.convert_metadata_to_dict(data_object.metadata.items())
+    )
 
     return render_template(
         view_template,
@@ -696,7 +740,7 @@ def view_object(data_object_path):
         acl_counts=acl_counts,
         my_groups=my_groups,
         grouped_metadata=grouped_metadata,
-        reorganized_dict = reorganized_dict,
+        reorganized_dict=reorganized_dict,
         schema_labels=schema_labels,
         realm=realm,
         schemas=schemas,
@@ -749,7 +793,7 @@ def download_object(data_object_path):
 
     data_object = g.irods_session.data_objects.get(data_object_path)
     # Abort for too large files, 50GB limit for now
-    if data_object.size > 50*1024*1024*1024:  # 50GB
+    if data_object.size > 50 * 1024 * 1024 * 1024:  # 50GB
         return abort(413)
     object_name = f"{data_object.name}"
     (object_type, object_encoding) = mimetypes.guess_type(object_name)
@@ -909,7 +953,7 @@ def collection_upload_stream(collection: str):
 
 @browse_bp.route("/collection/upload/file", methods=["POST", "PUT"])
 def collection_upload_file():
-    """ 
+    """
     Deprecated, use collection_upload_stream route instead
     """
     MANGO_STORAGE_BASE_PATH = Path("storage")
@@ -920,7 +964,7 @@ def collection_upload_file():
     collection = request.form["collection"]
     print(f"Requested upload file for collection {collection}")
     f = request.files["file"]
-    temp_file = tempfile.TemporaryFile(dir=TEMP_PATH) # tempfile.mktemp(dir=TEMP_PATH)
+    temp_file = tempfile.TemporaryFile(dir=TEMP_PATH)  # tempfile.mktemp(dir=TEMP_PATH)
     print(f"Temporary file for upload: {temp_file.name}")
     f.save(temp_file)
 
