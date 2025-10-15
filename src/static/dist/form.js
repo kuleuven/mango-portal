@@ -188,10 +188,9 @@ class SchemaForm {
       let myDate = new Date(existing_values[index])
       if (myDate.getMilliseconds() != 0) {
         existing_values[index] = myDate.toISOString().slice(0, -1); //slice Z for timezone
-      }   
+      }
       input.setAttribute("step", "any")
       //return (input, value)
-
     }
 
     // if we have multiple-value multiple-choice
@@ -205,7 +204,12 @@ class SchemaForm {
           if (existing_values.indexOf(chk.value) > -1)
             chk.setAttribute("checked", "");
         });
-      } else if (field.values.multiple) {
+      }
+      else if (field.values.values.length > MultipleInput.max_before_autocomplete) {
+        // autocomplete 
+        form.querySelector(`[name="${input_name}"]`).value = annotated_data[input_name]
+      }
+      else if (field.values.multiple) {
         // autocomplete
         const answers = first_input.querySelector("div[id$='answers']");
         for (let value of existing_values) {
@@ -216,8 +220,8 @@ class SchemaForm {
       }
     } else if (existing_values.length == 1) {
       // if there is only one value for this field
-        //fix datetime if necessary 
-      let input =  form.querySelector(`[name="${input_name}"]`)
+      //fix datetime if necessary  
+      let input = form.querySelector(`[name="${input_name}"]`)
       if (field.type === "datetime-local") {
         check_date(input, 0)
       }
@@ -231,8 +235,7 @@ class SchemaForm {
       }
       form.querySelectorAll(`[name="${input_name}"]`).forEach((input, i) => {
         //check datetime and fix 
-        if(field.type === "datetime-local")
-          {
+        if (field.type === "datetime-local") {
           check_date(input, i)
         }
         input.value = existing_values[i];
