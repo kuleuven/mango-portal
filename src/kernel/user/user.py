@@ -10,7 +10,6 @@ from flask import (
     session,
     url_for,
 )
-from irods.models import User
 from irods.session import iRODSSession
 from irods.exception import PAM_AUTH_PASSWORD_FAILED
 from kernel.template_overrides import get_template_override_manager
@@ -84,7 +83,8 @@ def group_members(group_name):
     members = []
     status = "Ok"
     try:
-        my_group = g.irods_session.user_groups.get(group_name)
+        irods_session : iRODSSession = g.irods_session
+        my_group = irods_session.groups.get(group_name)
         members = my_group.members
 
     except Exception:
