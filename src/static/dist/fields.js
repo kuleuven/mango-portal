@@ -1041,8 +1041,8 @@ class TypedInput extends InputField {
         ? " " + this.print_range() // specify the range
         : this.temp_values.pattern != undefined && // if it has a pattern
           this.temp_values.pattern.length > 0
-        ? ` fully matching /${this.temp_values.pattern}/` // specify the pattern
-        : "";
+          ? ` fully matching /${this.temp_values.pattern}/` // specify the pattern
+          : "";
     return `Input type: ${this.temp_values.type}${par_text}`;
   }
 
@@ -1222,8 +1222,8 @@ class TypedInput extends InputField {
         input.type == "number"
           ? " " + this.print_range() // if it's a number, message about the range
           : this.values.pattern != undefined && this.values.pattern.length > 0 // otherwise if there is a regex pattern...
-          ? ` matching the regular expression /^${this.values.pattern}$/`
-          : "";
+            ? ` matching the regular expression /^${this.values.pattern}$/`
+            : "";
       const validator_message = Field.quick(
         "div",
         "invalid-feedback",
@@ -1553,9 +1553,8 @@ class ObjectInput extends InputField {
   }
 
   get default_help() {
-    return `Nested form with ${
-      this.minischema ? this.minischema.fields.length : " "
-    }subfields that go together.`;
+    return `Nested form with ${this.minischema ? this.minischema.fields.length : " "
+      }subfields that go together.`;
   }
 
   /**
@@ -1806,9 +1805,8 @@ class MultipleInput extends InputField {
   }
 
   get default_help() {
-    return `Choose ${this.values.multiple ? "at least " : ""}one of ${
-      this.temp_options.length
-    } options.`;
+    return `Choose ${this.values.multiple ? "at least " : ""}one of ${this.temp_options.length
+      } options.`;
   }
 
   update_field() {
@@ -1882,8 +1880,7 @@ class MultipleInput extends InputField {
     return Field.quick(
       "div",
       "invalid-feedback",
-      `${is_required_msg}Please provide ${
-        this.values.multiple ? "at least " : ""
+      `${is_required_msg}Please provide ${this.values.multiple ? "at least " : ""
       }one of the accepted options.`
     );
   }
@@ -1902,23 +1899,31 @@ class MultipleInput extends InputField {
       },
       placeHolder: this.default != undefined ? this.default : "Search...",
       data: { src: this.values.values, cache: true },
-      resultsList: {
-        element: (list, data) => {
-          if (!data.results.length) {
-            const msg = Field.quick(
-              "div",
-              "no_result",
-              `<span>No results found</span>`
-            );
-            list.prepend(msg);
-          }
-        },
-        noResults: true,
-        maxResults: 20,
-      },
       resultItem: {
         highlight: true,
       },
+      // start on focus
+      events: {
+        input: {
+          focus() {
+            autocomplete.start()
+          },
+        },
+      },
+      // show list of items with no input
+      threshold: 0,
+      resultsList: {
+        element: (list, data) => {
+          if (!data.results.length) {
+            const message = document.createElement("div");
+            message.setAttribute("class", "no_result");
+            message.innerHTML = `<span>No Results for "${data.query}"</span>`;
+            list.appendChild(message);
+          }
+        },
+        noResults: true,
+        maxResults: undefined
+      }
     });
     this.autocomplete_selector.parentElement.appendChild(
       this.validator_message
@@ -1943,8 +1948,8 @@ class MultipleInput extends InputField {
           composite_parent == null
             ? this.name
             : `${this.name}__${composite_parent.getAttribute(
-                "data-composite-unit"
-              )}`;
+              "data-composite-unit"
+            )}`;
         const [pill, label] = Field.autocomplete_checkbox(
           event.detail.selection.value,
           input_name
