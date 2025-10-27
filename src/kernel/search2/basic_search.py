@@ -70,10 +70,13 @@ def build_basic_query_filters(form):
     ITEM_NAME_FULL_MATCH = "item_name-comparison"  # y or n
     METADATA_SCHEMA_PREFIX = "schema_metadata-"
     METADATA_NOSCHEMA_PREFIX = "non_schema_metadata-"
+    SUBTREE = "collection_subtree-collection"
 
     # subtree
-    if subtree := form.get("collection_subtree-collection", False):
+    if subtree := form.get(SUBTREE, None):
         filters += [Like(Collection.name, f"{subtree}%")]
+    else:
+        raise KeyError("Compulsory subtree is missing.")
 
     # deal with item type
     if form[ITEM_TYPE] == "data_object":
@@ -85,11 +88,10 @@ def build_basic_query_filters(form):
         metadata_item_column = CollectionMeta
 
     # deal with item name
-    if item_name := form.get(ITEM_NAME, False):
-        crit = "="
-        if form.get(ITEM_NAME_FULL_MATCH, "n") != "y":
-            crit = "like"
-            item_name = f"%{item_name}%"
+    if item_name := form.get(ITEM_NAME, None):
+        item_name = item_name.strip()
+        crit = "=" if form.get(ITEM_NAME_FULL_MATCH, None) == "y" else "like"
+        item_name = f"%{item_name}%" if crit == "like" else item_name
         filters += [Criterion(crit, item_column.name, item_name)]
 
     # deal with schema metadata
@@ -166,14 +168,14 @@ def restructure_item(item, flattened_schema):
             "enum": (value.get("enum", None)),
             "level": value["level"],
             "parent": (
-                None
-                if value["level"] == 0
-                else ".".join(str(key).split(".")[:-1])
+                None if value["level"] == 0 else ".".join(str(key).split(".")[:-1])
             ),
-            "title": create_nested_label(key, flattened_schema)
+            "title": (
+                create_nested_label(key, flattened_schema)
                 if value["type"] == "object"
-                 else value["label"],  # actual title
-                     # label with hierarchy for display in select
+                else value["label"]
+            ),  # actual title
+            # label with hierarchy for display in select
         }
     }
     return restructured_item
@@ -231,9 +233,6 @@ def get_realm_schemas(realm):
 @basic_search2_bp.route("/catalog/search2", methods=["GET", "POST"])
 def catalog_search2():
 
-
-
-
     # cache for 5 minutes using all the arguments as a key, user specific!
     @cache.memoize(300)
     def get_meta_attribute_names(type=DataObjectMeta.name, user=None, zone=None):
@@ -286,7 +285,6 @@ def catalog_search2():
     for item in data_object_meta_names:
         meta_names.append(item[DataObjectMeta.name])
 
-
     search_form = CatalogSearchForm(
         formdata=request.values,
         per_page=20,
@@ -294,8 +292,7 @@ def catalog_search2():
         subtrees=subtrees,
     )
 
-
-    try: 
+    try:
         # set the choose collection to current realm if exists
         current_realm = g.irods_session.realm
         search_form.collection_subtree.collection.data = current_realm["path"]
@@ -444,8 +441,7 @@ def catalog_search2():
                 continue
             if row.schema.data:
                 choices_list = [
-                    key
-                    for key in schemas_transformed[row.schema.data].keys()
+                    key for key in schemas_transformed[row.schema.data].keys()
                 ]
                 # choices_list = [choice[1] for choice in choices_tuple]
                 row.meta_a.choices = choices_list
