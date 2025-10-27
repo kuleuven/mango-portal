@@ -16,6 +16,7 @@ Note: versioning follows Semver standard with 3 levels
 
 ### New features
 
+- Automated user management (Mostly ManGO Flow, but also UI updates in operator group manager to upload YAML files)
 - Metadata schemas are now native irods data objects. See `src/bin/migrate_schemas.py` for the migration script
 - Patched version of PRC for irods 5.x compatibility
 - metadata download as json
