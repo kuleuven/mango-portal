@@ -205,12 +205,12 @@ class SchemaForm {
             chk.setAttribute("checked", "");
         });
       }
-      else if (field.values.values.length > MultipleInput.max_before_autocomplete) {
-        // autocomplete 
+      else if (!field.values.multiple) {
+        // autocomplete not multiple 
         form.querySelector(`[name="${input_name}"]`).value = annotated_data[input_name]
       }
-      else if (field.values.multiple) {
-        // autocomplete
+      else {
+        // autocomplete multiple
         const answers = first_input.querySelector("div[id$='answers']");
         for (let value of existing_values) {
           const [pill, label] = Field.autocomplete_checkbox(value, input_name);
