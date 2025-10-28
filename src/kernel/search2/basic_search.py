@@ -102,7 +102,7 @@ def build_basic_query_filters(form):
         if key.startswith(METADATA_SCHEMA_PREFIX) and key.endswith("meta_a")
     ]
     for attribute in schema_attributes:
-        filters += [get_criterion(form[attribute], metadata_item_column.value)]
+        filters += [get_criterion(form[attribute], metadata_item_column.name)]
         if schema_value := form.get(attribute.replace("_a", "_v"), False):
             filters += [get_criterion(schema_value, metadata_item_column.value)]
 
