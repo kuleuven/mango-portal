@@ -56,193 +56,92 @@ irods_comparison_operator = {
 # ---------------------- filters ---------------------------- #
 
 
+def get_criterion(user_input: str, column) -> Criterion:
+    comparison = "like" if user_input.find("%") != -1 else "="
+    return Criterion(comparison, column, user_input)
+
 
 def build_basic_query_filters(form):
-    """
-
-    {'avus-0-meta_a': '',
-     'avus-0-meta_u': '',
-     'avus-0-meta_v': '',
-     'avus-1-meta_a': '',
-     'avus-1-meta_u': '',
-     'avus-1-meta_v': '',
-     'create_date-comparison': 'before',
-     'create_date-date': '',
-     'csrf_token': 'IjlmZDc4OTFlNzdiOTYyNzg1NWI4Zjc0YTBjM2NkMzNkZDRmNWQwNjki.YjIKRA.SmWr4OGmq8iz-zTIVGTPg1fMj-c',
-     'item_name-comparison': 'contains',
-     'item_name-item_name': '',
-     'item_name-item_type': 'data_object',
-     'mod_date-comparison': 'before',
-     'mod_date-date': '',
-     'submit': 'Search'}
-
-    """
     filters = []
-    # avoid the replicated data objects
-    if form["item_name-item_type"] == "data_object":
+
+    # constant form keys
+    ITEM_TYPE = "item_name-item_type"  # data_object or collection
+    ITEM_NAME = "item_name-item_name"
+    ITEM_NAME_FULL_MATCH = "item_name-comparison"  # y or n
+    METADATA_SCHEMA_PREFIX = "schema_metadata-"
+    METADATA_NOSCHEMA_PREFIX = "non_schema_metadata-"
+    SUBTREE = "collection_subtree-collection"
+
+    # subtree
+    if subtree := form.get(SUBTREE, None):
+        filters += [Like(Collection.name, f"{subtree}%")]
+    else:
+        raise KeyError("Compulsory subtree is missing.")
+
+    # deal with item type
+    if form[ITEM_TYPE] == "data_object":
+        item_column = DataObject
+        metadata_item_column = DataObjectMeta
         filters += [Criterion("=", DataObject.replica_number, 0)]
+    else:
+        item_column = Collection
+        metadata_item_column = CollectionMeta
 
-    if form["item_name-item_name"]:
-        # crit = "="
-        # name = form["item_name-item_name"]
-        try:
-            if form["item_name-comparison"] == "y":
-                crit = "="
-                name = form["item_name-item_name"]
-        except:
-            crit = "like"
-            name = f"%{form['item_name-item_name']}%"
+    # deal with item name
+    if item_name := form.get(ITEM_NAME, None):
+        item_name = item_name.strip()
+        crit = "=" if form.get(ITEM_NAME_FULL_MATCH, None) == "y" else "like"
+        item_name = f"%{item_name}%" if crit == "like" else item_name
+        filters += [Criterion(crit, item_column.name, item_name)]
 
-        column = DataObject.name
-        if form["item_name-item_type"] == "collection":
-            column = Collection.name
-        filters += [Criterion(crit, column, name)]
+    # deal with schema metadata
 
-    column_meta_base = (
-        DataObjectMeta
-        if form["item_name-item_type"] == "data_object"
-        else CollectionMeta
+    schema_attributes = [
+        key
+        for key in form.keys()
+        if key.startswith(METADATA_SCHEMA_PREFIX) and key.endswith("meta_a")
+    ]
+    for attribute in schema_attributes:
+        filters += [get_criterion(form[attribute], metadata_item_column.name)]
+        if schema_value := form.get(attribute.replace("_a", "_v"), False):
+            filters += [get_criterion(schema_value, metadata_item_column.value)]
+
+    # deal with non-schema metadata
+
+    METADATA_SUFFIX_PART_MAPPING = {
+        "a": metadata_item_column.name,
+        "v": metadata_item_column.value,
+        "u": metadata_item_column.units,
+    }
+
+    non_schema_indices = set(
+        [
+            key.split("-")[1]
+            for key in form.keys()
+            if key.startswith(METADATA_NOSCHEMA_PREFIX)
+        ]
     )
+    for idx in non_schema_indices:  # loop over existing indices
+        for (
+            suffix,
+            avu_part,
+        ) in METADATA_SUFFIX_PART_MAPPING.items():  # loop over name/value/unit
+            if form_value := form.get(
+                f"{METADATA_NOSCHEMA_PREFIX}{idx}-meta_{suffix}", False
+            ):
+                filters += [get_criterion(form_value, avu_part)]
 
-    try:
-        if form[f"schema_metadata-meta_a"]:
+    # deal with dates
+    DATE_FORM_MAPPING = {
+        "create_date": item_column.create_time,
+        "mod_date": item_column.modify_time,
+    }
+
+    for form_item, column_name in DATE_FORM_MAPPING.items():
+        if form_value := form.get(f"{form_item}-date", False):
+            comparison = ">=" if form[f"{form_item}-comparison"] == "after" else "<="
             filters += [
-                Criterion("=", column_meta_base.name, form[f"schema_metadata-meta_a"])
-            ]
-
-        if form[f"schema_metadata-meta_v"]:
-            comparison = (
-                "like" if form[f"schema_metadata-meta_v"].find("%") != -1 else "="
-            )
-            filters += [
-                Criterion(
-                    comparison, column_meta_base.value, form[f"schema_metadata-meta_v"]
-                )
-            ]
-    except:
-        pass
-
-    # for num in [1, 2, 3]:
-    num = 0
-    while True:
-        try:
-            if form[f"schema_metadata-{num}-meta_a"]:
-                filters += [
-                    Criterion(
-                        "=",
-                        column_meta_base.name,
-                        form[f"schema_metadata-{num}-meta_a"],
-                    )
-                ]
-
-            if form[f"schema_metadata-{num}-meta_v"]:
-                comparison = (
-                    "like"
-                    if form[f"schema_metadata-{num}-meta_v"].find("%") != -1
-                    else "="
-                )
-                filters += [
-                    Criterion(
-                        comparison,
-                        column_meta_base.value,
-                        form[f"schema_metadata-{num}-meta_v"],
-                    )
-                ]
-
-            # if form[f"any_avu{num}-meta_u"]:
-            #     comparison = "like" if form[f"any_avu{num}-meta_u"].find("%") != -1 else "="
-            #     filters += [
-            #         Criterion(
-            #             comparison, column_meta_base.units, form[f"any_avu{num}-meta_u"]
-            #         )
-            #     ]
-            num += 1
-        except:
-            break
-
-    num = 0
-    while True:
-        try:
-            if form[f"non_schema_metadata-{num}-meta_a"]:
-                filters += [
-                    Criterion(
-                        "=",
-                        column_meta_base.name,
-                        form[f"non_schema_metadata-{num}-meta_a"],
-                    )
-                ]
-
-            if form[f"non_schema_metadata-{num}-meta_v"]:
-                comparison = (
-                    "like"
-                    if form[f"non_schema_metadata-{num}-meta_v"].find("%")
-                    != -1
-                    else "="
-                )
-                filters += [
-                    Criterion(
-                        comparison,
-                        column_meta_base.value,
-                        form[f"non_schema_metadata-{num}-meta_v"],
-                    )
-                ]
-
-            if form[f"non_schema_metadata-{num}-meta_u"]:
-                comparison = (
-                    "like"
-                    if form[f"non_schema_metadata-{num}-meta_u"].find("%")
-                    != -1
-                    else "="
-                )
-                filters += [
-                    Criterion(
-                        comparison,
-                        column_meta_base.value,
-                        form[f"non_schema_metadata-{num}-meta_u"],
-                    )
-                ]
-
-                
-
-            num += 1
-        except:
-            break
-
-    if form["create_date-date"]:
-        column = (
-            DataObject.create_time
-            if form["item_name-item_type"] == "data_object"
-            else Collection.create_time
-        )
-        comparison = ">=" if form["create_date-comparison"] == "after" else "<="
-        filters += [
-            Criterion(
-                comparison, column, datetime.fromisoformat(form["create_date-date"])
-            )
-        ]
-        # filters += [(column >= datetime.fromisoformat(form["create_date-date"]))]
-
-    if form["mod_date-date"]:
-        column = (
-            DataObject.create_time
-            if form["item_name-item_type"] == "data_object"
-            else Collection.create_time
-        )
-        comparison = ">=" if form["mod_date-comparison"] == "after" else "<="
-        filters += [
-            Criterion(comparison, column, datetime.fromisoformat(form["mod_date-date"]))
-        ]
-
-    if form["collection_subtree-collection"]:
-        if form["item_name-item_type"] == "collection":
-
-            filters += [
-                Like(Collection.name, f"{form['collection_subtree-collection']}%")
-            ]
-
-        else:
-            filters += [
-                Like(Collection.name, f"{form['collection_subtree-collection']}%")
+                Criterion(comparison, column_name, datetime.fromisoformat(form_value))
             ]
 
     return filters
@@ -269,14 +168,14 @@ def restructure_item(item, flattened_schema):
             "enum": (value.get("enum", None)),
             "level": value["level"],
             "parent": (
-                None
-                if value["level"] == 0
-                else ".".join(str(key).split(".")[:-1])
+                None if value["level"] == 0 else ".".join(str(key).split(".")[:-1])
             ),
-            "title": create_nested_label(key, flattened_schema)
+            "title": (
+                create_nested_label(key, flattened_schema)
                 if value["type"] == "object"
-                 else value["label"],  # actual title
-                     # label with hierarchy for display in select
+                else value["label"]
+            ),  # actual title
+            # label with hierarchy for display in select
         }
     }
     return restructured_item
@@ -334,9 +233,6 @@ def get_realm_schemas(realm):
 @basic_search2_bp.route("/catalog/search2", methods=["GET", "POST"])
 def catalog_search2():
 
-
-
-
     # cache for 5 minutes using all the arguments as a key, user specific!
     @cache.memoize(300)
     def get_meta_attribute_names(type=DataObjectMeta.name, user=None, zone=None):
@@ -389,7 +285,6 @@ def catalog_search2():
     for item in data_object_meta_names:
         meta_names.append(item[DataObjectMeta.name])
 
-
     search_form = CatalogSearchForm(
         formdata=request.values,
         per_page=20,
@@ -397,8 +292,7 @@ def catalog_search2():
         subtrees=subtrees,
     )
 
-
-    try: 
+    try:
         # set the choose collection to current realm if exists
         current_realm = g.irods_session.realm
         search_form.collection_subtree.collection.data = current_realm["path"]
@@ -547,8 +441,7 @@ def catalog_search2():
                 continue
             if row.schema.data:
                 choices_list = [
-                    key
-                    for key in schemas_transformed[row.schema.data].keys()
+                    key for key in schemas_transformed[row.schema.data].keys()
                 ]
                 # choices_list = [choice[1] for choice in choices_tuple]
                 row.meta_a.choices = choices_list
