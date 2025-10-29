@@ -207,7 +207,17 @@ class SchemaForm {
       }
       else if (!field.values.multiple) {
         // autocomplete not multiple 
-        form.querySelector(`[name="${input_name}"]`).value = annotated_data[input_name]
+        let result;
+        try {
+          result = form.querySelector(`[name="${input_name}"]`);
+          if (result) {
+            result.value = annotated_data[input_name.replace(/__\d/, "")];
+          } else {
+            pass
+          }
+        } catch (error) {
+          console.log("There was an error processing the autocomplete field.")
+        }
       }
       else {
         // autocomplete multiple
