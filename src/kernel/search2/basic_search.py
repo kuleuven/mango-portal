@@ -156,7 +156,7 @@ def create_nested_label(key, flattened_schema):
         ]  # add +1 here because range starts from 0
         for i in range(len(ids))
     ]
-    print(label_list)
+    # print(label_list)
     return " / ".join(label_list)
 
 
@@ -232,21 +232,46 @@ def get_realm_schemas(realm):
 
 @basic_search2_bp.route("/catalog/search2", methods=["GET", "POST"])
 def catalog_search2():
+    try:
+        realm = g.irods_session.realm
+    except Exception:
+        realm = None
+
+    home = f"/{g.irods_session.zone}/home" if realm is None else realm["path"]
 
     # cache for 5 minutes using all the arguments as a key, user specific!
     @cache.memoize(300)
-    def get_meta_attribute_names(type=DataObjectMeta.name, user=None, zone=None):
+    def get_meta_attribute_names(
+        meta_type=DataObjectMeta,
+        realm: str = None,
+        zone: str = g.irods_session.zone,
+        user: str = g.irods_session.user.name,
+    ):
         current_app.logger.info(
             f"Creating/refreshing metadata attribute (name) cache for user {user}"
         )
-        return g.irods_session.query(type).all()
+        query = g.irods_session.query(meta_type)
+        if realm is not None:
+            query = query.filter(
+                Criterion(
+                    "like",
+                    Collection.name,
+                    f"/{zone}/home/{realm}/%",
+                )
+            )
+        return query.all()
 
-    home = f"/{g.irods_session.zone}/home"
     # allow querying for schemas of any realm the user has access to
-    realm_schemas = {
-        realm: get_realm_schemas(realm)
-        for realm in get_realms_for_current_user(g.irods_session, home)
-    }
+    # this is waaaay faster when a realm has been established
+    realm_schemas = (
+        {
+            realm: get_realm_schemas(realm)
+            for realm in get_realms_for_current_user(g.irods_session, home)
+        }
+        if realm is None
+        else {realm["name"]: get_realm_schemas(realm["name"])}
+    )
+
     # get_realm_schemas returns a tuple with [0] -> titles and [1] -> transformed schemas
 
     schemas_titles = {
@@ -264,26 +289,32 @@ def catalog_search2():
 
     # create a list of first level collections to refine the search
 
-    base = g.irods_session.collections.get(f"/{g.irods_session.zone}/home")
+    base = g.irods_session.collections.get(home)
     subtrees = [base.path] + [collection.path for collection in base.subcollections]
-    user_home = f"{g.irods_session.zone}/home/{g.irods_session.username}"
+    # user_home = f"{g.irods_session.zone}/home/{g.irods_session.username}"
 
     current_app.logger.info(request.values)
-    data_object_meta_names = get_meta_attribute_names(
-        DataObjectMeta.name, user=g.irods_session.username, zone=g.irods_session.zone
-    )
-    # collection_meta_names = get_meta_attribute_names(
-    #     CollectionMeta.name, user=g.irods_session.username, zone=g.irods_session.zone
-    # )
-    # user_meta_names = get_meta_attribute_names(
-    #     UserMeta.name, user=g.irods_session.username, zone=g.irods_session.zone
-    # )
-    meta_names = []
-    current_app.logger.info(
-        f"Got {data_object_meta_names.length} items for data objects"
-    )
-    for item in data_object_meta_names:
-        meta_names.append(item[DataObjectMeta.name])
+
+    if realm is None:
+        # DataObjectMeta names are the same as CollectionMeta names
+        meta_names = [
+            item[DataObjectMeta.name]
+            for item in get_meta_attribute_names(DataObjectMeta.name)
+        ]
+    else:
+        # The collection specification gives different result when query DataObjectMeta or CollectionMeta
+        meta_names = list(
+            {
+                item[DataObjectMeta.name]
+                for item in get_meta_attribute_names(DataObjectMeta.name, realm["name"])
+            }
+            | {
+                item[CollectionMeta.name]
+                for item in get_meta_attribute_names(CollectionMeta.name, realm["name"])
+            }
+        )
+
+    current_app.logger.info(f"Got {len(meta_names)} distinct metadata names")
 
     search_form = CatalogSearchForm(
         formdata=request.values,
@@ -292,12 +323,8 @@ def catalog_search2():
         subtrees=subtrees,
     )
 
-    try:
-        # set the choose collection to current realm if exists
-        current_realm = g.irods_session.realm
-        search_form.collection_subtree.collection.data = current_realm["path"]
-    except:
-        pass
+    if realm is not None:
+        search_form.collection_subtree.collection.data = realm["path"]
 
     # breakpoint()
 
