@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template, g, request, redirect, flash, url_for
-from irods.user import iRODSGroup
+from flask import (Blueprint, flash, g, redirect, render_template, request,
+                   url_for)
 from irods.models import Group, User
-from irods.session import iRODSSession
+from irods.user import iRODSGroup
+
+from irods_session_pool import iRODSUserSession
 from mango_ui import register_module
 
 basic_user_group_manager_admin_bp = Blueprint(
@@ -19,12 +21,12 @@ UI = {
 register_module(**UI)
 
 
-def current_user_can_manage(irods_session: iRODSSession):
+def current_user_can_manage(mango_irods_session: iRODSUserSession):
     # allowed_users = []  # possible stricter rules, get this from config or env
 
     return (
         True
-        if irods_session.user.type in ["rodsadmin", "groupadmin"]
+        if mango_irods_session.user_object.type in ["rodsadmin", "groupadmin"]
         # and irods_session.username in allowed_users
         else False
     )
@@ -33,13 +35,13 @@ def current_user_can_manage(irods_session: iRODSSession):
 @basic_user_group_manager_admin_bp.route("/user_group_manager")
 def user_group_manager_index():
 
-    operator_session: iRODSSession = g.irods_session
+    mango_irods_session: iRODSUserSession = g.irods_session
     groups = [
-        iRODSGroup(operator_session.groups, item)
-        for item in operator_session.query(Group).filter(User.type == "rodsgroup").all()
+        iRODSGroup(mango_irods_session.groups, item)
+        for item in mango_irods_session.query(Group).filter(User.type == "rodsgroup").all()
     ]
 
-    editable = current_user_can_manage(operator_session)
+    editable = current_user_can_manage(mango_irods_session)
 
     return render_template(
         "basic_user_group_manager/index.html.j2",
@@ -52,9 +54,9 @@ def user_group_manager_index():
 @basic_user_group_manager_admin_bp.route("/basic_user_group_manager/<group>")
 def view_members(group):
     """ """
-    operator_session: iRODSSession = g.irods_session
-    members = operator_session.groups.getmembers(group)
-    all_users = operator_session.groups.getmembers("public")
+    mango_irods_session: iRODSUserSession = g.irods_session
+    members = mango_irods_session.groups.getmembers(group)
+    all_users = mango_irods_session.groups.getmembers("public")
     member_names = [member.name for member in members]
     all_user_names = [member.name for member in all_users]
     non_member_names = [
@@ -62,7 +64,7 @@ def view_members(group):
     ]
     non_members = [member for member in all_users if member.name in non_member_names]
 
-    irodsgroup = operator_session.groups.get(group)
+    irodsgroup = mango_irods_session.groups.get(group)
     protected_groups = ["public", "rodsadmin"]
 
     return render_template(
@@ -72,10 +74,10 @@ def view_members(group):
         members=members,
         all_users=all_users,
         non_members=non_members,
-        editable=current_user_can_manage(operator_session),
+        editable=current_user_can_manage(mango_irods_session),
         is_protected_group=group in protected_groups,
         protected_groups=protected_groups,
-        current_user_is_rodsadmin=g.irods_session.user.type == "rodsadmin",
+        current_user_is_rodsadmin=g.irods_session.user_object.type == "rodsadmin",
     )
 
 
@@ -83,10 +85,10 @@ def view_members(group):
     "/user_group_manager/add_group", methods=["POST"]
 )
 def add_group():
-    operator_session: iRODSSession = g.irods_session
+    mango_irods_session: iRODSUserSession = g.irods_session
     group_name = request.form["group_name"].strip()
     try:
-        new_group: iRODSGroup = operator_session.groups.create(group_name)
+        new_group: iRODSGroup = mango_irods_session.groups.create(group_name)
         return redirect(
             url_for(
                 "basic_user_group_manager_admin_bp.view_members",
@@ -104,10 +106,10 @@ def add_group():
 )
 def remove_group():
     """ """
-    operator_session = g.irods_session
+    mango_irods_session = g.irods_session
     group_name = request.form["group_name"]
     try:
-        operator_session.groups.remove(group_name)
+        mango_irods_session.groups.remove(group_name)
     except Exception as e:
         flash(f"Failed to remove group: {e}", "danger")
     if "redirect_route" in request.values:
@@ -124,11 +126,11 @@ def remove_group():
 )
 def add_members(group):
     """ """
-    operator_session = g.irods_session
+    mango_irods_session: iRODSUserSession = g.irods_session
     members = request.form.getlist("members-to-add")
     try:
         for member in members:
-            operator_session.groups.addmember(group, member)
+            mango_irods_session.groups.addmember(group, member)
     except Exception as e:
         flash(f"Failed to add members {members} to group {group}: {e}", "danger")
     return redirect(request.referrer)
@@ -139,11 +141,11 @@ def add_members(group):
 )
 def remove_members(group):
     """ """
-    operator_session = g.irods_session
+    mango_irods_session: iRODSUserSession = g.irods_session
     members = request.form.getlist("members-to-remove")
     try:
         for member in members:
-            operator_session.groups.removemember(group, member)
+            mango_irods_session.groups.removemember(group, member)
     except Exception as e:
         flash(f"Failed to add members {members} to group {group}: {e}", "danger")
     return redirect(request.referrer)
@@ -153,19 +155,19 @@ def remove_members(group):
     "/user_group_manager/create_user", methods=["POST"]
 )
 def create_user(group=None):
-    operator_session: iRODSSession = g.irods_session
+    mango_irods_session: iRODSUserSession = g.irods_session
     user_name = request.form.get("user_name")
     password = request.form.get("password")
     group = request.form.get("group")
     user = None
     try:
-        user = operator_session.users.create_with_password(user_name, password)
+        user = mango_irods_session.users.create_with_password(user_name, password)
     except Exception as e:
         flash(f"Failed to create {user_name}: {e}", "danger")
     if group and user and group != "public":
         try:
-            operator_session.groups.addmember(group, user_name)
-        except:
+            mango_irods_session.groups.addmember(group, user_name)
+        except Exception as e:
             flash(f"Failed to attach {user_name} to group {group}: {e}", "danger")
 
     return redirect(request.referrer)
@@ -175,12 +177,12 @@ def create_user(group=None):
     "/user_group_manager/remove_users", methods=["POST", "DELETE"]
 )
 def remove_users():
-    operator_session: iRODSSession = g.irods_session
+    mango_irods_session: iRODSUserSession = g.irods_session
     user_names = request.form.getlist("users-to-remove")
-    if operator_session.user.type == "rodsadmin":
+    if mango_irods_session.user_object.type == "rodsadmin":
         for user_name in user_names:
             try:
-                operator_session.users.remove(user_name)
+                mango_irods_session.users.remove(user_name)
             except Exception as e:
                 flash(f"failed to remove user: {e}", "danger")
                 break
