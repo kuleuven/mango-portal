@@ -147,62 +147,85 @@ def build_basic_query_filters(form):
     return filters
 
 
-def create_nested_label(key, flattened_schema):
-    parts = key.split(".")
-    ids = parts[2:]
-    label_list = [
-        flattened_schema[".".join(parts[:2] + ids[: i + 1])][
-            "label"
-        ]  # add +1 here because range starts from 0
-        for i in range(len(ids))
-    ]
-    print(label_list)
-    return " / ".join(label_list)
 
-
-def restructure_item(item, flattened_schema):
-    key, value = item
-    restructured_item = {
-        key: {
-            "type": ("label" if value["type"] == "object" else value["type"]),
-            "enum": (value.get("enum", None)),
-            "level": value["level"],
-            "parent": (
-                None if value["level"] == 0 else ".".join(str(key).split(".")[:-1])
-            ),
-            "title": (
-                create_nested_label(key, flattened_schema)
-                if value["type"] == "object"
-                else value["label"]
-            ),  # actual title
-            # label with hierarchy for display in select
-        }
-    }
-    return restructured_item
-
-
-def transform_schema(schema, schema_manager):
-    schema_dict = json.loads(schema_manager.load_schema(schema))
-
-    flattened_schema = flatten_schema(
-        schema_dict,
-        level=0,
-        prefix=f"mgs.{schema}",
-        result_dict={},
-        add_enum=True,
-    )
-
-    transformed_schema = {}
-    for item in flattened_schema.items():
-        transformed_schema |= restructure_item(item, flattened_schema)
-
-    return transformed_schema
 
     # print("this is the schema:", flattened_schema)
 
     # return {k : v for k,v in
     #     restructure_item(item, flattened_schema) for item in flattened_schema.items()
     # }
+
+class SchemaInfo:
+    def __init__(self, realm:str, schema_name:str, schema_dict:dict, schema_manager):
+        self._realm = realm
+        self._name = schema_name
+        self._title = schema_dict.get("title", None)
+        # self._schema = transform_schema(self.name, schema_manager)
+        self.schema = self.transform_schema(schema_manager) 
+    
+    @property
+    def attributes(self):
+        return list(self.schema.keys())
+    
+    @property
+    def title(self):
+        return (self.key, self._title)
+    
+    @property
+    def key(self):
+        return f"{self._realm}_{self._name}"
+    
+    def transform_schema(self, schema_manager):
+        schema_dict = json.loads(schema_manager.load_schema(self._name))
+
+        flattened_schema = flatten_schema(
+            schema_dict,
+            level=0,
+            prefix=f"mgs.{self._name}",
+            result_dict={},
+            add_enum=True,
+        )
+        transformed_schema = {}
+        for item in flattened_schema.items():
+            transformed_schema |= SchemaInfo.restructure_item(item, flattened_schema)
+
+        return transformed_schema
+
+    @staticmethod
+    def restructure_item(item, flattened_schema):
+        key, value = item
+        restructured_item = {
+            key: {
+                "type": ("label" if value["type"] == "object" else value["type"]),
+                "enum": (value.get("enum", None)),
+                "level": value["level"],
+                "parent": (
+                    None if value["level"] == 0 else ".".join(str(key).split(".")[:-1])
+                ),
+                "title": (
+                    SchemaInfo.create_nested_label(key, flattened_schema)
+                    if value["type"] == "object"
+                    else value["label"]
+                ),  # actual title
+                # label with hierarchy for display in select
+            }
+        }
+        return restructured_item
+
+
+    @staticmethod
+    def create_nested_label(key, flattened_schema):
+        parts = key.split(".")
+        ids = parts[2:]
+        label_list = [
+            flattened_schema[".".join(parts[:2] + ids[: i + 1])][
+                "label"
+            ]  # add +1 here because range starts from 0
+            for i in range(len(ids))
+        ]
+        print(label_list)
+        return " / ".join(label_list)
+
 
 
 def get_realm_schemas(realm):
@@ -215,19 +238,13 @@ def get_realm_schemas(realm):
         filters=["published"]
     )  # TODO archived schemas should also be searchable ...
 
-    schemas_titles = {
-        schema_name: schema["title"] for schema_name, schema in my_schemas.items()
-    }
-    if not schemas_titles:
-        return None
+    schema_generator = (SchemaInfo(realm, schema_name, schema_dict, schema_manager) for schema_name, schema_dict in my_schemas.items())
 
     schemas_dict = {
-        k: transform_schema(k, schema_manager) for k in schemas_titles.keys()
+        schema.key: schema for schema in schema_generator
     }  # transformed schemas dictionary to feed Advanced Search
 
-    if len(schemas_titles) == 0:
-        schemas_titles = {"no_schemas": "no schemas found"}
-    return schemas_titles, schemas_dict
+    return schemas_dict
 
 
 @basic_search2_bp.route("/catalog/search2", methods=["GET", "POST"])
@@ -244,23 +261,12 @@ def catalog_search2():
     home = f"/{g.irods_session.zone}/home"
     # allow querying for schemas of any realm the user has access to
     realm_schemas = {
-        realm: get_realm_schemas(realm)
-        for realm in get_realms_for_current_user(g.irods_session, home)
+        k: v
+        for realm in get_realms_for_current_user(g.irods_session, home)         
+        for k, v in get_realm_schemas(realm).items()
     }
     # get_realm_schemas returns a tuple with [0] -> titles and [1] -> transformed schemas
 
-    schemas_titles = {
-        k: v
-        for schema in realm_schemas.values()
-        if schema is not None
-        for k, v in schema[0].items()
-    }
-    schemas_transformed = {
-        k: v
-        for schema in realm_schemas.values()
-        if schema is not None
-        for k, v in schema[1].items()
-    }
 
     # create a list of first level collections to refine the search
 
@@ -288,7 +294,7 @@ def catalog_search2():
     search_form = CatalogSearchForm(
         formdata=request.values,
         per_page=20,
-        schemas=list(schemas_titles.items()),
+        schemas=[schema.title for schema in realm_schemas.values()],
         subtrees=subtrees,
     )
 
@@ -434,17 +440,10 @@ def catalog_search2():
         # pprint(pagination)
 
         for row in search_form.schema_metadata:
-            # no_label_schema = search_form.schema_metadata.schema.data
-            # breakpoint()
             print(row.schema.data)
-            if row.schema.data == "":
+            if not row.schema.data:
                 continue
-            if row.schema.data:
-                choices_list = [
-                    key for key in schemas_transformed[row.schema.data].keys()
-                ]
-                # choices_list = [choice[1] for choice in choices_tuple]
-                row.meta_a.choices = choices_list
+            row.meta_a.choices = realm_schemas[row.schema.data].attributes
 
         search_template = "search/basic_catalog_search.html.j2"
 
@@ -468,8 +467,7 @@ def catalog_search2():
             search_time=end - start,
             meta_names=meta_names,
             pagination=pagination,
-            schemas_dict=schemas_transformed,
-            existing_schemas=schemas_titles,
+            schemas_dict={k:v.schema for k, v in realm_schemas.items()},
             search_fields=request.values.to_dict(),
             no_label_fields_dict=no_label_fields_dict,
         )
@@ -482,8 +480,7 @@ def catalog_search2():
             results=[],
             meta_names=meta_names,
             # collection_tree=collection_tree,
-            schemas_dict=schemas_transformed,
-            existing_schemas=schemas_titles,
+            schemas_dict={k:v.schema for k, v in realm_schemas.items()},
             search_fields={},
             no_label_fields_dict={},
         )
