@@ -249,8 +249,10 @@ def get_realm_schemas(realm):
         filters=["published"]
     )  # TODO archived schemas should also be searchable ...
 
+    # generator to instantiate SchemaInfo classes
     schema_generator = (SchemaInfo(realm, schema_name, schema_dict, schema_manager) for schema_name, schema_dict in my_schemas.items())
 
+    # store schemas as dict with key (realm_name) and SchemaInfo as value
     schemas_dict = {
         schema.key: schema for schema in schema_generator
     }  # transformed schemas dictionary to feed Advanced Search
@@ -291,16 +293,11 @@ def catalog_search2():
 
     # allow querying for schemas of any realm the user has access to
     # this is waaaay faster when a realm has been established
-    realm_schemas = (
-        {
-            realm: get_realm_schemas(realm)
-            for realm in get_realms_for_current_user(g.irods_session, home)
-        }
-        if realm is None
-        else {realm["name"]: get_realm_schemas(realm["name"])}
-    )
-
-    # get_realm_schemas returns a tuple with [0] -> titles and [1] -> transformed schemas
+    realm_schemas =   {  
+        k: v
+        for realm in get_realms_for_current_user(g.irods_session, home)         
+        for k, v in get_realm_schemas(realm).items()
+    } if realm is None else { k: v for k, v in get_realm_schemas(realm["name"]).items()}
 
 
     # create a list of first level collections to refine the search
