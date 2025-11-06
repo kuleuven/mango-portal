@@ -5,6 +5,7 @@ console.log(schemasObject)
 function updateRowsOnReload(containerId) {
     let rows = document.querySelectorAll(containerId + " .row");
     let rowsArray = [...rows]
+    createClearButton(rowsArray[0], containerId);
     if (rows.length > 1) {
         rowsArray.shift();  // remove first element from array
         rowsArray.forEach((row) => {
@@ -18,7 +19,6 @@ function updateRowsOnReload(containerId) {
 
 updateRowsOnReload("#schemaMetadata")
 updateRowsOnReload("#nonSchemaMetadata")
-
 
 const selectSchemas = document.querySelectorAll("[name$='-schema']");
 
@@ -162,6 +162,10 @@ function addRow(type, elementId) {
         clonedRow.querySelector("[id$='-meta_v']").replaceWith(newInput);
         console.log(clonedRow);
     }
+    if (clonedRow.querySelector("[id$=-clear]")) {
+        clonedRow.querySelector("[id$=-clear]").closest(".col-md-1").remove()
+    }
+
     if (!clonedRow.querySelector("[id$=-remove]")) {
         createRemoveButton(clonedRow);
     }
@@ -188,6 +192,53 @@ function createRemoveButton(row) {
     row.appendChild(removeCol)
 }
 
+function createClearButton(row, containerId) {
+    let label = document.createElement("label");
+    label.classList.add("form-label");
+    label.htmlFor = 'non_schema_metadata_no_label-0-clear';
+    label.innerHTML = "Remove"
+    let clearCol = document.createElement("div");
+    clearCol.classList.add("col-md-1");
+    let clearContainer = document.createElement("div");
+    clearContainer.classList.add("mb-0");
+    const clearButton = document.createElement("button");
+    clearButton.classList.add("form-control");
+    clearButton.id = "non_schema_metadata_no_label-0-clear";
+    clearButton.setAttribute("name", "non_schema_metadata_no_label-0-clear");
+    clearButton.type = "button";
+    clearButton.innerHTML = '<i class="bi bi-x-circle"></i>';
+    clearButton.addEventListener("click", () => {
+        clearRow(containerId);
+    });
+    clearContainer.appendChild(label);
+    clearContainer.appendChild(clearButton);
+    clearCol.appendChild(clearContainer);
+    row.appendChild(clearCol)
+
+
+}
+
+
+function clearRow(containerId) {
+
+    if (containerId == "#schemaMetadata") {
+    const inputField = document.createElement("input");
+    inputField.type = "text";
+    inputField.className = "form-control";
+    inputField.id = "schema_metadata-0-meta_v";
+    inputField.name = "schema_metadata-0-meta_v";
+    inputField.setAttribute("data-target", "meta-value");
+
+    document.getElementById("schema_metadata-0-schema").options.selectedIndex = (0);
+    document.getElementById("schema_metadata-0-meta_a").innerHTML = ""
+    document.getElementById("schema_metadata-0-meta_v").replaceWith(inputField)
+    }
+    else {
+    document.getElementById("non_schema_metadata-0-meta_a").value = ""
+    document.getElementById("non_schema_metadata-0-meta_v").value = ""
+    document.getElementById("non_schema_metadata-0-meta_u").value = ""
+    }
+}
 
 function removeRow(event) {
     event.target.closest(".row").remove();
