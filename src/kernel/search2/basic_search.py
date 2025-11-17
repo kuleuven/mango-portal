@@ -269,28 +269,6 @@ def catalog_search2():
 
     home = f"/{g.irods_session.zone}/home" if realm is None else realm["path"]
 
-    # cache for 5 minutes using all the arguments as a key, user specific!
-    @cache.memoize(300)
-    def get_meta_attribute_names(
-        meta_type=DataObjectMeta,
-        realm: str = None,
-        zone: str = g.irods_session.zone,
-        user: str = g.irods_session.user.name,
-    ):
-        current_app.logger.info(
-            f"Creating/refreshing metadata attribute (name) cache for user {user}"
-        )
-        query = g.irods_session.query(meta_type)
-        if realm is not None:
-            query = query.filter(
-                Criterion(
-                    "like",
-                    Collection.name,
-                    f"/{zone}/home/{realm}/%",
-                )
-            )
-        return query.all()
-
     # allow querying for schemas of any realm the user has access to
     # this is waaaay faster when a realm has been established
     realm_schemas =   {  
@@ -307,27 +285,6 @@ def catalog_search2():
     # user_home = f"{g.irods_session.zone}/home/{g.irods_session.username}"
 
     current_app.logger.info(request.values)
-
-    if realm is None:
-        # DataObjectMeta names are the same as CollectionMeta names
-        meta_names = [
-            item[DataObjectMeta.name]
-            for item in get_meta_attribute_names(DataObjectMeta.name)
-        ]
-    else:
-        # The collection specification gives different result when query DataObjectMeta or CollectionMeta
-        meta_names = list(
-            {
-                item[DataObjectMeta.name]
-                for item in get_meta_attribute_names(DataObjectMeta.name, realm["name"])
-            }
-            | {
-                item[CollectionMeta.name]
-                for item in get_meta_attribute_names(CollectionMeta.name, realm["name"])
-            }
-        )
-
-    current_app.logger.info(f"Got {len(meta_names)} distinct metadata names")
 
     search_form = CatalogSearchForm(
         formdata=request.values,
@@ -499,7 +456,6 @@ def catalog_search2():
             dict_results=dict_results,
             # collection_tree=collection_tree,
             search_time=end - start,
-            meta_names=meta_names,
             pagination=pagination,
             schemas_dict={k:v.schema for k, v in realm_schemas.items()},
             search_fields=request.values.to_dict(),
@@ -512,7 +468,6 @@ def catalog_search2():
             "search/basic_catalog_search.html.j2",
             search_form=search_form,
             results=[],
-            meta_names=meta_names,
             # collection_tree=collection_tree,
             schemas_dict={k:v.schema for k, v in realm_schemas.items()},
             search_fields={},

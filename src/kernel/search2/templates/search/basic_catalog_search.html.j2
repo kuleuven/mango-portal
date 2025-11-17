@@ -177,15 +177,7 @@ a.right {
     {% if search_time is defined %}
         <p class="small text-end">Searching took {{"%.3f" % (search_time) }} seconds</p>
     {% endif %}
-    <datalist id="search_meta_names">
-        {% for meta_name in meta_names %}<option value="{{ meta_name }}" />{% endfor %}
-    </datalist>
-    {# <datalist id="co_search_meta_names">
-{% for meta_name in meta_names %}
-    <option value="{{ meta_name }}">
-{%endfor%}
-</datalist> #}
-    {# {{ collection_tree }} #}
+
 {% endblock body %}
 
     {% block javascript %}
