@@ -26,11 +26,15 @@ from flask_paginate import Pagination
 from kernel.template_overrides import get_template_override_manager
 from kernel.metadata_schema import get_schema_manager  # , SchemaManager
 from kernel.metadata_schema.editor import get_realms_for_current_user
+import time
 
 
 basic_search2_bp = Blueprint("basic_search2_bp", __name__, template_folder="templates")
 
 from mango_ui import register_module
+
+
+ITEM_TYPE = "item_name-item_type"  # data_object or collection
 
 
 UI = {
@@ -65,7 +69,6 @@ def build_basic_query_filters(form):
     filters = []
 
     # constant form keys
-    ITEM_TYPE = "item_name-item_type"  # data_object or collection
     ITEM_NAME = "item_name-item_name"
     ITEM_NAME_FULL_MATCH = "item_name-comparison"  # y or n
     METADATA_SCHEMA_PREFIX = "schema_metadata-"
@@ -159,33 +162,33 @@ def create_nested_label(key, flattened_schema):
     # print(label_list)
     return " / ".join(label_list)
 
-
     # print("this is the schema:", flattened_schema)
 
     # return {k : v for k,v in
     #     restructure_item(item, flattened_schema) for item in flattened_schema.items()
     # }
 
+
 class SchemaInfo:
-    def __init__(self, realm:str, schema_name:str, schema_dict:dict, schema_manager):
+    def __init__(self, realm: str, schema_name: str, schema_dict: dict, schema_manager):
         self._realm = realm
         self._name = schema_name
         self._title = schema_dict.get("title", None)
         # self._schema = transform_schema(self.name, schema_manager)
-        self.schema = self.transform_schema(schema_manager) 
-    
+        self.schema = self.transform_schema(schema_manager)
+
     @property
     def attributes(self):
         return list(self.schema.keys())
-    
+
     @property
     def title(self):
         return (self.key, self._title)
-    
+
     @property
     def key(self):
         return f"{self._realm}_{self._name}"
-    
+
     def transform_schema(self, schema_manager):
         schema_dict = json.loads(schema_manager.load_schema(self._name))
 
@@ -223,7 +226,6 @@ class SchemaInfo:
         }
         return restructured_item
 
-
     @staticmethod
     def create_nested_label(key, flattened_schema):
         parts = key.split(".")
@@ -238,7 +240,6 @@ class SchemaInfo:
         return " / ".join(label_list)
 
 
-
 def get_realm_schemas(realm):
 
     schema_manager: SchemaManager = get_schema_manager(
@@ -250,7 +251,10 @@ def get_realm_schemas(realm):
     )  # TODO archived schemas should also be searchable ...
 
     # generator to instantiate SchemaInfo classes
-    schema_generator = (SchemaInfo(realm, schema_name, schema_dict, schema_manager) for schema_name, schema_dict in my_schemas.items())
+    schema_generator = (
+        SchemaInfo(realm, schema_name, schema_dict, schema_manager)
+        for schema_name, schema_dict in my_schemas.items()
+    )
 
     # store schemas as dict with key (realm_name) and SchemaInfo as value
     schemas_dict = {
@@ -267,16 +271,20 @@ def catalog_search2():
     except Exception:
         realm = None
 
+    print(request.values)
     home = f"/{g.irods_session.zone}/home" if realm is None else realm["path"]
 
     # allow querying for schemas of any realm the user has access to
     # this is waaaay faster when a realm has been established
-    realm_schemas =   {  
-        k: v
-        for realm in get_realms_for_current_user(g.irods_session, home)         
-        for k, v in get_realm_schemas(realm).items()
-    } if realm is None else { k: v for k, v in get_realm_schemas(realm["name"]).items()}
-
+    realm_schemas = (
+        {
+            k: v
+            for realm in get_realms_for_current_user(g.irods_session, home)
+            for k, v in get_realm_schemas(realm).items()
+        }
+        if realm is None
+        else {k: v for k, v in get_realm_schemas(realm["name"]).items()}
+    )
 
     # create a list of first level collections to refine the search
 
@@ -309,167 +317,139 @@ def catalog_search2():
     # TODO: make more robust: currently it filters string -8 (-schema, -meta_a, -meta_v) and then removes duplicates by creating a set
     no_label_fields_dict = {f"no_label_{v}": v for v in no_label_fields}
 
-    if request.values.get("submit", False) == "Search" and search_form.validate():
-        import time
-
-        start = time.time()
-        filters = build_basic_query_filters(request.values)
-        objects = (
-            [Collection.name, Collection.owner_name]
-            if request.values["item_name-item_type"] == "collection"
-            else [
-                Collection.name,
-                DataObject.name,
-                DataObject.size,
-                DataObject.owner_name,
-            ]
-        )
-        # objects = (
-        #     Collection
-        #     if request.values["item_name-item_type"] == "collection"
-        #     else
-        #         DataObject,
-
-        # )
-        page = request.values.get("page", 1, int)
-        limit = 20  # request.values.get("per_page", 20, int)
-        offset = (page - 1) * limit
-        pprint(request.values)
-        current_app.logger.info(f"Query with offset {offset}, limit {limit}")
-
-        query = (
-            Query(g.irods_session, *objects)
-            .filter(*filters)
-            .limit(limit)
-            .offset(offset)
-        )
-
-        if True:  # "page" not in request.values or not request.values["total"]:
-            total_query_object = (
-                Collection.id
-                if request.values["item_name-item_type"] == "collection"
-                else DataObject.id
-            )
-            filters = filters.copy()
-            total_query = (
-                Query(g.irods_session, total_query_object)
-                .filter(*filters)
-                .count(total_query_object)
-            )
-            total_results = total_query.execute()
-            print(f"totals:")
-            print(total_results)
-            for r in total_results:
-                print(f"TOTAL = {r[total_query_object]}")
-            print("end totals")
-            total = int(total_results[0][total_query_object])
-            # if request.values["item_name-item_type"] == "data_object":
-            #     total = int(total / 2)
-            current_app.logger.info(f" total results is {total}")
-            # rebuild the search form
-            # search_form = CatalogSearchForm(
-            #     formdata=request.values, per_page=20, total=total
-            # )
-
-        else:
-            total = int(request.values["total"])
-            current_app.logger.info(f"Re-using the request total parameter: {total}")
-
-        current_app.logger.info(f"Assigned to total hidden field: {total}")
-        search_form.total.data = total
-        pprint(search_form.total)
-
-        # pprint(query)
-
-        # search_query.limit = 20
-        # search_query.offset = 0
-
-        # pprint(query._message())
-        try:
-            results = query.execute()
-        except Exception as error:
-            print(f"Error during search", error)
-            flash(f"The server returned an error: {error}", category="danger")
-            return render_template(
-                "basic_catalog_search.html.j2",
-                search_form=search_form,
-                # collection_tree=collection_tree,
-                results=[],
-            )
-
-        end = time.time()  # right time
-        dict_results = []
-        for r in results:
-            if request.values["item_name-item_type"] == "collection":
-                dict_results.append(
-                    {
-                        "type": "collection",
-                        "name": r[Collection.name],
-                        "owner": r[Collection.owner_name],
-                    }
-                )
-            else:
-                dict_results.append(
-                    {
-                        "type": "data_object",
-                        "path": r[Collection.name],
-                        "name": r[DataObject.name],
-                        "size": r[DataObject.size],
-                        "owner": r[DataObject.owner_name],
-                    }
-                )
-        # pprint(dict_results)
-        pagination = Pagination(
-            page=page,
-            per_page=limit,
-            total=total,
-            # search=True,
-            record_name="items",
-            css_framework="bootstrap5",
-            # show_single_page=True,
-        )
-        # pprint(pagination)
-
-        for row in search_form.schema_metadata:
-            print(row.schema.data)
-            if not row.schema.data:
-                continue
-            row.meta_a.choices = realm_schemas[row.schema.data].attributes
-
-        search_template = "search/basic_catalog_search.html.j2"
-
-        if current_collection := request.values.get(
-            "collection_subtree-collection", None
-        ):
-            search_template = get_template_override_manager(
-                g.irods_session.zone
-            ).get_template_for_catalog_item(
-                g.irods_session.collections.get(current_collection),
-                "search/basic_catalog_search.html.j2",
-            )
-
-        return render_template(
-            search_template,
-            search_form=search_form,
-            results=results,
-            total=total,
-            dict_results=dict_results,
-            # collection_tree=collection_tree,
-            search_time=end - start,
-            pagination=pagination,
-            schemas_dict={k:v.schema for k, v in realm_schemas.items()},
-            search_fields=request.values.to_dict(),
-            no_label_fields_dict=no_label_fields_dict,
-        )
-
-    else:
+    if not (request.values.get("submit", False) == "Search" and search_form.validate()):
 
         return render_template(
             "search/basic_catalog_search.html.j2",
             search_form=search_form,
             results=[],
             # collection_tree=collection_tree,
-            schemas_dict={k:v.schema for k, v in realm_schemas.items()},
+            schemas_dict={k: v.schema for k, v in realm_schemas.items()},
             search_fields={},
             no_label_fields_dict={},
         )
+
+    def build_query_columns(values, only_ids=False):
+        item_type = Collection if values[ITEM_TYPE] == "collection" else DataObject
+        if only_ids:
+            return item_type.id
+        columns =  [Collection.name, Collection.owner_name]
+        if item_type == DataObject:
+            columns = [
+            Collection.name,
+            DataObject.name,
+            DataObject.size,
+            DataObject.owner_name,
+        ]
+        return columns
+
+    start = time.time()
+    filters = build_basic_query_filters(request.values)
+    columns = build_query_columns(request.values)
+
+    page = request.values.get("page", 1, int)
+    limit = 20  # request.values.get("per_page", 20, int)
+    offset = (page - 1) * limit
+    pprint(request.values)
+    current_app.logger.info(f"Query with offset {offset}, limit {limit}")
+
+    query = (
+        Query(g.irods_session, *columns).filter(*filters).limit(limit).offset(offset)
+    )
+
+    total_query_object = build_query_columns(request.values, True)
+
+    filters = filters.copy()
+    total_query = (
+        Query(g.irods_session, total_query_object)
+        .filter(*filters)
+        .count(total_query_object)
+    )
+    total_results = total_query.execute()
+    print(f"totals:")
+    print(total_results)
+    for r in total_results:
+        print(f"TOTAL = {r[total_query_object]}")
+    print("end totals")
+    total = int(total_results[0][total_query_object])
+
+    current_app.logger.info(f" total results is {total}")
+
+    current_app.logger.info(f"Assigned to total hidden field: {total}")
+    search_form.total.data = total
+    pprint(search_form.total)
+
+    try:
+        results = query.execute()
+    except Exception as error:
+        print(f"Error during search", error)
+        flash(f"The server returned an error: {error}", category="danger")
+        return render_template(
+            "basic_catalog_search.html.j2",
+            search_form=search_form,
+            # collection_tree=collection_tree,
+            results=[],
+        )
+
+    end = time.time()  # right time
+
+    def results_to_dict(result, item_type):
+        if item_type == "collection":
+            return {
+                "type": "collection",
+                "name": result[Collection.name],
+                "owner": result[Collection.owner_name],
+            }
+        return {
+            "type": "data_object",
+            "path": result[Collection.name],
+            "name": result[DataObject.name],
+            "size": result[DataObject.size],
+            "owner": result[DataObject.owner_name],
+        }
+
+    dict_results = [
+        results_to_dict(result, request.values[ITEM_TYPE]) for result in results
+    ]
+
+    # pprint(dict_results)
+    pagination = Pagination(
+        page=page,
+        per_page=limit,
+        total=total,
+        # search=True,
+        record_name="items",
+        css_framework="bootstrap5",
+        # show_single_page=True,
+    )
+    # pprint(pagination)
+
+    for row in search_form.schema_metadata:
+        print(row.schema.data)
+        if not row.schema.data:
+            continue
+        row.meta_a.choices = realm_schemas[row.schema.data].attributes
+
+    search_template = "search/basic_catalog_search.html.j2"
+
+    if current_collection := request.values.get("collection_subtree-collection", None):
+        search_template = get_template_override_manager(
+            g.irods_session.zone
+        ).get_template_for_catalog_item(
+            g.irods_session.collections.get(current_collection),
+            "search/basic_catalog_search.html.j2",
+        )
+
+    return render_template(
+        search_template,
+        search_form=search_form,
+        results=results,
+        total=total,
+        dict_results=dict_results,
+        # collection_tree=collection_tree,
+        search_time=end - start,
+        pagination=pagination,
+        schemas_dict={k: v.schema for k, v in realm_schemas.items()},
+        search_fields=request.values.to_dict(),
+        no_label_fields_dict=no_label_fields_dict,
+    )
