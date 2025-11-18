@@ -58,6 +58,7 @@ src/scratch
 lib/vsc_irods
 # local python environment
 venv
+.venv
 #Node modules
 node_modules
 #Vue build files

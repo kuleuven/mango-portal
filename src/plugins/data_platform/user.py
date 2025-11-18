@@ -246,6 +246,7 @@ def connection_info_modal(zone):
     setup_json={
         'linux': json.dumps(info['irods_environment'], indent=4),
         'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
+        'linux_pam_interactive': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': "pam_interactive"}, indent=4),
     }
 
     if "-hpc-" in jobid:
@@ -257,15 +258,24 @@ def connection_info_modal(zone):
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
 
+    accounttype = "kuleuven"
+
+    if info['irods_environment']['irods_user_name'].startswith("vsc"):
+        accounttype = "vsc"
+
     sftp_host = "rdmsftp.icts.kuleuven.be"
+    desktop_sync = f"icts-p-coz-desktop-sync-reva-{accounttype}.cloud.icts.kuleuven.be"
     if "-q-" in jobid:
         sftp_host = "rdmsftp.q.icts.kuleuven.be"
+        desktop_sync = f"icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
     if "-t-" in jobid:
-        sftp_host = "rdmsftp.t.icts.kuleuven.be"   
+        sftp_host = "rdmsftp.t.icts.kuleuven.be"
+        desktop_sync = f"icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
 
-    return render_template("user/connection_info_body.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host)
+    return render_template("user/connection_info_body.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host, desktop_sync=desktop_sync)
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
+@data_platform_user_bp.route("/desktop-sync", methods=["GET"])
 @openid_login_required
 def connection_info():
     token, _ = current_user_api_token()
@@ -287,6 +297,7 @@ def connection_info():
     setup_json={
         'linux': json.dumps(info['irods_environment'], indent=4),
         'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
+        'linux_pam_interactive': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': "pam_interactive"}, indent=4),
     }
 
     if "-hpc-" in jobid:
@@ -298,13 +309,21 @@ def connection_info():
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
 
+    accounttype = "kuleuven"
+
+    if info['irods_environment']['irods_user_name'].startswith("vsc"):
+        accounttype = "vsc"
+
     sftp_host = "rdmsftp.icts.kuleuven.be"
+    desktop_sync = f"icts-p-coz-desktop-sync-reva-{accounttype}.cloud.icts.kuleuven.be"
     if "-q-" in jobid:
         sftp_host = "rdmsftp.q.icts.kuleuven.be"
+        desktop_sync = f"icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
     if "-t-" in jobid:
-        sftp_host = "rdmsftp.t.icts.kuleuven.be"    
+        sftp_host = "rdmsftp.t.icts.kuleuven.be"
+        desktop_sync = f"icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
 
-    return render_template("user/connection_info.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host)
+    return render_template("user/connection_info.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host, desktop_sync=desktop_sync)
 
 
 @data_platform_user_bp.route('/data-platform/retrieve-token', methods=["GET", "POST"])

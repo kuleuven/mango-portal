@@ -365,10 +365,10 @@ class iRODSSchemaManager(SchemaManager):
         rods_irods_session = get_zone_operator_session(zone, client_user="rods")
         if not rods_irods_session.collections.exists(str(mango_collection)):
             rods_irods_session.collections.create(str(mango_collection))
-        rods_irods_session.acls.set(
-            iRODSAccess("own", str(mango_collection), user_name=irods_session.username),
-            recursive=True,
-        )
+            rods_irods_session.acls.set(
+                iRODSAccess("own", str(mango_collection), user_name=irods_session.username),
+                recursive=True,
+            )
 
         self._storage_schemas_path = str(mango_collection / realm / "schemas")
 

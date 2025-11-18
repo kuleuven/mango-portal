@@ -1,5 +1,8 @@
 from curses import meta
 import flask
+
+from collections.abc import Mapping
+
 from flask import (
     Blueprint,
     render_template,
@@ -373,7 +376,46 @@ def collection_browse(collection=None):
         # json_template_dir = get_metadata_schema_dir(g.irods_session)
 
         for schema in grouped_metadata["schema"]:  # schema_labels[schema][item.name]:
+
             if schema_manager:
+                if schema not in schemas:
+                    if schema == "other":
+                        pass
+                    else:
+                        result_dict = {}
+
+                        def add_labels(schema, result_dict):
+                            for key, value in schema.items():
+                                if "__version__" in key:
+                                    continue
+                                if isinstance(value, (dict, Mapping)):
+                                    result_dict[key] = {
+                                        "label": key.split(".")[-1],
+                                        "type": "object",
+                                        "level": (len(key.split(".")) - 3),
+                                        "properties": [],
+                                    }
+                                    for nested_value in value.values():
+                                        for element in nested_value:
+                                            if (
+                                                element
+                                                not in result_dict[key]["properties"]
+                                            ):
+                                                result_dict[key]["properties"].append(
+                                                    element
+                                                )
+                                        add_labels(nested_value, result_dict)
+                                else:
+                                    result_dict[key] = {
+                                        "label": key.split(".")[-1],
+                                        "type": "text",
+                                        "level": (len(key.split(".")) - 3),
+                                    }
+
+                        add_labels(grouped_metadata["schema"][schema], result_dict)
+                        result_dict["title"] = schema
+                        schema_labels[schema] = result_dict
+
                 try:
                     if version := grouped_metadata["schema"][schema].get(
                         f"{current_app.config['MANGO_SCHEMA_PREFIX']}.{schema}.__version__",
@@ -391,7 +433,6 @@ def collection_browse(collection=None):
                         schema_dict = json.loads(
                             schema_manager.load_schema(schema, status="published")
                         )
-
                     if schema_dict:
                         schema_labels[schema] = flatten_schema(
                             schema_dict,
@@ -405,11 +446,8 @@ def collection_browse(collection=None):
                         )
                     else:
                         logging.info(f"No labels found for {schema}")
+
                 except Exception as e:
-                    flash_error(
-                        e,
-                        default_message=f"Encountered error loading schema {schema} for fetching labels {e}",
-                    )
                     logging.info(
                         f"Encountered error loading schema {schema} for fetching labels {e}"
                     )
