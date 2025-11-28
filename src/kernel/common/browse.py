@@ -1055,14 +1055,23 @@ def ask_tika(data_object_path):
 
     tika_file_path = f"{tika_storage}/{data_object.id}.tika.json"
 
-    if (
-        os.path.exists(tika_file_path)
-        and data_object.modify_time
-        < datetime.datetime.fromtimestamp(os.path.getmtime(tika_file_path))
-        and not "skip-tika-cache" in request.values
+    do_modtime = data_object.modify_time
+    use_tz = (
+        do_modtime.tzinfo is not None
+        and do_modtime.tzinfo.utcoffset(do_modtime) is not None
+    )
+
+    if os.path.exists(tika_file_path) and do_modtime < (
+        analysis_timestamp := datetime.datetime.fromtimestamp(
+            os.path.getmtime(tika_file_path), tz=do_modtime.tzinfo if use_tz else None
+        )
+        and "skip-tika-cache" not in request.values
     ):
         with open(tika_file_path, mode="r") as tika_file:
-            result = json.load(tika_file)
+            tika_result = json.load(tika_file)
+            tika_result["X-ANALYSIS-timestamp"] = analysis_timestamp.replace(
+                tzinfo=datetime.timezone.utc, microsecond=0
+            ).isoformat()
     # temporary limit: @todo create an async handler
     elif data_object.size > 200000000:
         flash(
