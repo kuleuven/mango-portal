@@ -257,7 +257,6 @@ def group_prefix_metadata_items(
 def get_current_user_rights(
     irods_session: iRODSSession, item: iRODSDataObject | iRODSCollection
 ) -> list:
-
     item_acls = irods_session.acls.get(item, report_raw_acls=True)
     access = [
         item_acl.access_name
@@ -376,7 +375,6 @@ def collection_browse(collection=None):
         # json_template_dir = get_metadata_schema_dir(g.irods_session)
 
         for schema in grouped_metadata["schema"]:  # schema_labels[schema][item.name]:
-
             if schema_manager:
                 if schema not in schemas:
                     if schema == "other":
@@ -816,7 +814,7 @@ def download_object(data_object_path):
                 bytes_read = len(file_chunk)
                 position += bytes_read
                 print(
-                    f"{data_object.name}: sending {position} bytes after {time.time()-start}"
+                    f"{data_object.name}: sending {position} bytes after {time.time() - start}"
                 )
                 yield file_chunk
 
@@ -941,7 +939,7 @@ def collection_upload_stream(collection: str):
                     do_handle.write(chunk)
                 delta = time.perf_counter() - start
                 logging.info(
-                    f"Wrote in total {total_bytes} bytes to irods in {delta} secs or {total_bytes/delta} bytes per second"
+                    f"Wrote in total {total_bytes} bytes to irods in {delta} secs or {total_bytes / delta} bytes per second"
                 )
             return {}
 
@@ -1061,9 +1059,16 @@ def ask_tika(data_object_path):
         and do_modtime.tzinfo.utcoffset(do_modtime) is not None
     )
 
-    if os.path.exists(tika_file_path) and do_modtime < (
-        analysis_timestamp := datetime.datetime.fromtimestamp(
-            os.path.getmtime(tika_file_path), tz=do_modtime.tzinfo if use_tz else None
+    if (
+        os.path.exists(tika_file_path)
+        and (
+            do_modtime
+            < (
+                analysis_timestamp := datetime.datetime.fromtimestamp(
+                    os.path.getmtime(tika_file_path),
+                    tz=do_modtime.tzinfo if use_tz else None,
+                )
+            )
         )
         and "skip-tika-cache" not in request.values
     ):
