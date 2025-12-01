@@ -2,6 +2,25 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.24.0 []
+
+### New features
+
+- [core] updated PRC to 3.2.0
+- [data platform] additional connection info and updates (owncloud, pam interactive, ...)
+
+### Bug fixes
+
+- [tika] fixed Tika bug with naive datetimes
+- [metadata schema] fixed unnecessary calls to set acls in schema manager
+- [metadata schema] fixed schema form for single value autocomplete until second level composite with try catch for errors
+- [metadata schema] updated schema form conditional logic to set autocomplete value when not multiple
+- [metadata schema] fixed schema form for autocomplete to show options on focus
+
+### Other
+
+- cleanup of unused imports
+
 ## Release 0.23.0 [2025-09-18]
 
 ### Bug fixes
