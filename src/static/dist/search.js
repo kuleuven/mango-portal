@@ -1,5 +1,5 @@
 
-console.log(schemasObject)
+// console.log(schemasObject)
 
 
 function updateRowsOnReload(containerId) {
@@ -28,9 +28,7 @@ function updateAttributeChoice(schemaDropdown, schemasObject) {
     attribute.innerHTML = "" // clear the attribute select field each time 
     const optgroups = {}
     for (const [key, value] of Object.entries(schemasObject[schemaDropdown.value])) {
-        console.log(key)
         if (value.type === "label") {
-            console.log(value.type)
             let optgroup = document.createElement("optgroup");
             optgroup.setAttribute("label", value.title);
             attribute.add(optgroup);
@@ -60,15 +58,12 @@ function updateAttributeChoice(schemaDropdown, schemasObject) {
     attribute.addEventListener("change", () => {  // listen for changes to attribute name
         let value = schemaDropdown.closest(".row").querySelector("[name$='meta_v']");
         let data = schemasObject[schemaDropdown.value][attribute.value];
-        console.log("changing")
-        console.log(value, data)
         changeValueType(value, data);
     })
 };
 
 
 selectSchemas.forEach((schemaDropdown) => {
-    console.log(schemaDropdown);
     if (schemaDropdown.value) {
         updateAttributeChoice(schemaDropdown, schemasObject)
     }
@@ -98,7 +93,7 @@ function createField(type, elementName, elementID, inputValue) { // function to 
 function changeValueType(value, data) {
     let currentName = value.name
     let currentId = value.id
-    let inputValue = value.value
+    let inputValue = "" //value.value
     // function to check  the type for row with labels 
     let newField = createField(data.type, currentName, currentId, inputValue);
     if (data.type == "select") {
@@ -160,7 +155,6 @@ function addRow(type, elementId) {
         newInput.type = "text";
         newInput.value = "";
         clonedRow.querySelector("[id$='-meta_v']").replaceWith(newInput);
-        console.log(clonedRow);
     }
     if (clonedRow.querySelector("[id$=-clear]")) {
         clonedRow.querySelector("[id$=-clear]").closest(".col-md-1").remove()
