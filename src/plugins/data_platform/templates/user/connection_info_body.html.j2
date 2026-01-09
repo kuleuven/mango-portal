@@ -17,16 +17,14 @@
 
     <p class="mt-3">
       The ManGO platform is reachable over the iRODS protocol using the following connection information.
-    </p>
-    <p>
       <i>Note that after June 1st, our iRODS servers will be firewalled. You will either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
       or to open the web firewall page 
       {% if '-hpc-' in jobid %}
-      <a href="https://access.kuleuven.be">access.kuleuven.be</a>, 
-      {% else %}
       <a href="https://firewall.vscentrum.be">firewall.vscentrum.be</a>, 
+      {% else %}
+      <a href="https://access.kuleuven.be">access.kuleuven.be</a>, 
       {% endif %}
-      before attempting to connect using any of the clients listed below. Contact the RDM team if some script needs access from another location.</i>
+      before attempting to connect using any of the clients listed below.</i>
     </p>
     
     <table class="table table-sm table-borderless ml-20 mt-3">
@@ -405,11 +403,11 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
         <i>Note that after June 1st, the SFTP service will be firewalled. You will either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
         or to open the web firewall page 
         {% if '-hpc-' in jobid %}
-        <a href="https://access.kuleuven.be">access.kuleuven.be</a>, 
-        {% else %}
         <a href="https://firewall.vscentrum.be">firewall.vscentrum.be</a>, 
+        {% else %}
+        <a href="https://access.kuleuven.be">access.kuleuven.be</a>, 
         {% endif %}
-        before attempting to connect. Contact the RDM team if some script needs access from another location.</i>
+        before attempting to connect.</i>
       </p>
       <ol>
         {% if '-hpc-' in jobid %}
