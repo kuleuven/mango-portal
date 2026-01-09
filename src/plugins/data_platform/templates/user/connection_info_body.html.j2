@@ -103,20 +103,20 @@
         </button></h6>
     <div id="pythonModule" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
       <p>
-        Using the <code>iron</code> authentication above prepares the <code>.irods/irods_environment.json</code> and <code>.irods/.irodsA</code> files, that
-        the python-irodsclient will read by default if 
+        Using the <code>iron</code> authentication above prepares the <code>.irods/irods_environment.json</code> and <code>.irods/.irodsA</code> files.
+        The python iRODS client can be configured to use these authentication files by putting the following in your code:
       </p>
       <div class="code-container ms-2">
         <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
           <i class="bi bi-clipboard"></i> Copy
         </button>
-        <pre><code class="user-select-all">iRODSSession(irods_env_file=os.path.expanduser('~/.irods/irods_environment.json'))</code></pre>
+        <pre><code class="user-select-all">env_file = os.path.expanduser('~/.irods/irods_environment.json')
+with iRODSSession(irods_env_file=env_file) as session:
+  (...)</code></pre>
       </div>
-      </p>
-        is used to get an iRODS session in a python script/shell.
-      </p>
       <p>
-        However, it is also possible to do authenticate with python code only and integrate it in your scripts. For this, install the <code>mango_auth</code> pip module with the command:
+        However, it is also possible to do authenticate with python code only and integrate it in your scripts. 
+        For this, ensure python is installed, and install the <code>mango_auth</code> pip module with the command:
       </p>
       <div class="code-container ms-2">
         <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
