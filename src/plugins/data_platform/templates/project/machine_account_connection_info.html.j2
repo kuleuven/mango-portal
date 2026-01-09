@@ -57,10 +57,10 @@
     <p>
     <pre><code>{{ setup_json }}</code></pre>
     <p>
-      Run either <code>iron auth</code> or <code>iinit</code> and enter the password above to authenticate.
+      Run either <code>iron auth</code> or <code>iinit</code> and enter the password above to authenticate. This will initialize your iRODS session.
     </p>
     <p>
-      Now you can use iron, iCommands or python scripts using <code>python-irodsclient</code> to connect to iRODS during the lifetime of the password. 
-      Be aware that is your responsability to check for any errors that might occur in unattended scripts.
+      Scripts that use iron, iCommands or PRC will now be able to connect to iRODS. 
+      Be aware that unattended scripts need to deal with possible transfer errors, by e.g. adding a logging method or by retrying failed transfers.
     </p>
 {% endblock %}
