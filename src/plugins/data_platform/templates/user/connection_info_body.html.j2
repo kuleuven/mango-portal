@@ -125,7 +125,7 @@
         <pre><code class="user-select-all">pip install mango_auth</code></pre>
       </div>
       <p>
-        Use the following command to authenticate against irods (this is equivalent to <code>iron auth</code>):
+        Use the following command to authenticate against iRODS (this is equivalent to <code>iron auth</code>):
       </p>
       <div class="code-container ms-2">
         <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
@@ -151,8 +151,8 @@ iinit("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['irods_envi
     <div id="linuxPamInteractive" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
       <p>
         If the <code>iron</code> command is not available, it is also possible to authenticate with iCommands only on Linux operating systems.
-        Make sure that your irods icommands installation is 5.0.0 or above and includes the <code>irods-auth-plugin-pam-interactive-client</code> package.
-        Run the snippet below to configure an irods client under Linux.
+        Make sure that your iRODS icommands installation is 5.0.0 or above and includes the <code>irods-auth-plugin-pam-interactive-client</code> package.
+        Run the snippet below to configure an iRODS client under Linux.
       </p>
       <div class="code-container ms-2">
         <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
@@ -162,11 +162,11 @@ iinit("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['irods_envi
 cat > ~/.irods/irods_environment.json <<'EOF'
 {{ setup_json['linux_pam_interactive'] }}
 EOF
-iinit --ttl 168 && echo You are now authenticated to irods.
+iinit --ttl 168 && echo You are now authenticated to iRODS.
 </code></pre>
       </div>
       <p>
-        The irods session remains valid for one week. Run <code>iinit --ttl 168</code> again to refresh.
+        The iRODS session remains valid for one week. Run <code>iinit --ttl 168</code> again to refresh.
         In contrast to authentication with <code>iron</code>, a login URL will be shown every time.
       </p>
     </div>
@@ -223,7 +223,7 @@ iinit --ttl 168 && echo You are now authenticated to irods.
       </p>
       <p>
         On the HPC tier1 or tier2 clusters in Leuven, run the snippet below to
-        configure an irods client. The irods session itself will last for a
+        configure an iRODS client. The iRODS session itself will last for a
         week, afterwards repeat the command.
       </p>
       <div class="code-container ms-2">
@@ -246,8 +246,8 @@ iinit --ttl 168 && echo You are now authenticated to irods.
         <i>This method is deprecrated and this information will be removed February 1st, 2026.</i>
       </p>
       <p>
-        If your installation lacks the <code>irods-auth-plugin-pam-interactive-client</code> package, run the snippet below to configure an irods client under Linux. The
-        irods session is valid
+        If your installation lacks the <code>irods-auth-plugin-pam-interactive-client</code> package, run the snippet below to configure an iRODS client under Linux. The
+        iRODS session is valid
         {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
           for one week
         {% else %}
@@ -263,7 +263,7 @@ iinit --ttl 168 && echo You are now authenticated to irods.
 cat > ~/.irods/irods_environment.json <<'EOF'
 {{ setup_json['linux'] }}
 EOF
-echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}--ttl 168{% endif %} >/dev/null && echo You are now authenticated to irods.
+echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}--ttl 168{% endif %} >/dev/null && echo You are now authenticated to iRODS.
 </code></pre>
       </div>
     </div>
@@ -277,9 +277,9 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
       </p>
       <p>
         Start a python interactive shell, and paste the snippet below to setup
-        the necessary files to authenticate against irods. The script assumes
+        the necessary files to authenticate against iRODS. The script assumes
         that you installed the <code>python-irodsclient</code>. It will write
-        the irods environment file and a password file.
+        the iRODS environment file and a password file.
         {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
           The validity period of the password depends on server configuration
           and the version of python-irodsclient. For version 1.0.0, this is 60 hours,
@@ -302,7 +302,7 @@ from irods.session import iRODSSession
 from irods.password_obfuscation import encode
 
 if irods.__version__.startswith(("1.", "0.")):
-  print("You are using an outdated version of the python irods client. Please update to 2.0.0 as soon as possible")
+  print("You are using an outdated version of the python iRODS client. Please update to 2.0.0 as soon as possible")
 {%- if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
 config = config.replace("pam_password", "PAM")
 {%- endif %}
