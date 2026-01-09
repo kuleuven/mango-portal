@@ -115,7 +115,7 @@ with iRODSSession(irods_env_file=env_file) as session:
   (...)</code></pre>
       </div>
       <p>
-        However, it is also possible to do authenticate with python code only and integrate it in your scripts. 
+        In some situations it might be benefitial to integrate authentication in a python script, and to prepare the iRODS environment files directly in python.
         For this, ensure python is installed, and install the <code>mango_auth</code> pip module with the command:
       </p>
       <div class="code-container ms-2">
@@ -125,7 +125,7 @@ with iRODSSession(irods_env_file=env_file) as session:
         <pre><code class="user-select-all">pip install mango_auth</code></pre>
       </div>
       <p>
-        Use the following command to authenticate against iRODS (this is equivalent to <code>iron auth</code>):
+        To demonstrate that it works correctly, the following command can be used to authenticate against iRODS, instead of <code>iron auth</code>:
       </p>
       <div class="code-container ms-2">
         <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
@@ -134,14 +134,18 @@ with iRODSSession(irods_env_file=env_file) as session:
         <pre><code class="user-select-all">mango_auth {{ info['irods_environment']['irods_user_name'] }} {{ info['irods_environment']['irods_zone_name'] }} {{ info['irods_environment']['irods_host'] }}</code></pre>
       </div>
       <p>
-        Or equivalently, in a python script/shell:
+        Once confirmed this works, the following function can be integrated in your python script to do exactly the same without external commands:
       </p>
       <div class="code-container ms-2">
         <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
           <i class="bi bi-clipboard"></i> Copy
         </button>
         <pre><code class="user-select-all">from mango_auth import iinit
-iinit("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['irods_environment']['irods_zone_name'] }}", "{{ info['irods_environment']['irods_host'] }}")</code></pre>
+iinit("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['irods_environment']['irods_zone_name'] }}", "{{ info['irods_environment']['irods_host'] }}")
+
+env_file = os.path.expanduser('~/.irods/irods_environment.json')
+with iRODSSession(irods_env_file=env_file) as session:
+  (...)</code></pre>
       </div>
     </div>
 
@@ -181,6 +185,7 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
       <p>
         Consult the <a href="https://rdm-docs.icts.kuleuven.be/mango/clients.html">client list at the RDM documentation pages</a> to check which clients we actively support.
       </p>
+      <!--
       <p>
         In case you want to connect using a third party client not supporting <code>pam_interactive</code>, you might try with the <code>native</code> authentication method and the following password:
       </p>
@@ -209,6 +214,7 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
         The provided password is valid until {{ info['expiration']|format_timestamp }}, refresh the page to get a
         new password.
       </p>
+      -->
     </div>
 
     
@@ -219,7 +225,7 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
         </button></h6>
     <div id="linuxHPC" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
       <p>
-        <i>This method is deprecrated and this information will be removed February 1st, 2026. The method itself will continue to work until April 1st, 2026, afterwards the setup-irods command will be removed.</i>
+        <i>This method is deprecrated and will stop working on April 1st, 2026. We'll remove this information from this page already on February 1st, 2026.</i>
       </p>
       <p>
         On the HPC tier1 or tier2 clusters in Leuven, run the snippet below to
@@ -230,7 +236,7 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
         <pre><code>irods-setup --zone {{ info['hpc-irods-setup-zone'] }} | bash</code></pre>
       </div>
       <p>
-        From other HPC clusters in flanders, you can run
+        From other HPC clusters in Flanders, you can run
         <code class="user-select-all">ssh login.hpc.kuleuven.be irods-setup --zone
           {{ info['hpc-irods-setup-zone'] }} | bash</code>. If this command through ssh does not work, please run it without
         <code>| bash</code> to troubleshoot.
@@ -243,7 +249,7 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
         </button></h6>
     <div id="linuxNative" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
       <p>
-        <i>This method is deprecrated and this information will be removed February 1st, 2026.</i>
+        <i>This method is deprecrated and this information will be removed on February 1st, 2026.</i>
       </p>
       <p>
         If your installation lacks the <code>irods-auth-plugin-pam-interactive-client</code> package, run the snippet below to configure an iRODS client under Linux. The
@@ -273,7 +279,7 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
         </button></h6>
     <div id="pythonScript" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
       <p>
-        <i>This method is deprecrated and this information will be removed February 1st, 2026.</i>
+        <i>This method is deprecrated and this information will be removed on February 1st, 2026.</i>
       </p>
       <p>
         Start a python interactive shell, and paste the snippet below to setup
