@@ -716,7 +716,7 @@ def projects_statistics():
             "project_name": project_name,
             "project_create_date": project_create_date,
             "project_type": project["project"]["type"],
-            "project_status": project["project"]["status"],
+            "project_status": project["status"],
             "usage_total": convert_bytes_to_GB(
                 [x["used_size"] for x in project["usage"]][-1]
             ),
@@ -1011,7 +1011,7 @@ def project_quota_change():
                     "project_name": project["name"],
                     "project_create": project["log"][0]["date"],
                     "project_type": project["type"],
-                    "project_status": project["status"],
+                    "project_status": day["status"] if day["status"] != "" else ("archived" if day["archived"] else "active"),
                     "sap_ref": project["sap_ref"],
                     "an": project["an"],
                     "quota_set": convert_bytes_to_GB(
