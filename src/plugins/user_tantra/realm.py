@@ -1,4 +1,5 @@
 from flask import render_template, Blueprint, g, session, request, jsonify, redirect
+from kernel.template_overrides import get_template_override_manager
 from irods.session import iRODSSession
 
 user_tantra_realm_bp = Blueprint(
@@ -10,15 +11,23 @@ user_tantra_realm_bp = Blueprint(
 def index():
     irods_session: iRODSSession = g.irods_session
     # projects = irods_session.query()
-    realm_collections = irods_session.collections.get(f"/{irods_session.zone}/home").subcollections
+    realm_collections = irods_session.collections.get(
+        f"/{irods_session.zone}/home"
+    ).subcollections
 
     realm = get_realm(g.irods_session)
     if realm and realm["name"] not in [coll.name for coll in realm_collections]:
         realm = None
         set_realm(g.irods_session)
 
+    view_template = get_template_override_manager(
+        g.irods_session.zone
+    ).get_template_for_catalog_item(
+        g.irods_session.collections.get(f"/{g.irods_session.zone}"),
+        "user_tantra/index.html.j2",
+    )
     return render_template(
-        "user_tantra/index.html.j2", realm_collections=realm_collections, realm = realm
+        view_template, realm_collections=realm_collections, realm=realm
     )
 
 
@@ -33,7 +42,7 @@ def set_realm(irods_session, realm=None):
     else:
         setattr(irods_session, "realm", realm)
 
- 
+
 @user_tantra_realm_bp.route(
     "/user_tantra/realm",
     methods=[
@@ -56,10 +65,10 @@ def handle_realm():
                 }
                 set_realm(g.irods_session, realm)
                 session.setdefault("realm", realm)
-                
+
     if request.method == "GET":
         return jsonify(get_realm(g.irods_session))
-    
+
     if "redirect_route" in request.values:
         return redirect(request.values["redirect_route"])
     if "redirect_hash" in request.values:

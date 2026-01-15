@@ -54,7 +54,7 @@ collection_view_tabs = [
         id="permissions", title="Permissions", template="collection_permissions.html.j2"
     ),
     TabInfo(id="metadata", title="Metadata", template="collection_metadata.html.j2"),
-    TabInfo(id="extra", title="Extra", template="collection_extra.html.j2"),
+    TabInfo(id="extra", title="More...", template="collection_extra.html.j2"),
 ]
 
 collection_extra_tabs = []

@@ -15,6 +15,7 @@ if not API_TOKEN:
 zone_operator_sessions = {}
 failed_operator_sessions = {}
 
+
 def get_operator_session_params_via_api(zone: str):
     if not API_URL or not API_TOKEN or not zone in irods_zones_config.irods_zones:
         return False
@@ -27,7 +28,8 @@ def get_operator_session_params_via_api(zone: str):
     response.raise_for_status()
     return response.json()
 
-def is_zone_operator_session_valid(key : str) -> bool:
+
+def is_zone_operator_session_valid(key: str) -> bool:
     global zone_operator_sessions
     if (
         key in zone_operator_sessions
@@ -35,8 +37,8 @@ def is_zone_operator_session_valid(key : str) -> bool:
     ):
         # check if the session can access the zone collection
         try:
-            operator_session : iRODSSession = zone_operator_sessions[key]
-            zone_home=operator_session.collections.get(f"/{operator_session.zone}")
+            operator_session: iRODSSession = zone_operator_sessions[key]
+            zone_home = operator_session.collections.get(f"/{operator_session.zone}")
         except Exception as e:
             del zone_operator_sessions[key]
             return False
@@ -44,8 +46,7 @@ def is_zone_operator_session_valid(key : str) -> bool:
     return False
 
 
-
-def get_zone_operator_session(zone: str, client_user : str = None) -> iRODSSession:
+def get_zone_operator_session(zone: str, client_user: str = None) -> iRODSSession:
     global zone_operator_sessions
     key = f"{zone}_{client_user}" if client_user else zone
     if is_zone_operator_session_valid(key):
@@ -106,6 +107,7 @@ class OperatorSessionCleanupThread(Thread):
                 if not is_zone_operator_session_valid(key):
                     logging.info(f"Removed invalid zone operator session for {key}")
             time.sleep(120)
+
 
 cleanup_old_sessions_thread = OperatorSessionCleanupThread()
 cleanup_old_sessions_thread.start()

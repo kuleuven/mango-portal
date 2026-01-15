@@ -230,7 +230,12 @@ def catalog_search():
         current_app.logger.info(
             f"Creating/refreshing metadata attribute (name) cache for user {user}"
         )
-        return g.irods_session.query(type).all()
+        # fix for seemingly weird characters in metadata names that break xml 
+        # https://github.com/irods/python-irodsclient?tab=readme-ov-file#special-characters
+        from irods.helpers import xml_mode
+        with xml_mode('QUASI_XML'):
+            res = g.irods_session.query(type).all()
+        return res
 
     class AVUForm(Form):
         meta_a = StringField("Attribute name")  # , [validators.Length(min=2)])

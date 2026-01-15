@@ -31,6 +31,11 @@
       {% endif %}
     </p>
 
+    <p>
+      <i>Note that after June 1st, the iRODS servers will be firewalled. You will either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
+      or to open the web firewall page before attempting to connect. Contact the RDM team if some script needs access from another location, e.g. to whitelist an additional IP.</i>
+    </p>
+
     <dl class="mx-auto ml-20">
       <dt>Hostname</dt>
       <dd>{{ info['irods_environment']['irods_host'] }}</dd>
@@ -50,34 +55,17 @@
       </dd>
     </dl>
 
-    <h5>iCommands Client on Linux</h5>
-      <p style="margin-top: 10px">
-        Run the snippet below to configure an irods client under Linux.
-      </p>
-<pre><code>mkdir -p ~/.irods
-cat > ~/.irods/irods_environment.json <<'EOF'
-{{ setup_json }}
-EOF
-echo {{ info['token'] }} | iinit >/dev/null
-</code></pre>
-
-    <h5>Python Client</h5>
-    <p style="margin-top: 10px">
-        Use the following snippet (and adapt) to authenticate a python client.
-      </p>
-<pre><code>config = """
-{{ setup_json }}
-"""
-password = "{{ info['token']}}"
-
-import json
-from irods.session import iRODSSession
-
-parameters = json.loads(config)
-user = parameters['irods_user_name']
-
-with iRODSSession(user=user, password=password, **parameters) as session:
-    # Do something
-    coll = session.collections.get("/{{ info['irods_environment']['irods_zone_name'] }}")
-    print(coll.id)</code></pre>
-{% endblock body %}
+    <h5>How to configure authentication</h5>
+    <p>
+      Put the following contents in the <code>irods_environment.json</code> file inside the <code>.irods</code> directory on the device that needs an iRODS connection.
+      The location of the <code>.irods</code> directory depends on the operating system. For Mac: <code>/Users/&lt;user&gt;/.irods</code>, for Linux: <code>/home/&lt;user&gt;/.irods</code>, for Windows: <code>C:\Users\&lt;user&gt;\.irods</code>.
+    <p>
+    <pre><code>{{ setup_json }}</code></pre>
+    <p>
+      Run either <code>iron auth</code> or <code>iinit</code> and enter the password above to authenticate. This will initialize your iRODS session.
+    </p>
+    <p>
+      Scripts that use iron, iCommands or PRC will now be able to connect to iRODS. 
+      Be aware that unattended scripts need to deal with possible transfer errors, by e.g. adding a logging method or by retrying failed transfers.
+    </p>
+{% endblock %}

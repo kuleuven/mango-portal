@@ -57,20 +57,25 @@
               <tr>
                 <th>Status</th>
                 <td>
-                Will be activated at {{ project['valid_after'] }}
+                Will be activated at {{ project['valid_after'] }} (<code>{{ status['status'] }}</code>)
                 </td>
               </tr>
               {% elif project['archived'] %}
               <tr>
                 <th>Status</th>
                 <td>
-                Archived at {{ status['archived_at']|parse_json_timestamp|format_timestamp }}
+                Archived at {{ status['archived_at']|parse_json_timestamp|format_timestamp }} (<code>{{ status['status'] }}</code>)
                 </td>
               </tr>
               {% elif not status['provisioned'] %}
               <tr>
                 <th>Status</th>
                 <td>Changes pending in {{ project['platform']|replace('generic', 'the globus share storage') }}</td>
+              </tr>
+              {% elif status['status'] != 'active' %}
+              <tr>
+                <th>Status</th>
+                <td><code>{{ status['status'] }}</code></td>
               </tr>
               {% endif %}
               <tr>
@@ -140,14 +145,32 @@
                 {{ status['archived_at']|parse_json_timestamp|yesterday|format_date }}
                 {% elif project['invalid_after'] %}
                 {{ project['invalid_after']|parse_json_date|yesterday|format_date  }}
+                {% if project['grace_period'] > 0 %}
+                + {{ project['grace_period'] / 86400000000000 }} days grace period
+                {% endif %}
                 {% else %}
                 infinite
                 {% endif %}
+
                 {% if admin %}
                 <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
                 {% endif %}
                 </td>
               </tr>
+
+              {% if project['invalid_after'] and project['retention_period'] %}
+              <tr>
+                <th>Retention</th>
+                <td>
+                  {{ project['retention_period'] / 31557600000000000 }} years (until {{ project['retention_until']|parse_json_date|format_date }})
+                  of which {{ project['paid_retention_period'] / 31557600000000000 }} years (until {{ project['paid_retention_until']|parse_json_date|format_date }}) are funded
+
+                  {% if admin %}
+                  <a href="#" data-bs-toggle="modal" data-bs-target="#modifyProject"><i class="bi bi-pencil"></i></a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endif %}
 
               <tr>
                 <th>Platform</th>
@@ -362,7 +385,7 @@
                       </button>
                     </div>
                       <div class="modal-body">
-                        Archiving a project means that access to the data will no longer be possible for all members, but the data is not automatically cleaned up. API tokens will be revoked, and cannot be restored if the project is unarchived later.
+                        Archiving a project means that access to the project will be read only during the configured retention period, and hidden afterwards. No data is not automatically cleaned up. API tokens will be revoked, and cannot be restored if the project is unarchived later.
                       </div>
                       <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -647,7 +670,8 @@
           <div class="tab-pane fade show" id="quotalog" role="tabpanel" aria-labelledby="quotalog-tab">
             <table class="table table-hover">
               <tr>
-                <th>Quota Change Date</th>
+                <th>Change Date</th>
+                <th>Status</th>
                 <th>Quota</th>
                 <th>Modified by</th>
                 <th>Message</th>
@@ -655,7 +679,8 @@
               {% for log in quotalog %}
               <tr>
                 <td class="align-middle">{{ log['date']|parse_json_date|format_date }}</td>
-                <td class="align-middle">{% if log['archived'] %}Project is archived{% else %}{{ log['quota_size']|format_size }}, {{ log['quota_inodes']|format_intword }} inodes{% endif %}</td>
+                <td class="align-middle"><code>{{ log['status'] }}</code></td>
+                <td class="align-middle">{% if log['hidden'] %}&nbsp;{% else %}{{ log['quota_size']|format_size }}, {{ log['quota_inodes']|format_intword }} inodes{% endif %}</td>
                 <td class="align-middle">{{ log['modified_by'] }}</td>
                 <td class="align-middle">{{ log['message'] }}</td>
               </tr>
@@ -882,7 +907,7 @@
   </div>
 
   <!-- Modify project modal -->
-  <div class="modal fade"
+  <div class="modal modal-xl fade"
        id="modifyProject"
        tabindex="-1"
        aria-labelledby="modifyProjectLabel"
@@ -902,11 +927,12 @@
         <form action="{{ url_for('data_platform_project_bp.modify_project') }}"
               method="post"
               enctype="multipart/form-data"
-              class="row g-3 needs-validation"
+              class="container g-3 needs-validation"
               novalidation>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="modal-body">
-            <div class="mb-3">
+          <div class="row modal-body">
+          <div class="col">
+            <div class="mb-3 ">
               <label for="type" class="col-form-label">
                 Project Type
               </label>
@@ -915,7 +941,9 @@
                      id="type"
                      name="type"
                      required>
-                        <option value="project" selected>project</option>
+                        <option value="{{ project['type'] }}" selected>{{ project['type'] }}</option>
+                        <hr />
+                        <option value="project">project</option>
                         <option value="test">test</option>
                         <option value="training">training</option>
                         <option value="pilot">pilot</option>
@@ -977,6 +1005,9 @@
                 VSC project call is required
               </div>
             </div>
+          
+          </div>
+          <div class="col">
 
             <div class="mb-3">
               <label for="valid_after" class="col-form-label">
@@ -1004,10 +1035,120 @@
               </div>
             </div>
 
+            <div class="mb-3">
+              <label for="grace_period" class="col-form-label">
+                Grace period
+              </label>
+              <select class="form-select"
+                     name="grace_period"
+                     value="{{ project['grace_period'] }}"
+                     aria-describedby="gracePeriodHelp">
+                <option value="{{ project['grace_period'] }}" selected>{{ project['grace_period'] / 86400000000000 }} days</option>
+                <hr />
+                <option value="0">no grace period</option>
+                <option value="604800000000000">1 week</option>
+                <option value="2629800000000000">1 month</option>
+                <option value="7889400000000000">3 months</option>
+                <option value="15778800000000000">6 months</option>
+                <option value="31557600000000000">1 year</option>
+              </select>
+              <div class="invalid-feedback">
+                Grade period is required
+              </div>
+              <small id="gracePeriodHelp" class="form-text text-muted">Time period the project is still accessible read-write after the deactivation date.</small>
+            </div>
+
+            <div class="mb-3">
+              <label for="grace_period" class="col-form-label">
+                Retention period
+              </label>
+              <select class="form-select"
+                     name="retention_period"
+                     value="{{ project['retention_period'] }}"
+                     aria-describedby="retentionPeriodHelp">
+                <option value="{{ project['retention_period'] }}" selected>{{ project['retention_period'] / 31557600000000000 }} years</option>
+                <hr />
+                <option value="0">0 years</option>
+                <option value="31557600000000000">1 years</option>
+                <option value="63115200000000000">2 years</option>
+                <option value="94672800000000000">3 years</option>
+                <option value="126230400000000000">4 years</option>
+                <option value="157788000000000000">5 years</option>
+                <option value="189345600000000000">6 years</option>
+                <option value="220903200000000000">7 years</option>
+                <option value="252460800000000000">8 years</option>
+                <option value="284018400000000000">9 years</option>
+                <option value="315576000000000000">10 years</option>
+                <option value="347133600000000000">11 years</option>
+                <option value="378691200000000000">12 years</option>
+                <option value="410248800000000000">13 years</option>
+                <option value="441806400000000000">14 years</option>
+                <option value="473364000000000000">15 years</option>
+                <option value="504921600000000000">16 years</option>
+                <option value="536479200000000000">17 years</option>
+                <option value="568036800000000000">18 years</option>
+                <option value="599594400000000000">19 years</option>
+                <option value="631152000000000000">20 years</option>
+                <option value="662709600000000000">21 years</option>
+                <option value="694267200000000000">22 years</option>
+                <option value="725824800000000000">23 years</option>
+                <option value="757382400000000000">24 years</option>
+                <option value="788940000000000000">25 years</option>
+              </select>
+              <div class="invalid-feedback">
+                Retention period is required
+              </div>
+              <small id="retentionPeriodHelp" class="form-text text-muted">Legal retention period the data should be kept after the deactivation date of the project.</small>
+            </div>
+
+            <div class="mb-3">
+              <label for="paid_retention_period" class="col-form-label">
+                Funded retention period
+              </label>
+              <select class="form-select"
+                     name="paid_retention_period"
+                     value="{{ project['paid_retention_period'] }}"
+                     aria-describedby="paidRetentionPeriodHelp">
+                 <option value="{{ project['paid_retention_period'] }}" selected>{{ project['paid_retention_period'] / 31557600000000000 }} years</option>
+                 <hr />
+                <option value="0">0 years</option>
+                <option value="31557600000000000">1 years</option>
+                <option value="63115200000000000">2 years</option>
+                <option value="94672800000000000">3 years</option>
+                <option value="126230400000000000">4 years</option>
+                <option value="157788000000000000">5 years</option>
+                <option value="189345600000000000">6 years</option>
+                <option value="220903200000000000">7 years</option>
+                <option value="252460800000000000">8 years</option>
+                <option value="284018400000000000">9 years</option>
+                <option value="315576000000000000">10 years</option>
+                <option value="347133600000000000">11 years</option>
+                <option value="378691200000000000">12 years</option>
+                <option value="410248800000000000">13 years</option>
+                <option value="441806400000000000">14 years</option>
+                <option value="473364000000000000">15 years</option>
+                <option value="504921600000000000">16 years</option>
+                <option value="536479200000000000">17 years</option>
+                <option value="568036800000000000">18 years</option>
+                <option value="599594400000000000">19 years</option>
+                <option value="631152000000000000">20 years</option>
+                <option value="662709600000000000">21 years</option>
+                <option value="694267200000000000">22 years</option>
+                <option value="725824800000000000">23 years</option>
+                <option value="757382400000000000">24 years</option>
+                <option value="788940000000000000">25 years</option>
+              </select>
+              <div class="invalid-feedback">
+                Funded retention period is required
+              </div>
+              <small id="paidRetentionPeriodHelp" class="form-text text-muted">Amount of the legal retention period that has been funded, either up front or on a per year basis.</small>
+            </div>
+
             <input type="hidden"
                    id="project-modify"
                    name="project"
                    value="{{ project['name']}}"/>
+          </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">

@@ -7,7 +7,8 @@ echo "Starting instance from directory $(dirname $0)"
 
 export SERVICE_PORT=3000
 export spOption="mango_portal"
-export IRODS_QUERY_LIMIT=2000
+export IRODS_QUERY_LIMIT=2000 # custom PRC
+export PYTHON_IRODSCLIENT_CONFIG__GENQUERY1__IRODS_QUERY_LIMIT=2000 # PRC 3.2.0
 
 #export MANGO_AUTH="via_callback"
 export MANGO_AUTH=localdev
@@ -15,7 +16,7 @@ export HOSTNAME
 
 export OIDC_ISSUER_URL=https://idp.kuleuven.be/auth/realms/kuleuven
 export OIDC_CLIENT_ID=oidcapp
-export OPENID_REDIRECT_BASE=http://localhost:3000
+export OPENID_REDIRECT_BASE=http://oidcapp.icts.kuleuven.be:3000
 
 # To test kuleuven login locally, ask Peter for the secret and run
 #   export OIDC_SECRET=XXXX

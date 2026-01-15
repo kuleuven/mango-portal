@@ -13,18 +13,18 @@
                         <span class="fw-bold fs-5 align-bottom"><i class="bi bi-boxes"></i> {{ g.irods_session.zone }}</span>
                     {% else %}
                         {# <img class="logo"
-                             alt="logo"
-                             src="{{ url_for('static', filename='logo.svg') }}"
-                             width="137"
-                             style="margin: -10px auto" /> #}
+      alt="logo"
+      src="{{ url_for('static', filename='logo.svg') }}"
+      width="137"
+      style="margin: -10px auto" /> #}
                         <img class="logo"
                              alt="logo"
                              src="{{ url_for('static', filename='mango-logo.svg') }}"
                              width="137"
                              style="margin: -10px auto" />
-                             {% if 'irods_session' in g %}
-                             <span class="fw-bold fs-5 align-bottom"><i class="bi bi-boxes"></i> {{ g.irods_session.zone }}</span>
-                             {% endif %}
+                        {% if 'irods_session' in g %}
+                            <span class="fw-bold fs-5 align-bottom"><i class="bi bi-boxes"></i> {{ g.irods_session.zone }}</span>
+                        {% endif %}
                     {% endif %}
                 </a>
             </div>
@@ -33,13 +33,13 @@
             {% if config['MANGO_GLOBAL_SEARCH_ACTION'] %}
                 <form class="w-100 me-3"
                       method="get"
-                      action="{{ url_for(config['MANGO_GLOBAL_SEARCH_ACTION'])}}">
+                      action="{{ url_for(config['MANGO_GLOBAL_SEARCH_ACTION']) }}">
                     <input name="search_string"
                            type="search"
                            class="form-control"
-                           {% if request.args.get('search_string') %} value="{{ request.args.get('search_string') }}" {% endif %}
+                           {% if request.args.get('search_string') %}value="{{ request.args.get('search_string') }}"{% endif %}
                            placeholder="Search file names, collection names, owner names and selected metadata fields..."
-                           required/>
+                           required />
                 </form>
             {% else %}
                 <div class="w-100 me-3"></div>
@@ -59,12 +59,11 @@
                             <a class="dropdown-item disabled" href="#">Preferences</a>
                         </li>
                         <li>
-                            <a class="dropdown-item" href="{{ url_for('user_bp.my_profile')}}">My profile</a>
+                            <a class="dropdown-item" href="{{ url_for('user_bp.my_profile') }}">My profile</a>
                         </li>
                         <li>
                             <hr class="dropdown-divider" />
                         </li>
-                        
                         {% if config['MANGO_AUTH'] == 'localdev' %}
                             <li>
                                 <a class="dropdown-item disabled" href="#">Sign out</a>
