@@ -47,6 +47,7 @@ importlib_metadata==8.5.0
 iniconfig==2.0.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
+jaraco.context==6.1.0
 jsbeautifier==1.15.1
 json5==0.10.0
 jsonlines==4.0.0
