@@ -4,7 +4,7 @@ import math
 import pandas as pd
 import pytz
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from distinctipy import distinctipy
 from irods.session import iRODSSession
 from irods.models import RuleExec
@@ -82,6 +82,15 @@ def project(project_name):
         or not project["valid_after"]
         or datetime.strptime(project["valid_after"], "%Y-%m-%d") < datetime.now()
     )
+
+    if project["invalid_after"]:
+        project["retention_until"] = datetime.strftime(datetime.strptime(
+            project["invalid_after"], "%Y-%m-%d"
+        ) + timedelta(microseconds=project["retention_period"] / 1000.0), "%Y-%m-%d")
+
+        project["paid_retention_until"] = datetime.strftime(datetime.strptime(
+            project["invalid_after"], "%Y-%m-%d"
+        ) + timedelta(microseconds=project["paid_retention_period"] / 1000.0), "%Y-%m-%d")
 
     # find out whether we are project owner
     project["my_role"] = ""
@@ -187,22 +196,12 @@ def modify_project():
             "vsc_call": request.form.get("vsc_call"),
             "valid_after": request.form.get("valid_after"),
             "invalid_after": request.form.get("invalid_after"),
+
+            # grace period / retention period
+            "grace_period": round(float(request.form.get("grace_period"))),
+            "retention_period": round(float(request.form.get("retention_period"))),
+            "paid_retention_period": round(float(request.form.get("paid_retention_period"))),
         }
-
-        now = datetime.now()
-
-        if (
-            data["invalid_after"]
-            and datetime.strptime(data["invalid_after"], "%Y-%m-%d") < now
-        ):
-            data["archived"] = True
-        elif (
-            data["valid_after"]
-            and datetime.strptime(data["valid_after"], "%Y-%m-%d") < now
-        ):
-            data["archived"] = False
-        elif data["valid_after"]:
-            data["archived"] = True
 
     elif "quota_inodes" in request.form:
         data = {
@@ -321,7 +320,7 @@ def deploy_project():
         response = requests.patch(
             f"{API_URL}/v1/projects/{id}",
             headers=header,
-            json={"archived": False, "valid_after": now},
+            json={"archived": False, "valid_after": now, "invalid_after": ""},
         )
         response.raise_for_status()
 
@@ -717,7 +716,7 @@ def projects_statistics():
             "project_name": project_name,
             "project_create_date": project_create_date,
             "project_type": project["project"]["type"],
-            "project_status": "Archived" if project["project"]["archived"] else "Active",
+            "project_status": project["status"],
             "usage_total": convert_bytes_to_GB(
                 [x["used_size"] for x in project["usage"]][-1]
             ),
@@ -1012,7 +1011,7 @@ def project_quota_change():
                     "project_name": project["name"],
                     "project_create": project["log"][0]["date"],
                     "project_type": project["type"],
-                    "project_status": (f"Active" if day["archived"]==False else "Archived"),
+                    "project_status": day["status"] if day["status"] != "" else ("archived" if day["archived"] else "active"),
                     "sap_ref": project["sap_ref"],
                     "an": project["an"],
                     "quota_set": convert_bytes_to_GB(
