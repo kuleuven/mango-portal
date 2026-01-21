@@ -119,7 +119,7 @@
       </div>
       <p>
         Put it in the front of your job script. You can control and extend the period in which the iRODS session can be refreshed at 
-        {% if '-hpc-' in jobid %}
+        {% if 'vsc' in info['irods_environment']['irods_user_name'] %}
         <a href="https://auth.vscentrum.be">https://auth.vscentrum.be</a>.
         {% else %}
         <a href="https://mango-auth.icts.kuleuven.be/">https://mango-auth.icts.kuleuven.be/</a>.
