@@ -1,3 +1,12 @@
+{# Use jobid to determine documentation links #}
+{% if '-hpc-' in jobid %}
+    {% set doc_base = "https://docs.vscentrum.be/data" %}
+    {% set doc_type = "VSC Tier-1 Data documentation pages" %}
+{% else %}
+    {% set doc_base = "https://rdm-docs.icts.kuleuven.be/mango" %}
+    {% set doc_type = "RDM documentation pages" %}
+{% endif %}
+
 <p>You can use the information below to connect to the ManGO platform through various protocols.</p>
 <ul class="nav nav-pills">
   <li class="nav-item">
@@ -16,9 +25,13 @@
   <div class="tab-pane container active p-1" id="irodsClients">
 
     <p class="mt-3">
+      {% if '-hpc-' in jobid %}
+      The Tier-1 Data service is reachable over the iRODS protocol using the following connection information.
+      {% else %}
       The ManGO platform is reachable over the iRODS protocol using the following connection information.
+      {% endif %}
       <i>Note that after June 1st, our iRODS servers will be firewalled. You will either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
-      or to open the web firewall page 
+      or open the web firewall page
       {% if '-hpc-' in jobid %}
       <a href="https://firewall.vscentrum.be">firewall.vscentrum.be</a>, 
       {% else %}
@@ -64,8 +77,13 @@
 
     <p class="mt-3 mb-2">
       KU Leuven developed the <code>iron</code> utility to provide user-friendly interaction with your data on the ManGO platform. 
-      Find the <a href="https://rdm-docs.icts.kuleuven.be/mango/clients/iron.html#installation">installation instructions</a>
-      and <a href="https://rdm-docs.icts.kuleuven.be/mango/clients/iron.html#how-to-use-iron">how to use iron</a> at the RDM documentation pages.
+      {% if '-hpc-' in jobid %}
+        Find the <a href="{{ doc_base }}/tier1data/clients/iron.html#installation">installation instructions</a>
+        and <a href="{{ doc_base }}/tier1data/clients/iron.html#how-to-use-iron">how to use iron</a> at the {{ doc_type }}.
+      {% else %}
+        Find the <a href="{{ doc_base }}/clients/iron.html#installation">installation instructions</a>
+        and <a href="{{ doc_base }}/clients/iron.html#how-to-use-iron">how to use iron</a> at the {{ doc_type }}.
+      {% endif %}
     </p>
     <p>
       Run the snippet below to set up your environment and authenticate using <code>iron</code>:
@@ -78,7 +96,11 @@
     </div>
     <p>
       If the iRODS session gets expired, simply run <code>iron auth</code> without arguments to reauthenticate to the same iRODS zone. 
-      The created session is also usable by other iRODS clients such as <a href="https://rdm-docs.icts.kuleuven.be/mango/clients/icommands.html#installation">iCommands</a>, <a href="https://rdm-docs.icts.kuleuven.be/mango/clients/python_client.html">PRC</a>.
+      {% if '-hpc-' in jobid %}
+        The created session is also usable by other iRODS clients such as iCommands and PRC.
+      {% else %}
+        The created session is also usable by other iRODS clients such as <a href="{{ doc_base }}/clients/icommands.html#installation">iCommands</a>, <a href="{{ doc_base }}/clients/python_client.html">PRC</a>.
+      {% endif %}
     </p>
 
     <h6 class="mt-3"><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#hpcJobScripts" aria-expanded="false" aria-controls="hpcJobScripts">
@@ -193,7 +215,7 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
         In principal, any existing iRODS tool might be used to connect to the ManGO zones, provided it supports TLS encryption and the <code>pam_interactive</code> authentication scheme, although your mileage may vary.
       </p>
       <p>
-        Consult the <a href="https://rdm-docs.icts.kuleuven.be/mango/clients.html">client list at the RDM documentation pages</a> to check which clients we actively support.
+        Consult the <a href="{% if '-hpc-' in jobid %}{{ doc_base }}/tier1data/clients.html{% else %}{{ doc_base }}/clients.html{% endif %}">client list at the {{ doc_type }}</a> to check which clients we actively support.
       </p>
       <!--
       <p>
@@ -371,7 +393,7 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
       <p class="mt-3">
         The ownCloud desktop sync application can be used to synchorize an iRODS folder to your local workstation.
 
-        See the instructions below or the <a href="https://rdm-docs.icts.kuleuven.be/mango/clients/owncloud.html">RDM documentation pages</a> for more detailed information.
+        See the instructions below or the <a href="{% if '-hpc-' in jobid %}{{ doc_base }}{% else %}{{ doc_base }}/clients/owncloud.html{% endif %}">{{ doc_type }}</a> for more detailed information.
       </p>
       <p>
         <i>The use of ownCloud is currently in an open pilot phase. Please report any feedback to the RDM team.</i>
