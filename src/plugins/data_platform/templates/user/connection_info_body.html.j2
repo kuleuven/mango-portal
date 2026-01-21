@@ -25,7 +25,11 @@
   <div class="tab-pane container active p-1" id="irodsClients">
 
     <p class="mt-3">
+      {% if '-hpc-' in jobid %}
+      The Tier‑1 Data service is reachable over the iRODS protocol using the following connection information.
+      {% else %}
       The ManGO platform is reachable over the iRODS protocol using the following connection information.
+      {% endif %}
       <i>Note that after June 1st, our iRODS servers will be firewalled. You will either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
       or to open the web firewall page 
       {% if '-hpc-' in jobid %}
