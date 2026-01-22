@@ -15,6 +15,7 @@ if __name__ == '__main__':
     logger = logging.getLogger("waitress")
     logger.setLevel(logging.INFO)
     service_port = str(os.environ.get("SERVICE_PORT", 80))
+    print(f"{os.environ.get("API_URL")=}")
 
     # register a shutdown function
     def handle_sig(sig, frame):

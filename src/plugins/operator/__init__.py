@@ -1,8 +1,13 @@
-import os, logging, datetime, time
-from irods.session import iRODSSession
-import irods_zones_config
+import datetime
+import logging
+import os
+import time
+from threading import Event, Thread
+
 import requests
-from threading import Lock, Thread, Event
+from irods.session import iRODSSession
+
+import irods_zones_config
 
 API_URL = os.environ.get(
     "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
@@ -38,15 +43,15 @@ def is_zone_operator_session_valid(key: str) -> bool:
         # check if the session can access the zone collection
         try:
             operator_session: iRODSSession = zone_operator_sessions[key]
-            zone_home = operator_session.collections.get(f"/{operator_session.zone}")
-        except Exception as e:
+            _ = operator_session.collections.get(f"/{operator_session.zone}")
+        except Exception:
             del zone_operator_sessions[key]
             return False
         return True
     return False
 
 
-def get_zone_operator_session(zone: str, client_user: str = None) -> iRODSSession:
+def get_zone_operator_session(zone: str, client_user: str | None  = None) -> iRODSSession | None:
     global zone_operator_sessions
     key = f"{zone}_{client_user}" if client_user else zone
     if is_zone_operator_session_valid(key):
@@ -70,8 +75,8 @@ def get_zone_operator_session(zone: str, client_user: str = None) -> iRODSSessio
         ) - datetime.timedelta(minutes=20)
         zone_operator_sessions[key] = irods_session
         return zone_operator_sessions[key]
-    except:
-        logging.warn(f"Failed getting operator session for zone {key}")
+    except Exception:
+        logging.warning(f"Failed getting operator session for zone {key}")
         return None
 
 
