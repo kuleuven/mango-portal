@@ -114,7 +114,7 @@ def login_openid_select_zone():
 
         in_the_fridge = (
             True
-            if request.headers.get("Host") == "frigo.kuleuven.be"
+            if request.headers.get("Host", None) == "frigo.kuleuven.be"
             or request.args.get("host", None) == "frigo"
             else False
         )
