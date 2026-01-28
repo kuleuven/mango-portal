@@ -110,6 +110,15 @@ def login_openid_select_zone():
     if request.method == 'GET':
         last_zone_name=''
 
+        # discriminate between zones and domain names or a query parameter to test the logic in test and quality tiers
+
+        in_the_fridge = (
+            True
+            if request.headers.get("Host") == "frigo.kuleuven.be"
+            or request.args.get("host", None) == "frigo"
+            else False
+        )
+
         if 'zone' in session:
             last_zone_name = session['zone']
 
@@ -124,6 +133,14 @@ def login_openid_select_zone():
                 other_platforms.append(project['platform'])
             if 'zone' not in project:
                 continue
+            # Frigo filtering
+            if in_the_fridge:
+                if not project["zone"].startswith("cold"):
+                    continue
+            else:
+                if project["zone"].startswith("cold"):
+                    continue
+
             if project['zone'] not in zones:
                 zones.append(project['zone'])
             if project['my_role'] != '' and not project['archived'] and project['zone'] not in my_zones:
