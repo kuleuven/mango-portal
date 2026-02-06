@@ -21,40 +21,66 @@ API_TOKEN = os.environ.get("API_TOKEN", "")
 if not os.environ.get("OIDC_SECRET", ""):
     logging.warn(f"No OIDC_SECRET, only VSC login will work")
 
-# Dict of openid providers
+# Definition of openid providers
 openid_providers = {
     "kuleuven": {
-        "label": "KU Leuven",
         "client_id": os.environ.get("OIDC_CLIENT_ID", ""),
         "secret": os.environ.get("OIDC_SECRET", ""),
         "issuer_url": os.environ.get("OIDC_ISSUER_URL", ""),
-        "auto_pick_on_host": "mango.kuleuven.be",
         "scopes": ["openid", "eduPersonEntitlement"],
     },
     "vsc": {
-        "label": "VSC",
         "client_id": "mango.vscentrum.be",
         "secret": "blub",
         "issuer_url": "https://auth.vscentrum.be",
-        "auto_pick_on_host": "mango.vscentrum.be",
         "scopes": ["openid"],
     },
     "eduteams": {
-        "label": "My AccessID",
         "client_id": os.environ.get("EDUTEAMS_CLIENT_ID", ""),
         "secret": os.environ.get("EDUTEAMS_SECRET", ""),
         "issuer_url": os.environ.get("EDUTEAMS_ISSUER_URL", ""),
-        "auto_pick_on_host": "",
         "scopes": ["openid", "profile", "aarc"],
     }
 }
 
-openid_clients = {}
+# Definition of tenants (for data-platform-api)
+portals = {
+    "kuleuven": {
+        "label": "ManGO Portal - KU Leuven authentication",
+        "tenant": "kuleuven",
+        "openid_provider": "kuleuven",
+        "auto_pick_on_host": "mango.kuleuven.be",
+    },
+    "kuleuven-as-vsc": {
+        "label": "ManGO Portal - VSC authentication",
+        "tenant": "kuleuven",
+        "openid_provider": "vsc",
+    },
+    "kuleuven-cold": {
+        "label": "Frigo Portal - KU Leuven authentication",
+        "tenant": "kuleuven-cold",
+        "openid_provider": "kuleuven",
+        "auto_pick_on_host": "frigo.kuleuven.be",
+    },
+    "vsc": {
+        "label": "Tier1 Data Portal - VSC authentication",
+        "tenant": "vsc",
+        "openid_provider": "vsc",
+        "auto_pick_on_host": "mango.vscentrum.be",
+    },
+    "vsc-as-kuleuven": {
+        "label": "Tier1 Data Portal - KU Leuven authentication",
+        "tenant": "vsc",
+        "openid_provider": "kuleuven",
+    },
+}
+
+oidc_clients = {}
 
 # Function to retrieve client for openid providers
 def openid_get_client(openid_provider):
-    if openid_provider in openid_clients:
-        return openid_clients[openid_provider]
+    if openid_provider in oidc_clients:
+        return oidc_clients[openid_provider]
 
     provider_config = openid_providers[openid_provider]
 
@@ -64,7 +90,7 @@ def openid_get_client(openid_provider):
     client_reg = RegistrationResponse(client_id=provider_config['client_id'], client_secret=provider_config['secret'])
     client.store_registration_info(client_reg)
 
-    openid_clients[openid_provider] = client
+    oidc_clients[openid_provider] = client
 
     return client
 
@@ -87,20 +113,16 @@ def openid_login_required(func):
     if not s.valid():
         session['openid_redirect'] = request.full_path
         return redirect(url_for("data_platform_user_bp.login_openid"))
-    
-    # Try to get data platform token, if this retuns None, the user is not entitled to use the data platform api
-    g.data_platform_token = s.data_platform_token()
 
-    if g.data_platform_token is None:
+    # No permissions means the user is not entitled to use the data platform api, redirect to entitlement required page
+    if not s.permissions:
         return redirect(url_for('data_platform_user_bp.entitlement_required'))
     
-    # If oidc did not provide a preferred_username, use the generated username by the data platform api
-    if s.username is None:
-        s.set_preferred_username(g.data_platform_token['username'])
-        session['openid_session'] = dict(s)
+     # Set session as global variable
+    g.dpa = s
 
     # Update the irods zone information
-    update_zone_info(current_app.config['irods_zones'], g.data_platform_token['token'])
+    update_zone_info(current_app.config['irods_zones'], g.dpa.data_platform_token)
 
     return func(*args, **kwargs)
   
@@ -142,16 +164,10 @@ def update_zone_info(irods_zones, token=API_TOKEN):
     irods_zones.clear()
     irods_zones.update(zones)
 
-
-def current_user_api_token():
-    return g.data_platform_token["token"], g.data_platform_token["permissions"]
-
 def current_user_projects():
     # Retrieve projects
-    token, perms = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
     response = requests.get(
-        f"{API_URL}/v1/projects", headers=header
+        f"{API_URL}/v2/{g.dpa.tenant}/projects", headers=g.dpa.data_platform_headers
     )
     response.raise_for_status()
 
@@ -183,19 +199,19 @@ def current_user_projects():
             if 'jobid' in zones[zone] and zones[zone]['jobid'] == jobid:
                 project["zone"] = zone
     
-    return projects, perms
+    return projects
 
 def current_zone_jobid():
     return current_app.config['irods_zones'][g.irods_session.zone]["jobid"]
 
 class Session(dict):
-    def __init__(self, provider):
+    def __init__(self, portal):
         dict.__init__(self)
 
-        if type(provider) is dict:
-            self.update(**provider)
+        if type(portal) is dict:
+            self.update(**portal)
         else:
-            self['provider'] = provider
+            self['portal'] = portal
 
     @property
     def username(self):
@@ -221,10 +237,38 @@ class Session(dict):
     @property
     def access_token(self):
         return self['access_token']
+    
+    @property
+    def data_platform_token(self):
+        return self['data_platform_token']
 
     @property
+    def portal(self):
+        return self['portal']
+    
+    @property
     def provider(self):
-        return self['provider']
+        return portals[self['portal']]['openid_provider']
+    
+    @property
+    def tenant(self):
+        return portals[self['portal']]['tenant']
+    
+    @property
+    def permissions(self):        
+        if 'permissions' not in self:
+            return []
+        
+        return self['permissions']
+    
+    @property
+    def data_platform_headers(self):
+        headers = {"Authorization": "Bearer " + self.data_platform_token}
+
+        if 'drop_permissions' not in self:
+            headers['X-Sudo'] = 'true'
+
+        return headers
 
     def valid(self):
         if 'expiry' not in self:
@@ -245,7 +289,7 @@ class Session(dict):
             "redirect_uri": self.redirect_uri,
         }
 
-        client = openid_get_client(self['provider'])
+        client = openid_get_client(self.provider)
 
         token_resp = client.do_access_token_refresh(
             request_args=request_args, 
@@ -260,7 +304,7 @@ class Session(dict):
         self['expiry'] = token_resp['id_token']['exp']
 
     def login(self):
-        client = openid_get_client(self['provider'])
+        client = openid_get_client(self.provider)
 
         if 'openid_session' in session:
             del session["openid_session"]
@@ -268,7 +312,7 @@ class Session(dict):
         session["openid_nonce"] = rndstr()
         args = {
             "response_type": "code",
-            "scope": openid_providers[self["provider"]]["scopes"],
+            "scope": openid_providers[self.provider]["scopes"],
             "nonce": session["openid_nonce"],
             "redirect_uri": self.redirect_uri,
             "state": session["openid_state"]
@@ -280,7 +324,7 @@ class Session(dict):
         return redirect(auth_uri)
     
     def from_callback(self):
-        client = openid_get_client(self['provider'])
+        client = openid_get_client(self.provider)
 
         query_string = request.query_string.decode('utf-8')
         authn_resp = client.parse_response(AuthorizationResponse, info=query_string, sformat='urlencoded')
@@ -313,6 +357,24 @@ class Session(dict):
             self['refresh_token'] = token_resp['refresh_token']
         self['expiry'] = token_resp['id_token']['exp']
         self['subject'] = token_resp['id_token']['sub']
+        self['data_platform_token'] = self['access_token']
+
+        print("Retrieving permissions for user")
+        print(self['user_info'])
+        print(self['access_token'])
+
+        response = requests.get(f"{API_URL}/v2/{self.tenant}/whoami", headers=self.data_platform_headers)
+
+        if response.status_code == 402:
+            self['permissions'] = []
+            return self
+
+        response.raise_for_status()
+        data = response.json()
+        self['permissions'] = data['claims']['permissions']
+
+        if 'preferred_username' not in self['user_info']:
+            self['user_info']['preferred_username'] = data['claims']['user']['username']
 
         return self
     
@@ -320,57 +382,56 @@ class Session(dict):
     def redirect_uri(self):
         redirect_base = os.environ.get("OPENID_REDIRECT_BASE", f"https://{request.host}") 
 
-        return f"{redirect_base}/user/openid/callback/{self['provider']}"
+        return f"{redirect_base}/user/openid/callback/{self.portal}"
     
     def drop_permissions(self):
         self['drop_permissions'] = True
 
+        response = requests.get(f"{API_URL}/v2/{self.tenant}/whoami", headers=self.data_platform_headers)
+        if response.status_code == 402:
+            self['permissions'] = []
+            
+            return self
+
+        response.raise_for_status()
+        self['permissions'] = response.json()['claims']['permissions']
+
+        return self
+
     def impersonate(self, username):
+        # Retrieve a token for the specified username.
+        payload = {
+            'username': username,
+            'permissions': ['user'],
+        }
+
+        headers = {"Authorization": "Bearer " + self.access_token}
+
+        response = requests.post(
+            f"{API_URL}/v2/{self.tenant}/token",
+            json=payload,
+            headers=headers,
+        )
+        response.raise_for_status()
+
+        self['data_platform_token'] = response.json()['token']
+
         if not 'orig_user_info' in self:
             self['orig_user_info'] = self['user_info'].copy()
+        
         self['user_info']['preferred_username'] = username
         self['user_info']['name'] = self['orig_user_info']['name'] + " (impersonating " + username + ")"
-        self['impersonate'] = True
 
-    def set_preferred_username(self, username):
-        self['user_info']['preferred_username'] = username
-
-    def data_platform_token(self):
-        drop = 'drop_permissions' in self
-        impersonate = 'impersonate' in self
-       
-        response = requests.post(
-            f"{API_URL}/v1/token/exchange",
-            json={
-                "access_token": self.access_token,
-                "drop_permissions": drop and not impersonate,
-            },
-        )
-
+        response = requests.get(f"{API_URL}/v2/{self.tenant}/whoami", headers=self.data_platform_headers)
         if response.status_code == 402:
-            return None
+            self['permissions'] = []
+            
+            return self
 
         response.raise_for_status()
-        payload = response.json()
+        self['permissions'] = response.json()['claims']['permissions']
 
-        if not impersonate:
-            return payload
-        
-        header = {"Authorization": "Bearer " + payload["token"]}
-        response = requests.post(
-            f"{API_URL}/v1/token",
-            json={
-                "username": self.username,
-                "lookup_user_permissions": not drop,
-                "permissions": ["user"],
-            },
-            headers=header,
-        )
-
-        response.raise_for_status()
-        payload = response.json()
-
-        return payload
+        return self
 
 # moved here from the main app/config: if the dataplatform plugin is loaded, it should take over the zones config
 from app import app
