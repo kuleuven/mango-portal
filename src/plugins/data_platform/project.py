@@ -17,11 +17,12 @@ from flask import (
     session,
     flash,
     current_app,
+    g,
 )
 from cache import cache
 from signals import mango_signals
 from csrf import csrf
-from . import API_URL, current_user_api_token, openid_login_required, Session
+from . import API_URL, openid_login_required, Session
 
 data_platform_project_bp = Blueprint(
     "data_platform_project_bp", __name__, template_folder="templates"
@@ -43,35 +44,32 @@ project_changed.connect(project_user_search_cache_update_listener)
 )
 @openid_login_required
 def project(project_name):
-    token, perms = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
-    response = requests.get(f"{API_URL}/v1/irods/zones", headers=header)
+    response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/irods/zones", headers=g.dpa.data_platform_headers)
     response.raise_for_status()
 
     zones = response.json()
 
-    response = requests.get(f"{API_URL}/v1/projects/{project_name}", headers=header)
+    response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/project/{project_name}", headers=g.dpa.data_platform_headers)
     response.raise_for_status()
 
     project = response.json()
 
     response = requests.get(
-        f"{API_URL}/v1/projects/{project_name}/members", headers=header
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{project_name}/members", headers=g.dpa.data_platform_headers
     )
     response.raise_for_status()
 
     project["members"] = response.json()
 
     response = requests.get(
-        f"{API_URL}/v1/projects/{project_name}/status", headers=header
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{project_name}/status", headers=g.dpa.data_platform_headers
     )
     response.raise_for_status()
 
     status = response.json()
 
     response = requests.get(
-        f"{API_URL}/v1/projects/{project_name}/quota", headers=header
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{project_name}/quota", headers=g.dpa.data_platform_headers
     )
     response.raise_for_status()
 
@@ -104,7 +102,7 @@ def project(project_name):
 
     if project["platform"] == "irods":
         response = requests.get(
-            f"{API_URL}/v1/irods/projects/{project_name}/machine_token", headers=header
+            f"{API_URL}/v1/irods/projects/{project_name}/machine_token", headers=g.dpa.data_platform_headers
         )
         response.raise_for_status()
 
@@ -114,7 +112,7 @@ def project(project_name):
             t["expiration"] = datetime.strptime(t["expiration"], "%Y-%m-%dT%H:%M:%S%z")
 
             response = requests.get(
-                f"{API_URL}/v1/irods/projects/{project_name}/ssh_key/{t['type']}", headers=header
+                f"{API_URL}/v2/{g.dpa.tenant}/irods/project/{project_name}/ssh-keys/{t['type']}", headers=g.dpa.data_platform_headers
             )
             response.raise_for_status()
 
@@ -126,23 +124,20 @@ def project(project_name):
         status=status,
         quotalog=quotalog,
         zones=zones,
-        admin=("operator" in perms or "admin" in perms),
+        admin=("project-management" in g.dpa.permissions),
     )
 
 
 @data_platform_project_bp.route("/data-platform/projects/member/add", methods=["POST"])
 @openid_login_required
 def add_project_member():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("project")
     username = request.form.get("username")
     role = request.form.get("role")
 
     response = requests.put(
-        f"{API_URL}/v1/projects/{id}/members/{username}",
-        headers=header,
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{id}/member/{username}",
+        headers=g.dpa.data_platform_headers,
         json={
             "role": role,
         },
@@ -161,14 +156,11 @@ def add_project_member():
 )
 @openid_login_required
 def delete_project_member():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("project")
     username = request.form.get("username")
 
     response = requests.delete(
-        f"{API_URL}/v1/projects/{id}/members/{username}", headers=header
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{id}/member/{username}", headers=g.dpa.data_platform_headers
     )
     response.raise_for_status()
 
@@ -182,9 +174,6 @@ def delete_project_member():
 @data_platform_project_bp.route("/data-platform/projects/modify", methods=["POST"])
 @openid_login_required
 def modify_project():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("project")
 
     if "description" in request.form:
@@ -210,8 +199,8 @@ def modify_project():
         }
 
     response = requests.patch(
-        f"{API_URL}/v1/projects/{id}",
-        headers=header,
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{id}",
+        headers=g.dpa.data_platform_headers,
         json=data,
     )
     response.raise_for_status()
@@ -225,17 +214,14 @@ def modify_project():
 @data_platform_project_bp.route("/data-platform/projects/modify/rdr", methods=["POST"])
 @openid_login_required
 def modify_project_rdr():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("project")
 
     for key in ['s3_bucket', 's3_prefix']:
         value = request.form.get(key, "")
 
         response = requests.put(
-            f"{API_URL}/v1/projects/{id}/option/{key}",
-            headers=header,
+            f"{API_URL}/v2/{g.dpa.tenant}/project/{id}/option/{key}",
+            headers=g.dpa.data_platform_headers,
             json={"value": value},
         )
         response.raise_for_status()
@@ -250,12 +236,9 @@ def modify_project_rdr():
 @data_platform_project_bp.route("/data-platform/projects/option", methods=["POST"])
 @openid_login_required
 def set_project_options():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("project")
 
-    response = requests.get(f"{API_URL}/v1/projects/{id}", headers=header)
+    response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/project/{id}", headers=g.dpa.data_platform_headers)
     response.raise_for_status()
 
     project = response.json()
@@ -285,8 +268,8 @@ def set_project_options():
             continue
 
         response = requests.put(
-            f"{API_URL}/v1/projects/{id}/option/{key}",
-            headers=header,
+            f"{API_URL}/v2/{g.dpa.tenant}/project/{id}/option/{key}",
+            headers=g.dpa.data_platform_headers,
             json={"value": value},
         )
         response.raise_for_status()
@@ -301,33 +284,30 @@ def set_project_options():
 @data_platform_project_bp.route("/data-platform/projects/deploy", methods=["POST"])
 @openid_login_required
 def deploy_project():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("project")
 
     now = datetime.now().strftime("%Y-%m-%d")
 
     if request.form.get("submit") == "Archive":
         response = requests.patch(
-            f"{API_URL}/v1/projects/{id}",
-            headers=header,
+            f"{API_URL}/v2/{g.dpa.tenant}/project/{id}",
+            headers=g.dpa.data_platform_headers,
             json={"archived": True, "invalid_after": now},
         )
         response.raise_for_status()
 
     if request.form.get("submit") == "Unarchive":
         response = requests.patch(
-            f"{API_URL}/v1/projects/{id}",
-            headers=header,
+            f"{API_URL}/v2/{g.dpa.tenant}/project/{id}",
+            headers=g.dpa.data_platform_headers,
             json={"archived": False, "valid_after": now, "invalid_after": ""},
         )
         response.raise_for_status()
 
     if request.form.get("submit") == "Delete":
         response = requests.delete(
-            f"{API_URL}/v1/projects/{id}",
-            headers=header,
+            f"{API_URL}/v2/{g.dpa.tenant}/project/{id}",
+            headers=g.dpa.data_platform_headers,
         )
         response.raise_for_status()
 
@@ -336,7 +316,7 @@ def deploy_project():
         return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
 
     response = requests.post(
-        f"{API_URL}/v1/projects/{id}/deploy", headers=header, json={}
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{id}/deploy", headers=g.dpa.data_platform_headers, json={}
     )
     response.raise_for_status()
 
@@ -352,12 +332,9 @@ def deploy_project():
 )
 @openid_login_required
 def machine_account_password(project_name, type):
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     response = requests.post(
         f"{API_URL}/v1/irods/projects/{project_name}/machine_token",
-        headers=header,
+        headers=g.dpa.data_platform_headers,
         json={"type": type},
     )
     response.raise_for_status()
@@ -380,9 +357,6 @@ def machine_account_password(project_name, type):
 )
 @openid_login_required
 def add_ssh_key(project_name, type):
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     if request.method == "GET":
         return render_template(
             "project/ssh_key.html.j2",
@@ -391,8 +365,8 @@ def add_ssh_key(project_name, type):
         )
 
     response = requests.post(
-        f"{API_URL}/v1/irods/projects/{project_name}/ssh_key/{type}",
-        headers=header,
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{project_name}/ssh-key/{type}",
+        headers=g.dpa.data_platform_headers,
         json={
             "authorized_key": request.form.get("authorized_key"), 
             "source_ip": request.form.get("source_ip"),
@@ -419,15 +393,12 @@ def add_ssh_key(project_name, type):
 )
 @openid_login_required
 def modify_ssh_key(project_name):
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     type = request.form.get("type")
     fingerprint = request.form.get("fingerprint")
 
     response = requests.put(
-        f"{API_URL}/v1/irods/projects/{project_name}/ssh_key/{type}/{fingerprint}",
-        headers=header,
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{project_name}/ssh-key/{type}/{fingerprint}",
+        headers=g.dpa.data_platform_headers,
         json={
             "source_ip": request.form.get("source_ip"),
         },
@@ -447,15 +418,12 @@ def modify_ssh_key(project_name):
 )
 @openid_login_required
 def remove_ssh_key(project_name):
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     type = request.form.get("type")
     fingerprint = request.form.get("fingerprint")
 
     response = requests.delete(
-        f"{API_URL}/v1/irods/projects/{project_name}/ssh_key/{type}/{fingerprint}",
-        headers=header,
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{project_name}/ssh-key/{type}/{fingerprint}",
+        headers=g.dpa.data_platform_headers,
     )
 
     if response.status_code >= 400 and response.status_code < 500:
@@ -470,12 +438,9 @@ def remove_ssh_key(project_name):
 @data_platform_project_bp.route("/data-platform/projects/add/irods", methods=["POST"])
 @openid_login_required
 def add_irods_project():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("name")
 
-    response = requests.get(f"{API_URL}/v1/projects/{id}", headers=header)
+    response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/project/{id}", headers=g.dpa.data_platform_headers)
 
     if response.status_code == 200:
         flash(f"Project {id} already exists! Please determine another project name.", "warning")
@@ -483,15 +448,12 @@ def add_irods_project():
     if response.status_code == 410:
         flash(f"Project {id} already existed and now is in the 'removed' status! Please determine another project name.", "warning")
         return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
-    if response.status_code == 400:
-        flash(f"Project {id} name contains invalid characters or is too long! Please control your project name.", "warning")
-        return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
     if response.status_code != 404:
         response.raise_for_status()
     
-    response = requests.put(
-        f"{API_URL}/v1/projects/{id}",
-        headers=header,
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{id}",
+        headers=g.dpa.data_platform_headers,
         json={
             "type": request.form.get("type"),
             "platform": "irods",
@@ -503,6 +465,11 @@ def add_irods_project():
             ],
         },
     )
+    
+    if response.status_code == 400:
+        flash(f"Project {id} name contains invalid characters or is too long! Please control your project name.", "warning")
+        return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
+    
     response.raise_for_status()
     flash(response.json()["message"], "success")
 
@@ -513,12 +480,9 @@ def add_irods_project():
 @data_platform_project_bp.route("/data-platform/projects/add/cold", methods=["POST"])
 @openid_login_required
 def add_cold_project():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("name")
 
-    response = requests.get(f"{API_URL}/v1/projects/{id}", headers=header)
+    response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/project/{id}", headers=g.dpa.data_platform_headers)
 
     if response.status_code == 200:
         flash(f"Project {id} already exists! Please determine another project name.", "warning")
@@ -526,15 +490,12 @@ def add_cold_project():
     if response.status_code == 410:
         flash(f"Project {id} already existed and now is in the 'removed' status! Please determine another project name.", "warning")
         return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
-    if response.status_code == 400:
-        flash(f"Project {id} name contains invalid characters or is too long! Please control your project name.", "warning")
-        return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
     if response.status_code != 404:
         response.raise_for_status()
 
-    response = requests.put(
-        f"{API_URL}/v1/projects/{id}",
-        headers=header,
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{id}",
+        headers=g.dpa.data_platform_headers,
         json={
             "type": request.form.get("type"),
             "platform": "irods-cold",
@@ -546,6 +507,9 @@ def add_cold_project():
             ],
         },
     )
+    if response.status_code == 400:
+        flash(f"Project {id} name contains invalid characters or is too long! Please control your project name.", "warning")
+        return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
     response.raise_for_status()
     flash(response.json()["message"], "success")
 
@@ -556,14 +520,11 @@ def add_cold_project():
 @data_platform_project_bp.route("/data-platform/projects/add/generic", methods=["POST"])
 @openid_login_required
 def add_generic_project():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("name")
 
-    response = requests.put(
-        f"{API_URL}/v1/projects/{id}",
-        headers=header,
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{id}",
+        headers=g.dpa.data_platform_headers,
         json={
             "type": request.form.get("type"),
             "platform": "generic",
@@ -580,14 +541,11 @@ def add_generic_project():
 @data_platform_project_bp.route("/data-platform/projects/add/rdr", methods=["POST"])
 @openid_login_required
 def add_rdr_project():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     id = request.form.get("name")
 
-    response = requests.put(
-        f"{API_URL}/v1/projects/{id}",
-        headers=header,
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{id}",
+        headers=g.dpa.data_platform_headers,
         json={
             "platform": "rdr",
             "platform_options": [
@@ -613,10 +571,7 @@ def add_rdr_project():
 @data_platform_project_bp.route("/data-platform/projects", methods=["GET"])
 @openid_login_required
 def project_overview():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
-    response = requests.get(f"{API_URL}/v1/irods/zones", headers=header)
+    response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/irods/zones", headers=g.dpa.data_platform_headers)
     response.raise_for_status()
 
     zones = response.json()
@@ -626,7 +581,7 @@ def project_overview():
     if not year:
         year = datetime.now().year
 
-    response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
+    response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/log/projects/usage/{year}", headers=g.dpa.data_platform_headers)
 
     response.raise_for_status()
 
@@ -667,15 +622,12 @@ def calculate_usage_percent(quota, usage):
 @data_platform_project_bp.route("/data-platform/statistics", methods=["GET"])
 @openid_login_required
 def projects_statistics():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     year = request.args.get("year")
 
     if not year:
         year = datetime.now().year
 
-    response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
+    response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/log/projects/usage/{year}", headers=g.dpa.data_platform_headers)
 
     response.raise_for_status()
 
@@ -685,7 +637,7 @@ def projects_statistics():
         flash(f"No project information found in {year}.")
         projects = []
 
-    response_quota = requests.get(f"{API_URL}/v1/projects/quota", headers=header)
+    response_quota = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/log/projects/quota", headers=g.dpa.data_platform_headers)
 
     response_quota.raise_for_status()
 
@@ -789,9 +741,6 @@ def to_csv(grouped_data, y_axis):
 @openid_login_required
 @csrf.exempt
 def projects_usage():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     start_date = "2023-01"
     end_date = str(time.strftime("%Y-%m"))
     start_date_year = int(start_date.split("-")[0])
@@ -804,7 +753,7 @@ def projects_usage():
     projects_dict["usage"] = []
     projects_dict["quota"] = []
     for year in range(start_date_year, end_date_year+1):
-        response = requests.get(f"{API_URL}/v1/projects/usage/{year}", headers=header)
+        response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/log/projects/usage/{year}", headers=g.dpa.data_platform_headers)
         response.raise_for_status()
         projects = response.json()
         for project in projects:
@@ -904,15 +853,12 @@ def gather_user_data(member, project_data, users):
 @openid_login_required
 @cache.cached(timeout=3600)
 def project_user_search():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
-    projects_response = requests.get(f"{API_URL}/v1/projects", headers=header)
+    projects_response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/project", headers=g.dpa.data_platform_headers)
     projects_response.raise_for_status()
 
     projects = projects_response.json()
 
-    users_response = requests.get(f"{API_URL}/v1/users", headers=header)
+    users_response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/users", headers=g.dpa.data_platform_headers)
     users_response.raise_for_status()
 
     users = {x["username"]: {"user_name": x["name"], "user_account": x["username"], "user_email": x["email"]} for x in users_response.json()}
@@ -931,18 +877,15 @@ def project_user_search():
 @data_platform_project_bp.route("/data-platform/rule-management", methods=["GET"])
 @openid_login_required
 def rule_management():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
     def get_zones():
-        response = requests.get(f"{API_URL}/v1/irods/zones", headers=header)
+        response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/irods/zones", headers=g.dpa.data_platform_headers)
         response.raise_for_status()
         response = response.json()
         return [item["jobid"] for item in response]
 
     def get_irods_credentials(jobid):
         response = requests.post(
-            f"{API_URL}/v1/irods/zones/{jobid}/admin_token", headers=header
+            f"{API_URL}/v1/irods/zones/{jobid}/admin_token", headers=g.dpa.data_platform_headers
         )
         response.raise_for_status()
         response = response.json()
@@ -994,10 +937,7 @@ def rule_management():
 @data_platform_project_bp.route("/data-platform/quota-change", methods=["GET"])
 @openid_login_required
 def project_quota_change():
-    token, _ = current_user_api_token()
-    header = {"Authorization": "Bearer " + token}
-
-    response = requests.get(f"{API_URL}/v1/projects/quota", headers=header)
+    response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/log/projects/quota", headers=g.dpa.data_platform_headers)
 
     response.raise_for_status()
 
