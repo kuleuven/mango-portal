@@ -24,21 +24,18 @@ if not os.environ.get("OIDC_SECRET", ""):
 # Definition of openid providers
 openid_providers = {
     "kuleuven": {
-        "label": "KU Leuven",
         "client_id": os.environ.get("OIDC_CLIENT_ID", ""),
         "secret": os.environ.get("OIDC_SECRET", ""),
         "issuer_url": os.environ.get("OIDC_ISSUER_URL", ""),
         "scopes": ["openid", "eduPersonEntitlement"],
     },
     "vsc": {
-        "label": "VSC",
         "client_id": "mango.vscentrum.be",
         "secret": "blub",
         "issuer_url": "https://auth.vscentrum.be",
         "scopes": ["openid"],
     },
     "eduteams": {
-        "label": "My AccessID",
         "client_id": os.environ.get("EDUTEAMS_CLIENT_ID", ""),
         "secret": os.environ.get("EDUTEAMS_SECRET", ""),
         "issuer_url": os.environ.get("EDUTEAMS_ISSUER_URL", ""),
@@ -48,20 +45,20 @@ openid_providers = {
 
 # Definition of tenants (for data-platform-api)
 portals = {
-    "mango": {
-        "label": "Mango Portal",
+    "kuleuven": {
+        "label": "KU Leuven ManGO Portal",
         "tenant": "kuleuven",
         "openid_provider": "kuleuven",
         "auto_pick_on_host": "mango.kuleuven.be",
     },
-    "frigo": {
-        "label": "Frigo Portal",
+    "kuleuven-cold": {
+        "label": "KU Leuven Frigo Portal",
         "tenant": "kuleuven-cold",
         "openid_provider": "kuleuven",
         "auto_pick_on_host": "frigo.kuleuven.be",
     },
     "vsc": {
-        "label": "VSC Portal",
+        "label": "VSC Tier1 Data Portal",
         "tenant": "vsc",
         "openid_provider": "vsc",
         "auto_pick_on_host": "mango.vscentrum.be",
