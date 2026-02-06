@@ -46,22 +46,32 @@ openid_providers = {
 # Definition of tenants (for data-platform-api)
 portals = {
     "kuleuven": {
-        "label": "KU Leuven ManGO Portal",
+        "label": "ManGO Portal - KU Leuven authentication",
         "tenant": "kuleuven",
         "openid_provider": "kuleuven",
         "auto_pick_on_host": "mango.kuleuven.be",
     },
+    "kuleuven-as-vsc": {
+        "label": "ManGO Portal - VSC authentication",
+        "tenant": "kuleuven",
+        "openid_provider": "vsc",
+    },
     "kuleuven-cold": {
-        "label": "KU Leuven Frigo Portal",
+        "label": "Frigo Portal - KU Leuven authentication",
         "tenant": "kuleuven-cold",
         "openid_provider": "kuleuven",
         "auto_pick_on_host": "frigo.kuleuven.be",
     },
     "vsc": {
-        "label": "VSC Tier1 Data Portal",
+        "label": "Tier1 Data Portal - VSC authentication",
         "tenant": "vsc",
         "openid_provider": "vsc",
         "auto_pick_on_host": "mango.vscentrum.be",
+    },
+    "vsc-as-kuleuven": {
+        "label": "Tier1 Data Portal - KU Leuven authentication",
+        "tenant": "vsc",
+        "openid_provider": "kuleuven",
     },
 }
 
@@ -347,7 +357,11 @@ class Session(dict):
             self['refresh_token'] = token_resp['refresh_token']
         self['expiry'] = token_resp['id_token']['exp']
         self['subject'] = token_resp['id_token']['sub']
-        self['data_platform_token'] = token_resp['access_token']
+        self['data_platform_token'] = self['access_token']
+
+        print("Retrieving permissions for user")
+        print(self['user_info'])
+        print(self['access_token'])
 
         response = requests.get(f"{API_URL}/v2/{self.tenant}/whoami", headers=self.data_platform_headers)
 

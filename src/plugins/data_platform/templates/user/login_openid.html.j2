@@ -5,8 +5,8 @@
     <form action="{{ url_for('data_platform_user_bp.login_openid') }}"" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="form-group mb-3">
-            <label for="openid_provider">Login Provider</label>
-            <select class="form-select" name="openid_provider" id="irods_zone">
+            <label for="portal">Login Provider</label>
+            <select class="form-select" name="portal" id="portal">
                 {% for portal in portals %}
                     <option value="{{ portal }}"
                             {% if portal == last_portal %}selected{% endif %}>
