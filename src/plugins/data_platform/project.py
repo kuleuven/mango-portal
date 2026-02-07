@@ -69,7 +69,7 @@ def project(project_name):
     status = response.json()
 
     response = requests.get(
-        f"{API_URL}/v2/{g.dpa.tenant}/project/{project_name}/quota", headers=g.dpa.data_platform_headers
+        f"{API_URL}/v2/{g.dpa.tenant}/project/{project_name}/log/quota", headers=g.dpa.data_platform_headers
     )
     response.raise_for_status()
 
