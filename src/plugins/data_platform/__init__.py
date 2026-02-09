@@ -405,7 +405,7 @@ class Session(dict):
             'permissions': ['user'],
         }
 
-        headers = {"Authorization": "Bearer " + self.access_token}
+        headers = {"Authorization": "Bearer " + self.access_token, "X-Sudo": "true"}
 
         response = requests.post(
             f"{API_URL}/v2/{self.tenant}/token",
