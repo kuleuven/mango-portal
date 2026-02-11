@@ -1,6 +1,5 @@
 import os
 import ssl
-import requests
 
 API_URL = os.environ.get(
     "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
@@ -129,9 +128,9 @@ irods_zones = {
         "admin_users": ["u0123318", "x0116999"],
     },
     "cold": {
-        "jobid": "icts-t-lnx-irods-cold",
+        "jobid": "icts-p-lnx-irods-cold",
         "parameters": {
-            "host": "cold.irods.t.icts.kuleuven.be",
+            "host": "cold.irods.icts.kuleuven.be",
             "zone": "cold",
         },
         "ssl_settings": {},
