@@ -31,8 +31,10 @@ data_platform_user_bp = Blueprint(
 def irods_connection_info(zone, username):
     jobid = current_app.config['irods_zones'][zone]["jobid"]
 
-    response = requests.get(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection_info", headers=g.dpa.data_platform_headers
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
+            "client": "mango-portal",
+        }
     )
     response.raise_for_status()
 
@@ -226,8 +228,10 @@ def impersonate():
 @openid_login_required
 def connection_info_modal(zone):
     jobid = current_app.config['irods_zones'][zone]["jobid"]
-    response = requests.get(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection_info?audience=end-user", headers=g.dpa.data_platform_headers
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
+            "client": "mango-portal-connection-info-modal",
+        }
     )
 
     info = {}
@@ -275,8 +279,10 @@ def connection_info_modal(zone):
 @openid_login_required
 def connection_info():
     jobid = current_zone_jobid()
-    response = requests.get(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection_info?audience=end-user", headers=g.dpa.data_platform_headers
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
+            "client": "mango-portal-connection-info-modal",
+        }
     )
 
     info = {}
@@ -318,58 +324,3 @@ def connection_info():
         desktop_sync = f"icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
 
     return render_template("user/connection_info.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host, desktop_sync=desktop_sync)
-
-
-@data_platform_user_bp.route('/data-platform/retrieve-token', methods=["GET", "POST"])
-@openid_login_required
-def local_client_retrieve_token_callback():
-    if request.method == 'POST':
-        redirect_uri = request.form.get('redirect_uri')
-        irods_zone = request.form.get('irods_zone')
-
-        if not redirect_uri.startswith('http://localhost:'):
-            flash('Invalid redirect uri')
-            return redirect(url_for("data_platform_user_bp.local_client_retrieve_token_callback"))
-
-        response = requests.post(
-            f"{API_URL}/v1/token/exchange",
-            json={
-                "access_token": Session(session['openid_session']).access_token,
-                "drop_permissions": True,
-            },
-        )
-        response.raise_for_status()
-
-        payload = response.json()
-
-        params = {
-            'token': payload['token'],
-            'irods_zone': irods_zone,
-            'jobid': current_app.config['irods_zones'][irods_zone]["jobid"],
-        }
-
-        req = PreparedRequest()
-        req.prepare_url(redirect_uri, params)
-
-        return redirect(req.url)
-
-    all_projects = current_user_projects()
-
-    projects = []
-    zones = []
-    for project in all_projects:
-        if not project['platform'].startswith('irods'):
-            continue
-        if 'zone' not in project:
-            continue
-        if project['my_role'] == '' or project['archived']:
-            continue
-        if project['zone'] not in zones:
-            zones.append(project['zone'])
-        projects.append(project)
-
-    return render_template('user/local_client_select_zone.html.j2',
-        zones=zones,
-        projects=projects,
-        redirect_uri=request.args.get('redirect_uri'),
-    )

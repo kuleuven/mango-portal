@@ -25,10 +25,12 @@ def get_operator_session_params_via_api(zone: str):
     if not API_URL or not API_TOKEN or not zone in irods_zones_config.irods_zones:
         return False
     jobid = irods_zones_config.irods_zones[zone]["jobid"]
-    # /irods/zones/{id}/admin_token
     header = {"Authorization": "Bearer " + API_TOKEN}
     response = requests.post(
-        f"{API_URL}/v1/irods/zones/{jobid}/admin_token", headers=header
+        f"{API_URL}/v1/irods/zones/{jobid}/connection-info", headers=header, json={
+            "username": "operator",
+            "client": "mango-portal-operator-session",
+        }
     )
     response.raise_for_status()
     return response.json()

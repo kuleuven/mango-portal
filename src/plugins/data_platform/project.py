@@ -102,7 +102,7 @@ def project(project_name):
 
     if project["platform"] == "irods":
         response = requests.get(
-            f"{API_URL}/v1/irods/projects/{project_name}/machine_token", headers=g.dpa.data_platform_headers
+            f"{API_URL}/v2/{g.dpa.tenant}/irods/project/{project_name}/machine-tokens", headers=g.dpa.data_platform_headers
         )
         response.raise_for_status()
 
@@ -333,7 +333,7 @@ def deploy_project():
 @openid_login_required
 def machine_account_password(project_name, type):
     response = requests.post(
-        f"{API_URL}/v1/irods/projects/{project_name}/machine_token",
+        f"{API_URL}/v2/{g.dpa.tenant}/irods/project/{project_name}/machine-token",
         headers=g.dpa.data_platform_headers,
         json={"type": type},
     )
@@ -885,7 +885,10 @@ def rule_management():
 
     def get_irods_credentials(jobid):
         response = requests.post(
-            f"{API_URL}/v1/irods/zones/{jobid}/admin_token", headers=g.dpa.data_platform_headers
+            f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
+                "username": "operator",
+                "client": "mango-portal-rule-management",
+            }
         )
         response.raise_for_status()
         response = response.json()
