@@ -2,7 +2,14 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.24.0 []
+## Release 0.25.0 [2026-02-11]
+
+### Other
+
+- data platform changes, major mango-flow and cold-storage updates (other repos)
+
+
+## Release 0.24.0 [2026-01-02]
 
 ### New features
 
