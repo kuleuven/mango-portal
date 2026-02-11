@@ -31,8 +31,10 @@ data_platform_user_bp = Blueprint(
 def irods_connection_info(zone, username):
     jobid = current_app.config['irods_zones'][zone]["jobid"]
 
-    response = requests.get(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection_info", headers=g.dpa.data_platform_headers
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
+            "client": "mango-portal",
+        }
     )
     response.raise_for_status()
 
@@ -226,8 +228,10 @@ def impersonate():
 @openid_login_required
 def connection_info_modal(zone):
     jobid = current_app.config['irods_zones'][zone]["jobid"]
-    response = requests.get(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection_info?audience=end-user", headers=g.dpa.data_platform_headers
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
+            "client": "mango-portal-connection-info-modal",
+        }
     )
 
     info = {}
@@ -275,8 +279,10 @@ def connection_info_modal(zone):
 @openid_login_required
 def connection_info():
     jobid = current_zone_jobid()
-    response = requests.get(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection_info?audience=end-user", headers=g.dpa.data_platform_headers
+    response = requests.post(
+        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
+            "client": "mango-portal-connection-info-modal",
+        }
     )
 
     info = {}
