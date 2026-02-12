@@ -866,7 +866,7 @@ def gather_user_data(member, project_data, users):
 @openid_login_required
 @cache.cached(timeout=3600)
 def project_user_search():
-    projects_response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/project", headers=g.dpa.data_platform_headers)
+    projects_response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/projects", headers=g.dpa.data_platform_headers)
     projects_response.raise_for_status()
 
     projects = projects_response.json()
