@@ -1,2 +1,2 @@
-__version__ = "0.25.0"
-__comment__ = "DPA changes and mango-flow/cold-storage"
+__version__ = "0.26.0"
+__comment__ = "DPA bug fix and switch tenant feature"
