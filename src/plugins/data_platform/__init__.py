@@ -50,7 +50,7 @@ portals = {
         "tenant": "kuleuven",
         "openid_provider": "kuleuven",
         "auto_pick_on_host": "mango.kuleuven.be",
-        "allow_switch_tenant_to": ["vsc-as-kuleuven"],
+        "allow_switch_tenant_to": ["vsc-as-kuleuven", "kuleuven-cold"],
     },
     "kuleuven-as-vsc": {
         "label": "ManGO Portal - VSC authentication",
@@ -63,7 +63,7 @@ portals = {
         "tenant": "kuleuven-cold",
         "openid_provider": "kuleuven",
         "auto_pick_on_host": "frigo.kuleuven.be",
-        "allow_switch_tenant_to": [],
+        "allow_switch_tenant_to": ["kuleuven", "vsc-as-kuleuven"],
     },
     "vsc": {
         "label": "Tier1 Data Portal - VSC authentication",
@@ -76,7 +76,7 @@ portals = {
         "label": "Tier1 Data Portal - KU Leuven authentication",
         "tenant": "vsc",
         "openid_provider": "kuleuven",
-        "allow_switch_tenant_to": ["kuleuven"],
+        "allow_switch_tenant_to": ["kuleuven", "kuleuven-cold"],
     },
 }
 
