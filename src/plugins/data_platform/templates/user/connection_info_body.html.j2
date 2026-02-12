@@ -250,14 +250,14 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
     </div>
 
     
-
+    
     {% if 'hpc-irods-setup-zone' in info %}
     <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxHPC" aria-expanded="false" aria-controls="linuxHPC">
           <i class="bi bi-chevron-down"></i> Deprecated: The irods-setup command on HPC infrastructure
         </button></h6>
     <div id="linuxHPC" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
       <p>
-        <i>This method is deprecrated and will stop working on April 1st, 2026. We'll remove this information from this page already on February 1st, 2026.</i>
+        <i>This method is deprecrated and will stop working on April 1st, 2026.</i>
       </p>
       <p>
         On the HPC tier1 or tier2 clusters in Leuven, run the snippet below to
@@ -275,7 +275,9 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
       </p>
     </div>
     {% endif %}
+    
 
+    <!--
     <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxNative" aria-expanded="false" aria-controls="linuxNative">
           <i class="bi bi-chevron-down"></i> Deprecated: Authentication with iCommands using native password
         </button></h6>
@@ -305,7 +307,9 @@ echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authen
 </code></pre>
       </div>
     </div>
+    -->
 
+    <!--
     <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#pythonScript" aria-expanded="false" aria-controls="pythonScript">
           <i class="bi bi-chevron-down"></i> Deprecated: Authentication with python-irodsclient only and native password, on Windows
         </button></h6>
@@ -361,6 +365,7 @@ put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
 </code></pre>
       </div>
     </div>
+    -->
 
     <!--
     <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#rirods" aria-expanded="false" aria-controls="linuxNative">
