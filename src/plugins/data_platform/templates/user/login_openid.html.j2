@@ -7,10 +7,10 @@
         <div class="form-group mb-3">
             <label for="portal">Login Provider</label>
             <select class="form-select" name="portal" id="portal">
-                {% for portal in portals %}
+                {% for portal in available_portals %}
                     <option value="{{ portal }}"
                             {% if portal == last_portal %}selected{% endif %}>
-                        {{ portals[portal]['label'] }}
+                        {{ available_portals[portal]['label'] }}
                     </option>
                 {% endfor %}
             </select>

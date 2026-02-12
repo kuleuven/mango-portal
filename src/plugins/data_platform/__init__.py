@@ -50,28 +50,33 @@ portals = {
         "tenant": "kuleuven",
         "openid_provider": "kuleuven",
         "auto_pick_on_host": "mango.kuleuven.be",
+        "allow_switch_tenant_to": ["vsc-as-kuleuven", "kuleuven-cold"],
     },
     "kuleuven-as-vsc": {
         "label": "ManGO Portal - VSC authentication",
         "tenant": "kuleuven",
         "openid_provider": "vsc",
+        "allow_switch_tenant_to": ["vsc"],
     },
     "kuleuven-cold": {
         "label": "Frigo Portal - KU Leuven authentication",
         "tenant": "kuleuven-cold",
         "openid_provider": "kuleuven",
         "auto_pick_on_host": "frigo.kuleuven.be",
+        "allow_switch_tenant_to": ["kuleuven", "vsc-as-kuleuven"],
     },
     "vsc": {
         "label": "Tier1 Data Portal - VSC authentication",
         "tenant": "vsc",
         "openid_provider": "vsc",
         "auto_pick_on_host": "mango.vscentrum.be",
+        "allow_switch_tenant_to": ["kuleuven-as-vsc"],
     },
     "vsc-as-kuleuven": {
         "label": "Tier1 Data Portal - KU Leuven authentication",
         "tenant": "vsc",
         "openid_provider": "kuleuven",
+        "allow_switch_tenant_to": ["kuleuven", "kuleuven-cold"],
     },
 }
 
@@ -360,8 +365,8 @@ class Session(dict):
         self['data_platform_token'] = self['access_token']
 
         print("Retrieving permissions for user")
-        print(self['user_info'])
-        print(self['access_token'])
+        #print(self['user_info'])
+        #print(self['access_token'])
 
         response = requests.get(f"{API_URL}/v2/{self.tenant}/whoami", headers=self.data_platform_headers)
 
@@ -430,6 +435,29 @@ class Session(dict):
 
         response.raise_for_status()
         self['permissions'] = response.json()['claims']['permissions']
+
+        return self
+    
+    def switch_portal(self, portal):
+        self['portal'] = portal
+        self['data_platform_token'] = self['access_token']
+
+        if 'orig_user_info' in self:
+            self['user_info'] = self['orig_user_info']
+            del self['orig_user_info']
+
+        if 'drop_permissions' in self:
+            del self['drop_permissions']
+
+        response = requests.get(f"{API_URL}/v2/{self.tenant}/whoami", headers=self.data_platform_headers)
+
+        if response.status_code == 402:
+            self['permissions'] = []
+            return self
+
+        response.raise_for_status()
+        data = response.json()
+        self['permissions'] = data['claims']['permissions']
 
         return self
 

@@ -45,6 +45,13 @@
                     <li>
                         <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.login_openid_select_zone') }}">Switch zone</a>
                     </li>
+                    {% if portals is defined %}
+                    {% for switch_portal in portals[session.openid_session.portal].allow_switch_tenant_to %}
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.switch_portal', portal=switch_portal) }}">Switch to {{ portals[switch_portal].label }}</a>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
                     {% if admin|default(False) %}
                     <li>
                         <a class="dropdown-item" href="{{ url_for('data_platform_user_bp.drop_permissions') }}">Drop permissions</a>
