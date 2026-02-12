@@ -360,8 +360,8 @@ class Session(dict):
         self['data_platform_token'] = self['access_token']
 
         print("Retrieving permissions for user")
-        print(self['user_info'])
-        print(self['access_token'])
+        #print(self['user_info'])
+        #print(self['access_token'])
 
         response = requests.get(f"{API_URL}/v2/{self.tenant}/whoami", headers=self.data_platform_headers)
 
