@@ -19,7 +19,7 @@ from irods.session import iRODSSession
 import irods_session_pool
 
 from irods_zones_config import DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
-from . import API_URL, portals, openid_login_required, current_user_projects, current_zone_jobid, Session
+from . import API_URL, portals, openid_login_required, current_user_projects, current_zone_jobid, Session, portals
 
 import logging
 
@@ -69,7 +69,7 @@ def login_openid():
         if 'openid_session' in session and 'portal' in session['openid_session']:
             last_portal = session['openid_session']['portal']
 
-        return render_template('user/login_openid.html.j2', portals=portals, last_portal=last_portal)
+        return render_template('user/login_openid.html.j2', available_portals=portals, last_portal=last_portal)
 
     if request.method == 'POST':
         portal = request.form.get('portal')
@@ -144,6 +144,7 @@ def login_openid_select_zone():
             admin=('project-management' in g.dpa.permissions),
             finance=('project-statistics' in g.dpa.permissions),
             sftp_host=sftp_host,
+            portals=portals,
         )
 
     zone = request.form.get('irods_zone')
@@ -220,6 +221,20 @@ def drop_permissions():
 def impersonate():
     s = Session(session['openid_session'])
     s.impersonate(request.form.get('username'))
+    session['openid_session'] = dict(s)
+
+    return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+
+
+@data_platform_user_bp.route('/user/openid/switch_portal/<portal>', methods=["GET"])
+@openid_login_required
+def switch_portal(portal):
+    if portal not in portals:
+        flash('Unknown portal', category='danger')
+        return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+
+    s = Session(session['openid_session'])
+    s.switch_portal(portal)
     session['openid_session'] = dict(s)
 
     return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
