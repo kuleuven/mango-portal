@@ -22,7 +22,7 @@ from flask import (
 from cache import cache
 from signals import mango_signals
 from csrf import csrf
-from . import API_URL, openid_login_required, Session
+from . import API_URL, openid_login_required, Session, portals
 
 data_platform_project_bp = Blueprint(
     "data_platform_project_bp", __name__, template_folder="templates"
@@ -125,6 +125,7 @@ def project(project_name):
         quotalog=quotalog,
         zones=zones,
         admin=("project-management" in g.dpa.permissions),
+        portals=portals,
     )
 
 
@@ -349,6 +350,8 @@ def machine_account_password(project_name, type):
         type=type,
         info=info,
         setup_json=json.dumps(info["irods_environment"], indent=4),
+        admin=("project-management" in g.dpa.permissions),
+        portals=portals,
     )
 
 
@@ -362,6 +365,8 @@ def add_ssh_key(project_name, type):
             "project/ssh_key.html.j2",
             project_name=project_name,
             type=type,
+            admin=("project-management" in g.dpa.permissions),
+            portals=portals,
         )
 
     response = requests.post(
@@ -380,6 +385,8 @@ def add_ssh_key(project_name, type):
             "project/ssh_key.html.j2",
             project_name=project_name,
             type=type,
+            admin=("project-management" in g.dpa.permissions),
+            portals=portals,
         )
 
     response.raise_for_status()
@@ -597,6 +604,8 @@ def project_overview():
         "project/projects_overview.html.j2",
         projects=projects,
         year=year,
+        admin=("project-management" in g.dpa.permissions),
+        portals=portals,
     )
 
 
@@ -692,6 +701,8 @@ def projects_statistics():
         "project/projects_statistics.html.j2",
         year=year,
         projects_list=json.dumps(projects_list),
+        admin=("project-management" in g.dpa.permissions),
+        portals=portals,
     )
 
 
@@ -822,6 +833,8 @@ def projects_usage():
         bytes_csv_usage_data=bytes_csv_usage_data,
         quota_plot=quota_plot,
         filters=filters,
+        admin=("project-management" in g.dpa.permissions),
+        portals=portals,
     )
 
 
@@ -871,6 +884,8 @@ def project_user_search():
     return render_template(
         "project/project_user_search.html.j2",
         user_project_search_list=json.dumps(project_list_of_dicts),
+        admin=("project-management" in g.dpa.permissions),
+        portals=portals,
     )
 
 
@@ -934,6 +949,8 @@ def rule_management():
     return render_template(
         "project/rule_management.html.j2",
         rule_info=rule_info,
+        admin=("project-management" in g.dpa.permissions),
+        portals=portals,
     )
 
 
@@ -968,4 +985,6 @@ def project_quota_change():
     return render_template(
         "project/projects_quota_change.html.j2",
         projects_list=json.dumps(projects_list),
+        admin=("project-management" in g.dpa.permissions),
+        portals=portals,
     )
