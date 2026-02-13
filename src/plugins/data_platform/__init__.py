@@ -158,11 +158,12 @@ def update_zone_info(irods_zones, token=API_TOKEN):
                 "zone": zone_info["zone"],
             },
             "ssl_settings": {},
+            "tenant": zone_info["tenant"]["name"],
             #"admin_users": ["u0123318", "vsc33436", "x0116999"],
         }
 
         if zone_info["zone"] in irods_zones:
-            extra_zone_configs = [extra_zone_config for extra_zone_config in irods_zones[zone_info["zone"]].keys() if extra_zone_config not in ['jobid', 'parameters', 'ssl_settings']]
+            extra_zone_configs = [extra_zone_config for extra_zone_config in irods_zones[zone_info["zone"]].keys() if extra_zone_config not in ['jobid', 'parameters', 'ssl_settings', 'tenant']]
             for extra_zone_config in extra_zone_configs:
                 zones[zone_info["zone"]][extra_zone_config] = irods_zones[zone_info["zone"]][extra_zone_config]
 
