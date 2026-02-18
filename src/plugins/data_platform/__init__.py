@@ -283,7 +283,7 @@ class Session(dict):
         return self['expiry'] > datetime.now().timestamp() + 30
 
     def should_refresh(self):
-         if'expiry' not in self or 'refresh_token' not in self or self['refresh_token'] is None:
+         if 'expiry' not in self or 'refresh_token' not in self or self['refresh_token'] is None:
             return False
         
          return self['expiry'] < datetime.now().timestamp() + 90
