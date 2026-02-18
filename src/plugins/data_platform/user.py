@@ -250,38 +250,42 @@ def connection_info_modal(zone):
 
     services = response.json()
 
-    jobid = current_app.config['irods_zones'][zone]["jobid"]
-    response = requests.post(
-        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
-            "client": "mango-portal-connection-info-modal",
-        }
-    )
-
-    info = {}
-    setup_json = {}
-
-    response.raise_for_status()
-
-    info = response.json()
-
-    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
-
-    setup_json={
-        'linux': json.dumps(info['irods_environment'], indent=4),
-        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
-        'linux_pam_interactive': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': "pam_interactive"}, indent=4),
+    zone_info = {
+        "irods_user_name": Session(session['openid_session']).username,
+        "irods_zone_name": zone,
+        "irods_host": current_app.config['irods_zones'][zone]['parameters']['host'],
+        "irods_port": 1247,
+        "jobid": current_app.config['irods_zones'][zone]["jobid"],
     }
 
-    if "-hpc-" in jobid:
-        # icts-p-hpc-irods-instance
-        parts = jobid.split('-', 5)
+    irods_env = {
+        "irods_host": zone_info["irods_host"],
+        "irods_port": zone_info["irods_port"],
+        "irods_zone_name": zone_info["irods_zone_name"],
+        "irods_authentication_scheme": "pam_interactive",
+        "irods_encryption_algorithm": "AES-256-CBC",
+        "irods_encryption_salt_size": 8,
+        "irods_encryption_key_size": 32,
+        "irods_encryption_num_hash_rounds": 8,
+        "irods_user_name": zone_info["irods_user_name"],
+        "irods_ssl_ca_certificate_file": "",
+        "irods_ssl_verify_server": "cert",
+        "irods_client_server_negotiation": "request_server_negotiation",
+        "irods_client_server_policy": "CS_NEG_REQUIRE",
+        "irods_default_resource": "default",
+        "irods_cwd": f"/{zone_info['irods_zone_name']}/home"
+    }
 
-        info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
+    if "-hpc-" in zone_info["jobid"]:
+        # icts-p-hpc-irods-instance
+        parts = zone_info["jobid"].split('-', 5)
+
+        zone_info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
 
         if parts[1] != 'p':
-            info['hpc-irods-setup-zone'] += "-" + parts[1]
+            zone_info['hpc-irods-setup-zone'] += "-" + parts[1]
 
-    return render_template("user/connection_info_body.html.j2", services=services, info=info, jobid=jobid, setup_json=setup_json)
+    return render_template("user/connection_info_body.html.j2", services=services, zone_info=zone_info, setup_json=json.dumps(irods_env, indent=2))
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 @data_platform_user_bp.route("/desktop-sync", methods=["GET"])
@@ -295,34 +299,47 @@ def connection_info():
     services = response.json()
 
     jobid = current_zone_jobid()
-    response = requests.post(
-        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
-            "client": "mango-portal-connection-info-modal",
-        }
-    )
+    
+    zone = ""
 
-    info = {}
-    setup_json = {}
+    for z in current_app.config['irods_zones']:
+        if current_app.config['irods_zones'][z]["jobid"] == jobid:
+            zone = z
+            break
 
-    response.raise_for_status()
-
-    info = response.json()
-
-    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
-
-    setup_json={
-        'linux': json.dumps(info['irods_environment'], indent=4),
-        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
-        'linux_pam_interactive': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': "pam_interactive"}, indent=4),
+    zone_info = {
+        "irods_user_name": Session(session['openid_session']).username,
+        "irods_zone_name": zone,
+        "irods_host": current_app.config['irods_zones'][zone]['parameters']['host'],
+        "irods_port": 1247,
+        "jobid": current_app.config['irods_zones'][zone]["jobid"],
     }
 
-    if "-hpc-" in jobid:
-        # icts-p-hpc-irods-instance
-        parts = jobid.split('-', 5)
+    irods_env = {
+        "irods_host": zone_info["irods_host"],
+        "irods_port": zone_info["irods_port"],
+        "irods_zone_name": zone_info["irods_zone_name"],
+        "irods_authentication_scheme": "pam_interactive",
+        "irods_encryption_algorithm": "AES-256-CBC",
+        "irods_encryption_salt_size": 8,
+        "irods_encryption_key_size": 32,
+        "irods_encryption_num_hash_rounds": 8,
+        "irods_user_name": zone_info["irods_user_name"],
+        "irods_ssl_ca_certificate_file": "",
+        "irods_ssl_verify_server": "cert",
+        "irods_client_server_negotiation": "request_server_negotiation",
+        "irods_client_server_policy": "CS_NEG_REQUIRE",
+        "irods_default_resource": "default",
+        "irods_cwd": f"/{zone_info['irods_zone_name']}/home"
+    }
 
-        info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
+    if "-hpc-" in zone_info["jobid"]:
+        # icts-p-hpc-irods-instance
+        parts = zone_info["jobid"].split('-', 5)
+
+        zone_info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
 
         if parts[1] != 'p':
-            info['hpc-irods-setup-zone'] += "-" + parts[1]
+            zone_info['hpc-irods-setup-zone'] += "-" + parts[1]
 
-    return render_template("user/connection_info.html.j2", services=services, info=info, jobid=jobid, setup_json=setup_json)
+    return render_template("user/connection_info.html.j2", services=services, zone_info=zone_info, setup_json=json.dumps(irods_env, indent=2))
