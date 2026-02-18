@@ -410,7 +410,7 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
             <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
               <i class="bi bi-clipboard"></i> Copy
             </button>
-            <pre><code class="user-select-all">https://{{ desktop_sync }}</code></pre>
+            <pre><code class="user-select-all">{{ services['desktop-sync']['url'] }}</code></pre>
           </div>
         </li>
         <li>Click on "Open Browser" to log in to ownCloud. To grant privileges to ownCloud click on "Agree and continue to the application".</li>
@@ -459,7 +459,7 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
           <dl class="mx-auto ml-20 mt-3">
             <dt>Hostname</dt>
             <dd>
-              {{ sftp_host }}
+              {{ services['sftp-server']['url']|replace("sftp://", "") }}
             </dd>
             <dt>Port</dt>
             <dd>
@@ -474,7 +474,7 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
               Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
             </dd>
           </dl>
-          Or use <code>lftp -u {{ info['irods_environment']['irods_user_name'] }}, sftp://{{ sftp_host }}</code>.
+          Or use <code>lftp -u {{ info['irods_environment']['irods_user_name'] }}, {{ services['sftp-server']['url'] }}</code>.
         </li>
       </ol>
     </div>

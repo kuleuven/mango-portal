@@ -129,13 +129,15 @@ def login_openid_select_zone():
             if project['my_role'] != '' and not project['archived'] and project['zone'] not in my_zones:
                 my_zones.append(project['zone'])
 
-        sftp_host = "rdmsftp.icts.kuleuven.be"
-        if "-q-" in API_URL:
-            sftp_host = "rdmsftp.q.icts.kuleuven.be"
-        if "-t-" in API_URL:
-            sftp_host = "rdmsftp.t.icts.kuleuven.be"
+        response = requests.get(
+            f"{API_URL}/v2/{g.dpa.tenant}/services", headers=g.dpa.data_platform_headers
+        )
+        response.raise_for_status()
+
+        services = response.json()
 
         return render_template('user/login_openid_select_zone.html.j2',
+            services=services,
             projects=projects,
             zones=zones,
             my_zones=my_zones,
@@ -143,7 +145,6 @@ def login_openid_select_zone():
             last_zone_name=last_zone_name,
             admin=('project-management' in g.dpa.permissions),
             finance=('project-statistics' in g.dpa.permissions),
-            sftp_host=sftp_host,
             portals=portals,
         )
 
@@ -242,6 +243,13 @@ def switch_portal(portal):
 @data_platform_user_bp.route("/data-platform/connection-info/modal/<zone>", methods=["GET"])
 @openid_login_required
 def connection_info_modal(zone):
+    response = requests.get(
+        f"{API_URL}/v2/{g.dpa.tenant}/services", headers=g.dpa.data_platform_headers
+    )
+    response.raise_for_status()
+
+    services = response.json()
+
     jobid = current_app.config['irods_zones'][zone]["jobid"]
     response = requests.post(
         f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
@@ -273,26 +281,19 @@ def connection_info_modal(zone):
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
 
-    accounttype = "kuleuven"
-
-    if info['irods_environment']['irods_user_name'].startswith("vsc"):
-        accounttype = "vsc"
-
-    sftp_host = "rdmsftp.icts.kuleuven.be"
-    desktop_sync = f"icts-p-coz-desktop-sync-reva-{accounttype}.cloud.icts.kuleuven.be"
-    if "-q-" in jobid:
-        sftp_host = "rdmsftp.q.icts.kuleuven.be"
-        desktop_sync = f"icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
-    if "-t-" in jobid:
-        sftp_host = "rdmsftp.t.icts.kuleuven.be"
-        desktop_sync = f"icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
-
-    return render_template("user/connection_info_body.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host, desktop_sync=desktop_sync)
+    return render_template("user/connection_info_body.html.j2", services=services, info=info, jobid=jobid, setup_json=setup_json)
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 @data_platform_user_bp.route("/desktop-sync", methods=["GET"])
 @openid_login_required
 def connection_info():
+    response = requests.get(
+        f"{API_URL}/v2/{g.dpa.tenant}/services", headers=g.dpa.data_platform_headers
+    )
+    response.raise_for_status()
+
+    services = response.json()
+
     jobid = current_zone_jobid()
     response = requests.post(
         f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
@@ -324,18 +325,4 @@ def connection_info():
         if parts[1] != 'p':
             info['hpc-irods-setup-zone'] += "-" + parts[1]
 
-    accounttype = "kuleuven"
-
-    if info['irods_environment']['irods_user_name'].startswith("vsc"):
-        accounttype = "vsc"
-
-    sftp_host = "rdmsftp.icts.kuleuven.be"
-    desktop_sync = f"icts-p-coz-desktop-sync-reva-{accounttype}.cloud.icts.kuleuven.be"
-    if "-q-" in jobid:
-        sftp_host = "rdmsftp.q.icts.kuleuven.be"
-        desktop_sync = f"icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
-    if "-t-" in jobid:
-        sftp_host = "rdmsftp.t.icts.kuleuven.be"
-        desktop_sync = f"icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
-
-    return render_template("user/connection_info.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host, desktop_sync=desktop_sync)
+    return render_template("user/connection_info.html.j2", services=services, info=info, jobid=jobid, setup_json=setup_json)

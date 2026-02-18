@@ -43,7 +43,7 @@
             Open FileZilla or WinSCP, and connect using the following information:
             <dl class="mx-auto ml-20 mt-3">
               <dt>Hostname</dt>
-              <dd>{{ sftp_host }}</dd>
+              <dd>{{ services['sftp-server']['url']|replace("sftp://", "") }}</dd>
               <dt>Port</dt>
               <dd>22</dd>
               <dt>Username</dt>
@@ -53,7 +53,7 @@
                 Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
               </dd>
             </dl>
-            Or use <code>lftp -l {{ session.openid_session.user_info.preferred_username }}, sftp://{{ sftp_host }}</code>.
+            Or use <code>lftp -l {{ session.openid_session.user_info.preferred_username }}, {{ services['sftp-server']['url'] }}</code>.
           </li>
         </ol>
       </div>
