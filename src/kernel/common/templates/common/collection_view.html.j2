@@ -58,7 +58,7 @@
     hidden_fields=[{"name": "item_path", "value": collection.path}]) }}
   </div>
   {% if (current_user_rights | intersection(own_or_write)) %}
-    <div class="d-flex justify-content-end">
+    <div class="d-flex justify-content-between">
       <div class="col-2 mr-auto">
         <button type="button"
                 class="btn btn-primary"
@@ -66,7 +66,15 @@
                 data-bs-target="#addCollection">Add collection</button>
       </div>
       <div class="col-4 mr-auto">
-        <form action="{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}"
+
+        <button class="btn btn-primary mb-2"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#folder-upload-form">Upload folder ...</button>
+        <div id="folder-upload-form" class="collapse">
+    
+
+    <form action="{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}"
                   method="post" enctype="multipart/form-data" id="folderUpload">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <div class="input-group">
@@ -108,6 +116,10 @@
           </script>
           <script src="{{url_for('static', filename='dist/folderUpload.js')}}"></script>
         </form>
+
+        </div>
+
+    
         </div>
         <div class="col-6 mr-auto">
         {# <form action="{{ url_for('browse_bp.collection_upload_file')}}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
