@@ -11,8 +11,6 @@ const filesModal = document.getElementById("folderUploadModal");
 const modalBody = filesModal.querySelector(".modal-body");
 const tableBody = modalBody.querySelector("tbody");
 const submitButton = filesModal.querySelector("button#sendFile");
-tableBody.className = "myTable";
-
 
 
 const units = ['bytes', 'KiB', 'MiB', 'GiB'];
@@ -35,7 +33,6 @@ function listBigFiles(bigFiles) {
         summary.innerHTML = `Files larger than ${humanizeSize(sizeThreshold)} will be ignored.`;
         const ul = document.createElement("ul");
         bigFiles.forEach((file) => {
-            console.log(file)
             const li = document.createElement("li");
             li.innerHTML = `${file.webkitRelativePath} (${humanizeSize(file.size)})`;
             ul.appendChild(li);
@@ -73,6 +70,17 @@ function createRowForFile(file, filesToIgnore) {
     deleteButton.addEventListener("click", () => {
         row.remove();
         filesToIgnore.push(file.webkitRelativePath);
+        let totalSize = document.getElementById("totalSize");
+        let newTotalSize = totalSize.dataset.bytes - file.size;
+        totalSize.innerHTML = humanizeSize(newTotalSize);
+        totalSize.dataset.bytes = newTotalSize;
+
+        if (newTotalSize <= totalSizeThreshold && submitButton.disabled) {
+        submitButton.disabled = false;
+        document.getElementById("warningBadge").hidden = true;
+
+
+        }
     });
 }
 
@@ -127,6 +135,15 @@ function checkTotalSize(data) {
     return totalSize;
 }
 
+function appendTotalSize(total) {
+
+    const row = document.createElement("tr");
+    row.innerHTML = `<td><b>Total size:</b></td> <td> <b id="totalSize" data-bytes=${total}>${humanizeSize(total)}</b> </td> <td></td>`
+    tableBody.appendChild(row);
+
+
+}
+
 function listFilesToUpload() {
     const modal = new bootstrap.Modal(filesModal);
     modal.show();
@@ -135,25 +152,26 @@ function listFilesToUpload() {
     const bigFiles = [...data.getAll(filesFieldName)].filter((file) => file.size >= sizeThreshold);
     listBigFiles(bigFiles);
 
-    console.log([...data.getAll(filesFieldName)])
     totalSize = checkTotalSize(data);
-    console.log(totalSize);
 
-    
     const listOfFiles = [...data.getAll(filesFieldName)].filter((file) => file.size < sizeThreshold);
     const filesToIgnore = [];
 
     listOfFiles.forEach((file) => createRowForFile(file, filesToIgnore));
+    appendTotalSize(totalSize);
 
     if (totalSize >= totalSizeThreshold) {
     submitButton.setAttribute("disabled", "disabled")
+    document.getElementById("warningBadge").hidden = false;
+
     }
-    else {
+
+
     submitButton.addEventListener("click", () => {
         submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
         submitFiles(listOfFiles, filesToIgnore, data.get("csrf_token"));
     });
-}
+
 }
 
 document.getElementById("uploadFolder").addEventListener("change", listFilesToUpload);
