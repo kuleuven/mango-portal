@@ -1,4 +1,5 @@
-const sizeThreshold = 300 * 1024 * 1024; // 300 MB
+const sizeThreshold = 300 * 1024 * 1024; // 300 MiB
+const totalSizeThreshold = 5000 * 1024 * 1024 // 5 Gig
 
 // folderUploadURL is defined in the template
 // form constants
@@ -10,6 +11,7 @@ const filesModal = document.getElementById("folderUploadModal");
 const modalBody = filesModal.querySelector(".modal-body");
 const tableBody = modalBody.querySelector("tbody");
 const submitButton = filesModal.querySelector("button#sendFile");
+tableBody.className = "myTable";
 
 
 
@@ -47,9 +49,10 @@ function listBigFiles(bigFiles) {
 function createRowForFile(file, filesToIgnore) {
     const row = document.createElement("tr");
     row.setAttribute("data-filename", file.webkitRelativePath);
+
     
     const fnameCell = document.createElement("td");
-    fnameCell.className = "text-truncate";
+    fnameCell.className = "text-truncate"; //or text-wrap
     fnameCell.innerHTML = file.webkitRelativePath;
     
     const sizeCell =  document.createElement("td");
@@ -113,6 +116,17 @@ function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
     });
 }
 
+
+function checkTotalSize(data) {
+    let totalSize = 0;
+    [...data.getAll(filesFieldName)].forEach( (x) => {
+        if(x.size < sizeThreshold) {
+            totalSize += x.size;
+        }
+    })
+    return totalSize;
+}
+
 function listFilesToUpload() {
     const modal = new bootstrap.Modal(filesModal);
     modal.show();
@@ -120,16 +134,26 @@ function listFilesToUpload() {
     const data = new FormData(form);
     const bigFiles = [...data.getAll(filesFieldName)].filter((file) => file.size >= sizeThreshold);
     listBigFiles(bigFiles);
+
+    console.log([...data.getAll(filesFieldName)])
+    totalSize = checkTotalSize(data);
+    console.log(totalSize);
+
     
     const listOfFiles = [...data.getAll(filesFieldName)].filter((file) => file.size < sizeThreshold);
     const filesToIgnore = [];
 
     listOfFiles.forEach((file) => createRowForFile(file, filesToIgnore));
 
+    if (totalSize >= totalSizeThreshold) {
+    submitButton.setAttribute("disabled", "disabled")
+    }
+    else {
     submitButton.addEventListener("click", () => {
         submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
         submitFiles(listOfFiles, filesToIgnore, data.get("csrf_token"));
     });
+}
 }
 
 document.getElementById("uploadFolder").addEventListener("change", listFilesToUpload);

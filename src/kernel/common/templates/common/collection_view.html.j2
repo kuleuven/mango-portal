@@ -14,6 +14,7 @@
           top: 85%;
       }
 
+
       .btn-oc {
           --bs-btn-font-weight: 600;
           --bs-btn-color: var(--bs-primary);
@@ -66,14 +67,11 @@
                 data-bs-target="#addCollection">Add collection</button>
       </div>
       <div class="col-4 mr-auto">
-
         <button class="btn btn-primary mb-2"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#folder-upload-form">Upload folder ...</button>
         <div id="folder-upload-form" class="collapse">
-    
-
     <form action="{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}"
                   method="post" enctype="multipart/form-data" id="folderUpload">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -90,7 +88,12 @@
                 </div>
                 <div class="modal-body" id="folderUploadFiles">
                 <div id="details"></div>
-                <table class="table table-striped">
+                <table class="table-striped" style="table-layout:fixed; width: 100%;">  
+                <colgroup>
+                  <col style="width: 80%;">     
+                  <col style="width: 10%;">      
+                  <col style="width: auto;">    
+                </colgroup>
                   <thead>
                     <tr>
                       <th>Filename</th>
@@ -116,10 +119,7 @@
           </script>
           <script src="{{url_for('static', filename='dist/folderUpload.js')}}"></script>
         </form>
-
         </div>
-
-    
         </div>
         <div class="col-6 mr-auto">
         {# <form action="{{ url_for('browse_bp.collection_upload_file')}}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
