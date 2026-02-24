@@ -6,11 +6,7 @@ properties([
 
 def allowed_branch_names = [
   'development': 'development',
-  'mango_flow': 'development',
-  'devops-image-build-refactor': 'development',
   'main': 'latest',
-  'main-quality': 'latest',
-  'feature/schemas-in-irods': 'development'
 ]
 
 def deploy_tier = [

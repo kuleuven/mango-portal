@@ -9,7 +9,7 @@
             rel="stylesheet" />
       <link rel="shortcut icon"
             href="{{ url_for('static', filename='mango-ico.png') }}" />
-      <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+      <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
       <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
       <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
       <link rel="stylesheet"
@@ -79,7 +79,7 @@
                         data-bs-dismiss="toast"
                         aria-label="Close"></button>
               </div>
-              <div class="toast-body">{{ message | safe }}</div>
+              <div class="toast-body">{{ message }}</div>
             </div>
           {% endfor %}
         {% endif %}

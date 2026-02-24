@@ -2,6 +2,43 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.26.0 [2026-02-12]
+
+### Bug fixes
+
+- project and user search API endpoint fix
+
+### New feature
+
+- data platform tenant switch feature
+
+
+## Release 0.25.0 [2026-02-11]
+
+### Other
+
+- data platform changes, major mango-flow and cold-storage updates (other repos)
+
+
+## Release 0.24.0 [2026-01-02]
+
+### New features
+
+- [core] updated PRC to 3.2.0
+- [data platform] additional connection info and updates (owncloud, pam interactive, ...)
+
+### Bug fixes
+
+- [tika] fixed Tika bug with naive datetimes
+- [metadata schema] fixed unnecessary calls to set acls in schema manager
+- [metadata schema] fixed schema form for single value autocomplete until second level composite with try catch for errors
+- [metadata schema] updated schema form conditional logic to set autocomplete value when not multiple
+- [metadata schema] fixed schema form for autocomplete to show options on focus
+
+### Other
+
+- cleanup of unused imports
+
 ## Release 0.23.0 [2025-09-18]
 
 ### Bug fixes
