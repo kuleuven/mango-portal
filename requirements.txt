@@ -1,6 +1,6 @@
 Beaker==1.12.1
 bleach==6.1.0
-celery-redbeat==2.2.0
+celery-redbeat==2.3.3
 Bootstrap-Flask==2.3.3
 distinctipy==1.3.4
 djlint==1.34.1
