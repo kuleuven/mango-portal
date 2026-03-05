@@ -129,13 +129,15 @@ def login_openid_select_zone():
             if project['my_role'] != '' and not project['archived'] and project['zone'] not in my_zones:
                 my_zones.append(project['zone'])
 
-        sftp_host = "rdmsftp.icts.kuleuven.be"
-        if "-q-" in API_URL:
-            sftp_host = "rdmsftp.q.icts.kuleuven.be"
-        if "-t-" in API_URL:
-            sftp_host = "rdmsftp.t.icts.kuleuven.be"
+        response = requests.get(
+            f"{API_URL}/v2/{g.dpa.tenant}/services", headers=g.dpa.data_platform_headers
+        )
+        response.raise_for_status()
+
+        services = response.json()
 
         return render_template('user/login_openid_select_zone.html.j2',
+            services=services,
             projects=projects,
             zones=zones,
             my_zones=my_zones,
@@ -143,7 +145,6 @@ def login_openid_select_zone():
             last_zone_name=last_zone_name,
             admin=('project-management' in g.dpa.permissions),
             finance=('project-statistics' in g.dpa.permissions),
-            sftp_host=sftp_host,
             portals=portals,
         )
 
@@ -242,100 +243,103 @@ def switch_portal(portal):
 @data_platform_user_bp.route("/data-platform/connection-info/modal/<zone>", methods=["GET"])
 @openid_login_required
 def connection_info_modal(zone):
-    jobid = current_app.config['irods_zones'][zone]["jobid"]
-    response = requests.post(
-        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
-            "client": "mango-portal-connection-info-modal",
-        }
+    response = requests.get(
+        f"{API_URL}/v2/{g.dpa.tenant}/services", headers=g.dpa.data_platform_headers
     )
-
-    info = {}
-    setup_json = {}
-
     response.raise_for_status()
 
-    info = response.json()
+    services = response.json()
 
-    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
-
-    setup_json={
-        'linux': json.dumps(info['irods_environment'], indent=4),
-        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
-        'linux_pam_interactive': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': "pam_interactive"}, indent=4),
+    zone_info = {
+        "irods_user_name": Session(session['openid_session']).username,
+        "irods_zone_name": zone,
+        "irods_host": current_app.config['irods_zones'][zone]['parameters']['host'],
+        "irods_port": 1247,
+        "jobid": current_app.config['irods_zones'][zone]["jobid"],
     }
 
-    if "-hpc-" in jobid:
-        # icts-p-hpc-irods-instance
-        parts = jobid.split('-', 5)
+    irods_env = {
+        "irods_host": zone_info["irods_host"],
+        "irods_port": zone_info["irods_port"],
+        "irods_zone_name": zone_info["irods_zone_name"],
+        "irods_authentication_scheme": "pam_interactive",
+        "irods_encryption_algorithm": "AES-256-CBC",
+        "irods_encryption_salt_size": 8,
+        "irods_encryption_key_size": 32,
+        "irods_encryption_num_hash_rounds": 8,
+        "irods_user_name": zone_info["irods_user_name"],
+        "irods_ssl_ca_certificate_file": "",
+        "irods_ssl_verify_server": "cert",
+        "irods_client_server_negotiation": "request_server_negotiation",
+        "irods_client_server_policy": "CS_NEG_REQUIRE",
+        "irods_default_resource": "default",
+        "irods_cwd": f"/{zone_info['irods_zone_name']}/home"
+    }
 
-        info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
+    if "-hpc-" in zone_info["jobid"]:
+        # icts-p-hpc-irods-instance
+        parts = zone_info["jobid"].split('-', 5)
+
+        zone_info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
 
         if parts[1] != 'p':
-            info['hpc-irods-setup-zone'] += "-" + parts[1]
+            zone_info['hpc-irods-setup-zone'] += "-" + parts[1]
 
-    accounttype = "kuleuven"
-
-    if info['irods_environment']['irods_user_name'].startswith("vsc"):
-        accounttype = "vsc"
-
-    sftp_host = "rdmsftp.icts.kuleuven.be"
-    desktop_sync = f"icts-p-coz-desktop-sync-reva-{accounttype}.cloud.icts.kuleuven.be"
-    if "-q-" in jobid:
-        sftp_host = "rdmsftp.q.icts.kuleuven.be"
-        desktop_sync = f"icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
-    if "-t-" in jobid:
-        sftp_host = "rdmsftp.t.icts.kuleuven.be"
-        desktop_sync = f"icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
-
-    return render_template("user/connection_info_body.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host, desktop_sync=desktop_sync)
+    return render_template("user/connection_info_body.html.j2", services=services, zone_info=zone_info, setup_json=json.dumps(irods_env, indent=2))
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 @data_platform_user_bp.route("/desktop-sync", methods=["GET"])
 @openid_login_required
 def connection_info():
-    jobid = current_zone_jobid()
-    response = requests.post(
-        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
-            "client": "mango-portal-connection-info-modal",
-        }
+    response = requests.get(
+        f"{API_URL}/v2/{g.dpa.tenant}/services", headers=g.dpa.data_platform_headers
     )
-
-    info = {}
-    setup_json = {}
-
     response.raise_for_status()
 
-    info = response.json()
+    services = response.json()
 
-    info['expiration'] = datetime.strptime(info['expiration'], '%Y-%m-%dT%H:%M:%S%z')
+    jobid = current_zone_jobid()
+    
+    zone = ""
 
-    setup_json={
-        'linux': json.dumps(info['irods_environment'], indent=4),
-        'windows': json.dumps({**info['irods_environment'], 'irods_authentication_uid': 1000}, indent=4),
-        'linux_pam_interactive': json.dumps({**info['irods_environment'], 'irods_authentication_scheme': "pam_interactive"}, indent=4),
+    for z in current_app.config['irods_zones']:
+        if current_app.config['irods_zones'][z]["jobid"] == jobid:
+            zone = z
+            break
+
+    zone_info = {
+        "irods_user_name": Session(session['openid_session']).username,
+        "irods_zone_name": zone,
+        "irods_host": current_app.config['irods_zones'][zone]['parameters']['host'],
+        "irods_port": 1247,
+        "jobid": current_app.config['irods_zones'][zone]["jobid"],
     }
 
-    if "-hpc-" in jobid:
-        # icts-p-hpc-irods-instance
-        parts = jobid.split('-', 5)
+    irods_env = {
+        "irods_host": zone_info["irods_host"],
+        "irods_port": zone_info["irods_port"],
+        "irods_zone_name": zone_info["irods_zone_name"],
+        "irods_authentication_scheme": "pam_interactive",
+        "irods_encryption_algorithm": "AES-256-CBC",
+        "irods_encryption_salt_size": 8,
+        "irods_encryption_key_size": 32,
+        "irods_encryption_num_hash_rounds": 8,
+        "irods_user_name": zone_info["irods_user_name"],
+        "irods_ssl_ca_certificate_file": "",
+        "irods_ssl_verify_server": "cert",
+        "irods_client_server_negotiation": "request_server_negotiation",
+        "irods_client_server_policy": "CS_NEG_REQUIRE",
+        "irods_default_resource": "default",
+        "irods_cwd": f"/{zone_info['irods_zone_name']}/home"
+    }
 
-        info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
+    if "-hpc-" in zone_info["jobid"]:
+        # icts-p-hpc-irods-instance
+        parts = zone_info["jobid"].split('-', 5)
+
+        zone_info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
 
         if parts[1] != 'p':
-            info['hpc-irods-setup-zone'] += "-" + parts[1]
+            zone_info['hpc-irods-setup-zone'] += "-" + parts[1]
 
-    accounttype = "kuleuven"
-
-    if info['irods_environment']['irods_user_name'].startswith("vsc"):
-        accounttype = "vsc"
-
-    sftp_host = "rdmsftp.icts.kuleuven.be"
-    desktop_sync = f"icts-p-coz-desktop-sync-reva-{accounttype}.cloud.icts.kuleuven.be"
-    if "-q-" in jobid:
-        sftp_host = "rdmsftp.q.icts.kuleuven.be"
-        desktop_sync = f"icts-q-coz-desktop-sync-reva-{accounttype}.cloud.q.icts.kuleuven.be"
-    if "-t-" in jobid:
-        sftp_host = "rdmsftp.t.icts.kuleuven.be"
-        desktop_sync = f"icts-t-coz-desktop-sync-reva-{accounttype}.cloud.t.icts.kuleuven.be"
-
-    return render_template("user/connection_info.html.j2", info=info, jobid=jobid, setup_json=setup_json, sftp_host=sftp_host, desktop_sync=desktop_sync)
+    return render_template("user/connection_info.html.j2", services=services, zone_info=zone_info, setup_json=json.dumps(irods_env, indent=2))
