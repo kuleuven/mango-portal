@@ -84,26 +84,30 @@ function createRowForFile(file, filesToIgnore) {
     });
 }
 
-function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
+async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
     processedFiles = 0;
-    listOfFiles.forEach(async (file) => {
+    
+    for (const file of listOfFiles) {
         if (filesToIgnore.indexOf(file.webkitRelativePath) > -1) {
             processedFiles += 1;
         } else {
+            
             const fileData = new FormData();
             fileData.append("csrf_token", csrf_token);
             fileData.append("uploadFolder", file, file.webkitRelativePath);
-
+            
             const response = await fetch(folderUploadURL, {
                 method: "POST",
                 body: fileData
             });
-
+            
             const result = await response.json();
             
             const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
             if (result) {
                 if (result.status == "OK") {
+   
+
                     button.classList.replace("btn-danger", "btn-success");
                     button.querySelector("i").classList.replace("bi-trash", "bi-check-lg");
 
@@ -114,15 +118,18 @@ function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
                 processedFiles += 1;
                 if (processedFiles == listOfFiles.length) {
                     submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
-                    submitButton.innerHTML = "Refresh page";
+                    submitButton.innerHTML = "Close and Refresh page";
                     submitButton.addEventListener("click", () => {
                         location.reload();
                     });
                 }
             }
+  
         }
-    });
+    }
 }
+
+
 
 
 function checkTotalSize(data) {
