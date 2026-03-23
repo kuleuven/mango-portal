@@ -637,9 +637,7 @@ def projects_statistics():
         year = datetime.now().year
 
     response = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/log/projects/usage/{year}", headers=g.dpa.data_platform_headers)
-
     response.raise_for_status()
-
     projects = response.json()
 
     if not projects:
@@ -647,28 +645,33 @@ def projects_statistics():
         projects = []
 
     response_quota = requests.get(f"{API_URL}/v2/{g.dpa.tenant}/log/projects/quota", headers=g.dpa.data_platform_headers)
-
     response_quota.raise_for_status()
-
     projects_quota = response_quota.json()
 
     def create_project_dict(project, projects_quota):
+        # Initialize variables with default values
+        project_create_date = None
+        zone_name = "Non iRODS"
+        project_name = project["project"]["name"]
+
         if project["project"]["platform"] == "irods":
-            zone_name = [
+            # Added a safety check to avoid IndexError if zone-jobid is missing
+            zones = [
                 "-".join(x["value"].split("-")[4:])
                 for x in project["project"]["platform_options"]
                 if x["key"] == "zone-jobid"
-            ][0]
-        else:
-            zone_name = "Non iRODS"
-
-        project_name = project["project"]["name"]
+            ]
+            if zones:
+                zone_name = zones[0]
 
         # Find matching project in projects_quota and extract create date
         for quota_project in projects_quota:
             if quota_project["name"] == project_name:
-                project_active_dates = [item["date"] for item in quota_project["log"] if not item["archived"]]
-                if len(project_active_dates) > 0:
+                project_active_dates = [
+                    item["date"] for item in quota_project.get("log", [])
+                    if not item.get("archived")
+                ]
+                if project_active_dates:
                     project_create_date = project_active_dates[0]
                 break
 
@@ -680,12 +683,12 @@ def projects_statistics():
             "project_status": project["status"],
             "usage_total": convert_bytes_to_GB(
                 [x["used_size"] for x in project["usage"]][-1]
-            ),
+            ) if project["usage"] else 0,
             "quota_set": convert_bytes_to_GB(project["project"]["quota_size"]),
             "quota_usage_rate": calculate_usage_percent(
                 project["project"]["quota_size"],
                 [x["used_size"] for x in project["usage"]][-1],
-            ),
+            ) if project["usage"] else 0,
             "responsible_name": project["responsibles"][0]["name"]
             if project["responsibles"]
             else "",
