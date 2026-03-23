@@ -236,7 +236,7 @@ class SchemaInfo:
             ]  # add +1 here because range starts from 0
             for i in range(len(ids))
         ]
-        print(label_list)
+        # print(label_list)
         return " / ".join(label_list)
 
 
@@ -271,7 +271,7 @@ def catalog_search2():
     except Exception:
         realm = None
 
-    print(request.values)
+    # print(request.values)
     home = f"/{g.irods_session.zone}/home" if realm is None else realm["path"]
 
     # allow querying for schemas of any realm the user has access to
@@ -308,7 +308,7 @@ def catalog_search2():
 
     # ----------------------- run search -------------------- #
 
-    print(request.values.to_dict())
+    # print(request.values.to_dict())
 
     # this dictionary is used to create the fields on page reload
     no_label_fields = list(
