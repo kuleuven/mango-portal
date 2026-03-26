@@ -84,6 +84,13 @@ function createRowForFile(file, filesToIgnore) {
     });
 }
 
+const fileIcons = {
+    "initial": "bi-trash",
+    "queued": "bi-clock-history",
+    "success":  "bi-check-lg",
+    "fail": "bi-bug"
+}
+
 async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
     processedFiles = 0;
     
@@ -91,7 +98,10 @@ async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
         if (filesToIgnore.indexOf(file.webkitRelativePath) > -1) {
             processedFiles += 1;
         } else {
-            
+            const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
+            button.classList.replace("btn-danger", "btn-warning");
+            const button_icon = button.querySelector("i");
+            button_icon.classList.replace(fileIcons.initial, fileIcons.queued);
             const fileData = new FormData();
             fileData.append("csrf_token", csrf_token);
             fileData.append("uploadFolder", file, file.webkitRelativePath);
@@ -108,16 +118,17 @@ async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
                 result = {"status": err}
             }
             
-            const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
             if (result) {
                 if (result.status == "OK") {
    
 
-                    button.classList.replace("btn-danger", "btn-success");
-                    button.querySelector("i").classList.replace("bi-trash", "bi-check-lg");
+                    button.classList.replace("btn-warning", "btn-success");
+                    button.querySelector("i").classList.replace(fileIcons.queued, fileIcons.success);
 
                 } else {
-                    button.querySelector("i").classList.replace("bi-trash", "bi-bug");
+                    button.classList.replace("btn-warning", "btn-danger");
+                    button.setAttribute("title", result.status)
+                    button.querySelector("i").classList.replace(fileIcons.queued, fileIcons.fail);
                     console.log(result.status);
                 }  
                 processedFiles += 1;
