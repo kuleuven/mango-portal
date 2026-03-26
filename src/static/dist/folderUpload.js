@@ -121,15 +121,15 @@ async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
                     console.log(result.status);
                 }  
                 processedFiles += 1;
-                if (processedFiles == listOfFiles.length) {
-                    submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
-                    submitButton.innerHTML = "Close and Refresh page";
-                    submitButton.addEventListener("click", () => {
-                        location.reload();
-                    });
-                }
             }
   
+        }
+        if (processedFiles == listOfFiles.length) {
+            submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
+            submitButton.innerHTML = "Close and Refresh page";
+            submitButton.addEventListener("click", () => {
+                location.reload();
+            });
         }
     }
 }
