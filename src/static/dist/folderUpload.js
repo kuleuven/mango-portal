@@ -95,13 +95,18 @@ async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
             const fileData = new FormData();
             fileData.append("csrf_token", csrf_token);
             fileData.append("uploadFolder", file, file.webkitRelativePath);
-            
-            const response = await fetch(folderUploadURL, {
-                method: "POST",
-                body: fileData
-            });
-            
-            const result = await response.json();
+            let result;
+            try {
+                const response = await fetch(folderUploadURL, {
+                    method: "POST",
+                    body: fileData
+                });
+                
+                result = await response.json();
+            } catch(err) {
+                console.error(err);
+                result = {"status": err}
+            }
             
             const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
             if (result) {
