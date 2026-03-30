@@ -1,5 +1,5 @@
-{# Use jobid to determine documentation links #}
-{% if '-hpc-' in jobid %}
+{# Use zone_info['jobid'] to determine documentation links #}
+{% if '-hpc-' in zone_info['jobid'] %}
     {% set doc_base = "https://docs.vscentrum.be/data" %}
     {% set doc_type = "VSC Tier-1 Data documentation pages" %}
 {% else %}
@@ -12,31 +12,29 @@
   <li class="nav-item">
     <a class="nav-link active" data-bs-toggle="pill" href="#irodsClients">iRODS clients</a>
   </li>
-  <!--
+  {% if 'desktop-sync' in services %}
   <li class="nav-item">
     <a class="nav-link" data-bs-toggle="pill" href="#owncloud">ownCloud desktop sync</a>
   </li>
-  -->
+  {% endif %}
+  {% if 'sftp-server' in services %}
   <li class="nav-item">
     <a class="nav-link" data-bs-toggle="pill" href="#sftp">SFTP</a>
   </li>
+  {% endif %}
 </ul>
 <div class="tab-content">
   <div class="tab-pane container active p-1" id="irodsClients">
 
     <p class="mt-3">
-      {% if '-hpc-' in jobid %}
+      {% if '-hpc-' in zone_info['jobid'] %}
       The Tier-1 Data service is reachable over the iRODS protocol using the following connection information.
       {% else %}
       The ManGO platform is reachable over the iRODS protocol using the following connection information.
       {% endif %}
       <i>Note that after June 1st, our iRODS servers will be firewalled. You will either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
       or open the web firewall page
-      {% if '-hpc-' in jobid %}
-      <a href="https://firewall.vscentrum.be">firewall.vscentrum.be</a>, 
-      {% else %}
-      <a href="https://access.kuleuven.be">access.kuleuven.be</a>, 
-      {% endif %}
+      <a href="{{ services['web-firewall']['url'] }}">{{ services['web-firewall']['url']|replace("https://", "") }}</a>,
       before attempting to connect using any of the clients listed below.</i>
     </p>
     
@@ -45,25 +43,25 @@
       <tr>
         <th>Hostname</th>
         <td>
-          {{ info['irods_environment']['irods_host'] }}
+          {{ zone_info['irods_host'] }}
         </td>
       </tr>
       <tr>
         <th>Port</th>
         <td>
-          {{ info['irods_environment']['irods_port'] }}
+          {{ zone_info['irods_port'] }}
         </td>
       </tr>
       <tr>
         <th>Zone</th>
         <td>
-          {{ info['irods_environment']['irods_zone_name'] }}
+          {{ zone_info['irods_zone_name'] }}
         </td>
       </tr>
       <tr>
         <th>Username</th>
         <td>
-          {{ info['irods_environment']['irods_user_name'] }}
+          {{ zone_info['irods_user_name'] }}
         </td>
       </tr>
       <tr>
@@ -75,325 +73,182 @@
     </tbody>
     </table>
 
-    <p class="mt-3 mb-2">
-      KU Leuven developed the <code>iron</code> utility to provide user-friendly interaction with your data on the ManGO platform. 
-      {% if '-hpc-' in jobid %}
-        Find the <a href="{{ doc_base }}/tier1data/clients/iron.html#installation">installation instructions</a>
-        and <a href="{{ doc_base }}/tier1data/clients/iron.html#how-to-use-iron">how to use iron</a> at the {{ doc_type }}.
-      {% else %}
-        Find the <a href="{{ doc_base }}/clients/iron.html#installation">installation instructions</a>
-        and <a href="{{ doc_base }}/clients/iron.html#how-to-use-iron">how to use iron</a> at the {{ doc_type }}.
-      {% endif %}
-    </p>
-    <p>
-      Run the snippet below to set up your environment and authenticate using <code>iron</code>:
-    </p>
-    <div class="code-container ms-2">
-      <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-        <i class="bi bi-clipboard"></i> Copy
-      </button>
-      <pre><code class="user-select-all">iron auth {{ info['irods_environment']['irods_user_name'] }} {{ info['irods_environment']['irods_zone_name'] }} {{ info['irods_environment']['irods_host'] }}</code></pre>
-    </div>
-    <p>
-      If the iRODS session gets expired, simply run <code>iron auth</code> without arguments to reauthenticate to the same iRODS zone. 
-      {% if '-hpc-' in jobid %}
-        The created session is also usable by other iRODS clients such as iCommands and PRC.
-      {% else %}
-        The created session is also usable by other iRODS clients such as <a href="{{ doc_base }}/clients/icommands.html#installation">iCommands</a>, <a href="{{ doc_base }}/clients/python_client.html">PRC</a>.
-      {% endif %}
-    </p>
-
-    <h6 class="mt-3"><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#hpcJobScripts" aria-expanded="false" aria-controls="hpcJobScripts">
-          <i class="bi bi-chevron-down"></i> How to use in HPC job scripts
-        </button></h6>
-    <div id="hpcJobScripts" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
-      <p>
-        Ensure you have authenticated against the iRODS zone using the command above on the login node. During one month after the initial authentication,
-        the following command will be able to refresh the iRODS session without interaction:
-      </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">iron auth --non-interactive</code></pre>
-      </div>
-      <p>
-        Put it in the front of your job script. You can control and extend the period in which the iRODS session can be refreshed at 
-        {% if 'vsc' in info['irods_environment']['irods_user_name'] %}
-        <a href="https://auth.vscentrum.be">https://auth.vscentrum.be</a>.
+      <p class="mt-3 mb-2">
+        KU Leuven developed the <code>iron</code> utility to provide user-friendly interaction with your data on the ManGO platform. 
+        {% if '-hpc-' in zone_info['jobid'] %}
+          Find the <a href="{{ doc_base }}/tier1data/clients/iron.html#installation">installation instructions</a>
+          and <a href="{{ doc_base }}/tier1data/clients/iron.html#how-to-use-iron">how to use iron</a> at the {{ doc_type }}.
         {% else %}
-        <a href="https://mango-auth.icts.kuleuven.be/">https://mango-auth.icts.kuleuven.be/</a>.
+          Find the <a href="{{ doc_base }}/clients/iron.html#installation">installation instructions</a>
+          and <a href="{{ doc_base }}/clients/iron.html#how-to-use-iron">how to use iron</a> at the {{ doc_type }}.
         {% endif %}
       </p>
       <p>
-        If by any chance the iRODS session cannot be renewed, <code>iron auth ---non-interactive</code> will fail with exit code 1.
-      </p>
-    </div>
-
-    <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#pythonModule" aria-expanded="false" aria-controls="pythonModule">
-          <i class="bi bi-chevron-down"></i> How to authenticate in python scripts
-        </button></h6>
-    <div id="pythonModule" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
-      <p>
-        Using the <code>iron</code> authentication above prepares the <code>.irods/irods_environment.json</code> and <code>.irods/.irodsA</code> files.
-        The python iRODS client can be configured to use these authentication files by putting the following in your code:
+        Run the snippet below to set up your environment and authenticate using <code>iron</code>:
       </p>
       <div class="code-container ms-2">
         <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
           <i class="bi bi-clipboard"></i> Copy
         </button>
-        <pre><code class="user-select-all">env_file = os.path.expanduser('~/.irods/irods_environment.json')
+        <pre><code class="user-select-all">iron auth {{ zone_info['irods_user_name'] }} {{ zone_info['irods_zone_name'] }} {{ zone_info['irods_host'] }}</code></pre>
+      </div>
+      <p>
+        If the iRODS session gets expired, simply run <code>iron auth</code> without arguments to reauthenticate to the same iRODS zone. 
+        {% if '-hpc-' in zone_info['jobid'] %}
+          The created session is also usable by other iRODS clients such as iCommands and PRC.
+        {% else %}
+          The created session is also usable by other iRODS clients such as <a href="{{ doc_base }}/clients/icommands.html#installation">iCommands</a>, <a href="{{ doc_base }}/clients/python_client.html">PRC</a>.
+        {% endif %}
+      </p>
+
+      <h6 class="mt-3"><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#hpcJobScripts" aria-expanded="false" aria-controls="hpcJobScripts">
+            <i class="bi bi-chevron-down"></i> How to use in HPC job scripts
+          </button></h6>
+      <div id="hpcJobScripts" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
+        <p>
+          Ensure you have authenticated against the iRODS zone using the command above on the login node. During one month after the initial authentication,
+          the following command will be able to refresh the iRODS session without interaction:
+        </p>
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">iron auth --non-interactive</code></pre>
+        </div>
+        <p>
+          Put it in the front of your job script. You can control and extend the period in which the iRODS session can be refreshed at 
+          {% if 'vsc' in zone_info['irods_user_name'] %}
+          <a href="https://auth.vscentrum.be">https://auth.vscentrum.be</a>.
+          {% else %}
+          <a href="https://mango-auth.icts.kuleuven.be/">https://mango-auth.icts.kuleuven.be/</a>.
+          {% endif %}
+        </p>
+        <p>
+          If by any chance the iRODS session cannot be renewed, <code>iron auth ---non-interactive</code> will fail with exit code 1.
+        </p>
+      </div>
+
+      <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#pythonModule" aria-expanded="false" aria-controls="pythonModule">
+            <i class="bi bi-chevron-down"></i> How to authenticate in python scripts
+          </button></h6>
+      <div id="pythonModule" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
+        <p>
+          Using the <code>iron</code> authentication above prepares the <code>.irods/irods_environment.json</code> and <code>.irods/.irodsA</code> files.
+          The python iRODS client can be configured to use these authentication files by putting the following in your code:
+        </p>
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">env_file = os.path.expanduser('~/.irods/irods_environment.json')
 with iRODSSession(irods_env_file=env_file) as session:
   (...)</code></pre>
-      </div>
-      <p>
-        In some situations it might be beneficial to integrate authentication in a python script, and to prepare the iRODS environment files directly in python.
-        For this, ensure python is installed, and install the <code>mango_auth</code> pip module with the command:
-      </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">pip install mango_auth</code></pre>
-      </div>
-      <p>
-        To demonstrate that it works correctly, the following command can be used to authenticate against iRODS, instead of <code>iron auth</code>:
-      </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">mango_auth {{ info['irods_environment']['irods_user_name'] }} {{ info['irods_environment']['irods_zone_name'] }} {{ info['irods_environment']['irods_host'] }}</code></pre>
-      </div>
-      <p>
-        Once confirmed this works, the following function can be integrated in your python script to do exactly the same without external commands:
-      </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">from mango_auth import iinit
-iinit("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['irods_environment']['irods_zone_name'] }}", "{{ info['irods_environment']['irods_host'] }}")
+        </div>
+        <p>
+          In some situations it might be beneficial to integrate authentication in a python script, and to prepare the iRODS environment files directly in python.
+          For this, ensure python is installed, and install the <code>mango_auth</code> pip module with the command:
+        </p>
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">pip install mango_auth</code></pre>
+        </div>
+        <p>
+          To demonstrate that it works correctly, the following command can be used to authenticate against iRODS, instead of <code>iron auth</code>:
+        </p>
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">mango_auth {{ zone_info['irods_user_name'] }} {{ zone_info['irods_zone_name'] }} {{ zone_info['irods_host'] }}</code></pre>
+        </div>
+        <p>
+          Once confirmed this works, the following function can be integrated in your python script to do exactly the same without external commands:
+        </p>
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">from mango_auth import iinit
+iinit("{{ zone_info['irods_user_name'] }}", "{{ zone_info['irods_zone_name'] }}", "{{ zone_info['irods_host'] }}")
 
 env_file = os.path.expanduser('~/.irods/irods_environment.json')
 with iRODSSession(irods_env_file=env_file) as session:
   (...)</code></pre>
+        </div>
       </div>
-    </div>
 
-    <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxPamInteractive" aria-expanded="false" aria-controls="linuxPamInteractive">
-          <i class="bi bi-chevron-down"></i> With iCommands only for Linux operating systems
-        </button></h6>
-    <div id="linuxPamInteractive" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
-      <p>
-        If the <code>iron</code> command is not available, it is also possible to authenticate with iCommands only on Linux operating systems.
-        Make sure that your iRODS icommands installation is 5.0.0 or above and includes the <code>irods-auth-plugin-pam-interactive-client</code> package.
-        Run the snippet below to configure an iRODS client under Linux.
-      </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">mkdir -p ~/.irods
+      <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxPamInteractive" aria-expanded="false" aria-controls="linuxPamInteractive">
+            <i class="bi bi-chevron-down"></i> With iCommands only for Linux operating systems
+          </button></h6>
+      <div id="linuxPamInteractive" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
+        <p>
+          If the <code>iron</code> command is not available, it is also possible to authenticate with iCommands only on Linux operating systems.
+          Make sure that your iRODS icommands installation is 5.0.0 or above and includes the <code>irods-auth-plugin-pam-interactive-client</code> package.
+          Run the snippet below to configure an iRODS client under Linux.
+        </p>
+        <div class="code-container ms-2">
+          <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+          <pre><code class="user-select-all">mkdir -p ~/.irods
 cat > ~/.irods/irods_environment.json <<'EOF'
-{{ setup_json['linux_pam_interactive'] }}
+{{ setup_json }}
 EOF
 iinit --ttl 168 && echo You are now authenticated to iRODS.
 </code></pre>
+        </div>
+        <p>
+          The iRODS session remains valid for one week. Run <code>iinit --ttl 168</code> again to refresh.
+          In contrast to authentication with <code>iron</code>, a login URL will be shown every time.
+        </p>
       </div>
-      <p>
-        The iRODS session remains valid for one week. Run <code>iinit --ttl 168</code> again to refresh.
-        In contrast to authentication with <code>iron</code>, a login URL will be shown every time.
-      </p>
-    </div>
 
-    <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#otherApplications" aria-expanded="false" aria-controls="otherApplications">
-          <i class="bi bi-chevron-down"></i> Authentication in other iRODS applications
-        </button></h6>
-    <div id="otherApplications" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
-      <p>
-        In principal, any existing iRODS tool might be used to connect to the ManGO zones, provided it supports TLS encryption and the <code>pam_interactive</code> authentication scheme, although your mileage may vary.
-      </p>
-      <p>
-        Consult the <a href="{% if '-hpc-' in jobid %}{{ doc_base }}/tier1data/clients.html{% else %}{{ doc_base }}/clients.html{% endif %}">client list at the {{ doc_type }}</a> to check which clients we actively support.
-      </p>
-      <!--
-      <p>
-        In case you want to connect using a third party client not supporting <code>pam_interactive</code>, you might try with the <code>native</code> authentication method and the following password:
-      </p>
-      <table class="table table-sm table-borderless ml-20 mt-3">
-      <tbody>
-        <tr>
-          <th>Login method</th>
-          <td>
-            <code>native</code>
-          </td>
-        </tr>
-        <tr>
-          <th>Password</th>
-          <td>
-            <div class="code-container">
-              <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-                <i class="bi bi-clipboard"></i> Copy
-              </button>
-              <code>{{ info['token'] }}</code>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-      </table>
-      <p>
-        The provided password is valid until {{ info['expiration']|format_timestamp }}, refresh the page to get a
-        new password.
-      </p>
-      -->
-    </div>
-
+      <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#otherApplications" aria-expanded="false" aria-controls="otherApplications">
+            <i class="bi bi-chevron-down"></i> Authentication in other iRODS applications
+          </button></h6>
+      <div id="otherApplications" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
+        <p>
+          In principal, any existing iRODS tool might be used to connect to the ManGO zones, provided it supports TLS encryption and the <code>pam_interactive</code> authentication scheme, although your mileage may vary.
+        </p>
+        <p>
+          Consult the <a href="{% if '-hpc-' in zone_info['jobid'] %}{{ doc_base }}/tier1data/clients.html{% else %}{{ doc_base }}/clients.html{% endif %}">client list at the {{ doc_type }}</a> to check which clients we actively support.
+        </p>
+      </div>
     
-
-    {% if 'hpc-irods-setup-zone' in info %}
-    <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxHPC" aria-expanded="false" aria-controls="linuxHPC">
-          <i class="bi bi-chevron-down"></i> Deprecated: The irods-setup command on HPC infrastructure
-        </button></h6>
-    <div id="linuxHPC" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
-      <p>
-        <i>This method is deprecrated and will stop working on April 1st, 2026. We'll remove this information from this page already on February 1st, 2026.</i>
-      </p>
-      <p>
-        On the HPC tier1 or tier2 clusters in Leuven, run the snippet below to
-        configure an iRODS client. The iRODS session itself will last for a
-        week, afterwards repeat the command.
-      </p>
-      <div class="code-container ms-2">
-        <pre><code>irods-setup --zone {{ info['hpc-irods-setup-zone'] }} | bash</code></pre>
+      {% if 'hpc-irods-setup-zone' in info %}
+      <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxHPC" aria-expanded="false" aria-controls="linuxHPC">
+            <i class="bi bi-chevron-down"></i> Deprecated: The irods-setup command on HPC infrastructure
+          </button></h6>
+      <div id="linuxHPC" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
+        <p>
+          <i>This method is deprecrated and will stop working on April 1st, 2026.</i>
+        </p>
+        <p>
+          On the HPC tier1 or tier2 clusters in Leuven, run the snippet below to
+          configure an iRODS client. The iRODS session itself will last for a
+          week, afterwards repeat the command.
+        </p>
+        <div class="code-container ms-2">
+          <pre><code>irods-setup --zone {{ info['hpc-irods-setup-zone'] }} | bash</code></pre>
+        </div>
+        <p>
+          From other HPC clusters in Flanders, you can run
+          <code class="user-select-all">ssh login.hpc.kuleuven.be irods-setup --zone
+            {{ info['hpc-irods-setup-zone'] }} | bash</code>. If this command through ssh does not work, please run it without
+          <code>| bash</code> to troubleshoot.
+        </p>
       </div>
-      <p>
-        From other HPC clusters in Flanders, you can run
-        <code class="user-select-all">ssh login.hpc.kuleuven.be irods-setup --zone
-          {{ info['hpc-irods-setup-zone'] }} | bash</code>. If this command through ssh does not work, please run it without
-        <code>| bash</code> to troubleshoot.
-      </p>
-    </div>
-    {% endif %}
-
-    <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#linuxNative" aria-expanded="false" aria-controls="linuxNative">
-          <i class="bi bi-chevron-down"></i> Deprecated: Authentication with iCommands using native password
-        </button></h6>
-    <div id="linuxNative" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
-      <p>
-        <i>This method is deprecrated and this information will be removed on February 1st, 2026.</i>
-      </p>
-      <p>
-        If your installation lacks the <code>irods-auth-plugin-pam-interactive-client</code> package, run the snippet below to configure an iRODS client under Linux. The
-        iRODS session is valid
-        {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
-          for one week
-        {% else %}
-          until {{ info['expiration']|format_timestamp }}
-        {% endif %}
-        .
-      </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">mkdir -p ~/.irods
-cat > ~/.irods/irods_environment.json <<'EOF'
-{{ setup_json['linux'] }}
-EOF
-echo '{{ info['token'] }}' | iinit {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}--ttl 168{% endif %} >/dev/null && echo You are now authenticated to iRODS.
-</code></pre>
-      </div>
+      {% endif %}
     </div>
 
-    <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#pythonScript" aria-expanded="false" aria-controls="pythonScript">
-          <i class="bi bi-chevron-down"></i> Deprecated: Authentication with python-irodsclient only and native password, on Windows
-        </button></h6>
-    <div id="pythonScript" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
-      <p>
-        <i>This method is deprecrated and this information will be removed on February 1st, 2026.</i>
-      </p>
-      <p>
-        Start a python interactive shell, and paste the snippet below to setup
-        the necessary files to authenticate against iRODS. The script assumes
-        that you installed the <code>python-irodsclient</code>. It will write
-        the iRODS environment file and a password file.
-        {% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
-          The validity period of the password depends on server configuration
-          and the version of python-irodsclient. For version 1.0.0, this is 60 hours,
-          for version 2.0.0 only 2 minutes.
-        {% else %}
-          The written password file will be valid until {{ info['expiration']|format_timestamp }}.
-        {% endif %}
-      </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">config = """
-{{ setup_json['windows'] }}
-"""
-password = "{{ info['token'] }}"
-
-import os, os.path, irods
-from irods.session import iRODSSession
-from irods.password_obfuscation import encode
-
-if irods.__version__.startswith(("1.", "0.")):
-  print("You are using an outdated version of the python iRODS client. Please update to 2.0.0 as soon as possible")
-{%- if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' %}
-config = config.replace("pam_password", "PAM")
-{%- endif %}
-
-def put(file, contents):
-  os.makedirs(os.path.dirname(file), exist_ok=True)
-  with open(file, "w") as f:
-    f.write(contents)
-
-env_file = os.getenv('IRODS_ENVIRONMENT_FILE', os.path.expanduser('~/.irods/irods_environment.json'))
-put(env_file, config)
-{% if info['irods_environment']['irods_authentication_scheme'] == 'pam_password' -%}
-with iRODSSession(irods_env_file=env_file, password=password) as session:
-put(iRODSSession.get_irods_password_file(), encode(session.pam_pw_negotiated[0], uid=1000))
-{% else -%}
-put(iRODSSession.get_irods_password_file(), encode(password, uid=1000))
-{% endif -%}
-</code></pre>
-      </div>
-    </div>
-
-    <!--
-    <h6><button type="button" class="btn ps-0" data-bs-toggle="collapse" data-bs-target="#rirods" aria-expanded="false" aria-controls="linuxNative">
-          <i class="bi bi-chevron-down"></i> How to connect in R with rirods
-        </button></h6>
-    <div id="rirods" class="accordion-collapse collapse" data-bs-parent="#irodsClients">
-      <p>
-        Run the snippet below in an interactive session in R:
-      </p>
-      <div class="code-container ms-2">
-        <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-          <i class="bi bi-clipboard"></i> Copy
-        </button>
-        <pre><code class="user-select-all">library(rirods)
-create_irods("https://{{ info["irods_environment"]["irods_host"] }}/irods-http-api/{{ info['http_api_version'] }}", overwrite=TRUE)
-iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}")
-# or alternatively:
-# iauth("{{ info['irods_environment']['irods_user_name'] }}") # and provide the password when prompted
-</code></pre>
-      </div>
-      <p>
-        The written password file will be valid until {{ info['expiration']|format_timestamp }}.
-      </p>
-    </div>
-    -->
-
-  </div>
-
+    {% if 'desktop-sync' in services %}
     <div class="tab-pane container fade p-1" id="owncloud">
       <p class="mt-3">
         The ownCloud desktop sync application can be used to synchorize an iRODS folder to your local workstation.
 
-        See the instructions below or the <a href="{% if '-hpc-' in jobid %}{{ doc_base }}{% else %}{{ doc_base }}/clients/owncloud.html{% endif %}">{{ doc_type }}</a> for more detailed information.
+        See the instructions below or the <a href="{% if '-hpc-' in zone_info['jobid'] %}{{ doc_base }}{% else %}{{ doc_base }}/clients/owncloud.html{% endif %}">{{ doc_type }}</a> for more detailed information.
       </p>
       <p>
         <i>The use of ownCloud is currently in an open pilot phase. Please report any feedback to the RDM team.</i>
@@ -405,7 +260,7 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
             <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
               <i class="bi bi-clipboard"></i> Copy
             </button>
-            <pre><code class="user-select-all">https://{{ desktop_sync }}</code></pre>
+            <pre><code class="user-select-all">{{ services['desktop-sync']['url'] }}</code></pre>
           </div>
         </li>
         <li>Click on "Open Browser" to log in to ownCloud. To grant privileges to ownCloud click on "Agree and continue to the application".</li>
@@ -415,7 +270,9 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
         <li>Keep checked the option to "Use virtual files instead of downloading content manually" and click on "Add sync connection".</li>
       </ol>
     </div>
+    {% endif %}
 
+    {% if 'sftp-server' in services %}
     <div class="tab-pane container fade p-1" id="sftp">
       <p class="mt-3">
         You can also use SFTP to connect to iRODS and use programs such as Filezilla, WinSCP or <code>lftp</code>.
@@ -424,15 +281,11 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
       <p>
         <i>Note that after June 1st, the SFTP service will be firewalled. You will either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
         or to open the web firewall page 
-        {% if '-hpc-' in jobid %}
-        <a href="https://firewall.vscentrum.be">firewall.vscentrum.be</a>, 
-        {% else %}
-        <a href="https://access.kuleuven.be">access.kuleuven.be</a>, 
-        {% endif %}
+        <a href="{{ services['web-firewall']['url'] }}">{{ services['web-firewall']['url']|replace("https://", "") }}</a>,
         before attempting to connect.</i>
       </p>
       <ol>
-        {% if '-hpc-' in jobid %}
+        {% if '-hpc-' in zone_info['jobid'] %}
           <li>
             You need to run an <code>ssh-agent</code> capable of handling SSH certificates.
             <br />
@@ -454,7 +307,7 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
           <dl class="mx-auto ml-20 mt-3">
             <dt>Hostname</dt>
             <dd>
-              {{ sftp_host }}
+              {{ services['sftp-server']['url']|replace("sftp://", "") }}
             </dd>
             <dt>Port</dt>
             <dd>
@@ -462,14 +315,16 @@ iauth("{{ info['irods_environment']['irods_user_name'] }}", "{{ info['token'] }}
             </dd>
             <dt>Username</dt>
             <dd>
-              {{ info['irods_environment']['irods_user_name'] }}
+              {{ zone_info['irods_user_name'] }}
             </dd>
             <dt>Password</dt>
             <dd>
               Leave empty. For FileZilla set 'Authentication type' to 'Interactive'.
             </dd>
           </dl>
-          Or use <code>lftp -u {{ info['irods_environment']['irods_user_name'] }}, sftp://{{ sftp_host }}</code>.
+          Or use <code>lftp -u {{ zone_info['irods_user_name'] }}, {{ services['sftp-server']['url'] }}</code>.
         </li>
       </ol>
     </div>
+    {% endif %}
+  </div>

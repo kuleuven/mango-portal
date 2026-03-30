@@ -77,6 +77,7 @@ MANGO_PLUGIN_BLUEPRINTS = [
         "blueprint": "mango_audit_history_bp",
     },
     {"module": "plugins.cold_storage.cs_routes", "blueprint": "cold_storage_bp"},
+    {"module": "kernel.search2.basic_search", "blueprint": "basic_search2_bp"},
     # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
 ]
 
@@ -91,6 +92,7 @@ MANGO_ADMINS = [
     "u0056780",
     "u0031305",
     "u0125288",
+    "u0112360",
 ]
 
 MANGO_MAIN_LANDING_ROUTE = {"module": "plugins.user_tantra.realm", "function": "index"}

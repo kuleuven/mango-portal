@@ -275,7 +275,10 @@
                      name="zone"
                      required>
                   {% for zone in config['irods_zones'] %}
+                  {{ config['irods_zones'][zone]['tenant'] }}
+                  {% if config['irods_zones'][zone]['tenant'] == portals[session.openid_session.portal]['tenant'] %}
                   <option value="{{ config['irods_zones'][zone]['jobid'] }}">{{ zone }}</option>
+                  {% endif %}
                   {% endfor %}
                 </select>
                 <div class="invalid-feedback">
@@ -364,7 +367,9 @@
                      name="zone"
                      required>
                   {% for zone in config['irods_zones'] %}
+                  {% if config['irods_zones'][zone]['tenant'] == portals[session.openid_session.portal]['tenant'] %}
                   <option value="{{ config['irods_zones'][zone]['jobid'] }}">{{ zone }}</option>
+                  {% endif %}
                   {% endfor %}
                 </select>
                 <div class="invalid-feedback">

@@ -2,6 +2,23 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+
+## Release 0.27.0
+
+### New feature
+
+- New search interface, offering selectable user friendly metadata schema fields
+
+## Release 0.26.1 [2026-03-05]
+
+### Bug fixes
+
+- de-whitelisted audit plugin 
+
+## Other changes
+
+- Removed deprecated authentication options from docs
+
 ## Release 0.26.0 [2026-02-12]
 
 ### Bug fixes

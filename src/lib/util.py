@@ -76,6 +76,9 @@ def flatten_schema(dictionary, level=0, prefix="", result_dict={}, **kwargs):
             "level": level,
         }
 
+        if kwargs.get("add_enum", False) and "values" in _property:  
+            result_dict[f"{prefix}.{p_key}"]["enum"] = _property["values"]
+
         if _property["type"] == "object":
             result_dict[f"{prefix}.{p_key}"]["properties"] = [
                 f"{prefix}.{p_key}.{x}" for x in _property["properties"].keys()
@@ -85,9 +88,12 @@ def flatten_schema(dictionary, level=0, prefix="", result_dict={}, **kwargs):
                 level=(level + 1),
                 prefix=f"{prefix}.{p_key}",
                 result_dict=result_dict,
+                add_enum = kwargs.get("add_enum", False)  # set bool for recursive calls
+                
             )
 
     return result_dict
+
 
 
 def get_collection_size(collection: iRODSCollection):
