@@ -99,9 +99,11 @@ async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
             processedFiles += 1;
         } else {
             const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
-            button.classList.replace("btn-danger", "btn-warning");
-            const button_icon = button.querySelector("i");
-            button_icon.classList.replace(fileIcons.initial, fileIcons.queued);
+            const spinner = document.createElement("span");
+            spinner.className = "spinner-border spinner-border-sm";
+            spinner.setAttribute("role", "status");
+            button.replaceWith(spinner);
+
             const fileData = new FormData();
             fileData.append("csrf_token", csrf_token);
             fileData.append("uploadFolder", file, file.webkitRelativePath);
@@ -118,21 +120,19 @@ async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
                 result = {"status": err}
             }
             
-            if (result) {
-                if (result.status == "OK") {
-   
+            if (result && result.status == "OK") {  
+                const checkmark = document.createElement("i");
+                checkmark.className = "bi bi-check-lg text-success";
+                spinner.replaceWith(checkmark);
 
-                    button.classList.replace("btn-warning", "btn-success");
-                    button.querySelector("i").classList.replace(fileIcons.queued, fileIcons.success);
-
-                } else {
-                    button.classList.replace("btn-warning", "btn-danger");
-                    button.setAttribute("title", result.status)
-                    button.querySelector("i").classList.replace(fileIcons.queued, fileIcons.fail);
-                    console.log(result.status);
-                }  
-                processedFiles += 1;
-            }
+            } else {
+                const cross = document.createElement("i");
+                cross.className = "bi bi-x-lg text-danger"
+                cross.setAttribute("title", result.status);
+                spinner.replaceWith(cross);
+                console.log(result.status);
+            }  
+            processedFiles += 1;
   
         }
         if (processedFiles == listOfFiles.length) {
