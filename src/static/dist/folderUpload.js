@@ -84,13 +84,6 @@ function createRowForFile(file, filesToIgnore) {
     });
 }
 
-const fileIcons = {
-    "initial": "bi-trash",
-    "queued": "bi-clock-history",
-    "success":  "bi-check-lg",
-    "fail": "bi-bug"
-}
-
 async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
     processedFiles = 0;
     
