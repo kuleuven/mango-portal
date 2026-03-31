@@ -5,6 +5,7 @@ const totalSizeThreshold = 5000 * 1024 * 1024 // 5 Gig
 // form constants
 const form = document.querySelector("form#folderUpload");
 const filesFieldName = "uploadFolder";
+const folderInput = form.querySelector("input#uploadFolder");
 
 // modal constants
 const filesModal = document.getElementById("folderUploadModal");
@@ -161,9 +162,6 @@ function appendTotalSize(total) {
 }
 
 function listFilesToUpload() {
-    const modal = new bootstrap.Modal(filesModal);
-    modal.show();
-
     const data = new FormData(form);
     const bigFiles = [...data.getAll(filesFieldName)].filter((file) => file.size >= sizeThreshold);
     listBigFiles(bigFiles);
@@ -181,13 +179,13 @@ function listFilesToUpload() {
     document.getElementById("warningBadge").hidden = false;
 
     }
-
-
+    folderInput.setAttribute("disabled", "")
     submitButton.addEventListener("click", () => {
         submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
         submitFiles(listOfFiles, filesToIgnore, data.get("csrf_token"));
     });
 
 }
+filesModal.addEventListener("hidden.bs.modal", () => location.reload());
 
-document.getElementById("uploadFolder").addEventListener("change", listFilesToUpload);
+folderInput.addEventListener("change", listFilesToUpload);

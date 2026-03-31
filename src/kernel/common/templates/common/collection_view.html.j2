@@ -69,16 +69,8 @@
       <div class="col-4 mr-auto">
         <button class="btn btn-primary mb-2"
                 type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#folder-upload-form">Upload folder ...</button>
-        <div id="folder-upload-form" class="collapse">
-    <form action="{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}"
-                  method="post" enctype="multipart/form-data" id="folderUpload">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="input-group">
-            <input type="file" class="form-control" id="uploadFolder" name="uploadFolder" aria-describedby="submitFolder" webkitdirectory multiple/>
-
-          </div>
+                data-bs-toggle="modal"
+                data-bs-target="#folderUploadModal">Upload folder ...</button>
           <div class="modal modal-lg" tabindex="-1" id="folderUploadModal">
             <div class="modal-dialog">
               <div class="modal-content">
@@ -86,14 +78,29 @@
                   <h5 class="modal-title">Files to upload</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+                
+                <div class="modal-body" id="folderUploadFiles">
                 <div class="alert alert-warning">
                 Note: If you upload a file with a path that already exists it will be overwritten.
                 </div>
-            <div   id="warningBadge" class="alert alert-danger" role="alert" hidden>
+                <form action="{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}"
+                  method="post" enctype="multipart/form-data" id="folderUpload">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <div class="input-group">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="uploadFolder"
+                    name="uploadFolder"
+                    aria-describedby="submitFolder"
+                    webkitdirectory
+                    multiple/>
+                </div>
+                <br/>
+            <div id="warningBadge" class="alert alert-danger" role="alert" hidden>
               Alert: The total size of a folder cannot be higher than 5 GiB for a single upload. Please remove a number of files in order to 
               continue. </div>
 
-                <div class="modal-body" id="folderUploadFiles">
                 <div id="details"></div>
                 <table class="table-striped" style="table-layout:fixed; width: 100%;">  
                 <colgroup>
@@ -112,7 +119,6 @@
                 </table>
                 </div>
                 <div class="modal-footer">
-                  {# <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> #}
                   <button type="button" id="sendFile" class="btn btn-primary">
                     <span class="spinner-border spinner-border-sm visually-hidden" aria-hidden="true"></span>
                     <span role="status">Upload files</span>
@@ -126,7 +132,6 @@
           </script>
           <script src="{{url_for('static', filename='dist/folderUpload.js')}}"></script>
         </form>
-        </div>
         </div>
         <div class="col-6 mr-auto">
         {# <form action="{{ url_for('browse_bp.collection_upload_file')}}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
