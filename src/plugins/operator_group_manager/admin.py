@@ -77,7 +77,7 @@ def group_manager_index(realm: str):
         groups = [
             iRODSGroup(operator_session.groups, item)
             for item in operator_session.query(Group)
-            .filter(Like(Group.name, f"{realm}_%"))
+            .filter(Like(Group.name, f"{realm}\\_%"))
             .filter(User.type == "rodsgroup")
             .all()
         ] + [operator_session.groups.get(realm)]
