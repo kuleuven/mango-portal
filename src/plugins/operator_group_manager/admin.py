@@ -77,10 +77,10 @@ def group_manager_index(realm: str):
         groups = [
             iRODSGroup(operator_session.groups, item)
             for item in operator_session.query(Group)
-            .filter(Like(Group.name, f"{realm}%"))
+            .filter(Like(Group.name, f"{realm}_%"))
             .filter(User.type == "rodsgroup")
             .all()
-        ]
+        ] + [operator_session.groups.get(realm)]
         # automatic user management
         user_management_yaml["path"] = build_yaml_path(realm)
         try:
