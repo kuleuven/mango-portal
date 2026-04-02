@@ -1,0 +1,200 @@
+{% extends "base.html.j2" %}
+{% from 'bootstrap5/form.html' import render_form, render_field, render_form_row, render_hidden_errors %}
+{% block body %}
+    <style>
+.vertical_horizontal_center {
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+}
+
+#exact_match {
+    margin-top: -15px;
+    margin-left: 15px;
+}
+
+.l1 {
+  padding-left: 3em;
+}
+
+a.right {
+    display: inline-block;
+    text-align: right;
+    width: 90%;
+}
+
+    </style>
+    {% if results %}
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-secondary"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#basic-search-form"
+                    aria-expanded="false"
+                    aria-controls="collapseform">Show/hide filters</button>
+        </div>
+    {% endif %}
+    <!-- start form -->
+    <form method="get"
+          action="{{ url_for('basic_search2_bp.catalog_search2') }}"
+          id="basic-search-form"
+          {% if results %}class="collapse"{% endif %}>
+        <h3>Advanced Search</h3>
+        {{ render_form_row([search_form.collection_subtree.collection]) }}
+        <fieldset class="mb-4">
+            {{ render_form_row([search_form.item_name.item_name]) }}
+            <div id="exact_match">
+                {{ search_form.item_name.comparison(class_="form-check-input") }}
+                {{ search_form.item_name.comparison.label }}
+            </div>
+        </fieldset>
+        {# {{ render_form_row([search_form.item_name.item_type]) }} #}
+        {% set selected_value = search_fields.get('item_name-item_type', 'default_value') %}
+        <fieldset class="row mb-3">
+            <legend class="col-form-label col-sm-2 pt-0">{{ search_form.item_name.item_type.label }}</legend>
+            <div class="col-sm-10">
+                {% for choice in search_form.item_name.item_type.choices %}
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="radio"
+                               name="item_name-item_type"
+                               id="item_name-item_type-{{ loop.index0 }}"
+                               value="{{ choice.0 }}"
+                               {% if selected_value == choice.0 or (selected_value == 'default_value' and loop.first) %}checked{% endif %}>
+                        <label class="form-check-label" for="item_name-item_type-{{ loop.index0 }}">{{ choice.1 }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+        </fieldset>
+        <!-- METADATA FILTERS -->
+        <div id="metadataFields">
+            <div class="row">
+                <h5>Schema metadata</h5>
+                <div id="schemaMetadata">
+                
+                        {% for subform in search_form.schema_metadata %}
+                            {{ render_form_row([subform.schema, subform.meta_a, subform.meta_v],
+                                                        col_map = {
+                                                        subform.id ~ '-schema': 'col-md-4 meta_schema',
+                                                        subform.id ~ '-meta_a' : 'col-md-3 meta_attribute',
+                                                        subform.id ~ '-meta_v': 'col-md-4 meta_value'},
+                                                        form_group_classes="col-mb-0") }}
+                        {% endfor %}
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="button" id="addSchemaField" class="btn btn-secondary me-3">
+                        {# <i class="bi bi-plus-circle"></i> #} Add metadata
+                    </button>
+                </div>
+            </div>
+            <div class="row">
+                <h5>Non-schema metadata</h5>
+                <div id="nonSchemaMetadata">
+                    {% for subform in search_form.non_schema_metadata %}
+                        {{ render_form_row([subform.meta_a, subform.meta_v, subform.meta_u],
+                                                col_map = {
+                                                subform.id ~ '-meta_a': 'col-md-4',
+                                                subform.id ~ '-meta_v' : 'col-md-4',
+                                                subform.id ~ '-meta_u' : 'col-md-3'},
+                                                form_group_classes="col-mb-0") }}
+                    {% endfor %}
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="button" id="addNonSchemaField"  class="btn btn-secondary me-3">
+                        {# <i class="bi bi-plus-circle"></i> #} Add metadata
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!--- DATE FILTER --->
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Created</h5>
+                {{ render_form_row([search_form.create_date.comparison, search_form.create_date.date]) }}
+            </div>
+            <div class="col-md-6">
+                <h5>Modified</h5>
+                {{ render_form_row([search_form.mod_date.comparison, search_form.mod_date.date]) }}
+            </div>
+        </div>
+        <div>
+            <br>
+            <input id="submit"
+                   class="btn btn-primary btn-md m-3"
+                   name="submit"
+                   type="submit"
+                   value="Search">
+        </div>
+        {{ render_field(search_form.per_page) }}
+        {{ render_field(search_form.total) }}
+        {#   {{ render_field(search_form.submit) }}  #}
+        {# {{ search_form.csrf_token }} #}
+    </form>
+    {{ render_hidden_errors(search_form) }}
+    {# {{ pformat(results) }} #}
+    {# {{ render_form(search_form, form_type='horizonthal') }} #}
+    {% if dict_results|length > 0 %}
+        <h4 class="mt-3">Results</h4>
+        <div class="row">
+            <div class="col-md-8">{{ pagination.links }}</div>
+            <div class="col-md-4 text-end">{{ pagination.info }}</div>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    {% for header in dict_results[0] %}<th>{{ header | capitalize() }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in dict_results %}
+                    <tr>
+                        {% for key, value in row.items() %}
+                            {% if key == 'size' %}
+                                <td>{{ value | filesizeformat }}</td>
+                            {% elif key =='name' %}
+                                <td class="text-wrap text-break">
+                                    {% if row["type"] == 'data_object' %}
+                                        <a href="{{ url_for('browse_bp.view_object', data_object_path = row['path']+'/'+row['name']) }}">{{ value }}</a>
+                                    {% else %}
+                                        <a href="{{ url_for('browse_bp.collection_browse', collection=row['name']) }}">{{ value }}</a>
+                                    {% endif %}
+                                </td>
+                            {% elif key =='path' %}
+                                <td class="text-wrap text-break">{{ value }}</td>
+                            {% else %}
+                                <td>{{ value }}</td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="row">{{ pagination.links }}</div>
+    {% elif search_time is defined %}
+        <div class="text-warning">No matches for the specified criteria</div>
+    {% endif %}
+    {% if search_time is defined %}
+        <p class="small text-end">Searching took {{"%.3f" % (search_time) }} seconds</p>
+    {% endif %}
+
+{% endblock body %}
+
+    {% block javascript %}
+
+    <script>
+         const resultsObject = {{ search_fields | tojson }} // get the results
+        const schemasObject = {{ schemas_dict | tojson  }} // get the schema metadata
+        const noLabelFields = {{ no_label_fields_dict | tojson  }} // get the number of no label schema fields 
+
+        const collections = document.getElementById("collection_subtree-collection");
+
+        // reload page to get schemas for collection from backend
+        //collections.addEventListener("change", function() {
+        //    window.open(`/catalog/search2?collection_subtree-collection=${collections.value}`, '_self');
+        //})
+
+    </script>
+
+        <script src="{{url_for('static', filename='dist/search.js')}}"></script>  
+{% endblock javascript %}
+

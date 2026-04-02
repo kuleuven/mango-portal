@@ -5,6 +5,7 @@ const totalSizeThreshold = 5000 * 1024 * 1024 // 5 Gig
 // form constants
 const form = document.querySelector("form#folderUpload");
 const filesFieldName = "uploadFolder";
+const folderInput = form.querySelector("input#uploadFolder");
 
 // modal constants
 const filesModal = document.getElementById("folderUploadModal");
@@ -91,40 +92,49 @@ async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
         if (filesToIgnore.indexOf(file.webkitRelativePath) > -1) {
             processedFiles += 1;
         } else {
-            
+            const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
+            const spinner = document.createElement("span");
+            spinner.className = "spinner-border spinner-border-sm";
+            spinner.setAttribute("role", "status");
+            button.replaceWith(spinner);
+
             const fileData = new FormData();
             fileData.append("csrf_token", csrf_token);
             fileData.append("uploadFolder", file, file.webkitRelativePath);
-            
-            const response = await fetch(folderUploadURL, {
-                method: "POST",
-                body: fileData
-            });
-            
-            const result = await response.json();
-            
-            const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
-            if (result) {
-                if (result.status == "OK") {
-   
-
-                    button.classList.replace("btn-danger", "btn-success");
-                    button.querySelector("i").classList.replace("bi-trash", "bi-check-lg");
-
-                } else {
-                    button.querySelector("i").classList.replace("bi-trash", "bi-bug");
-                    console.log(result.status);
-                }  
-                processedFiles += 1;
-                if (processedFiles == listOfFiles.length) {
-                    submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
-                    submitButton.innerHTML = "Close and Refresh page";
-                    submitButton.addEventListener("click", () => {
-                        location.reload();
-                    });
-                }
+            let result;
+            try {
+                const response = await fetch(folderUploadURL, {
+                    method: "POST",
+                    body: fileData
+                });
+                
+                result = await response.json();
+            } catch(err) {
+                console.error(err);
+                result = {"status": err}
             }
+            
+            if (result && result.status == "OK") {  
+                const checkmark = document.createElement("i");
+                checkmark.className = "bi bi-check-lg text-success";
+                spinner.replaceWith(checkmark);
+
+            } else {
+                const cross = document.createElement("i");
+                cross.className = "bi bi-x-lg text-danger"
+                cross.setAttribute("title", result.status);
+                spinner.replaceWith(cross);
+                console.log(result.status);
+            }  
+            processedFiles += 1;
   
+        }
+        if (processedFiles == listOfFiles.length) {
+            submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
+            submitButton.innerHTML = "Close and Refresh page";
+            submitButton.addEventListener("click", () => {
+                location.reload();
+            });
         }
     }
 }
@@ -152,9 +162,6 @@ function appendTotalSize(total) {
 }
 
 function listFilesToUpload() {
-    const modal = new bootstrap.Modal(filesModal);
-    modal.show();
-
     const data = new FormData(form);
     const bigFiles = [...data.getAll(filesFieldName)].filter((file) => file.size >= sizeThreshold);
     listBigFiles(bigFiles);
@@ -172,13 +179,13 @@ function listFilesToUpload() {
     document.getElementById("warningBadge").hidden = false;
 
     }
-
-
+    folderInput.setAttribute("disabled", "")
     submitButton.addEventListener("click", () => {
         submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
         submitFiles(listOfFiles, filesToIgnore, data.get("csrf_token"));
     });
 
 }
+filesModal.addEventListener("hidden.bs.modal", () => location.reload());
 
-document.getElementById("uploadFolder").addEventListener("change", listFilesToUpload);
+folderInput.addEventListener("change", listFilesToUpload);

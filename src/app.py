@@ -52,7 +52,7 @@ from kernel.user.user import user_bp
 from kernel.common.error import error_bp
 from kernel.common.browse import browse_bp
 from kernel.metadata.metadata import metadata_bp
-from kernel.search.basic_search import basic_search_bp
+# from kernel.search.basic_search import basic_search_bp
 from kernel.metadata_schema.editor import metadata_schema_editor_bp
 from kernel.metadata_schema.form import metadata_schema_form_bp
 from kernel.template_overrides import template_overrides_bp
@@ -118,7 +118,7 @@ with app.app_context():
     app.register_blueprint(error_bp)
     app.register_blueprint(browse_bp)
     app.register_blueprint(metadata_bp)
-    app.register_blueprint(basic_search_bp)
+   # app.register_blueprint(basic_search_bp)
     app.register_blueprint(metadata_schema_editor_bp)
     app.register_blueprint(metadata_schema_form_bp)
     app.register_blueprint(template_overrides_bp)
@@ -219,7 +219,6 @@ def init_and_secure_views():
         "data_platform_project_bp.project_quota_change",
         "operator_admin_bp.reset_all",
         "mango_audit_bp.get_general_audit",
-        "mango_audit_history_bp.get_history_data",
     ]:
         return None
 
