@@ -1,5 +1,5 @@
-const sizeThreshold = 300 * 1024 * 1024; // 300 MiB
-const totalSizeThreshold = 5000 * 1024 * 1024 // 5 Gig
+const sizeThreshold = 500 * 1024 * 1024; // 500 MiB
+const totalSizeThreshold = 5 * 1024 * 1024 * 1024 // 5 Gig
 
 // folderUploadURL is defined in the template
 // form constants
