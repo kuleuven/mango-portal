@@ -168,8 +168,11 @@ function listFilesToUpload() {
         }
         folderInput.setAttribute("disabled", "");
         submitButton.addEventListener("click", () => {
-            submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
-            submitFiles(listOfFiles, filesToIgnore, data.get("csrf_token"));
+            if (!submitButton.classList.contains("active")) {
+                submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
+                submitFiles(listOfFiles, filesToIgnore, data.get("csrf_token"));
+                submitButton.classList.add("active");
+            }
         });
     } else {
         warningBadge.innerHTML = "All files are too big, please select another folder.";
