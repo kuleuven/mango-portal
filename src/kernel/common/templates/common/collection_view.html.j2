@@ -97,9 +97,7 @@
                     multiple/>
                 </div>
                 <br/>
-            <div id="warningBadge" class="alert alert-danger" role="alert" hidden>
-              Alert: The total size of a folder cannot be higher than 5 GiB for a single upload. Please remove a number of files in order to 
-              continue. </div>
+            <div id="warningBadge" class="alert alert-danger" role="alert" hidden></div>
 
                 <div id="details"></div>
                 <table class="table-striped" style="table-layout:fixed; width: 100%;">  
@@ -116,10 +114,15 @@
                     </tr>
                   </thead>
                   <tbody></tbody>
+                  <tfoot>
+                      <th>Total size:</th>
+                      <th id="totalSize" data-bytes=0>0 bytes</th>
+                      <th></th>
+                  </tfoot>
                 </table>
                 </div>
                 <div class="modal-footer">
-                  <button type="button" id="sendFile" class="btn btn-primary">
+                  <button type="button" id="sendFile" class="btn btn-primary" disabled>
                     <span class="spinner-border spinner-border-sm visually-hidden" aria-hidden="true"></span>
                     <span role="status">Upload files</span>
                   </button>
