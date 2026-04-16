@@ -1,0 +1,186 @@
+const sizeThreshold = 500 * 1024 * 1024; // 500 MiB
+const totalSizeThreshold = 5 * 1024 * 1024 * 1024 // 5 Gig
+
+// folderUploadURL is defined in the template
+// form constants
+const form = document.querySelector("form#folderUpload");
+const filesFieldName = "uploadFolder";
+const folderInput = form.querySelector("input#uploadFolder");
+
+// modal constants
+const filesModal = document.getElementById("folderUploadModal");
+const modalBody = filesModal.querySelector(".modal-body");
+const tableBody = modalBody.querySelector("tbody");
+const submitButton = filesModal.querySelector("button#sendFile");
+const warningBadge = filesModal.querySelector("div.alert#warningBadge");
+const totalSize = modalBody.querySelector("tfoot th#totalSize");
+
+const units = ['bytes', 'KiB', 'MiB', 'GiB'];
+   
+function humanizeSize(x){
+
+  let l = 0, n = parseInt(x, 10) || 0;
+  while(n >= 1024 && ++l){
+      n = n/1024;
+  }
+  return(n.toFixed(n < 10 && l > 0 ? 1 : 0) + ' ' + units[l]);
+}
+
+
+function listBigFiles(bigFiles) {
+    if (bigFiles.length > 0) {
+        const detailsDiv = modalBody.querySelector("div#details");
+        detailsDiv.querySelector("details")?.remove();
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        summary.innerHTML = `Files larger than ${humanizeSize(sizeThreshold)} will be ignored.`;
+        const ul = document.createElement("ul");
+        bigFiles.forEach((file) => {
+            const li = document.createElement("li");
+            li.innerHTML = `${file.webkitRelativePath} (${humanizeSize(file.size)})`;
+            ul.appendChild(li);
+        });
+        details.appendChild(summary);
+        details.appendChild(ul);
+        detailsDiv.appendChild(details);
+    }
+}
+
+function createRowForFile(file, filesToIgnore) {
+    const row = document.createElement("tr");
+    row.setAttribute("data-filename", file.webkitRelativePath);
+
+    
+    const fnameCell = document.createElement("td");
+    fnameCell.className = "text-truncate"; //or text-wrap
+    fnameCell.innerHTML = file.webkitRelativePath;
+    
+    const sizeCell =  document.createElement("td");
+    sizeCell.innerHTML = humanizeSize(file.size);
+    
+    const deleteButtonCell = document.createElement("td");
+    
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "btn btn-danger"
+    deleteButton.type = "button"
+    deleteButton.innerHTML = "<i class='bi bi-trash'></i>";
+    deleteButtonCell.appendChild(deleteButton);
+    
+    [fnameCell, sizeCell, deleteButtonCell].forEach((cell) => row.appendChild(cell));
+    
+    tableBody.appendChild(row);
+    
+    deleteButton.addEventListener("click", () => {
+        row.remove();
+        filesToIgnore.push(file.webkitRelativePath);
+        
+        let newTotalSize = totalSize.dataset.bytes - file.size;
+        totalSize.innerHTML = humanizeSize(newTotalSize);
+        totalSize.dataset.bytes = newTotalSize;
+
+        if (newTotalSize <= totalSizeThreshold && submitButton.disabled) {
+            submitButton.disabled = false;
+            warningBadge.hidden = true;
+        }
+    });
+}
+
+async function submitFiles(listOfFiles, filesToIgnore, csrf_token) {
+    processedFiles = 0;
+    
+    for (const file of listOfFiles) {
+        if (filesToIgnore.indexOf(file.webkitRelativePath) > -1) {
+            processedFiles += 1;
+        } else {
+            const button = tableBody.querySelector(`tr[data-filename="${file.webkitRelativePath}"] button`);
+            const spinner = document.createElement("span");
+            spinner.className = "spinner-border spinner-border-sm";
+            spinner.setAttribute("role", "status");
+            button.replaceWith(spinner);
+
+            const fileData = new FormData();
+            fileData.append("csrf_token", csrf_token);
+            fileData.append("uploadFolder", file, file.webkitRelativePath);
+            let result;
+            try {
+                const response = await fetch(folderUploadURL, {
+                    method: "POST",
+                    body: fileData
+                });
+                
+                result = await response.json();
+            } catch(err) {
+                console.error(err);
+                result = {"status": err}
+            }
+            
+            if (result && result.status == "OK") {  
+                const checkmark = document.createElement("i");
+                checkmark.className = "bi bi-check-lg text-success";
+                spinner.replaceWith(checkmark);
+
+            } else {
+                const cross = document.createElement("i");
+                cross.className = "bi bi-x-lg text-danger"
+                cross.setAttribute("title", result.status);
+                spinner.replaceWith(cross);
+                console.log(result.status);
+            }  
+            processedFiles += 1;
+  
+        }
+        if (processedFiles == listOfFiles.length) {
+            submitButton.querySelector("span.spinner-border").classList.add("visually-hidden");
+            submitButton.innerHTML = "Close and Refresh page";
+            submitButton.addEventListener("click", () => {
+                location.reload();
+            });
+        }
+    }
+}
+
+
+function listFilesToUpload() {
+    warningBadge.hidden = true
+    const data = new FormData(form);
+    const bigFiles = [...data.getAll(filesFieldName)].filter((file) => file.size >= sizeThreshold);
+    listBigFiles(bigFiles);
+
+    const listOfFiles = [...data.getAll(filesFieldName)].filter((file) => file.size < sizeThreshold);
+    
+    if (listOfFiles.length > 0) {
+        const currentSize = listOfFiles.map((file) => file.size).reduce((a, b) => a + b);
+
+        const filesToIgnore = [];
+
+        listOfFiles.forEach((file) => createRowForFile(file, filesToIgnore));
+        totalSize.dataset.bytes = currentSize;
+        totalSize.innerHTML = humanizeSize(currentSize);
+
+        if (currentSize >= totalSizeThreshold) {
+            warningMessage = `Alert: The total size of a folder cannot be higher than ${humanizeSize(sizeThreshold)} for a single upload. Please remove a number of files in order to 
+              continue.`;
+            warningBadge.innerHTML = warningMessage;
+            warningBadge.hidden = false;
+
+        } else {
+            submitButton.disabled = false;
+        }
+        folderInput.setAttribute("disabled", "");
+        submitButton.addEventListener("click", () => {
+            if (!submitButton.classList.contains("active")) {
+                submitButton.querySelector("span.spinner-border").classList.remove("visually-hidden");
+                submitFiles(listOfFiles, filesToIgnore, data.get("csrf_token"));
+                submitButton.classList.add("active");
+            }
+        });
+    } else {
+        warningBadge.innerHTML = "All files are too big, please select another folder.";
+        warningBadge.hidden = false
+    }
+    
+
+}
+filesModal.addEventListener("hidden.bs.modal", () => location.reload());
+
+folderInput.addEventListener("change", listFilesToUpload);

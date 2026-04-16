@@ -14,6 +14,7 @@
           top: 85%;
       }
 
+
       .btn-oc {
           --bs-btn-font-weight: 600;
           --bs-btn-color: var(--bs-primary);
@@ -58,14 +59,84 @@
     hidden_fields=[{"name": "item_path", "value": collection.path}]) }}
   </div>
   {% if (current_user_rights | intersection(own_or_write)) %}
-    <div class="d-flex justify-content-end">
-      <div class="col-3 mr-auto">
+    <div class="d-flex justify-content-between">
+      <div class="col-2 mr-auto">
         <button type="button"
                 class="btn btn-primary"
                 data-bs-toggle="modal"
                 data-bs-target="#addCollection">Add collection</button>
       </div>
-      <div class="col-8 mr-auto">
+      <div class="col-4 mr-auto">
+        <button class="btn btn-primary mb-2"
+                type="button"
+                data-bs-toggle="modal"
+                data-bs-target="#folderUploadModal">Upload folder ...</button>
+          <div class="modal modal-lg" tabindex="-1" id="folderUploadModal">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Upload a folder</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <div class="modal-body" id="folderUploadFiles">
+                <div class="alert alert-warning">
+                Note: If you upload a file with a path that already exists it will be overwritten.
+                </div>
+                <form action="{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}"
+                  method="post" enctype="multipart/form-data" id="folderUpload">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <div class="input-group">
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="uploadFolder"
+                    name="uploadFolder"
+                    aria-describedby="submitFolder"
+                    webkitdirectory
+                    multiple/>
+                </div>
+                <br/>
+            <div id="warningBadge" class="alert alert-danger" role="alert" hidden></div>
+
+                <div id="details"></div>
+                <table class="table-striped" style="table-layout:fixed; width: 100%;">  
+                <colgroup>
+                  <col style="width: 80%;">     
+                  <col style="width: 10%;">      
+                  <col style="width: auto;">    
+                </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Filename</th>
+                      <th>Size</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                  <tfoot>
+                      <th>Total size:</th>
+                      <th id="totalSize" data-bytes=0>0 bytes</th>
+                      <th></th>
+                  </tfoot>
+                </table>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" id="sendFile" class="btn btn-primary" disabled>
+                    <span class="spinner-border spinner-border-sm visually-hidden" aria-hidden="true"></span>
+                    <span role="status">Upload files</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <script>
+            const folderUploadURL = "{{ url_for("browse_bp.test_folder_upload", collection=collection.path[1:]) }}"
+          </script>
+          <script src="{{url_for('static', filename='dist/folderUpload.js')}}"></script>
+        </form>
+        </div>
+        <div class="col-6 mr-auto">
         {# <form action="{{ url_for('browse_bp.collection_upload_file')}}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <div class="input-group mb-3">
@@ -88,8 +159,8 @@
           </form>
           <button class="btn btn-primary mt-2 float-end" id="submit-all">Start uploading all files</button>
         </div>
+        </div>
       </div>
-    </div>
   {% endif %}
   <ul class="nav nav-tabs mb-4" id="collection_tab" role="tablist">
     {% for tab in tabs %}
