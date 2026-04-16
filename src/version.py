@@ -1,2 +1,2 @@
-__version__ = "0.27.0"
-__comment__ = "New search interface with schema metadata as a first class citizen"
+__version__ = "0.28.0"
+__comment__ = "Folder upload in collection view"

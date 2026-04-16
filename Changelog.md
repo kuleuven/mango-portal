@@ -2,6 +2,15 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.28.0
+
+### New feature
+
+- Folder upload along the file by file multi upload
+
+### Bug fixes
+
+- KULeuven specific: fixed date problem related to archived projects
 
 ## Release 0.27.0
 
