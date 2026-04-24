@@ -15,7 +15,9 @@ API_URL = os.environ.get(
 API_TOKEN = os.environ.get("API_TOKEN", "")
 
 if not API_TOKEN:
-    logging.warn(f"No COZ API token, module group admin will not work")
+    logging.warning("No COZ API token, module group admin will not work")
+
+MONITORING_INTERVAL = 120
 
 zone_operator_sessions = {}
 failed_operator_sessions = {}
@@ -27,10 +29,12 @@ def get_operator_session_params_via_api(zone: str):
     jobid = irods_zones_config.irods_zones[zone]["jobid"]
     header = {"Authorization": "Bearer " + API_TOKEN}
     response = requests.post(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection-info", headers=header, json={
+        f"{API_URL}/v1/irods/zones/{jobid}/connection-info",
+        headers=header,
+        json={
             "username": "operator",
             "client": "mango-portal-operator-session",
-        }
+        },
     )
     response.raise_for_status()
     return response.json()
@@ -53,7 +57,9 @@ def is_zone_operator_session_valid(key: str) -> bool:
     return False
 
 
-def get_zone_operator_session(zone: str, client_user: str | None  = None) -> iRODSSession | None:
+def get_zone_operator_session(
+    zone: str, client_user: str | None = None
+) -> iRODSSession | None:
     global zone_operator_sessions
     key = f"{zone}_{client_user}" if client_user else zone
     if is_zone_operator_session_valid(key):
@@ -109,11 +115,15 @@ class OperatorSessionCleanupThread(Thread):
         while True:
             if self.stopped():
                 return
-            logging.info(f"Checking {len(zone_operator_sessions)} operator sessions")
+            logging.debug(f"Checking {len(zone_operator_sessions)} operator sessions")
+            invalid_sessions = []
             for key in zone_operator_sessions.keys():
                 if not is_zone_operator_session_valid(key):
-                    logging.info(f"Removed invalid zone operator session for {key}")
-            time.sleep(120)
+                    invalid_sessions.append(key)
+            for key in invalid_sessions:
+                del zone_operator_sessions[key]
+                logging.info(f"Removed invalid zone operator session for {key}")
+            time.sleep(MONITORING_INTERVAL)
 
 
 cleanup_old_sessions_thread = OperatorSessionCleanupThread()
