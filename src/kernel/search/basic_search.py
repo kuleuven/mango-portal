@@ -5,6 +5,8 @@ from flask import (
     g,
     request,
     flash,
+    redirect,
+    url_for,
 )
 import json
 from kernel.search.search_form import CatalogSearchForm
@@ -24,7 +26,7 @@ from irods.column import Criterion, Like
 from datetime import datetime
 from flask_paginate import Pagination
 from kernel.template_overrides import get_template_override_manager
-from kernel.metadata_schema import get_schema_manager  # , SchemaManager
+from kernel.metadata_schema import get_schema_manager, SchemaManager
 from kernel.metadata_schema.editor import get_realms_for_current_user
 import time
 
@@ -238,6 +240,7 @@ class SchemaInfo:
         return " / ".join(label_list)
 
 
+@cache.memoize(1200)
 def get_realm_schemas(realm):
 
     schema_manager: SchemaManager = get_schema_manager(
@@ -262,8 +265,23 @@ def get_realm_schemas(realm):
     return schemas_dict
 
 
+realm_schemas = {}
+
+# TO TRY WITH A THREAD THAT LOADS SCHEMAS
+# @basic_search_bp.route("/schemas/list")
+# def check_loaded_schemas():
+#     global realm_schemas
+
+#     if realm_schemas:
+#         return redirect(url_for("basic_search_bp.catalog_search"))
+
+#     return render_template("search/spinner.html.j2")
+
+
 @basic_search_bp.route("/catalog/search", methods=["GET", "POST"])
 def catalog_search():
+    global realm_schemas
+
     try:
         realm = g.irods_session.realm
     except Exception:
@@ -274,15 +292,26 @@ def catalog_search():
 
     # allow querying for schemas of any realm the user has access to
     # this is waaaay faster when a realm has been established
-    realm_schemas = (
-        {
-            k: v
-            for realm in get_realms_for_current_user(g.irods_session, home)
-            for k, v in get_realm_schemas(realm).items()
-        }
-        if realm is None
-        else {k: v for k, v in get_realm_schemas(realm["name"]).items()}
-    )
+    if not realm_schemas:
+        # return redirect(url_for("basic_search_bp.check_loaded_schemas"))
+        if realm is None:  # this loads slowly the first time but faster later
+            for _realm in get_realms_for_current_user(
+                g.irods_session, f"/{g.irods_session.zone}/home"
+            ):
+                for k, v in get_realm_schemas(_realm).items():
+                    realm_schemas[k] = v
+        else:
+            for k, v in get_realm_schemas(realm["name"].items()):
+                realm_schemas[k] = v
+    # realm_schemas = (
+    #     {
+    #         k: v
+    #         for realm in get_realms_for_current_user(g.irods_session, home)
+    #         for k, v in get_realm_schemas(realm).items()
+    #     }
+    #     if realm is None
+    #     else {k: v for k, v in get_realm_schemas(realm["name"]).items()}
+    # )
 
     # create a list of first level collections to refine the search
 
