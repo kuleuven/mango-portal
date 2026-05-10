@@ -31,15 +31,17 @@
   <nav aria-label="breadcrumb"
        class="navbar-light bg-light sticky-top pb-2 pt-1">
     <div class="text-bg-light me-4">
-      <ol class="breadcrumb">
+     <ol class="breadcrumb">
         <i class="bi bi-boxes"></i>&nbsp;
-        {#<li class="breadcrumb-item">{{ breadcrumbs[0]['label'] }}</li>#}
-        {% for element in breadcrumbs[:-1] %}
+        {% for element in breadcrumbs %}
+          {% if loop.last %}
+          <li class="breadcrumb-item active" aria-current="page">{{ element['label'] }}</li>
+          {% else %}
           <li class="breadcrumb-item">
             <a href="{{ url_for('browse_bp.collection_browse', collection=element['url']) }}">{{ element['label'] }}</a>
           </li>
+          {% endif %}
         {% endfor %}
-        {# <li class="breadcrumb-item active" aria-current="page">{{ breadcrumbs[-1]['label'] }}</li> #}
       </ol>
     </div>
   </nav>
