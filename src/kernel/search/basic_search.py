@@ -267,33 +267,10 @@ def get_realm_schemas(realm):
 
 realm_schemas = {}
 
-# TO TRY WITH A THREAD THAT LOADS SCHEMAS
-# @basic_search_bp.route("/schemas/list")
-# def check_loaded_schemas():
-#     global realm_schemas
 
-#     if realm_schemas:
-#         return redirect(url_for("basic_search_bp.catalog_search"))
-
-#     return render_template("search/spinner.html.j2")
-
-
-@basic_search_bp.route("/catalog/search", methods=["GET", "POST"])
-def catalog_search():
+def update_realm_schemas(realm):
     global realm_schemas
-
-    try:
-        realm = g.irods_session.realm
-    except Exception:
-        realm = None
-
-    # print(request.values)
-    home = f"/{g.irods_session.zone}/home" if realm is None else realm["path"]
-
-    # allow querying for schemas of any realm the user has access to
-    # this is waaaay faster when a realm has been established
-    if not realm_schemas:
-        # return redirect(url_for("basic_search_bp.check_loaded_schemas"))
+    if not realm_schemas or realm["name"] not in realm_schemas:
         if realm is None:  # this loads slowly the first time but faster later
             for _realm in get_realms_for_current_user(
                 g.irods_session, f"/{g.irods_session.zone}/home"
@@ -303,15 +280,19 @@ def catalog_search():
         else:
             for k, v in get_realm_schemas(realm["name"].items()):
                 realm_schemas[k] = v
-    # realm_schemas = (
-    #     {
-    #         k: v
-    #         for realm in get_realms_for_current_user(g.irods_session, home)
-    #         for k, v in get_realm_schemas(realm).items()
-    #     }
-    #     if realm is None
-    #     else {k: v for k, v in get_realm_schemas(realm["name"]).items()}
-    # )
+
+
+@basic_search_bp.route("/catalog/search", methods=["GET", "POST"])
+def catalog_search():
+    try:
+        realm = g.irods_session.realm
+    except Exception:
+        realm = None
+
+    # print(request.values)
+    home = f"/{g.irods_session.zone}/home" if realm is None else realm["path"]
+
+    update_realm_schemas(realm)
 
     # create a list of first level collections to refine the search
 
