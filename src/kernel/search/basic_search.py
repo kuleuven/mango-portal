@@ -8,7 +8,10 @@ from flask import (
     redirect,
     url_for,
 )
+import collections
 import json
+
+from requests import get
 from kernel.search.search_form import CatalogSearchForm
 from cache import cache
 from lib.util import (
@@ -23,6 +26,7 @@ from irods.models import (
 )
 from irods.query import Query
 from irods.column import Criterion, Like
+from irods.session import iRODSSession
 from datetime import datetime
 from flask_paginate import Pagination
 from kernel.template_overrides import get_template_override_manager
@@ -265,21 +269,43 @@ def get_realm_schemas(realm):
     return schemas_dict
 
 
-realm_schemas = {}
+realm_schemas = collections.defaultdict(dict[str, dict[str, SchemaInfo]])
+realm_schemas_last_update = collections.defaultdict(dict)
 
 
-def update_realm_schemas(realm):
+def update_realm_schemas(irods_session: iRODSSession, realm_name: str | None, refresh = False):
     global realm_schemas
-    if not realm_schemas or realm["name"] not in realm_schemas:
-        if realm is None:  # this loads slowly the first time but faster later
-            for _realm in get_realms_for_current_user(
-                g.irods_session, f"/{g.irods_session.zone}/home"
-            ):
-                for k, v in get_realm_schemas(_realm).items():
-                    realm_schemas[k] = v
-        else:
-            for k, v in get_realm_schemas(realm["name"].items()):
-                realm_schemas[k] = v
+    zone = irods_session.zone
+    realm_names_to_check = []
+    if realm_name:
+        realm_names_to_check.append(realm_name)
+    else:
+        realm_names_to_check = get_realms_for_current_user(irods_session, f"/{irods_session.zone}/home")
+
+    for _realm_name in realm_names_to_check:
+        if _realm_name not in realm_schemas or refresh:
+            realm_schemas[zone][_realm_name] = {}
+            realm_schemas_last_update[zone][_realm_name] = {}
+            for k, v in get_realm_schemas(_realm_name).items():
+                realm_schemas[zone][_realm_name][k] = v
+                realm_schemas_last_update[zone][_realm_name][k] = time.time()
+
+
+def get_realm_schemas_for_user(irods_session: iRODSSession):
+    if hasattr(irods_session, "realm"):
+        realm_name = irods_session.realm["name"]
+        if realm_name not in realm_schemas[irods_session.zone]:
+            update_realm_schemas(irods_session, realm_name)
+        return realm_schemas[irods_session.zone][realm_name]
+    else:
+        realm_names = get_realms_for_current_user(irods_session, f"/{irods_session.zone}/home")
+        schemas_for_user = {}
+        for realm_name in realm_names:
+            if realm_name not in realm_schemas[irods_session.zone]:
+                update_realm_schemas(irods_session, realm_name)
+            schemas_for_user.update(realm_schemas[irods_session.zone][realm_name])
+            
+    return schemas_for_user
 
 
 @basic_search_bp.route("/catalog/search", methods=["GET", "POST"])
@@ -292,7 +318,8 @@ def catalog_search():
     # print(request.values)
     home = f"/{g.irods_session.zone}/home" if realm is None else realm["path"]
 
-    update_realm_schemas(realm)
+    # update_realm_schemas(g.irods_session, realm["name"] if realm else None)
+    user_realm_schemas = get_realm_schemas_for_user(g.irods_session)
 
     # create a list of first level collections to refine the search
 
@@ -305,7 +332,7 @@ def catalog_search():
     search_form = CatalogSearchForm(
         formdata=request.values,
         per_page=20,
-        schemas=[schema.title for schema in realm_schemas.values()],
+        schemas=[schema.title for schema in user_realm_schemas.values()],
         subtrees=subtrees,
     )
 
@@ -332,7 +359,7 @@ def catalog_search():
             search_form=search_form,
             results=[],
             # collection_tree=collection_tree,
-            schemas_dict={k: v.schema for k, v in realm_schemas.items()},
+            schemas_dict={k: v.schema for k, v in user_realm_schemas.items()},
             search_fields={},
             no_label_fields_dict={},
         )
@@ -436,7 +463,7 @@ def catalog_search():
         print(row.schema.data)
         if not row.schema.data:
             continue
-        row.meta_a.choices = realm_schemas[row.schema.data].attributes
+        row.meta_a.choices = user_realm_schemas[row.schema.data].attributes
 
     search_template = "search/basic_catalog_search.html.j2"
 
@@ -457,7 +484,7 @@ def catalog_search():
         # collection_tree=collection_tree,
         search_time=end - start,
         pagination=pagination,
-        schemas_dict={k: v.schema for k, v in realm_schemas.items()},
+        schemas_dict={k: v.schema for k, v in user_realm_schemas.items()},
         search_fields=request.values.to_dict(),
         no_label_fields_dict=no_label_fields_dict,
     )
