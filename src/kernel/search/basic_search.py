@@ -300,7 +300,7 @@ def get_realm_schemas_for_user(irods_session: iRODSSession):
         realm_name = irods_session.realm["name"]
         # if realm_name not in realm_schemas[irods_session.zone]:
         #     update_realm_schemas(irods_session, realm_name)
-        return realm_schemas[irods_session.zone][realm_name]
+        return realm_schemas[irods_session.zone].get(realm_name, {})
     else:
         realm_names = get_realms_for_current_user(irods_session, f"/{irods_session.zone}/home")
         schemas_for_user = {}
