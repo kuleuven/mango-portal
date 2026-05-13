@@ -173,6 +173,8 @@ def create_nested_label(key, flattened_schema):
     # }
 
 
+
+# The class SchemaInfo is is to be copied to __init__.py, no other uses dettected. To remove I guess
 class SchemaInfo:
     def __init__(self, realm: str, schema_name: str, schema_dict: dict, schema_manager):
         self._realm = realm
@@ -273,7 +275,7 @@ realm_schemas = collections.defaultdict(dict[str, dict[str, SchemaInfo]])
 realm_schemas_last_update = collections.defaultdict(dict)
 
 
-def update_realm_schemas(irods_session: iRODSSession, realm_name: str | None, refresh = False):
+def update_realm_schemas(irods_session: iRODSSession, realm_name: str, refresh = False):
     global realm_schemas
     zone = irods_session.zone
     realm_names_to_check = []
@@ -283,27 +285,30 @@ def update_realm_schemas(irods_session: iRODSSession, realm_name: str | None, re
         realm_names_to_check = get_realms_for_current_user(irods_session, f"/{irods_session.zone}/home")
 
     for _realm_name in realm_names_to_check:
-        if _realm_name not in realm_schemas or refresh:
+        if _realm_name not in realm_schemas[zone] or (
+            refresh
+            and time.time() - realm_schemas_last_update[zone][_realm_name] > 3600*8
+        ):
             realm_schemas[zone][_realm_name] = {}
-            realm_schemas_last_update[zone][_realm_name] = {}
+            realm_schemas_last_update[zone][_realm_name] = time.time()
             for k, v in get_realm_schemas(_realm_name).items():
                 realm_schemas[zone][_realm_name][k] = v
-                realm_schemas_last_update[zone][_realm_name][k] = time.time()
 
 
 def get_realm_schemas_for_user(irods_session: iRODSSession):
     if hasattr(irods_session, "realm"):
         realm_name = irods_session.realm["name"]
-        if realm_name not in realm_schemas[irods_session.zone]:
-            update_realm_schemas(irods_session, realm_name)
+        # if realm_name not in realm_schemas[irods_session.zone]:
+        #     update_realm_schemas(irods_session, realm_name)
         return realm_schemas[irods_session.zone][realm_name]
     else:
         realm_names = get_realms_for_current_user(irods_session, f"/{irods_session.zone}/home")
         schemas_for_user = {}
         for realm_name in realm_names:
-            if realm_name not in realm_schemas[irods_session.zone]:
-                update_realm_schemas(irods_session, realm_name)
-            schemas_for_user.update(realm_schemas[irods_session.zone][realm_name])
+            # if realm_name not in realm_schemas[irods_session.zone]:
+            #     update_realm_schemas(irods_session, realm_name)
+            if realm_name in realm_schemas[irods_session.zone]:  # check if the realm schemas are already loaded
+                schemas_for_user.update(realm_schemas[irods_session.zone][realm_name])
             
     return schemas_for_user
 
