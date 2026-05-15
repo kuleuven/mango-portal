@@ -1,0 +1,71 @@
+{% extends "base_admin.html.j2" %}
+
+{% block body %}
+<div class="container mt-4">
+    <h2>Realm Schema Cache</h2>
+
+    {% if not realm_schemas %}
+        <div class="alert alert-warning">No realm schemas loaded yet.</div>
+    {% else %}
+        <p class="text-muted">
+            Total zones: <strong>{{ realm_schemas | length }}</strong>
+        </p>
+
+        {% for zone, realms in realm_schemas.items() %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="bi bi-boxes"></i>
+                     {{ zone }}
+                </span>
+                <span class="badge bg-light text-dark">{{ realms | length }} <i class="bi bi-box"></i></span>
+            </div>
+            <div class="card-body p-0">
+                {% if not realms %}
+                    <p class="p-3 text-muted mb-0">No realms loaded for this zone.</p>
+                {% else %}
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Realm</th>
+                                <th>Schemas</th>
+                                <th>Last Updated</th>
+                                <th>Schema Keys</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for realm_name, schemas in realms.items() %}
+                            <tr>
+                                <td>
+                                    <strong>{{ realm_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ schemas | length }}</span>
+                                </td>
+                                <td>
+                                    {% if realm_schemas_last_update[zone] is defined and realm_name in realm_schemas_last_update[zone] %}
+                                        <span class="text-muted">
+                                            {{ realm_schemas_last_update[zone][realm_name] | int  | date_time_from_timestamp }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for schema_key in schemas.keys() %}
+                                        <span class="badge bg-info text-dark me-1">{{ schema_key }}</span><br/>
+                                    {% else %}
+                                        <span class="text-muted">no schemas</span>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
