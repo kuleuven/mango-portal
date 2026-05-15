@@ -420,6 +420,10 @@ def shorten_name(string):
         return string
     return f"{string[:7]}...{string[-7:]}"
 
+@app.template_filter("date_time_from_timestamp")
+def date_time_from_timestamp(ts):
+    return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
 
 # register the main landing page route dynamically
 main_landing_route = app.config.get(
