@@ -1,22 +1,99 @@
+import collections
+import json
 import logging
-
 # create a Thread to periodically refresh the realm schemas
 import threading
 import time
 
+from flask import Blueprint
 from irods.session import iRODSSession
 
 import signals
 from cache import cache
 from kernel.metadata_schema import SchemaManager, get_schema_manager
-from kernel.search.basic_search import (
-    SchemaInfo,
-)  # to move here or in the metadata schema module, no other uses detected so far
-from plugins.operator import get_zone_operator_session  # @todo: use mango_lib proxy
+from lib.util import flatten_schema
+from plugins.operator import \
+    get_zone_operator_session  # @todo: use mango_lib proxy
 
-from .basic_search import realm_schemas, realm_schemas_last_update
+basic_search_bp = Blueprint("basic_search_bp", __name__, template_folder="templates")
 
-# Each queue item is a tuple: (zone, [realm_names], retry_count)
+
+class SchemaInfo:
+    """utility class for using metadata schemas in the search module"""
+
+    def __init__(self, realm: str, schema_name: str, schema_dict: dict, schema_manager):
+        self._realm = realm
+        self._name = schema_name
+        self._title = schema_dict.get("title", None)
+        # self._schema = transform_schema(self.name, schema_manager)
+        self.schema = self.transform_schema(schema_manager)
+
+    @property
+    def attributes(self):
+        return list(self.schema.keys())
+
+    @property
+    def title(self):
+        return (self.key, self._title)
+
+    @property
+    def key(self):
+        return f"{self._realm}_{self._name}"
+
+    def transform_schema(self, schema_manager):
+        schema_dict = json.loads(schema_manager.load_schema(self._name))
+
+        flattened_schema = flatten_schema(
+            schema_dict,
+            level=0,
+            prefix=f"mgs.{self._name}",
+            result_dict={},
+            add_enum=True,
+        )
+        transformed_schema = {}
+        for item in flattened_schema.items():
+            transformed_schema |= SchemaInfo.restructure_item(item, flattened_schema)
+
+        return transformed_schema
+
+    @staticmethod
+    def restructure_item(item, flattened_schema):
+        key, value = item
+        restructured_item = {
+            key: {
+                "type": ("label" if value["type"] == "object" else value["type"]),
+                "enum": (value.get("enum", None)),
+                "level": value["level"],
+                "parent": (
+                    None if value["level"] == 0 else ".".join(str(key).split(".")[:-1])
+                ),
+                "title": (
+                    SchemaInfo.create_nested_label(key, flattened_schema)
+                    if value["type"] == "object"
+                    else value["label"]
+                ),  # actual title
+                # label with hierarchy for display in select
+            }
+        }
+        return restructured_item
+
+    @staticmethod
+    def create_nested_label(key, flattened_schema):
+        parts = key.split(".")
+        ids = parts[2:]
+        label_list = [
+            flattened_schema[".".join(parts[:2] + ids[: i + 1])][
+                "label"
+            ]  # add +1 here because range starts from 0
+            for i in range(len(ids))
+        ]
+        # print(label_list)
+        return " / ".join(label_list)
+
+
+realm_schemas = collections.defaultdict(dict[str, dict[str, SchemaInfo]])
+realm_schemas_last_update = collections.defaultdict(dict)
+
 realm_schemas_queue = []
 MAX_SCHEMA_UPDATE_RETRIES = 5  # maximum number of retries for a failed update
 
@@ -79,7 +156,9 @@ def queue_realm_schemas_updates_upon_login(sender, **parameters):
 
 
 # wire it into the user session creation signal
-signals.session_pool_user_session_created.connect(queue_realm_schemas_updates_upon_login)
+signals.session_pool_user_session_created.connect(
+    queue_realm_schemas_updates_upon_login
+)
 
 
 def realm_schemas_updater():

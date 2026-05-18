@@ -8,15 +8,12 @@ from flask import (
     redirect,
     url_for,
 )
-import collections
-import json
+
 
 from requests import get
 from kernel.search.search_form import CatalogSearchForm
 from cache import cache
-from lib.util import (
-    flatten_schema,
-)
+
 from pprint import pprint
 from irods.models import (
     Collection,
@@ -30,13 +27,14 @@ from irods.session import iRODSSession
 from datetime import datetime
 from flask_paginate import Pagination
 from kernel.template_overrides import get_template_override_manager
-from kernel.metadata_schema import get_schema_manager, SchemaManager
 from kernel.metadata_schema.editor import get_realms_for_current_user
 import time
 
-basic_search_bp = Blueprint("basic_search_bp", __name__, template_folder="templates")
+from . import basic_search_bp
 
 from mango_ui import register_module
+
+import kernel.search.admin  # to register the admin route without configuring another blueprint, is there a better way to do this?
 
 ITEM_TYPE = "item_name-item_type"  # data_object or collection
 
@@ -175,127 +173,14 @@ def create_nested_label(key, flattened_schema):
 
 
 # The class SchemaInfo is is to be copied to __init__.py, no other uses dettected. To remove I guess
-class SchemaInfo:
-    def __init__(self, realm: str, schema_name: str, schema_dict: dict, schema_manager):
-        self._realm = realm
-        self._name = schema_name
-        self._title = schema_dict.get("title", None)
-        # self._schema = transform_schema(self.name, schema_manager)
-        self.schema = self.transform_schema(schema_manager)
 
-    @property
-    def attributes(self):
-        return list(self.schema.keys())
-
-    @property
-    def title(self):
-        return (self.key, self._title)
-
-    @property
-    def key(self):
-        return f"{self._realm}_{self._name}"
-
-    def transform_schema(self, schema_manager):
-        schema_dict = json.loads(schema_manager.load_schema(self._name))
-
-        flattened_schema = flatten_schema(
-            schema_dict,
-            level=0,
-            prefix=f"mgs.{self._name}",
-            result_dict={},
-            add_enum=True,
-        )
-        transformed_schema = {}
-        for item in flattened_schema.items():
-            transformed_schema |= SchemaInfo.restructure_item(item, flattened_schema)
-
-        return transformed_schema
-
-    @staticmethod
-    def restructure_item(item, flattened_schema):
-        key, value = item
-        restructured_item = {
-            key: {
-                "type": ("label" if value["type"] == "object" else value["type"]),
-                "enum": (value.get("enum", None)),
-                "level": value["level"],
-                "parent": (
-                    None if value["level"] == 0 else ".".join(str(key).split(".")[:-1])
-                ),
-                "title": (
-                    SchemaInfo.create_nested_label(key, flattened_schema)
-                    if value["type"] == "object"
-                    else value["label"]
-                ),  # actual title
-                # label with hierarchy for display in select
-            }
-        }
-        return restructured_item
-
-    @staticmethod
-    def create_nested_label(key, flattened_schema):
-        parts = key.split(".")
-        ids = parts[2:]
-        label_list = [
-            flattened_schema[".".join(parts[:2] + ids[: i + 1])][
-                "label"
-            ]  # add +1 here because range starts from 0
-            for i in range(len(ids))
-        ]
-        # print(label_list)
-        return " / ".join(label_list)
-
-
-@cache.memoize(1200)
-def get_realm_schemas(realm):
-
-    schema_manager: SchemaManager = get_schema_manager(
-        zone=g.irods_session.zone, realm=realm
-    )
-
-    my_schemas = schema_manager.list_schemas(
-        filters=["published"]
-    )  # TODO archived schemas should also be searchable ...
-
-    # generator to instantiate SchemaInfo classes
-    schema_generator = (
-        SchemaInfo(realm, schema_name, schema_dict, schema_manager)
-        for schema_name, schema_dict in my_schemas.items()
-    )
-
-    # store schemas as dict with key (realm_name) and SchemaInfo as value
-    schemas_dict = {
-        schema.key: schema for schema in schema_generator
-    }  # transformed schemas dictionary to feed Advanced Search
-
-    return schemas_dict
-
-
-realm_schemas = collections.defaultdict(dict[str, dict[str, SchemaInfo]])
-realm_schemas_last_update = collections.defaultdict(dict)
-
-
-def update_realm_schemas(irods_session: iRODSSession, realm_name: str, refresh = False):
-    global realm_schemas
-    zone = irods_session.zone
-    realm_names_to_check = []
-    if realm_name:
-        realm_names_to_check.append(realm_name)
-    else:
-        realm_names_to_check = get_realms_for_current_user(irods_session, f"/{irods_session.zone}/home")
-
-    for _realm_name in realm_names_to_check:
-        if _realm_name not in realm_schemas[zone] or (
-            refresh
-            and time.time() - realm_schemas_last_update[zone][_realm_name] > 3600*8
-        ):
-            realm_schemas[zone][_realm_name] = {}
-            realm_schemas_last_update[zone][_realm_name] = time.time()
-            for k, v in get_realm_schemas(_realm_name).items():
-                realm_schemas[zone][_realm_name][k] = v
+    
 
 
 def get_realm_schemas_for_user(irods_session: iRODSSession):
+
+    from . import realm_schemas  # avoid circular import
+
     if hasattr(irods_session, "realm"):
         realm_name = irods_session.realm["name"]
         # if realm_name not in realm_schemas[irods_session.zone]:
