@@ -30,11 +30,11 @@ from kernel.template_overrides import get_template_override_manager
 from kernel.metadata_schema.editor import get_realms_for_current_user
 import time
 
-from . import basic_search_bp
-
 from mango_ui import register_module
 
 import kernel.search.admin  # to register the admin route without configuring another blueprint, is there a better way to do this?
+
+basic_search_bp = Blueprint("basic_search_bp", __name__, template_folder="templates")
 
 ITEM_TYPE = "item_name-item_type"  # data_object or collection
 

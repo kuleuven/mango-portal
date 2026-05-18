@@ -81,7 +81,8 @@ MANGO_PLUGIN_BLUEPRINTS = [
     #     "module": "plugins.cold_storage.flask.cs_active_zone_routes",
     #     "blueprint": "cold_storage_bp",
     # },
-    {"module": "kernel.search", "blueprint": "basic_search_bp"},
+    # {"module": "kernel.search.basic_search", "blueprint": "basic_search_bp"},
+    # {"module": "kernel.search.admin", "blueprint": "basic_search_admin_bp"},
     # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
 ]
 

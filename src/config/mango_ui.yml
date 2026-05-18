@@ -7,7 +7,6 @@ MANGO_NAVBAR_MODULES:
   - operator_group_manager_admin_bp
   - basic_user_group_manager_admin_bp
   - cold_storage_bp
-  - basic_search_bp
 
 MANGO_NAVBAR_ADMIN_MODULES:
   - admin_admin_bp
@@ -16,4 +15,4 @@ MANGO_NAVBAR_ADMIN_MODULES:
   - mango_open_search_stats_bp
   - operator_admin_bp
   - mango_flow_admin_bp
-  - basic_search_bp
+  - basic_search_admin_bp

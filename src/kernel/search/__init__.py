@@ -15,8 +15,6 @@ from lib.util import flatten_schema
 from plugins.operator import \
     get_zone_operator_session  # @todo: use mango_lib proxy
 
-basic_search_bp = Blueprint("basic_search_bp", __name__, template_folder="templates")
-
 
 class SchemaInfo:
     """utility class for using metadata schemas in the search module"""
