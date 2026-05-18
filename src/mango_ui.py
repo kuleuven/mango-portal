@@ -84,9 +84,11 @@ def register_collection_extra_tab(**kwargs):
 def register_module_admin(**kwargs):
     global admin_navbar_entries, mango_ui_cfg
     admin_navbar_entries[kwargs["blueprint"]] = MangoModule(**kwargs)
+    print(f"registering admin module {kwargs['blueprint']} with title {kwargs['title']}")
     # ensure the configured order
     admin_navbar_entries = {
         enabled_module: admin_navbar_entries[enabled_module]
         for enabled_module in mango_ui_cfg["MANGO_NAVBAR_ADMIN_MODULES"]
         if enabled_module in admin_navbar_entries
     }
+    print(f"admin modules after ordering: {list(admin_navbar_entries.keys())}")

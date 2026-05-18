@@ -1,2 +1,2 @@
-__version__ = "0.26.1"
-__comment__ = "Removed deprecated auth options"
+__version__ = "0.28.1"
+__comment__ = "Folder upload in collection view"
