@@ -11,7 +11,6 @@ const container_id = "metadata_form";
 const container = document.getElementById(container_id);
 
 let schema_url = container.getAttribute("schema-url"); // url to retrieve existing schema
-let post_url = container.getAttribute("post-url"); // url to post metadata
 let csrf_token = container.getAttribute("csrf-token");
 let annotated_data = JSON.parse(atob(container.getAttribute("schema-values"))); // existing annotation
 let prefix = container.getAttribute("prefix"); // prefix for AVU names

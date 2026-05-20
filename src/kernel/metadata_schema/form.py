@@ -140,17 +140,21 @@ from irods.session import iRODSSession
 @metadata_schema_form_bp.route("/metadata-schema/edit", methods=["POST", "GET"])
 def edit_schema_metadata_for_item():
     """ """
-    print("FUNCTIONS HAVE BEEN SPLIT")
     return edit_metadata(
-        g.irods_session,
-        request.values,
-        request.method,
-        request.referrer + "#metadata",
+        irods_session=g.irods_session,
+        request_values=request.values,
+        method=request.method,
+        redirect_route=request.referrer + "#metadata",
+        post_url=url_for("metadata_schema_form_bp.edit_schema_metadata_for_item"),
     )
 
 
 def edit_metadata(
-    irods_session: iRODSSession, request_values: dict, method: str, redirect_route: str
+    irods_session: iRODSSession,
+    request_values: dict,
+    method: str,
+    redirect_route: str,
+    post_url: str,
 ):
     _parameters = request_values.to_dict()
 
@@ -192,6 +196,7 @@ def edit_metadata(
         convert_to_multi_dict(catalog_item.metadata.items(), form_values)
 
         form_values.add("redirect_route", redirect_route)
+        form_values.add("post_url", post_url)
         values_json = json.dumps(form_values.to_dict(flat=False), indent=2)
 
         return render_template(
