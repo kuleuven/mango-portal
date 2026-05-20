@@ -63,7 +63,6 @@ import logging
 
 import signals
 
-
 metadata_schema_form_bp = Blueprint(
     "metadata_schema_form_bp",
     __name__,
@@ -135,17 +134,35 @@ def convert_to_multi_dict(metadata_items, multidict: MultiDict, unit_level=1):
         multidict.add(composite_name, subdict.to_dict(flat=False))
 
 
+from irods.session import iRODSSession
+
+
 @metadata_schema_form_bp.route("/metadata-schema/edit", methods=["POST", "GET"])
-@csrf.exempt
 def edit_schema_metadata_for_item():
     """ """
-    _parameters = request.values.to_dict()
+    return edit_metadata(
+        irods_session=g.irods_session,
+        request_values=request.values,
+        method=request.method,
+        redirect_route=request.referrer + "#metadata",
+        post_url=url_for("metadata_schema_form_bp.edit_schema_metadata_for_item"),
+    )
+
+
+def edit_metadata(
+    irods_session: iRODSSession,
+    request_values: dict,
+    method: str,
+    redirect_route: str,
+    post_url: str,
+):
+    _parameters = request_values.to_dict()
 
     item_type = _parameters["item_type"]
     object_path = _parameters["object_path"]
     if not object_path.startswith("/"):
         object_path = "/" + object_path
-    template_name = schema = _parameters["schema"]
+    schema = _parameters["schema"]
     realm = _parameters["realm"]
     prefix = get_schema_prefix(schema_identifier=schema)
 
@@ -167,22 +184,21 @@ def edit_schema_metadata_for_item():
         )
 
     catalog_item = (
-        g.irods_session.data_objects.get(object_path)
+        irods_session.data_objects.get(object_path)
         if item_type == "data_object"
-        else g.irods_session.collections.get(object_path)
+        else irods_session.collections.get(object_path)
     )
     setattr(catalog_item, "item_type", item_type)
 
-    form_values = MultiDict()
+    if method == "GET":
+        form_values = MultiDict()
 
-    convert_to_multi_dict(catalog_item.metadata.items(), form_values)
-    form_values.add("redirect_route", request.referrer + "#metadata")
-    values_json = json.dumps(form_values.to_dict(flat=False), indent=2)
+        convert_to_multi_dict(catalog_item.metadata.items(), form_values)
 
-    # with open(f"/tmp/{catalog_item.id}.metadata.json", "w") as mdfile:
-    #     mdfile.write(values_json)
+        form_values.add("redirect_route", redirect_route)
+        form_values.add("post_url", post_url)
+        values_json = json.dumps(form_values.to_dict(flat=False), indent=2)
 
-    if request.method == "GET":
         return render_template(
             "schema_form_edit.html.j2",
             schema=schema,
@@ -192,7 +208,7 @@ def edit_schema_metadata_for_item():
             item=catalog_item,
         )
 
-    if request.method == "POST":
+    if method == "POST":
         """ """
 
         # remove all relevant attributes for this schema
@@ -203,7 +219,7 @@ def edit_schema_metadata_for_item():
                 avu_operation_list.append(
                     AVUOperation(operation="remove", avu=meta_data_item)
                 )
-        for _key, _value in request.values.items(multi=True):
+        for _key, _value in request_values.items(multi=True):
             if _key.startswith(prefix) and _value:
                 if (
                     _key in flat_form_dict
@@ -232,7 +248,7 @@ def edit_schema_metadata_for_item():
 
         # workaround for a bug in iRODS < = 4.2.11: only 'own' can execute atomic operations
         lib.util.execute_atomic_operations(
-            g.irods_session, catalog_item, avu_operation_list
+            irods_session, catalog_item, avu_operation_list
         )
 
         if item_type == "collection":
@@ -248,18 +264,17 @@ def edit_schema_metadata_for_item():
                 data_object_path=object_path,
             )
 
-        if item_type == "collection":
-            referral = url_for(
-                "browse_bp.collection_browse", collection=catalog_item.path
-            )
-        else:
-            referral = url_for(
-                "browse_bp.view_object", data_object_path=catalog_item.path
-            )
-
-        if "redirect_route" in request.values:
-            return redirect(request.values["redirect_route"])
-        if "redirect_hash" in request.values:
+        if "redirect_route" in request_values:
+            return redirect(request_values["redirect_route"])
+        if "redirect_hash" in request_values:
+            if item_type == "collection":
+                referral = url_for(
+                    "browse_bp.collection_browse", collection=catalog_item.path
+                )
+            else:
+                referral = url_for(
+                    "browse_bp.view_object", data_object_path=catalog_item.path
+                )
             return redirect(referral.split("#")[0] + request.values["redirect_hash"])
         return redirect(request.referrer)
 
