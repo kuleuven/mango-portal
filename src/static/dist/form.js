@@ -103,6 +103,12 @@ class SchemaForm {
       form_div.appendChild(hidden_input);
     }
 
+    let csrf_hidden_input = document.createElement("input");
+    csrf_hidden_input.type = "hidden";
+    csrf_hidden_input.name = "csrf_token";
+    csrf_hidden_input.value = csrf_token;
+    form_div.appendChild(csrf_hidden_input);
+
     // Create a row for the submission button
     let submitting_row = Field.quick("div", "row border-top pt-2");
     let submitter = Field.quick("button", "btn btn-primary", "Save metadata");

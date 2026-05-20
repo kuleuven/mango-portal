@@ -63,7 +63,6 @@ import logging
 
 import signals
 
-
 metadata_schema_form_bp = Blueprint(
     "metadata_schema_form_bp",
     __name__,
@@ -136,7 +135,6 @@ def convert_to_multi_dict(metadata_items, multidict: MultiDict, unit_level=1):
 
 
 @metadata_schema_form_bp.route("/metadata-schema/edit", methods=["POST", "GET"])
-@csrf.exempt
 def edit_schema_metadata_for_item():
     """ """
     _parameters = request.values.to_dict()
