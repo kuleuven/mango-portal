@@ -3,9 +3,15 @@
 Note: versioning follows Semver standard with 3 levels
 
 
+## Release 0.28.2
+
+### Upgrades
+
+- dependent packages, some addressing CVE vulnerabilities
+
 ## Release 0.28.1
 
-### New feature
+### New feature/bugfix
 
 - performance improvement by proactive caching of schemas to feed the new search form
 

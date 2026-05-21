@@ -1,2 +1,2 @@
-__version__ = "0.28.1"
-__comment__ = "Folder upload in collection view"
+__version__ = "0.28.2"
+__comment__ = "Upgrade of dependent packages"
