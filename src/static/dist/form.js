@@ -103,6 +103,12 @@ class SchemaForm {
       form_div.appendChild(hidden_input);
     }
 
+    let csrf_hidden_input = document.createElement("input");
+    csrf_hidden_input.type = "hidden";
+    csrf_hidden_input.name = "csrf_token";
+    csrf_hidden_input.value = csrf_token;
+    form_div.appendChild(csrf_hidden_input);
+
     // Create a row for the submission button
     let submitting_row = Field.quick("div", "row border-top pt-2");
     let submitter = Field.quick("button", "btn btn-primary", "Save metadata");
@@ -111,7 +117,6 @@ class SchemaForm {
     form_div.appendChild(submitting_row);
 
     // Add attributes to the form so it submits directly
-    form_div.setAttribute("action", post_url);
     form_div.setAttribute("method", "POST");
     form_div.setAttribute("novalidate", "");
     // Include BS5 validation
@@ -144,6 +149,9 @@ class SchemaForm {
    * @param {Object<String,String[]>} annotated_data Key-value pairs with the existing metadata.
    */
   add_annotation(annotated_data) {
+    // set post url
+    console.log(annotated_data)
+    this.card.setAttribute("action", annotated_data.post_url);
     // add a hidden field with the value of 'redirect_route
     let hidden_input = document.createElement("input");
     hidden_input.type = "hidden";
