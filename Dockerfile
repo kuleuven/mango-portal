@@ -2,7 +2,7 @@ FROM python:3.12
 WORKDIR /app
 COPY requirements-mango-flow.txt requirements.txt
 RUN apt-get update && apt-get -y upgrade && \
-	apt-get -y install libimage-exiftool-perl nano poppler-utils vim && \
+	apt-get -y install libimage-exiftool-perl nano poppler-utils vim inetutils-telnet && \
 	rm -rf /var/lib/apt/lists/*
 RUN pip install -r requirements.txt
 RUN echo "Europe/Brussels" > /etc/timezone && rm /etc/localtime && dpkg-reconfigure -f noninteractive tzdata
