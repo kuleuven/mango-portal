@@ -133,7 +133,8 @@ cleanup_old_sessions_thread.start()
 def get_user_session_via_operator_proxy_env():
     """
     typical use case for this function is local development with a proxy user. Can be your own username or to impersonate
-    export MANGO_PROXY_USER=u0123318
+    export MANGO_PROXY_USER=<username>
+    export MANGO_PROXY_USER_ZONE=<zone>
     export LOCALDEV_SESSION_FUNC="plugins.operator.get_user_session_via_operator_proxy_env"
 
     Returns:
