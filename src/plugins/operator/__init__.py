@@ -128,3 +128,23 @@ class OperatorSessionCleanupThread(Thread):
 
 cleanup_old_sessions_thread = OperatorSessionCleanupThread()
 cleanup_old_sessions_thread.start()
+
+
+def get_user_session_via_operator_proxy_env():
+    """
+    typical use case for this function is local development with a proxy user. Can be your own username or to impersonate
+    export MANGO_PROXY_USER=u0123318
+    export LOCALDEV_SESSION_FUNC="plugins.operator.get_user_session_via_operator_proxy_env"
+
+    Returns:
+        iRODSSession for MANGO_PROXY_USER in MANGO_PROXY_USER_ZONE
+    """
+    if os.getenv("MANGO_PROXY_USER", None) and os.getenv("MANGO_PROXY_USER_ZONE", None):
+        logging.info(
+            f"Creating irods session for proxy user {os.getenv('MANGO_PROXY_USER')} in zone {os.getenv('MANGO_PROXY_USER_ZONE')}"
+        )
+        return get_zone_operator_session(
+            zone=os.getenv("MANGO_PROXY_USER_ZONE"),
+            client_user=os.getenv("MANGO_PROXY_USER"),
+        )
+    return None
