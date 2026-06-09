@@ -23,9 +23,7 @@ zone_operator_sessions = {}
 failed_operator_sessions = {}
 
 
-def _get_zone_session_parameters(
-    zone: str, client_user: str, tenant: str, token: str
-) -> dict:
+def _get_zone_session_parameters(zone: str, tenant: str, token: str) -> dict:
     header = {"Authorization": "Bearer " + token}
 
     response = requests.get(f"{API_URL}/v2/{tenant}/irods/zones", headers=header)
@@ -40,23 +38,19 @@ def _get_zone_session_parameters(
     response = requests.post(
         f"{API_URL}/v2/{tenant}/irods/zone/{jobid}/connection-info",
         headers=header,
-        json={"username": client_user},
+        json={"username": "operator"},
     )
     response.raise_for_status()
 
     return response.json()
 
 
-def get_zone_session_parameters(
-    zone: str, client_user: str = "operator", tenant: str = TENANT
-) -> dict:
+def get_zone_session_parameters(zone: str, tenant: str = TENANT) -> dict:
     if not API_URL or not API_TOKEN:
         raise ValueError("Cannot access zones without URL and token")
 
     try:
-        session_parameters = _get_zone_session_parameters(
-            zone, client_user, tenant, API_TOKEN
-        )
+        session_parameters = _get_zone_session_parameters(zone, tenant, API_TOKEN)
     except Exception:
         """If it doesn't work, try to use existing token to get a new one,
         e.g. to change from one tenant to another."""
@@ -67,9 +61,7 @@ def get_zone_session_parameters(
         )
         token_response.raise_for_status()
         token = token_response.json()
-        session_parameters = _get_zone_session_parameters(
-            zone, client_user, tenant, token["token"]
-        )
+        session_parameters = _get_zone_session_parameters(zone, tenant, token["token"])
 
     return session_parameters
 
@@ -91,7 +83,7 @@ def is_zone_operator_session_valid(key: str) -> bool:
 
 
 def get_zone_operator_session(
-    zone: str, client_user: str = "operator", tenant: str = "kuleuven"
+    zone: str, client_user: str | None = None, tenant: str = "kuleuven"
 ) -> iRODSSession:
     global zone_operator_sessions
     key = f"{zone}_{client_user}" if client_user else zone
@@ -103,7 +95,12 @@ def get_zone_operator_session(
         raise ValueError("API URL is missing")
     if not API_TOKEN:
         raise ValueError("API Token is missing")
-    session_parameters = get_zone_session_parameters(zone, client_user, tenant)
+    session_parameters = get_zone_session_parameters(zone, tenant)
+    if client_user:
+        # irods_user_name remains 'operator'; client_user indicates whether we impersonate
+        session_parameters["irods_environment"]["client_user"] = client_user
+
+    logging.info(f"Requested operator info for {key}")
 
     irods_session = iRODSSession(
         **session_parameters["irods_environment"],
