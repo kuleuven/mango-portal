@@ -23,6 +23,20 @@ zone_operator_sessions = {}
 failed_operator_sessions = {}
 
 
+def get_tenant_for_zone(zone: str, requested_tenant: str) -> str:
+    """encapsulating function for future mapping of zones and tenants, e.g. for cold storage with external tenants"""
+    ZONE_TENANT_MAP = {
+        "cold": "kuleuven-cold",
+    }
+    if zone in ZONE_TENANT_MAP:
+        logging.info(
+            f"Using tenant {ZONE_TENANT_MAP[zone]} instead of {requested_tenant} for zone {zone}"
+        )
+        return ZONE_TENANT_MAP[zone]
+    else:
+        return requested_tenant
+
+
 def _get_zone_session_parameters(zone: str, tenant: str, token: str) -> dict:
     header = {"Authorization": "Bearer " + token}
 
@@ -30,6 +44,7 @@ def _get_zone_session_parameters(zone: str, tenant: str, token: str) -> dict:
     response.raise_for_status()
 
     mapping = {zone["zone"]: zone["jobid"] for zone in response.json()}
+    print(f"Mapping of zones to jobids: {mapping}")
     jobid = mapping.get(zone)
     if jobid is None:
         raise ValueError(
@@ -48,8 +63,11 @@ def _get_zone_session_parameters(zone: str, tenant: str, token: str) -> dict:
 def get_zone_session_parameters(zone: str, tenant: str = TENANT) -> dict:
     if not API_URL or not API_TOKEN:
         raise ValueError("Cannot access zones without URL and token")
-
+    
+    requested_tenant = tenant
+    tenant = get_tenant_for_zone(zone, requested_tenant)
     try:
+        print(f"Getting session parameters for zone {zone} and tenant {tenant}")
         session_parameters = _get_zone_session_parameters(zone, tenant, API_TOKEN)
     except Exception:
         """If it doesn't work, try to use existing token to get a new one,
