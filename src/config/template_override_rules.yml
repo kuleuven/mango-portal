@@ -1,6 +1,7 @@
 ---
 zone: tier1_data_pilot
 
+
 # my_gallery_view_override_for_collections:
 #   source: common/collection_view.html.j2
 #   target: myplugin/gallery.html.j2
@@ -52,9 +53,27 @@ cold_index:
   source: user_tantra/index.html.j2
   target: cold_storage/index.html.j2
   matches: always
-  
+
+---
+zone: cold_gateway
+
+gateway_sidebar:
+  source: sidebar.html.j2
+  target: cold_storage/gateway/gateway_sidebar.html.j2
+  matches: always
+
+gateway_collection:
+  source: common/collection_view.html.j2
+  target: cold_storage/gateway/collection_view.html.j2
+  matches: always
+
+gateway_objects:
+  source: common/object_view.html.j2
+  target: cold_storage/gateway/object_view.html.j2
+  matches: always
 ---
 zone: icts_demo
+
 
 # collection_view_iot:
 #   source: collection_view
@@ -69,7 +88,7 @@ collection_home_simple:
   target: common/collection_view_content_only.html.j2
   matches:
     any:
-      path: '/{{zone}}/home'
+      path: "/{{zone}}/home"
 
 gallery_carrousel:
   source: common/collection_view.html.j2
@@ -85,13 +104,13 @@ collection_view_trash:
   target: common/collection_view_trash.html.j2
   matches:
     all:
-      subtree: '/{{zone}}/trash' #quotes needed as in principle {} are special characters
+      subtree: "/{{zone}}/trash" #quotes needed as in principle {} are special characters
 object_view_trash:
   source: common/object_view.html.j2
   target: common/object_view_trash.html.j2
   matches:
     all:
-      subtree: '/{{zone}}/trash'
+      subtree: "/{{zone}}/trash"
 
 realm_powered_side_bar:
   source: sidebar.html.j2
@@ -118,11 +137,11 @@ gallery_view_dayral_barsha:
   target: collection_gallery.html.j2
   matches:
     all:
-      subtree: '/{{zone}}/home/Dayral-Barsha' #quotes needed as in principle {} are special characters
+      subtree: "/{{zone}}/home/Dayral-Barsha" #quotes needed as in principle {} are special characters
 
 gallery_view_search_dayral_barsha:
   source: search/basic_catalog_search.html.j2
   target: search/gallery_catalog_search.html.j2
   matches:
     all:
-      subtree: '/{{zone}}/home/Dayral-Barsha' #quotes needed as in principle {} are special characters
+      subtree: "/{{zone}}/home/Dayral-Barsha" #quotes needed as in principle {} are special characters
