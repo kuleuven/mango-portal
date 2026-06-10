@@ -2,6 +2,33 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+
+## Release 0.28.1
+
+### New feature
+
+- performance improvement by proactive caching of schemas to feed the new search form
+
+### Other
+
+- blueprint imports re-ordering
+
+## Release 0.28.0
+
+### New feature
+
+- Folder upload along the file by file multi upload
+
+### Bug fixes
+
+- KULeuven specific: fixed date problem related to archived projects
+
+## Release 0.27.0
+
+### New feature
+
+- New search interface, offering selectable user friendly metadata schema fields
+
 ## Release 0.26.1 [2026-03-05]
 
 ### Bug fixes
