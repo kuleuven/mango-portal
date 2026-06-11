@@ -2,42 +2,86 @@ import datetime
 import logging
 import os
 import time
-from threading import Event, Thread
 
-import requests
+from dateutil.parser import parse
 from irods.session import iRODSSession
 
-import irods_zones_config
+import requests
 
-API_URL = os.environ.get(
-    "API_URL", "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be"
-)
+from threading import Thread, Event
+
+API_URLS = {
+    "p": "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be",
+    "q": "https://icts-q-coz-data-platform-api.cloud.q.icts.kuleuven.be",
+    "t": "https://icts-t-coz-data-platform-api.cloud.t.icts.kuleuven.be",
+}
+API_URL = os.environ.get("API_URL", API_URLS["p"])
 API_TOKEN = os.environ.get("API_TOKEN", "")
-
-if not API_TOKEN:
-    logging.warning("No COZ API token, module group admin will not work")
-
-MONITORING_INTERVAL = 120
+TENANT = os.environ.get("TENANT", "kuleuven")
 
 zone_operator_sessions = {}
 failed_operator_sessions = {}
 
 
-def get_operator_session_params_via_api(zone: str):
-    if not API_URL or not API_TOKEN or not zone in irods_zones_config.irods_zones:
-        return False
-    jobid = irods_zones_config.irods_zones[zone]["jobid"]
-    header = {"Authorization": "Bearer " + API_TOKEN}
+def get_tenant_for_zone(zone: str, requested_tenant: str) -> str:
+    """encapsulating function for future mapping of zones and tenants, e.g. for cold storage with external tenants"""
+    ZONE_TENANT_MAP = {
+        "cold": "kuleuven-cold",
+    }
+    if zone in ZONE_TENANT_MAP:
+        logging.info(
+            f"Using tenant {ZONE_TENANT_MAP[zone]} instead of {requested_tenant} for zone {zone}"
+        )
+        return ZONE_TENANT_MAP[zone]
+    else:
+        return requested_tenant
+
+
+def _get_zone_session_parameters(zone: str, tenant: str, token: str) -> dict:
+    header = {"Authorization": "Bearer " + token}
+
+    response = requests.get(f"{API_URL}/v2/{tenant}/irods/zones", headers=header)
+    response.raise_for_status()
+
+    mapping = {zone["zone"]: zone["jobid"] for zone in response.json()}
+    print(f"Mapping of zones to jobids: {mapping}")
+    jobid = mapping.get(zone)
+    if jobid is None:
+        raise ValueError(
+            "This zone name is not valid, check that you have the url and token for the right tier!"
+        )
     response = requests.post(
-        f"{API_URL}/v1/irods/zones/{jobid}/connection-info",
+        f"{API_URL}/v2/{tenant}/irods/zone/{jobid}/connection-info",
         headers=header,
-        json={
-            "username": "operator",
-            "client": "mango-portal-operator-session",
-        },
+        json={"username": "operator"},
     )
     response.raise_for_status()
+
     return response.json()
+
+
+def get_zone_session_parameters(zone: str, tenant: str = TENANT) -> dict:
+    if not API_URL or not API_TOKEN:
+        raise ValueError("Cannot access zones without URL and token")
+    
+    requested_tenant = tenant
+    tenant = get_tenant_for_zone(zone, requested_tenant)
+    try:
+        print(f"Getting session parameters for zone {zone} and tenant {tenant}")
+        session_parameters = _get_zone_session_parameters(zone, tenant, API_TOKEN)
+    except Exception:
+        """If it doesn't work, try to use existing token to get a new one,
+        e.g. to change from one tenant to another."""
+        token_response = requests.post(
+            f"{API_URL}/v2/{TENANT}/token",
+            headers={"Authorization": "Bearer " + API_TOKEN},
+            json={"permissions": ["operator", "user"], "tenant": tenant},
+        )
+        token_response.raise_for_status()
+        token = token_response.json()
+        session_parameters = _get_zone_session_parameters(zone, tenant, token["token"])
+
+    return session_parameters
 
 
 def is_zone_operator_session_valid(key: str) -> bool:
@@ -49,51 +93,59 @@ def is_zone_operator_session_valid(key: str) -> bool:
         # check if the session can access the zone collection
         try:
             operator_session: iRODSSession = zone_operator_sessions[key]
-            _ = operator_session.collections.get(f"/{operator_session.zone}")
+            operator_session.collections.get(f"/{operator_session.zone}")
+            return True
         except Exception:
             del zone_operator_sessions[key]
-            return False
-        return True
     return False
 
 
 def get_zone_operator_session(
-    zone: str, client_user: str | None = None
-) -> iRODSSession | None:
+    zone: str, client_user: str | None = None, tenant: str = "kuleuven"
+) -> iRODSSession:
     global zone_operator_sessions
     key = f"{zone}_{client_user}" if client_user else zone
     if is_zone_operator_session_valid(key):
         return zone_operator_sessions[key]
     # so not valid
     # use the API to get login parameters and create a session
-    session_parameters = get_operator_session_params_via_api(zone)
+    if not API_URL:
+        raise ValueError("API URL is missing")
+    if not API_TOKEN:
+        raise ValueError("API Token is missing")
+    session_parameters = get_zone_session_parameters(zone, tenant)
     if client_user:
+        # irods_user_name remains 'operator'; client_user indicates whether we impersonate
         session_parameters["irods_environment"]["client_user"] = client_user
+
     logging.info(f"Requested operator info for {key}")
-    try:
-        irods_session = iRODSSession(
-            **session_parameters["irods_environment"],
-            password=session_parameters["token"],
-        )
-        # set the expiration time (4h) a bit lower than the real one to compensate running time and register it on the session object
-        from dateutil.parser import parse
 
-        irods_session.expiration = parse(
-            session_parameters["expiration"], ignoretz=True
-        ) - datetime.timedelta(minutes=20)
-        zone_operator_sessions[key] = irods_session
-        return zone_operator_sessions[key]
-    except Exception:
-        logging.warning(f"Failed getting operator session for zone {key}")
-        return None
+    irods_session = iRODSSession(
+        **session_parameters["irods_environment"],
+        password=session_parameters["token"],
+    )
+
+    # set the expiration time (4h) a bit lower than the real one to compensate running time and register it on the session object
+    irods_session.expiration = parse(  # type: ignore
+        session_parameters["expiration"], ignoretz=True
+    ) - datetime.timedelta(minutes=20)
+    zone_operator_sessions[key] = irods_session
+    return zone_operator_sessions[key]
 
 
-def remove_zone_operator_session(key: str):
+def remove_zone_operator_session(key: str) -> bool:
     global zone_operator_sessions
     if key in zone_operator_sessions:
         del zone_operator_sessions[key]
         return True
     return False
+
+
+def set_credentials(token: str = API_TOKEN, tier: str = "p"):
+    global API_TOKEN
+    global API_URL
+    API_TOKEN = token or os.getenv("API_TOKEN", "")
+    API_URL = API_URLS.get(tier, API_URL)
 
 
 class OperatorSessionCleanupThread(Thread):
@@ -115,15 +167,11 @@ class OperatorSessionCleanupThread(Thread):
         while True:
             if self.stopped():
                 return
-            logging.debug(f"Checking {len(zone_operator_sessions)} operator sessions")
-            invalid_sessions = []
+            logging.info(f"Checking {len(zone_operator_sessions)} operator sessions")
             for key in zone_operator_sessions.keys():
                 if not is_zone_operator_session_valid(key):
-                    invalid_sessions.append(key)
-            for key in invalid_sessions:
-                del zone_operator_sessions[key]
-                logging.info(f"Removed invalid zone operator session for {key}")
-            time.sleep(MONITORING_INTERVAL)
+                    logging.info(f"Removed invalid zone operator session for {key}")
+            time.sleep(120)
 
 
 cleanup_old_sessions_thread = OperatorSessionCleanupThread()
