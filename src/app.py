@@ -60,6 +60,7 @@ from kernel.template_overrides import template_overrides_bp
 import platform
 import version
 
+from kernel.user import get_irods_session_from_environment
 
 irods_zone_config_module = importlib.import_module(
     os.getenv("IRODS_ZONES_CONFIG", "irods_zones_config.py").rstrip(".py")
@@ -137,6 +138,11 @@ if app.config.get("DEBUG", False):
 
 from mango_ui import admin_navbar_entries, navbar_entries
 
+if (_mod_func := os.getenv("LOCALDEV_SESSION_FUNC")): # in "module[.submodule].function" format
+    _mod, _func = _mod_func.rsplit(".", 1)
+    localdev_session_func = getattr(importlib.import_module(_mod), _func)
+else:
+    localdev_session_func = get_irods_session_from_environment
 
 @app.context_processor
 def ui_navbars():
@@ -241,8 +247,7 @@ def init_and_secure_views():
             irods_session = irods_session_pool.get_irods_session(session["userid"])
         if not irods_session:
             print("No irods session found in pool, recreating one")
-            irods_env_file = os.path.expanduser("~/.irods/irods_environment.json")
-            irods_session = iRODSSession(irods_env_file=irods_env_file)
+            irods_session = localdev_session_func()
             session["userid"] = irods_session.username
             irods_session_pool.add_irods_session(session["userid"], irods_session)
         g.irods_session = irods_session
