@@ -467,21 +467,26 @@ class iRODSSchemaManager(SchemaManager):
                 Criterion("like", Collection.name, self._storage_schemas_path + "%")
             )
             .filter(Criterion("like", DataObject.name, "%.json"))
-            .filter(Criterion("=", DataObjectMeta.name, "mg.lifecycle_status"))
+            .filter(Criterion("=", DataObjectMeta.name, self.STATUS_METADATA_NAME))
             .all()
         )
 
-        all_schema_files = []
-        published_files = []
-        draft_files = []
-        for i in query:
-            path = f"/{i[Collection.name]}/{i[DataObject.name]}"
-            all_schema_files.append(path)
-            status = i[DataObjectMeta.value]
-            if status == "published":
-                published_files.append(i)
-            elif status == "draft":
-                draft_files.append(i)
+        all_schema_files = [
+            self.irods_session.data_objects.get(
+                f"/{i[Collection.name]}/{i[DataObject.name]}"
+            )
+            for i in query
+        ]
+        published_files = [
+            obj
+            for obj in all_schema_files
+            if obj.metadata.get_one(self.STATUS_METADATA_NAME).value == "published"
+        ]
+        draft_files = [
+            obj
+            for obj in all_schema_files
+            if obj.metadata.get_one(self.STATUS_METADATA_NAME).value == "draft"
+        ]
         total_count = len(all_schema_files)
         published_count = len(published_files)
         draft_count = len(draft_files)
@@ -567,7 +572,7 @@ class iRODSSchemaManager(SchemaManager):
                 Criterion("like", Collection.name, self._storage_schemas_path + "%")
             )
             .filter(Criterion("like", DataObject.name, "%.json"))
-            .filter(Criterion("=", DataObjectMeta.name, "mg.lifecycle_status"))
+            .filter(Criterion("=", DataObjectMeta.name, self.STATUS_METADATA_NAME))
         )
 
         if status in ["published", "draft", "archived"]:
