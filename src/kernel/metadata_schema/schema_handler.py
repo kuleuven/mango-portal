@@ -3,6 +3,8 @@ from irods.session import iRODSSession
 from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
 from irods.access import iRODSAccess
+from irods.models import Collection, DataObject, DataObjectMeta
+from irods.column import Criterion
 from pathlib import Path
 import re
 import json
@@ -457,15 +459,33 @@ class iRODSSchemaManager(SchemaManager):
         ):
             return self._schemas[schema_name]
 
+        query = (
+            self.irods_session.query(
+                Collection.name, DataObject.name, DataObjectMeta.value
+            )
+            .filter(
+                Criterion("like", Collection.name, self._storage_schemas_path + "%")
+            )
+            .filter(Criterion("like", DataObject.name, "%.json"))
+            .filter(Criterion("=", DataObjectMeta.name, self.STATUS_METADATA_NAME))
+            .all()
+        )
+
         all_schema_files = [
-            obj for obj in schema_coll.data_objects if obj.name.endswith(".json")
+            self.irods_session.data_objects.get(
+                f"/{i[Collection.name]}/{i[DataObject.name]}"
+            )
+            for i in query
         ]
-        # pprint.pprint(all_schema_files)
         published_files = [
-            obj.name for obj in all_schema_files if obj.name.endswith("published.json")
+            obj
+            for obj in all_schema_files
+            if obj.metadata.get_one(self.STATUS_METADATA_NAME).value == "published"
         ]
         draft_files = [
-            obj.name for obj in all_schema_files if obj.name.endswith("draft.json")
+            obj
+            for obj in all_schema_files
+            if obj.metadata.get_one(self.STATUS_METADATA_NAME).value == "draft"
         ]
         total_count = len(all_schema_files)
         published_count = len(published_files)
@@ -545,24 +565,35 @@ class iRODSSchemaManager(SchemaManager):
     def load_schema(
         self, schema_name: str, status="published", version=""
     ) -> dict | bool:
-        schema_paths = []
-        if status in ["published", "draft"] and not version:
-            schema_paths = [
-                obj
-                for obj in self._get_schema_path(schema_name).data_objects
-                if re.match(f"{schema_name}-v[\d.]+-{status}\.json$", obj.name)
-            ]
-        if version:
-            schema_paths = [
-                obj
-                for obj in self._get_schema_path(schema_name).data_objects
-                if re.search(f"{schema_name}-v{version}.*json", obj.name)
-            ]
-        if len(schema_paths) >= 1:
-            schema_object = sorted(schema_paths, key=lambda x: x.name)[-1]
-        else:
-            schema_object = schema_paths[0]
-        if schema_object:
+
+        query = (
+            self.irods_session.query(Collection.name, DataObject.name)
+            .filter(
+                Criterion("like", Collection.name, self._storage_schemas_path + "%")
+            )
+            .filter(Criterion("like", DataObject.name, "%.json"))
+            .filter(Criterion("=", DataObjectMeta.name, self.STATUS_METADATA_NAME))
+        )
+
+        if status in ["published", "draft", "archived"]:
+            query.filter(Criterion("=", DataObjectMeta.value, status))
+        if status not in ["published", "draft"]:
+            if version:
+                query.filter(
+                    Criterion("like", DataObject.name, f"{schema_name}-v{version}%")
+                )
+            else:
+                raise ValueError(
+                    "Either provide published/draft status or a specific version"
+                )
+
+        path = None
+        for result in query.all():
+            if result:
+                path = f"{result[Collection.name]}/{result[DataObject.name]}"
+                break
+        if path:
+            schema_object = self.irods_session.data_objects.get(path)
             with schema_object.open() as f:
                 # return json.load(f)
                 return f.read().decode()  # we want it as a string
