@@ -37,12 +37,15 @@ zone: tier1_data_pilot
 ---
 zone: cold
 
-collection_home_realm:
+cold_collections:
   source: common/collection_view.html.j2
   target: cold_storage/project_view.html.j2
-  matches:
-    all:
-      depth: 3
+  matches: always
+
+cold_objects:
+  source: common/object_view.html.j2
+  target: cold_storage/object_view.html.j2
+  matches: always
 
 cold_sidebar:
   source: sidebar.html.j2
