@@ -27,6 +27,7 @@ def get_tenant_for_zone(zone: str, requested_tenant: str) -> str:
     """encapsulating function for future mapping of zones and tenants, e.g. for cold storage with external tenants"""
     ZONE_TENANT_MAP = {
         "cold": "kuleuven-cold",
+        "cold_gateway": "kuleuven-cold",
     }
     if zone in ZONE_TENANT_MAP:
         logging.info(
