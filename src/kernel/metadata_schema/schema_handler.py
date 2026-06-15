@@ -3,6 +3,8 @@ from irods.session import iRODSSession
 from irods.data_object import iRODSDataObject
 from irods.collection import iRODSCollection
 from irods.access import iRODSAccess
+from irods.models import Collection, DataObject, DataObjectMeta
+from irods.column import Criterion
 from pathlib import Path
 import re
 import json
@@ -457,16 +459,29 @@ class iRODSSchemaManager(SchemaManager):
         ):
             return self._schemas[schema_name]
 
-        all_schema_files = [
-            obj for obj in schema_coll.data_objects if obj.name.endswith(".json")
-        ]
-        # pprint.pprint(all_schema_files)
-        published_files = [
-            obj.name for obj in all_schema_files if obj.name.endswith("published.json")
-        ]
-        draft_files = [
-            obj.name for obj in all_schema_files if obj.name.endswith("draft.json")
-        ]
+        query = (
+            self.irods_session.query(
+                Collection.name, DataObject.name, DataObjectMeta.value
+            )
+            .filter(
+                Criterion("like", Collection.name, self._storage_schemas_path + "%")
+            )
+            .filter(Criterion("like", DataObject.name, "%.json"))
+            .filter(Criterion("=", DataObjectMeta.name, "mg.lifecycle_status"))
+            .all()
+        )
+
+        all_schema_files = []
+        published_files = []
+        draft_files = []
+        for i in query:
+            path = f"/{i[Collection.name]}/{i[DataObject.name]}"
+            all_schema_files.append(path)
+            status = i[DataObjectMeta.value]
+            if status == "published":
+                published_files.append(i)
+            elif status == "draft":
+                draft_files.append(i)
         total_count = len(all_schema_files)
         published_count = len(published_files)
         draft_count = len(draft_files)
@@ -545,24 +560,35 @@ class iRODSSchemaManager(SchemaManager):
     def load_schema(
         self, schema_name: str, status="published", version=""
     ) -> dict | bool:
-        schema_paths = []
-        if status in ["published", "draft"] and not version:
-            schema_paths = [
-                obj
-                for obj in self._get_schema_path(schema_name).data_objects
-                if re.match(f"{schema_name}-v[\d.]+-{status}\.json$", obj.name)
-            ]
-        if version:
-            schema_paths = [
-                obj
-                for obj in self._get_schema_path(schema_name).data_objects
-                if re.search(f"{schema_name}-v{version}.*json", obj.name)
-            ]
-        if len(schema_paths) >= 1:
-            schema_object = sorted(schema_paths, key=lambda x: x.name)[-1]
-        else:
-            schema_object = schema_paths[0]
-        if schema_object:
+
+        query = (
+            self.irods_session.query(Collection.name, DataObject.name)
+            .filter(
+                Criterion("like", Collection.name, self._storage_schemas_path + "%")
+            )
+            .filter(Criterion("like", DataObject.name, "%.json"))
+            .filter(Criterion("=", DataObjectMeta.name, "mg.lifecycle_status"))
+        )
+
+        if status in ["published", "draft", "archived"]:
+            query.filter(Criterion("=", DataObjectMeta.value, status))
+        if status not in ["published", "draft"]:
+            if version:
+                query.filter(
+                    Criterion("like", DataObject.name, f"{schema_name}-v{version}%")
+                )
+            else:
+                raise ValueError(
+                    "Either provide published/draft status or a specific version"
+                )
+
+        path = None
+        for result in query.all():
+            if result:
+                path = f"{result[Collection.name]}/{result[DataObject.name]}"
+                break
+        if path:
+            schema_object = self.irods_session.data_objects.get(path)
             with schema_object.open() as f:
                 # return json.load(f)
                 return f.read().decode()  # we want it as a string
