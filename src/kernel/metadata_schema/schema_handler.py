@@ -468,7 +468,6 @@ class iRODSSchemaManager(SchemaManager):
             .filter(Criterion("=", DataObjectMeta.name, self.STATUS_METADATA_NAME))
             .all()
         )
-        # breakpoint()
         all_schema_files = []
         published_files = []
         draft_files = []
