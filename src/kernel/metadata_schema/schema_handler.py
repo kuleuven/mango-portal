@@ -463,30 +463,25 @@ class iRODSSchemaManager(SchemaManager):
             self.irods_session.query(
                 Collection.name, DataObject.name, DataObjectMeta.value
             )
-            .filter(
-                Criterion("like", Collection.name, self._storage_schemas_path + "%")
-            )
+            .filter(Criterion("=", Collection.name, schema_coll.path))
             .filter(Criterion("like", DataObject.name, "%.json"))
             .filter(Criterion("=", DataObjectMeta.name, self.STATUS_METADATA_NAME))
             .all()
         )
-
-        all_schema_files = [
-            self.irods_session.data_objects.get(
+        all_schema_files = []
+        published_files = []
+        draft_files = []
+        for i in query:
+            obj = self.irods_session.data_objects.get(
                 f"/{i[Collection.name]}/{i[DataObject.name]}"
             )
-            for i in query
-        ]
-        published_files = [
-            obj
-            for obj in all_schema_files
-            if obj.metadata.get_one(self.STATUS_METADATA_NAME).value == "published"
-        ]
-        draft_files = [
-            obj
-            for obj in all_schema_files
-            if obj.metadata.get_one(self.STATUS_METADATA_NAME).value == "draft"
-        ]
+            all_schema_files.append(obj)
+            status = obj.metadata.get_one(self.STATUS_METADATA_NAME).value
+            if status == "published":
+                published_files.append(obj.name)
+            elif status == "draft":
+                draft_files.append(obj.name)
+
         total_count = len(all_schema_files)
         published_count = len(published_files)
         draft_count = len(draft_files)
