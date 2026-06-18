@@ -76,11 +76,10 @@ MANGO_PLUGIN_BLUEPRINTS = [
         "module": "plugins.mango_audit.audit_history",
         "blueprint": "mango_audit_history_bp",
     },
-    {"module": "plugins.cold_storage.cs_routes", "blueprint": "cold_storage_bp"},
-    # {
-    #     "module": "plugins.cold_storage.flask.cs_active_zone_routes",
-    #     "blueprint": "cold_storage_bp",
-    # },
+    {
+        "module": "plugins.cold_storage.flask.cs_active_zone_routes",
+        "blueprint": "cold_storage_bp",
+    },
     # {"module": "kernel.search.basic_search", "blueprint": "basic_search_bp"},
     # {"module": "kernel.search.admin", "blueprint": "basic_search_admin_bp"},
     # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
@@ -92,7 +91,6 @@ MANGO_ADMINS = [
     "u0118974",
     "u0116999",
     "u0137480",
-    "u0089722",
     "u0079275",
     "u0056780",
     "u0031305",

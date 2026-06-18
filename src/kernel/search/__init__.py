@@ -140,9 +140,9 @@ def update_realm_schemas(irods_session: iRODSSession, realm_name: str, refresh=F
 def queue_realm_schemas_updates_upon_login(sender, **parameters):
     zone = parameters["zone"]
     username = parameters["username"]
-    logging.info(
-        f"Updating realm schemas for user {username} in zone {zone} upon login"
-    )
+    # logging.info(
+    #     f"Updating realm schemas for user {username} in zone {zone} upon login"
+    # )
     user_session = get_zone_operator_session(zone, client_user=username)
     user_realms = user_session.collections.get(f"/{zone}/home").subcollections
     realm_names_to_check = [
@@ -150,7 +150,7 @@ def queue_realm_schemas_updates_upon_login(sender, **parameters):
     ]
     # Add with initial retry_count = 0
     realm_schemas_queue.append((zone, realm_names_to_check, 0))
-    logging.info(f"Added to schema realm queue for {zone}: {realm_names_to_check}")
+    # logging.info(f"Added to schema realm queue for {zone}: {realm_names_to_check}")
 
 
 # wire it into the user session creation signal
@@ -171,16 +171,16 @@ def realm_schemas_updater():
                 zone, realm_names_to_check, retry_count = realm_schemas_queue.pop(0)
                 for realm_name in realm_names_to_check:
                     start = time.time()
-                    logging.info(
-                        f"Updating realm schemas for realm {realm_name} in zone {zone}"
-                    )
+                    # logging.info(
+                    #     f"Updating realm schemas for realm {realm_name} in zone {zone}"
+                    # )
                     try:
                         update_realm_schemas(
                             get_zone_operator_session(zone), realm_name, refresh=True
                         )
-                        logging.info(
-                            f"Finished updating realm schemas for realm {realm_name} in zone {zone} in {time.time() - start:.2f} seconds"
-                        )
+                        # logging.info(
+                        #     f"Finished updating realm schemas for realm {realm_name} in zone {zone} in {time.time() - start:.2f} seconds"
+                        # )
                     except Exception as e:
                         logging.error(
                             f"Failed to update realm schemas for realm {realm_name} in zone {zone}: {e}",

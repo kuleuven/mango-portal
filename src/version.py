@@ -1,2 +1,2 @@
-__version__ = "0.28.1"
-__comment__ = "Folder upload in collection view"
+__version__ = "0.29.0"
+__comment__ = "FriGO"
