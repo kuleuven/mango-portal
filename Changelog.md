@@ -2,6 +2,12 @@
 
 Note: versioning follows Semver standard with 3 levels
 
+## Release 0.29.0
+
+### Upgrades
+
+- VIP plugin: Cold Storage aka FriGO major refactoring 
+
 
 ## Release 0.28.2
 
