@@ -39,7 +39,9 @@ class SchemaInfo:
         return f"{self._realm}_{self._name}"
 
     def transform_schema(self, schema_manager):
-        schema_dict = json.loads(schema_manager.load_schema(self._name))
+        schema_dict = json.loads(
+            schema_manager.load_schema(self._name, status="published")
+        )
 
         flattened_schema = flatten_schema(
             schema_dict,

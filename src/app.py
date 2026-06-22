@@ -294,12 +294,14 @@ def release_irods_session_lock(response):
 
 
 # intersection of 2 iterables
+# @deprecated use mango-lib
 @app.template_filter("intersection")
 def intersection(set1, set2):
     return set(set1).intersection(set(set2))
 
 
 # html and js escape dangerous content
+# @deprecated use mango-lib
 @app.template_filter("bleach_clean")
 def bleach_clean(suspect, **kwargs):
     if type(suspect) == str:
@@ -363,12 +365,12 @@ def format_size(size):
 def format_intword(size):
     return humanize.intword(size)
 
-
+# @deprecated use mango-lib
 @app.template_filter("pprint_as_json")
 def pprint_as_json(anything, indent=2):
     return json.dumps(anything, indent=indent)
 
-
+# @deprecated use mango-lib
 @app.template_filter("python_type")
 def python_type(anything):
     return type(anything)
@@ -379,21 +381,21 @@ def format_datetime(datetime_object):
     return datetime.datetime.strftime(datetime_object, "%Y-%m-%dT%H:%M:%S")
 
 
-@app.template_filter("format_epoch_timestamp")
-def format_epoch_timestamp(ets):
-    return datetime.datetime.fromtimestamp(ets)
+# @app.template_filter("format_epoch_timestamp")
+# def format_epoch_timestamp(ets):
+#     return datetime.datetime.fromtimestamp(ets)
 
+# @deprecated use mango-lib
+# @app.template_filter("regex_search")
+# def regex_search(_string, _re):
+#     return re.search(_re, _string)
 
-@app.template_filter("regex_search")
-def regex_search(_string, _re):
-    return re.search(_re, _string)
-
-
+# @deprecated use mango-lib
 @app.template_filter("regex_match")
 def regex_match(_string, _re):
     return re.match(_re, _string)
 
-
+# @deprecated use mango-lib
 @app.template_filter("irods_to_sha256_checksum")
 def irods_to_sha256_checksum(irods_checksum):
     if irods_checksum is None or not irods_checksum.startswith("sha2:"):
@@ -401,7 +403,7 @@ def irods_to_sha256_checksum(irods_checksum):
 
     return binascii.hexlify(base64.b64decode(irods_checksum[5:])).decode("utf-8")
 
-
+# @deprecated use mango-lib
 @app.template_filter("get_one_irods_metadata")
 def get_one_irods_metadata(irods_object, meta_name):
     try:
@@ -410,23 +412,26 @@ def get_one_irods_metadata(irods_object, meta_name):
     except Exception as e:
         return iRODSMeta(meta_name, "")
 
+# @deprecated use mango-lib
+# @app.template_filter("os_env")
+# def os_env(parameter, default=None):
+#     return os.environ.get(parameter, default)
 
-@app.template_filter("os_env")
-def os_env(parameter, default=None):
-    return os.environ.get(parameter, default)
-
-
+# @deprecated use mango-lib
 @app.template_filter("b64encode")
 def b64encode(string):
     return base64.b64encode(string.encode("utf-8")).decode()
 
 
+# @deprecated use mango-lib
 @app.template_filter("shorten_name")
 def shorten_name(string):
     if len(string) < 25:
         return string
     return f"{string[:7]}...{string[-7:]}"
 
+
+# @deprecated use mango-lib
 @app.template_filter("date_time_from_timestamp")
 def date_time_from_timestamp(ts):
     return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
