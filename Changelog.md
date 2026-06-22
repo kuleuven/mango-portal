@@ -2,7 +2,18 @@
 
 Note: versioning follows Semver standard with 3 levels
 
-## Release 0.29.0
+## Release 0.29.1 (2026-06-22)
+
+### Bug fixes
+
+- schema manager would not load all schemas
+
+### New features
+
+- CSRF handling now with error handler and flash message, no longer a dull page
+
+
+## Release 0.29.0 (2026-06-19)
 
 ### Upgrades
 
