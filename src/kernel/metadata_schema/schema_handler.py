@@ -557,15 +557,12 @@ class iRODSSchemaManager(SchemaManager):
                 if any([schema_info[filter] for filter in filters])
             }
 
-    def load_schema(
-        self, schema_name: str, status="published", version=""
-    ) -> dict | bool:
+    def load_schema(self, schema_name: str, status="", version="") -> dict | bool:
+        schema_coll = self._get_schema_path(schema_name)
 
         query = (
             self.irods_session.query(Collection.name, DataObject.name)
-            .filter(
-                Criterion("like", Collection.name, self._storage_schemas_path + "%")
-            )
+            .filter(Criterion("=", Collection.name, schema_coll.path))
             .filter(Criterion("like", DataObject.name, "%.json"))
             .filter(Criterion("=", DataObjectMeta.name, self.STATUS_METADATA_NAME))
         )
