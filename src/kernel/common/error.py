@@ -1,6 +1,23 @@
-from flask import Blueprint, render_template, url_for, redirect, current_app, flash
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from flask_wtf.csrf import CSRFError
 
 error_bp = Blueprint("error_bp", __name__, template_folder="templates/common")
+
+
+@error_bp.app_errorhandler(CSRFError)
+def handle_csrf_error(e):
+    flash(
+        f"The form you submitted has expired or is invalid: {e}. Please try again.", "danger"
+    )
+    return redirect(request.referrer or url_for("browse_bp.index"))
 
 
 @error_bp.app_errorhandler(403)
@@ -12,9 +29,11 @@ def error_noaccess(e):
 def error_notfound(e):
     return render_template("404.html.j2", e=e)
 
+
 @error_bp.app_errorhandler(413)
-def error_notfound(e):
+def error_request_entity_too_large(e):
     return render_template("413.html.j2", e=e)
+
 
 @error_bp.app_errorhandler(500)
 def error_internalserver(e):
@@ -22,7 +41,7 @@ def error_internalserver(e):
 
 
 @error_bp.app_errorhandler(503)
-def error_internalserver(e):
+def error_internalserver_503(e):
     return render_template("503.html.j2", e=e)
 
 
