@@ -12,8 +12,10 @@ import semver
 from plugins.operator import get_zone_operator_session
 import logging
 
-
 MANGO_STORAGE_BASE_PATH = Path("storage")
+VERSION_PATTERN = re.compile(
+    r"-v(\d+\.\d+\.\d+)(?:\.json|-published\.json|-draft\.json)$"
+)
 
 
 class FileSystemSchemaManager(SchemaManager):
@@ -87,11 +89,12 @@ class FileSystemSchemaManager(SchemaManager):
         versions_sorted = sorted(
             [
                 re.search(
-                    r"-v(\d+\.\d+\.\d+)(\.json|-published\.json|-draft\.json)$",
+                    VERSION_PATTERN,
                     schema_file.name,
                 ).group(1)
                 for schema_file in all_schema_files
-            ]
+            ],
+            key=semver.Version.parse,
         )
 
         # Obtain the schema title from one of the files
@@ -488,11 +491,12 @@ class iRODSSchemaManager(SchemaManager):
         versions_sorted = sorted(
             [
                 re.search(
-                    r"-v(\d+\.\d+\.\d+)(\.json|-published\.json|-draft\.json)$",
+                    VERSION_PATTERN,
                     schema_file.name,
                 ).group(1)
                 for schema_file in all_schema_files
-            ]
+            ],
+            key=semver.Version.parse,
         )
 
         # Obtain the schema title from one of the files
