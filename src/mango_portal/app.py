@@ -1,79 +1,61 @@
-import logging
-import os
-
-# get the root logger and set the level to INFO to catch any start up info messages
-rootlogger = logging.getLogger()
-rootlogger.setLevel("INFO")
-
-from irods.session import iRODSSession
-from irods.manager.metadata_manager import iRODSMeta
-from flask import (
-    Flask,
-    g,
-    redirect,
-    request,
-    url_for,
-    render_template,
-    Blueprint,
-    session,
-    current_app,
-)
-
-from flask_session import Session
-
-# Early initialisation to avoid circulr imports from main app and its config by other modules
-app = Flask(__name__)
-app.config.from_pyfile(os.getenv("MANGO_CONFIG", "config.py"))
-# global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
-
-irods_sessions = {}
-
-from cache import cache
-import flask
-from pprint import pformat
-from flask_cors import CORS
-import json
-import irods
-import pytz
-import bleach
-import humanize
-import re
 import base64
 import binascii
+import datetime
 import importlib
-
-# proxy so it can also be imported in blueprints from csrf.py independently
-from csrf import csrf
-
-from flask_bootstrap import Bootstrap5
-
-# Blueprints
-from kernel.user.user import user_bp
-from kernel.common.error import error_bp
-from kernel.common.browse import browse_bp
-from kernel.metadata.metadata import metadata_bp
-from kernel.search.basic_search import basic_search_bp
-from kernel.search.admin import basic_search_admin_bp
-from kernel.metadata_schema.editor import metadata_schema_editor_bp
-from kernel.metadata_schema.form import metadata_schema_form_bp
-from kernel.template_overrides import template_overrides_bp
+import json
+import logging
+import os
 import platform
-import version
+import re
+from pprint import pformat
 
-from kernel.user import get_irods_session_from_environment
+import nh3
+import flask
+import humanize
+import irods
+import pytz
+from flask import (Flask, current_app, g, redirect, render_template,
+                   request, session, url_for)
+from flask_bootstrap import Bootstrap5
+from flask_cors import CORS
+from flask_session import Session
+from irods.manager.metadata_manager import iRODSMeta
+from werkzeug.exceptions import HTTPException, ServiceUnavailable
+
+import mango_portal.irods_session_pool as irods_session_pool
+import mango_portal.version as version
+
+from .cache import cache
+# proxy so it can also be imported in blueprints from csrf.py independently
+from .csrf import csrf
+from .kernel.common.browse import browse_bp
+from .kernel.common.error import error_bp
+from .kernel.metadata.metadata import metadata_bp
+from .kernel.metadata_schema.editor import metadata_schema_editor_bp
+from .kernel.metadata_schema.form import metadata_schema_form_bp
+from .kernel.search.admin import basic_search_admin_bp
+from .kernel.search.basic_search import basic_search_bp
+from .kernel.template_overrides import template_overrides_bp
+from .kernel.user import get_irods_session_from_environment
+from .kernel.user.user import user_bp
+
+from .mango_ui import admin_navbar_entries, navbar_entries
 
 irods_zone_config_module = importlib.import_module(
     os.getenv("IRODS_ZONES_CONFIG", "irods_zones_config.py").rstrip(".py")
 )
+rootlogger = logging.getLogger()
+rootlogger.setLevel("INFO")
 
-import irods_session_pool
-from werkzeug.exceptions import HTTPException, ServiceUnavailable
+# Early initialisation to avoid circulr imports from main app and its config by other modules
+app = Flask(__name__)
+app.config.from_pyfile(os.getenv("MANGO_CONFIG", "config.py"))  # @refactor
+# global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 
-import datetime
 
 # use a non default session handler only if specified
 if app.config.get('SESSION_TYPE', None):
-    Session(app) # use session specified in config.py
+    Session(app)  # use session specified in config.py
 
 print(f"Flask version {flask.__version__}")
 app.config["irods_zones"] = irods_zone_config_module.irods_zones
@@ -83,7 +65,7 @@ prc_version = irods.version_as_tuple()
 rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
 
 
-## Allow cross origin requests for SPA/Ajax situations
+# Allow cross origin requests for SPA/Ajax situations
 CORS(app, supports_credentials=True)
 
 
@@ -136,7 +118,7 @@ for mango_plugin_bp in app.config.get("MANGO_PLUGIN_BLUEPRINTS", []):
 if app.config.get("DEBUG", False):
     print(app.url_map)
 
-from mango_ui import admin_navbar_entries, navbar_entries
+
 
 if (_mod_func := os.getenv("LOCALDEV_SESSION_FUNC")): # in "module[.submodule].function" format
     _mod, _func = _mod_func.rsplit(".", 1)
@@ -303,14 +285,20 @@ def intersection(set1, set2):
 # html and js escape dangerous content
 # @deprecated use mango-lib
 @app.template_filter("bleach_clean")
-def bleach_clean(suspect, **kwargs):
-    if type(suspect) == str:
-        return bleach.clean(suspect, **kwargs)
+def bleach_clean(suspect: str, **kwargs) -> str:
+    """Escapes dangerous content for html and js
+
+    The name bleach_clean is for BC when it was using
+    the now unsupported bleach library. `nh3` is rust based and much faster too"""
+    if type(suspect) is str:
+        return nh3.clean(suspect, **kwargs)
     else:
         return suspect
 
 
+
 # return date into local time zone
+# @deprecated use mango-lib
 @app.template_filter("localize_datetime")
 def localize_datetime(
     value: datetime.datetime, format="%Y-%m-%d %H:%M:%S", local_timezone="Europe/Brussels"
