@@ -7,10 +7,9 @@ from flask import current_app
 from irods.models import Group, User
 from irods.session import iRODSSession
 
-# Since PRC 1.1.7
 from irods.user import iRODSGroup
 
-import signals
+import mango_portal.signals as signals
 
 # global pool of irods session as a dict of wrapped iRODSUSerSession objects
 irods_user_sessions = {}
