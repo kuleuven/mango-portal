@@ -5,14 +5,13 @@ import logging
 import threading
 import time
 
-from flask import Blueprint
 from irods.session import iRODSSession
 
-import signals
-from cache import cache
-from kernel.metadata_schema import SchemaManager, get_schema_manager
-from lib.util import flatten_schema
-from plugins.operator import \
+import mango_portal.signals as signals
+from  mango_portal.cache import cache
+from  mango_portal.kernel.metadata_schema import SchemaManager, get_schema_manager
+from mango_portal.lib.util import flatten_schema
+from mango_portal.plugins.operator import \
     get_zone_operator_session  # @todo: use mango_lib proxy
 
 
@@ -172,7 +171,6 @@ def realm_schemas_updater():
             if realm_schemas_queue:
                 zone, realm_names_to_check, retry_count = realm_schemas_queue.pop(0)
                 for realm_name in realm_names_to_check:
-                    start = time.time()
                     # logging.info(
                     #     f"Updating realm schemas for realm {realm_name} in zone {zone}"
                     # )

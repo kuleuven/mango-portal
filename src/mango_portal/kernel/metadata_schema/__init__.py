@@ -1,10 +1,8 @@
-# from irods.collection import iRODSCollection
-from irods.session import iRODSSession
-from app import app
+import importlib
 import logging
 
-import importlib
-
+from flask import current_app
+from irods.session import iRODSSession
 
 SCHEMA_CORE_PERMISSIONS = {
     "read_schema": 1 << 0,
@@ -42,6 +40,19 @@ SCHEMA_PERMISSIONS = SCHEMA_CORE_PERMISSIONS | {
 }
 
 
+class SchemaManager:
+    def get_user_permissions_realm(self, irods_session: iRODSSession):
+        pass
+
+    def get_user_permissions_schema(
+        self, irods_session: iRODSSession, schema: str | None = None
+    ):
+        pass
+
+    def list_schemas(self, filters: list[str] = ["published", "draft", "archived"]):
+        pass
+
+
 class BaseSchemaPermissionsManager:
     def __init__(self, zone: str, realm: str = ""):
         self.zone = zone
@@ -67,12 +78,8 @@ class BaseSchemaPermissionsManager:
         return self.schema_permissions
 
 
-class SchemaManager:
-    pass
-
-
 # register the schema permissions manager
-schema_permissions_manager_config = app.config.get(
+schema_permissions_manager_config = current_app.config.get(
     "MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS",
     {"module": "kernel.metadata_schema", "class": "BaseSchemaPermissionsManager"},
 )
@@ -82,7 +89,7 @@ schema_permissions_manager_module = importlib.import_module(
 schema_permissions_manager_class = getattr(
     schema_permissions_manager_module, schema_permissions_manager_config["class"]
 )
-schema_manager_config = app.config.get(
+schema_manager_config = current_app.config.get(
     "MANGO_SCHEMA_MANAGER_CLASS",
     {
         "module": "kernel.metadata_schema.schema_handler",
@@ -102,7 +109,7 @@ logging.info(
 
 
 def get_schema_manager(zone: str, realm: str) -> SchemaManager:
-    global schema_managers
+    # global schema_managers
 
     if zone_realm_key := f"{zone}-{realm}" not in schema_managers:
         schema_managers[zone_realm_key] = schema_manager_class(

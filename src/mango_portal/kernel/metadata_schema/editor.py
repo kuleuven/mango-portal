@@ -1,44 +1,26 @@
+import base64
+import json
+import os
+from pathlib import Path
+
+from mango_portal.cache import cache
+from mango_portal.csrf import csrf
 from flask import (
     Blueprint,
-    render_template,
-    current_app,
-    url_for,
-    redirect,
-    g,
-    send_file,
-    abort,
-    stream_with_context,
     Response,
-    request,
+    abort,
     flash,
-    helpers,
+    g,
+    redirect,
+    render_template,
+    request,
     session,
+    url_for,
 )
-
-from irods.meta import iRODSMeta
 from irods.session import iRODSSession
 
-from PIL import Image
-from pdf2image import convert_from_path
-import mimetypes
-import tempfile
-from urllib.parse import unquote
+from mango_portal.mango_ui import register_module
 
-from lib.util import generate_breadcrumbs
-import magic
-import os
-import glob
-from pathlib import Path
-import json
-from pprint import pprint
-import lib.util
-
-# from flask_wtf import CSRFProtect
-from csrf import csrf
-
-from slugify import slugify
-
-from cache import cache
 from . import get_schema_manager
 
 metadata_schema_editor_bp = Blueprint(
@@ -47,8 +29,6 @@ metadata_schema_editor_bp = Blueprint(
     template_folder="templates/metadata_schema",
 )
 
-
-from mango_ui import register_module
 
 UI = {
     "title": "Metadata schemas",
@@ -185,7 +165,7 @@ def save_schema():
         try:
             raw_schema = json.loads(request.form["raw_schema"])
         except Exception as e:
-            raw_schema = json.loads(lib.util.atob(request.form["raw_schema"]))
+            raw_schema = json.loads(base64.b64decode(request.form["raw_schema"]))
 
         result = schema_manager.store_schema(
             schema_name=request.form["schema_name"],
