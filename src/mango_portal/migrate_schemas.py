@@ -3,7 +3,7 @@ from pathlib import Path
 
 from irods.access import iRODSAccess
 
-from plugins.operator import get_zone_operator_session
+from .plugins.operator import get_zone_operator_session
 
 """Migrate existing schemas from persistent storage to iRODS
 

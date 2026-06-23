@@ -2,13 +2,11 @@ import datetime
 import logging
 import os
 import time
-
-from dateutil.parser import parse
-from irods.session import iRODSSession
+from threading import Event, Thread
 
 import requests
-
-from threading import Thread, Event
+from dateutil.parser import parse
+from irods.session import iRODSSession
 
 API_URLS = {
     "p": "https://icts-p-coz-data-platform-api.cloud.icts.kuleuven.be",

@@ -1,5 +1,5 @@
-import plugins.operator as operator
-import signals
+import mango_portal.plugins.operator as operator
+import mango_portal.signals as signals
 
 ##  signals to be used in dedicated pub/sub actions for the operator group manager
 yaml_definition_uploaded = signals.mango_signals.signal("yaml_definition_uploaded")

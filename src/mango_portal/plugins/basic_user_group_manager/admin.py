@@ -3,8 +3,8 @@ from flask import (Blueprint, flash, g, redirect, render_template, request,
 from irods.models import Group, User
 from irods.user import iRODSGroup
 
-from irods_session_pool import iRODSUserSession
-from mango_ui import register_module
+from mango_portal.irods_session_pool import iRODSUserSession
+from mango_portal.mango_ui import register_module
 
 basic_user_group_manager_admin_bp = Blueprint(
     "basic_user_group_manager_admin_bp", __name__, template_folder="templates"
@@ -88,7 +88,7 @@ def add_group():
     mango_irods_session: iRODSUserSession = g.irods_session
     group_name = request.form["group_name"].strip()
     try:
-        new_group: iRODSGroup = mango_irods_session.groups.create(group_name)
+        mango_irods_session.groups.create(group_name)
         return redirect(
             url_for(
                 "basic_user_group_manager_admin_bp.view_members",

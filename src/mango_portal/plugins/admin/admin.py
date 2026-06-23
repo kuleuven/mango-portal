@@ -1,19 +1,7 @@
-from flask import (
-    Blueprint,
-    render_template,
-    current_app,
-    url_for,
-    redirect,
-    g,
-    send_file,
-    abort,
-    stream_with_context,
-    Response,
-    request,
-    flash,
-)
-from mango_ui import register_module_admin
-import irods_session_pool
+from flask import Blueprint, render_template
+
+from mango_portal.mango_ui import register_module_admin
+import mango_portal.irods_session_pool as irods_session_pool
 
 admin_admin_bp = Blueprint(
     "admin_admin_bp", __name__, template_folder="templates/admin"

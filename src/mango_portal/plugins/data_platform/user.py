@@ -1,7 +1,5 @@
 from datetime import datetime
-import os
 import requests
-from requests.models import PreparedRequest
 import json
 from flask import (
     Blueprint,
@@ -12,14 +10,24 @@ from flask import (
     request,
     session,
     flash,
-    g
+    g,
 )
 
 from irods.session import iRODSSession
-import irods_session_pool
+import mango_portal.irods_session_pool as irods_session_pool
 
-from irods_zones_config import DEFAULT_IRODS_PARAMETERS, DEFAULT_SSL_PARAMETERS
-from . import API_URL, portals, openid_login_required, current_user_projects, current_zone_jobid, Session, portals
+from mango_portal.irods_zones_config import (
+    DEFAULT_IRODS_PARAMETERS,
+    DEFAULT_SSL_PARAMETERS,
+)
+from . import (
+    API_URL,
+    portals,
+    openid_login_required,
+    current_user_projects,
+    current_zone_jobid,
+    Session,
+)
 
 import logging
 
@@ -28,13 +36,16 @@ data_platform_user_bp = Blueprint(
     "data_platform_user_bp", __name__, template_folder="templates"
 )
 
+
 def irods_connection_info(zone, username):
-    jobid = current_app.config['irods_zones'][zone]["jobid"]
+    jobid = current_app.config["irods_zones"][zone]["jobid"]
 
     response = requests.post(
-        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info", headers=g.dpa.data_platform_headers, json={
+        f"{API_URL}/v2/{g.dpa.tenant}/irods/zone/{jobid}/connection-info",
+        headers=g.dpa.data_platform_headers,
+        json={
             "client": "mango-portal",
-        }
+        },
     )
     response.raise_for_status()
 
@@ -53,81 +64,93 @@ def irods_connection_info(zone, username):
     }
 
 
-
-@data_platform_user_bp.route('/user/login_openid', methods=["GET", "POST"])
+@data_platform_user_bp.route("/user/login_openid", methods=["GET", "POST"])
 def login_openid():
-    """
-    """
+    """ """
 
-    if request.method == 'GET':
+    if request.method == "GET":
         for portal in portals:
             portal_config = portals[portal]
-            if 'auto_pick_on_host' in portal_config and portal_config['auto_pick_on_host'] == request.host:
+            if (
+                "auto_pick_on_host" in portal_config
+                and portal_config["auto_pick_on_host"] == request.host
+            ):
                 return Session(portal).login()
 
         last_portal = ""
-        if 'openid_session' in session and 'portal' in session['openid_session']:
-            last_portal = session['openid_session']['portal']
+        if "openid_session" in session and "portal" in session["openid_session"]:
+            last_portal = session["openid_session"]["portal"]
 
-        return render_template('user/login_openid.html.j2', available_portals=portals, last_portal=last_portal)
+        return render_template(
+            "user/login_openid.html.j2",
+            available_portals=portals,
+            last_portal=last_portal,
+        )
 
-    if request.method == 'POST':
-        portal = request.form.get('portal')
+    if request.method == "POST":
+        portal = request.form.get("portal")
 
         if portal not in portals:
-            flash('Unknown portal', category='danger')
-            return redirect(url_for('data_platform_user_bp.login_openid'))
+            flash("Unknown portal", category="danger")
+            return redirect(url_for("data_platform_user_bp.login_openid"))
 
         return Session(portal).login()
-    
-@data_platform_user_bp.route('/user/openid/callback/<portal>')
+
+
+@data_platform_user_bp.route("/user/openid/callback/<portal>")
 def login_openid_callback(portal):
-    """
-    """
+    """ """
 
     if portal not in portals:
-        flash('Unknown portal', category='danger')
-        return render_template('user/login_openid.html.j2', portals=portals)
+        flash("Unknown portal", category="danger")
+        return render_template("user/login_openid.html.j2", portals=portals)
 
     s = Session(portal).from_callback()
 
     if not s.valid():
-        return redirect(url_for('data_platform_user_bp.login_openid'))
+        return redirect(url_for("data_platform_user_bp.login_openid"))
 
     # We are logged on
-    session['openid_session'] = dict(s)
+    session["openid_session"] = dict(s)
 
-    if 'openid_redirect' in session:
-        return redirect(session.pop('openid_redirect'))
+    if "openid_redirect" in session:
+        return redirect(session.pop("openid_redirect"))
 
-    return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+    return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
 
 
-@data_platform_user_bp.route('/user/openid/choose_zone', methods=["GET", "POST"])
+@data_platform_user_bp.route("/user/openid/choose_zone", methods=["GET", "POST"])
 @openid_login_required
 def login_openid_select_zone():
-    if request.method == 'GET':
-        last_zone_name=''
+    if request.method == "GET":
+        last_zone_name = ""
 
-        if 'zone' in session:
-            last_zone_name = session['zone']
+        if "zone" in session:
+            last_zone_name = session["zone"]
 
         projects = current_user_projects()
 
         # Filter zones
-        zones = [] # All visible zones (many in case user is admin)
-        my_zones = [] # Zones in which the user exist (user must be on a project that is not archived)
+        zones = []  # All visible zones (many in case user is admin)
+        my_zones = []  # Zones in which the user exist (user must be on a project that is not archived)
         other_platforms = []
         for project in projects:
-            if not project['platform'].startswith('irods') and project['platform'] not in other_platforms:
-                other_platforms.append(project['platform'])
-            if 'zone' not in project:
+            if (
+                not project["platform"].startswith("irods")
+                and project["platform"] not in other_platforms
+            ):
+                other_platforms.append(project["platform"])
+            if "zone" not in project:
                 continue
 
-            if project['zone'] not in zones:
-                zones.append(project['zone'])
-            if project['my_role'] != '' and not project['archived'] and project['zone'] not in my_zones:
-                my_zones.append(project['zone'])
+            if project["zone"] not in zones:
+                zones.append(project["zone"])
+            if (
+                project["my_role"] != ""
+                and not project["archived"]
+                and project["zone"] not in my_zones
+            ):
+                my_zones.append(project["zone"])
 
         response = requests.get(
             f"{API_URL}/v2/{g.dpa.tenant}/services", headers=g.dpa.data_platform_headers
@@ -136,111 +159,141 @@ def login_openid_select_zone():
 
         services = response.json()
 
-        return render_template('user/login_openid_select_zone.html.j2',
+        return render_template(
+            "user/login_openid_select_zone.html.j2",
             services=services,
             projects=projects,
             zones=zones,
             my_zones=my_zones,
             other_platforms=other_platforms,
             last_zone_name=last_zone_name,
-            admin=('project-management' in g.dpa.permissions),
-            finance=('project-statistics' in g.dpa.permissions),
+            admin=("project-management" in g.dpa.permissions),
+            finance=("project-statistics" in g.dpa.permissions),
             portals=portals,
         )
 
-    zone = request.form.get('irods_zone')
+    zone = request.form.get("irods_zone")
 
-    user_name = Session(session['openid_session']).username
+    user_name = Session(session["openid_session"]).username
     connection_info = irods_connection_info(zone=zone, username=user_name)
-    password = connection_info['password']
+    password = connection_info["password"]
 
     try:
         irods_session = iRODSSession(
             user=user_name,
             password=password,
-            **connection_info['parameters'],
-            **connection_info['ssl_settings']
+            **connection_info["parameters"],
+            **connection_info["ssl_settings"],
         )
 
-        irods_session_pool.add_irods_session(user_name, irods_session, Session(session['openid_session']).name, Session(session['openid_session']).email)
-        session['userid'] = user_name
-        session['password'] = password
-        session['zone'] = irods_session.zone
+        irods_session_pool.add_irods_session(
+            user_name,
+            irods_session,
+            Session(session["openid_session"]).name,
+            Session(session["openid_session"]).email,
+        )
+        session["userid"] = user_name
+        session["password"] = password
+        session["zone"] = irods_session.zone
 
-        irods_session_pool.irods_node_logins += [{'userid': user_name, 'zone': irods_session.zone, 'login_time': datetime.now(), 'user_name': getattr(irods_session, "openid_user_name", user_name)} ]
-        logging.info(f"User {irods_session.username}, zone {irods_session.zone} logged in")
+        irods_session_pool.irods_node_logins += [
+            {
+                "userid": user_name,
+                "zone": irods_session.zone,
+                "login_time": datetime.now(),
+                "user_name": getattr(irods_session, "openid_user_name", user_name),
+            }
+        ]
+        logging.info(
+            f"User {irods_session.username}, zone {irods_session.zone} logged in"
+        )
 
     except Exception as e:
         print(e)
-        flash(f'Could not create iRODS session: {e}', category='danger')
-        return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+        flash(f"Could not create iRODS session: {e}", category="danger")
+        return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
 
-    if request.form.get('submit') == 'How to connect':
-        return redirect(url_for('data_platform_user_bp.connection_info'))
+    if request.form.get("submit") == "How to connect":
+        return redirect(url_for("data_platform_user_bp.connection_info"))
 
-    collection = request.form.get('collection')
+    collection = request.form.get("collection")
     if collection:
-        return redirect(url_for('browse_bp.collection_browse', collection=collection.lstrip('/')))
-    
-    redirect_after_login = session.pop("redirect_after_login", url_for('index'))
+        return redirect(
+            url_for("browse_bp.collection_browse", collection=collection.lstrip("/"))
+        )
+
+    redirect_after_login = session.pop("redirect_after_login", url_for("index"))
 
     return redirect(redirect_after_login)
 
-@data_platform_user_bp.route('/user/logout_openid', methods=["GET"])
+
+@data_platform_user_bp.route("/user/logout_openid", methods=["GET"])
 def logout_openid():
-    if 'openid_session' in session:
-        del session['openid_session']
+    if "openid_session" in session:
+        del session["openid_session"]
 
-    if 'drop_data_platform_privileges' in session:
-        del session['drop_data_platform_privileges']
+    if "drop_data_platform_privileges" in session:
+        del session["drop_data_platform_privileges"]
 
-    if 'userid' in session:
-        del session['userid']
+    if "userid" in session:
+        del session["userid"]
 
-    return render_template('user/logout_openid.html.j2')
+    return render_template("user/logout_openid.html.j2")
 
-@data_platform_user_bp.route('/user/entitlement_required', methods=["GET"])
+
+@data_platform_user_bp.route("/user/entitlement_required", methods=["GET"])
 def entitlement_required():
-    if 'openid_session' not in session:
+    if "openid_session" not in session:
         return redirect(url_for("data_platform_user_bp.login_openid"))
 
-    s = Session(session['openid_session'])
+    s = Session(session["openid_session"])
 
-    return render_template('user/entitlement_required.html.j2', provider=s.provider, name=s.name, email=s.email, username=s.username)
+    return render_template(
+        "user/entitlement_required.html.j2",
+        provider=s.provider,
+        name=s.name,
+        email=s.email,
+        username=s.username,
+    )
 
-@data_platform_user_bp.route('/user/openid/drop_permissions', methods=["GET"])
+
+@data_platform_user_bp.route("/user/openid/drop_permissions", methods=["GET"])
 @openid_login_required
 def drop_permissions():
-    s = Session(session['openid_session'])
+    s = Session(session["openid_session"])
     s.drop_permissions()
-    session['openid_session'] = dict(s)
+    session["openid_session"] = dict(s)
 
-    return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+    return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
 
-@data_platform_user_bp.route('/user/openid/impersonate', methods=["POST"])
+
+@data_platform_user_bp.route("/user/openid/impersonate", methods=["POST"])
 @openid_login_required
 def impersonate():
-    s = Session(session['openid_session'])
-    s.impersonate(request.form.get('username'))
-    session['openid_session'] = dict(s)
+    s = Session(session["openid_session"])
+    s.impersonate(request.form.get("username"))
+    session["openid_session"] = dict(s)
 
-    return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+    return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
 
 
-@data_platform_user_bp.route('/user/openid/switch_portal/<portal>', methods=["GET"])
+@data_platform_user_bp.route("/user/openid/switch_portal/<portal>", methods=["GET"])
 @openid_login_required
 def switch_portal(portal):
     if portal not in portals:
-        flash('Unknown portal', category='danger')
-        return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+        flash("Unknown portal", category="danger")
+        return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
 
-    s = Session(session['openid_session'])
+    s = Session(session["openid_session"])
     s.switch_portal(portal)
-    session['openid_session'] = dict(s)
+    session["openid_session"] = dict(s)
 
-    return redirect(url_for('data_platform_user_bp.login_openid_select_zone'))
+    return redirect(url_for("data_platform_user_bp.login_openid_select_zone"))
 
-@data_platform_user_bp.route("/data-platform/connection-info/modal/<zone>", methods=["GET"])
+
+@data_platform_user_bp.route(
+    "/data-platform/connection-info/modal/<zone>", methods=["GET"]
+)
 @openid_login_required
 def connection_info_modal(zone):
     response = requests.get(
@@ -251,11 +304,11 @@ def connection_info_modal(zone):
     services = response.json()
 
     zone_info = {
-        "irods_user_name": Session(session['openid_session']).username,
+        "irods_user_name": Session(session["openid_session"]).username,
         "irods_zone_name": zone,
-        "irods_host": current_app.config['irods_zones'][zone]['parameters']['host'],
+        "irods_host": current_app.config["irods_zones"][zone]["parameters"]["host"],
         "irods_port": 1247,
-        "jobid": current_app.config['irods_zones'][zone]["jobid"],
+        "jobid": current_app.config["irods_zones"][zone]["jobid"],
     }
 
     irods_env = {
@@ -273,19 +326,25 @@ def connection_info_modal(zone):
         "irods_client_server_negotiation": "request_server_negotiation",
         "irods_client_server_policy": "CS_NEG_REQUIRE",
         "irods_default_resource": "default",
-        "irods_cwd": f"/{zone_info['irods_zone_name']}/home"
+        "irods_cwd": f"/{zone_info['irods_zone_name']}/home",
     }
 
     if "-hpc-" in zone_info["jobid"]:
         # icts-p-hpc-irods-instance
-        parts = zone_info["jobid"].split('-', 5)
+        parts = zone_info["jobid"].split("-", 5)
 
-        zone_info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
+        zone_info["hpc-irods-setup-zone"] = "-".join(parts[4:])
 
-        if parts[1] != 'p':
-            zone_info['hpc-irods-setup-zone'] += "-" + parts[1]
+        if parts[1] != "p":
+            zone_info["hpc-irods-setup-zone"] += "-" + parts[1]
 
-    return render_template("user/connection_info_body.html.j2", services=services, zone_info=zone_info, setup_json=json.dumps(irods_env, indent=2))
+    return render_template(
+        "user/connection_info_body.html.j2",
+        services=services,
+        zone_info=zone_info,
+        setup_json=json.dumps(irods_env, indent=2),
+    )
+
 
 @data_platform_user_bp.route("/data-platform/connection-info", methods=["GET"])
 @data_platform_user_bp.route("/desktop-sync", methods=["GET"])
@@ -299,20 +358,20 @@ def connection_info():
     services = response.json()
 
     jobid = current_zone_jobid()
-    
+
     zone = ""
 
-    for z in current_app.config['irods_zones']:
-        if current_app.config['irods_zones'][z]["jobid"] == jobid:
+    for z in current_app.config["irods_zones"]:
+        if current_app.config["irods_zones"][z]["jobid"] == jobid:
             zone = z
             break
 
     zone_info = {
-        "irods_user_name": Session(session['openid_session']).username,
+        "irods_user_name": Session(session["openid_session"]).username,
         "irods_zone_name": zone,
-        "irods_host": current_app.config['irods_zones'][zone]['parameters']['host'],
+        "irods_host": current_app.config["irods_zones"][zone]["parameters"]["host"],
         "irods_port": 1247,
-        "jobid": current_app.config['irods_zones'][zone]["jobid"],
+        "jobid": current_app.config["irods_zones"][zone]["jobid"],
     }
 
     irods_env = {
@@ -330,16 +389,21 @@ def connection_info():
         "irods_client_server_negotiation": "request_server_negotiation",
         "irods_client_server_policy": "CS_NEG_REQUIRE",
         "irods_default_resource": "default",
-        "irods_cwd": f"/{zone_info['irods_zone_name']}/home"
+        "irods_cwd": f"/{zone_info['irods_zone_name']}/home",
     }
 
     if "-hpc-" in zone_info["jobid"]:
         # icts-p-hpc-irods-instance
-        parts = zone_info["jobid"].split('-', 5)
+        parts = zone_info["jobid"].split("-", 5)
 
-        zone_info['hpc-irods-setup-zone'] = '-'.join(parts[4:])
+        zone_info["hpc-irods-setup-zone"] = "-".join(parts[4:])
 
-        if parts[1] != 'p':
-            zone_info['hpc-irods-setup-zone'] += "-" + parts[1]
+        if parts[1] != "p":
+            zone_info["hpc-irods-setup-zone"] += "-" + parts[1]
 
-    return render_template("user/connection_info.html.j2", services=services, zone_info=zone_info, setup_json=json.dumps(irods_env, indent=2))
+    return render_template(
+        "user/connection_info.html.j2",
+        services=services,
+        zone_info=zone_info,
+        setup_json=json.dumps(irods_env, indent=2),
+    )

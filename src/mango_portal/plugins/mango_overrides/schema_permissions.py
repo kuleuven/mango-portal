@@ -1,7 +1,6 @@
-# Requires: user_tantra plugin
-
-from kernel.metadata_schema import BaseSchemaPermissionsManager
 from irods.session import iRODSSession
+
+from mango_portal.kernel.metadata_schema import BaseSchemaPermissionsManager  # @todo: Move to Mango Lib
 
 SCHEMA_MANAGER_GROUP_SUFFIX = "schema_manager"
 
