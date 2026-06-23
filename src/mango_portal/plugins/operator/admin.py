@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, g, request, redirect, flash
+from flask import Blueprint, render_template, request, redirect, flash
 from . import zone_operator_sessions, remove_zone_operator_session
-from mango_ui import register_module_admin
+from mango_portal.mango_ui import register_module_admin
 
-from plugins.admin import require_mango_portal_admin
+from ..admin import require_mango_portal_admin
 
 operator_admin_bp = Blueprint(
     "operator_admin_bp", __name__, template_folder="templates"
@@ -31,14 +31,15 @@ def index():
 @require_mango_portal_admin
 def remove_operator_session():
     if zone := request.form.get("zone", False):
-        if remove_zone_operator_session(zone):
+        if remove_zone_operator_session(zone):  # @todo refactor damn this is ugly
             flash(f"Removed operator session for zone {zone}", "success")
         else:
             flash(f"Something went wrong trying to remove session for zone {zone} ")
 
     return redirect(request.referrer)
 
-@operator_admin_bp.route("/operator-reset-all", methods=["GET","POST"])
+
+@operator_admin_bp.route("/operator-reset-all", methods=["GET", "POST"])
 def reset_all():
     for zone in zone_operator_sessions:
         if remove_operator_session(zone):

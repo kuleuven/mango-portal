@@ -1,6 +1,9 @@
-from flask import render_template, Blueprint, g, session, request, jsonify, redirect
-from kernel.template_overrides import get_template_override_manager
+from flask import (Blueprint, g, jsonify, redirect, render_template, request,
+                   session)
 from irods.session import iRODSSession
+
+from mango_portal.kernel.template_overrides import \
+    get_template_override_manager
 
 user_tantra_realm_bp = Blueprint(
     "user_tantra_realm_bp", __name__, template_folder="templates"

@@ -8,7 +8,7 @@ import signal
 import time
 import sys
 from waitress.server import create_server
-import irods_session_pool
+import mango_portal.irods_session_pool as irods_session_pool
 
 if __name__ == '__main__':
 

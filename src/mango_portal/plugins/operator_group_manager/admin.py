@@ -13,14 +13,13 @@ from flask import (
 from irods.column import Like
 from irods.models import Group, User
 from irods.session import iRODSSession
-from irods.user import iRODSGroup, iRODSUser
+from irods.user import iRODSGroup
 
-from cache import cache
-from lib.util import setup_mango_collection, setup_realm_plugin_collection
-from mango_ui import register_module
-from plugins.operator import get_zone_operator_session
+from mango_portal.lib.util import setup_mango_collection, setup_realm_plugin_collection
+from mango_portal.mango_ui import register_module
+from mango_portal.plugins.operator import get_zone_operator_session
 
-from . import get_operator_session, group_definition_cud, yaml_definition_uploaded
+from . import get_operator_session, yaml_definition_uploaded
 from .validation import validate_user_management_yaml
 
 operator_group_manager_admin_bp = Blueprint(

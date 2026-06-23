@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-import yaml, pathlib
+import yaml
+import pathlib
 
 navbar_entries = {}
 admin_navbar_entries = {}

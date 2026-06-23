@@ -2,7 +2,6 @@ import requests
 from flask import (
     Blueprint,
     jsonify,
-    session,
     g
 )
 

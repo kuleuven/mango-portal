@@ -19,9 +19,9 @@ from flask import (
     current_app,
     g,
 )
-from cache import cache
-from signals import mango_signals
-from csrf import csrf
+from mango_portal.cache import cache
+from mango_portal.signals import mango_signals
+from mango_portal.csrf import csrf
 from . import API_URL, openid_login_required, Session, portals
 
 data_platform_project_bp = Blueprint(

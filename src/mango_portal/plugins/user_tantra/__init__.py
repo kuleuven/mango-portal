@@ -1,9 +1,9 @@
-from flask import session
+from flask import current_app, session
 
-import irods_session_pool, signals
-import json, logging
-from app import app, irods_sessions
-from plugins.operator import get_zone_operator_session
+import mango_portal.irods_session_pool as irods_session_pool
+import mango_portal.signals as signals
+import logging
+from mango_portal.plugins.operator import get_zone_operator_session
 
 # catch signal from user login sessions to
 # attach the mango_admin group
@@ -19,7 +19,7 @@ def enrich_irods_session_listener(sender, **parameters):
         )
 
         # Add role mango_portal_admin if eligible
-        mango_admins = app.config.get("MANGO_ADMINS", [])
+        mango_admins = current_app.config.get("MANGO_ADMINS", [])
         if parameters["username"] in mango_admins:
             if hasattr(mango_irods_session, "roles"):
                 mango_irods_session.roles.append("mango_portal_admin")
