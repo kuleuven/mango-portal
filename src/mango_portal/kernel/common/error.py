@@ -1,12 +1,5 @@
-from flask import (
-    Blueprint,
-    current_app,
-    flash,
-    redirect,
-    render_template,
-    request,
-    url_for,
-)
+from flask import (Blueprint, current_app, flash, redirect, render_template,
+                   request, url_for)
 from flask_wtf.csrf import CSRFError
 
 error_bp = Blueprint("error_bp", __name__, template_folder="templates/common")

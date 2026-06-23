@@ -5,16 +5,11 @@ from flask import (
     g,
     request,
     flash,
-    redirect,
-    url_for,
 )
 
 
-from requests import get
-from kernel.search.search_form import CatalogSearchForm
-from cache import cache
+from .search_form import CatalogSearchForm
 
-from pprint import pprint
 from irods.models import (
     Collection,
     DataObject,
@@ -26,13 +21,15 @@ from irods.column import Criterion, Like
 from irods.session import iRODSSession
 from datetime import datetime
 from flask_paginate import Pagination
-from kernel.template_overrides import get_template_override_manager
-from kernel.metadata_schema.editor import get_realms_for_current_user
+from ..template_overrides import get_template_override_manager
+from ..metadata_schema.editor import get_realms_for_current_user
 import time
 
 from mango_ui import register_module
 
-import kernel.search.admin  # to register the admin route without configuring another blueprint, is there a better way to do this?
+from . import (
+    admin,
+)  # to register the admin route without configuring another blueprint, is there a better way to do this?
 
 basic_search_bp = Blueprint("basic_search_bp", __name__, template_folder="templates")
 
@@ -171,10 +168,7 @@ def create_nested_label(key, flattened_schema):
     # }
 
 
-
 # The class SchemaInfo is is to be copied to __init__.py, no other uses dettected. To remove I guess
-
-    
 
 
 def get_realm_schemas_for_user(irods_session: iRODSSession):
@@ -187,14 +181,18 @@ def get_realm_schemas_for_user(irods_session: iRODSSession):
         #     update_realm_schemas(irods_session, realm_name)
         return realm_schemas[irods_session.zone].get(realm_name, {})
     else:
-        realm_names = get_realms_for_current_user(irods_session, f"/{irods_session.zone}/home")
+        realm_names = get_realms_for_current_user(
+            irods_session, f"/{irods_session.zone}/home"
+        )
         schemas_for_user = {}
         for realm_name in realm_names:
             # if realm_name not in realm_schemas[irods_session.zone]:
             #     update_realm_schemas(irods_session, realm_name)
-            if realm_name in realm_schemas[irods_session.zone]:  # check if the realm schemas are already loaded
+            if (
+                realm_name in realm_schemas[irods_session.zone]
+            ):  # check if the realm schemas are already loaded
                 schemas_for_user.update(realm_schemas[irods_session.zone][realm_name])
-            
+
     return schemas_for_user
 
 
@@ -243,7 +241,6 @@ def catalog_search():
     no_label_fields_dict = {f"no_label_{v}": v for v in no_label_fields}
 
     if not (request.values.get("submit", False) == "Search" and search_form.validate()):
-
         return render_template(
             "search/basic_catalog_search.html.j2",
             search_form=search_form,
@@ -275,7 +272,6 @@ def catalog_search():
     page = request.values.get("page", 1, int)
     limit = 20  # request.values.get("per_page", 20, int)
     offset = (page - 1) * limit
-    pprint(request.values)
     current_app.logger.info(f"Query with offset {offset}, limit {limit}")
 
     query = (
@@ -302,7 +298,6 @@ def catalog_search():
 
     current_app.logger.info(f"Assigned to total hidden field: {total}")
     search_form.total.data = total
-    pprint(search_form.total)
 
     try:
         results = query.execute()
@@ -337,7 +332,6 @@ def catalog_search():
         results_to_dict(result, request.values[ITEM_TYPE]) for result in results
     ]
 
-    # pprint(dict_results)
     pagination = Pagination(
         page=page,
         per_page=limit,
@@ -347,7 +341,6 @@ def catalog_search():
         css_framework="bootstrap5",
         # show_single_page=True,
     )
-    # pprint(pagination)
 
     for row in search_form.schema_metadata:
         print(row.schema.data)

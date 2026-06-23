@@ -12,15 +12,17 @@ from flask import (
 )
 from irods.session import iRODSSession
 from irods.exception import PAM_AUTH_PASSWORD_FAILED
-from kernel.template_overrides import get_template_override_manager
+from ..template_overrides import get_template_override_manager
 
-import irods_session_pool
+import mango_portal.irods_session_pool as irods_session_pool
 import logging
 import importlib
 import os
 
 
-irods_zone_config_module = importlib.import_module(os.getenv('IRODS_ZONES_CONFIG', 'irods_zones_config.py').rstrip('.py'))
+irods_zone_config_module = importlib.import_module(
+    os.getenv("IRODS_ZONES_CONFIG", "irods_zones_config.py").rstrip(".py")
+)
 
 irods_zones = irods_zone_config_module.irods_zones
 DEFAULT_IRODS_PARAMETERS = irods_zone_config_module.DEFAULT_IRODS_PARAMETERS
@@ -29,7 +31,6 @@ DEFAULT_SSL_PARAMETERS = irods_zone_config_module.DEFAULT_SSL_PARAMETERS
 user_bp = Blueprint(
     "user_bp", __name__, static_folder="static/user", template_folder="templates"
 )
-# iRODSSession.query()
 
 
 @user_bp.route("/user/groups")
@@ -64,9 +65,7 @@ def my_profile():
 
     view_template = get_template_override_manager(
         g.irods_session.zone
-    ).get_template_for_catalog_item(
-        None, "user/myprofile.html.j2"
-    )
+    ).get_template_for_catalog_item(None, "user/myprofile.html.j2")
     return render_template(
         view_template,
         me=me,
@@ -83,7 +82,7 @@ def group_members(group_name):
     members = []
     status = "Ok"
     try:
-        irods_session : iRODSSession = g.irods_session
+        irods_session: iRODSSession = g.irods_session
         my_group = irods_session.groups.get(group_name)
         members = my_group.members
 
@@ -92,9 +91,7 @@ def group_members(group_name):
 
     view_template = get_template_override_manager(
         g.irods_session.zone
-    ).get_template_for_catalog_item(
-        None, "user/group_members.html.j2"
-    )
+    ).get_template_for_catalog_item(None, "user/group_members.html.j2")
 
     return render_template(
         view_template,

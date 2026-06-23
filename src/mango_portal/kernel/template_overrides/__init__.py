@@ -4,7 +4,7 @@ Collection and data object views and other template calls can be changed by over
 jinja2 template based on several rules (or no real rule at all for permanent overrides)
 """
 
-from app import app
+from flask import current_app, Blueprint
 from irods.collection import iRODSCollection
 from irods.data_object import iRODSDataObject
 import os, pathlib, yaml, collections, logging
@@ -16,8 +16,8 @@ MANGO_OVERRIDE_SOURCE_TEMPLATES = (
     "data_object_content",
     "collection_content",
 )
-with app.app_context():
-    MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG = app.config.get(
+with current_app.app_context():
+    MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG = current_app.config.get(
         "MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG", "config/template_override_rules.yml"
     )
 
@@ -175,7 +175,7 @@ class TemplateOverrideManager:
             # match_list=[]
             for match_key, match_value in matches["any"].items():
                 match_item_result = match_item(match_key, match_value)
-                if (type(match_item_result) == list and any(match_item_result)) or (
+                if (type(match_item_result) is list and any(match_item_result)) or (
                     match_item_result
                 ):
                     match_result["any"] = True
@@ -242,7 +242,6 @@ logging.info(
     f"Template override managers: found dedicated configs for zones {list(template_override_managers.keys())}"
 )
 
-from flask import Blueprint
 
 template_overrides_bp = Blueprint("template_overrides_bp", __name__)
 

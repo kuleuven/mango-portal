@@ -6,7 +6,7 @@ basic_search_admin_bp = Blueprint("basic_search_admin_bp", __name__, template_fo
 
 # Are we in a ManGO portal context?
 try:
-    from mango_ui import register_module_admin
+    from mango_portal.mango_ui import register_module_admin
 
     ADMIN_UI = {
         "title": "Search Schema Cache",

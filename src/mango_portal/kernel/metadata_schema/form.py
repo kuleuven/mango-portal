@@ -1,67 +1,18 @@
-from unittest import result
-from flask import (
-    Blueprint,
-    render_template,
-    current_app,
-    url_for,
-    redirect,
-    g,
-    send_file,
-    abort,
-    stream_with_context,
-    Response,
-    request,
-    flash,
-)
-
-import os
 import json
-
-from flask_wtf import FlaskForm
-from wtforms import (
-    StringField,
-    EmailField,
-    DateField,
-    URLField,
-    SelectField,
-    SubmitField,
-    RadioField,
-    BooleanField,
-    FormField,
-    IntegerField,
-    validators,
-    Form,
-    TimeField,
-    HiddenField,
-    SelectMultipleField,
-    TextAreaField,
-    FloatField,
-)
-import wtforms.widgets
-from werkzeug.datastructures import MultiDict
-
-from irods.meta import iRODSMeta, AVUOperation
-
-from irods.models import Column, Collection, DataObject, DataObjectMeta, CollectionMeta
-from irods.column import Criterion
-
-from irods.query import Query
-
-
-from slugify import slugify
-
-from csrf import csrf
-
+import logging
 from pprint import pprint
 
-import lib.util
-from lib.util import flatten_josse_schema, flatten_schema
-from .editor import get_metadata_schema_dir
+from flask import (Blueprint, Response, current_app, g, redirect,
+                   render_template, request, url_for)
+from irods.meta import AVUOperation, iRODSMeta
+from irods.session import iRODSSession
+from slugify import slugify
+from werkzeug.datastructures import MultiDict
 
-from kernel.metadata_schema import get_schema_manager, SchemaManager
-import logging
+import mango_portal.signals as signals
+from mango_portal.lib.util import flatten_schema
 
-import signals
+from ..metadata_schema import SchemaManager, get_schema_manager
 
 metadata_schema_form_bp = Blueprint(
     "metadata_schema_form_bp",
@@ -134,9 +85,6 @@ def convert_to_multi_dict(metadata_items, multidict: MultiDict, unit_level=1):
         multidict.add(composite_name, subdict.to_dict(flat=False))
 
 
-from irods.session import iRODSSession
-
-
 @metadata_schema_form_bp.route("/metadata-schema/edit", methods=["POST", "GET"])
 def edit_schema_metadata_for_item():
     """ """
@@ -155,7 +103,7 @@ def edit_metadata(
     method: str,
     redirect_route: str,
     post_url: str,
-):
+) -> Response:
     _parameters = request_values.to_dict()
 
     item_type = _parameters["item_type"]
@@ -199,13 +147,15 @@ def edit_metadata(
         form_values.add("post_url", post_url)
         values_json = json.dumps(form_values.to_dict(flat=False), indent=2)
 
-        return render_template(
-            "schema_form_edit.html.j2",
-            schema=schema,
-            realm=realm,
-            schema_values=lib.util.btoa(values_json),
-            prefix=prefix,
-            item=catalog_item,
+        return Response(
+            render_template(
+                "schema_form_edit.html.j2",
+                schema=schema,
+                realm=realm,
+                schema_values=lib.util.btoa(values_json),
+                prefix=prefix,
+                item=catalog_item,
+            )
         )
 
     if method == "POST":
