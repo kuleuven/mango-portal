@@ -1,78 +1,50 @@
-from curses import meta
-import flask
-
-from collections.abc import Mapping
-
-from flask import (
-    Blueprint,
-    render_template,
-    current_app,
-    url_for,
-    redirect,
-    g,
-    send_file,
-    abort,
-    stream_with_context,
-    Response,
-    make_response,
-    request,
-    flash,
-)
-
-from irods.meta import iRODSMeta
-from irods.access import iRODSAccess
-import irods.keywords
-from irods.data_object import iRODSDataObject
-from irods.collection import iRODSCollection
-from irods.session import iRODSSession
-from irods.path import iRODSPath
-from irods.exception import CAT_SQL_ERR
-
-from PIL import Image
-from pdf2image import convert_from_path
-import mimetypes
-import tempfile
-from urllib.parse import unquote
-
-from lib.util import (
-    generate_breadcrumbs,
-    flatten_josse_schema,
-    get_collection_size,
-    flatten_schema,
-)
-import magic
-import os
+import datetime
 import glob
 import json
-import requests
-import pprint
-import tempfile
+import logging
+import mimetypes
+import os
 import re
-import datetime
+import tarfile
+import tempfile
 import time
 from collections import Counter, namedtuple
-from cache import cache
-import logging
-import irods_session_pool
-from multidict import MultiDict
+from collections.abc import Mapping
 from operator import itemgetter
-from pathlib import PurePath, Path
-import tarfile
+from pathlib import Path, PurePath
+from urllib.parse import unquote
 
-from kernel.metadata_schema import get_schema_manager
-from kernel.template_overrides import get_template_override_manager
-from kernel.common.error import flash_error
-
+import flask
+import httpx
+import irods.keywords
+import magic
+from flask import (Blueprint, Response, abort, current_app, flash, g,
+                   make_response, redirect, render_template, request,
+                   send_file, stream_with_context, url_for)
+from irods.access import iRODSAccess
+from irods.collection import iRODSCollection
+from irods.data_object import iRODSDataObject
+from irods.exception import CAT_SQL_ERR
+from irods.meta import iRODSMeta
+from irods.path import iRODSPath
+from irods.session import iRODSSession
 from mango_mdconverter import md2dict
+from multidict import MultiDict
+from pdf2image import convert_from_path
+from PIL import Image
+
+import mango_portal.csrf as csrf
+import mango_portal.signals as signals
+from mango_portal.lib.util import flatten_schema, generate_breadcrumbs
+from mango_portal.mango_ui import (collection_extra_tabs, collection_view_tabs,
+                                   object_view_tabs, register_module)
+
+from ..common.error import flash_error
+from ..metadata_schema import get_schema_manager
+from ..metadata_schema.editor import get_metadata_schema_dir
+from ..template_overrides import get_template_override_manager
 
 browse_bp = Blueprint("browse_bp", __name__, template_folder="templates")
-
-from mango_ui import (
-    register_module,
-    object_view_tabs,
-    collection_view_tabs,
-    collection_extra_tabs,
-)
 
 UI = {
     "title": "Collections",
@@ -83,11 +55,7 @@ UI = {
 }
 
 register_module(**UI)
-# proxy so it can also be imported in blueprints from csrf.py independently
-from csrf import csrf
 
-from kernel.metadata_schema.editor import get_metadata_schema_dir
-import signals
 
 # rudimentary code to obtain schema realm (project) from url
 
@@ -216,16 +184,16 @@ def group_prefix_metadata_items(
 
         elif group_analysis_unit and avu.units and avu.units.startswith("analysis/"):
             analysis_group = avu.units.split("/")[1]
-            if not analysis_group in grouped_metadata[ANALYSIS_LABEL]:
+            if analysis_group not in grouped_metadata[ANALYSIS_LABEL]:
                 grouped_metadata[ANALYSIS_LABEL][analysis_group] = MultiDict()
             grouped_metadata[ANALYSIS_LABEL][analysis_group].add(avu.name, avu)
         elif avu.name.count(".") > 0:
             other_group = avu.name.split(".", 1)[0]
-            if not other_group in grouped_metadata[no_schema_label]:
+            if other_group not in grouped_metadata[no_schema_label]:
                 grouped_metadata[no_schema_label][other_group] = MultiDict()
             grouped_metadata[no_schema_label][other_group].add(avu.name, avu)
         else:
-            if not no_schema_label in grouped_metadata[no_schema_label]:
+            if no_schema_label not in grouped_metadata[no_schema_label]:
                 grouped_metadata[no_schema_label][no_schema_label] = MultiDict()
             grouped_metadata[no_schema_label][no_schema_label].add(avu.name, avu)
     # sort the non schema lists by key
@@ -493,8 +461,8 @@ def collection_browse(collection=None):
     # if avu_ids:
     #     filters += [In(CollectionMeta.id, avu_ids)]
 
-    #     query = Query(g.irods_session, *objects).filter(*filters)
-    #     metadata_objects = query.execute()
+    # query = Query(g.irods_session, *objects).filter(*filters)
+    # metadata_objects = query.execute()
 
     # end temp
     view_template = get_template_override_manager(
@@ -1101,14 +1069,13 @@ def ask_tika(data_object_path):
                 tzinfo=datetime.timezone.utc, microsecond=0
             ).isoformat()
     # temporary limit: @todo create an async handler
-    elif data_object.size > 200000000:
+    elif data_object.size > 200_000_000:
         flash(
             f"File {data_object.name} is too large to perform ad hoc analysis",
             "warning",
         )
     else:
         try:
-            # ping_tika = requests.get(tika_host)
             destination = f"/tmp/irods-{data_object.id}.download"
 
             options = {irods.keywords.FORCE_FLAG_KW: True}
@@ -1123,15 +1090,16 @@ def ask_tika(data_object_path):
                 # "X-Tika-OCRLanguage": "eng+fra"
             }
             # pprint.pprint(request.values)
-            if not "do-tika-ocr" in request.values:
+            if "do-tika-ocr" not in request.values:
                 # "X-Tika-OCRmaxFileSizeToOcr": "0",  # Tika 1.x
                 # "X-Tika-OCRskipOcr": "true", #Tika 2.x
                 headers["X-Tika-OCRskipOcr"] = "true"
             try:
-                res = requests.put(
-                    url=tika_url, headers=headers, data=open(destination, mode="rb")
+                res = httpx.put(
+                    url=tika_url,
+                    headers=headers,
+                    content=Path(destination).read_bytes(),
                 )
-                # result = res.content
                 result = dict(sorted(res.json().items()))
                 # pprint.pprint(result)
                 # strip multiple blank lines to just one
@@ -1323,8 +1291,8 @@ def empty_user_trash():
 @browse_bp.route("/PID/<zone>/<id>/<item_type>")
 def resolve_persistent_id(zone, id, item_type=None):
     assert g.irods_session.zone == zone
-    from irods.models import Collection, DataObject
     from irods.column import Criterion
+    from irods.models import Collection, DataObject
 
     if item_type is None or item_type == "c":
         res = [
@@ -1361,13 +1329,11 @@ def bulk_operation_items():
             )
         return redirect(request.referrer)
 
-    if not ("items" in request.form):
+    if "items" not in request.form:
         return return_error("Missing selection")
-    if not ("action" in request.form):
+    if "action" not in request.form:
         return return_error("Don't know what you want to do!")
-    if (request.form["action"] in ["move", "copy"]) and not (
-        "destination" in request.form
-    ):
+    if (request.form["action"] in ["move", "copy"]) and "destination" not in request.form:
         return_error("Destination for move or copy is missing")
 
     irods_session: iRODSSession = g.irods_session
