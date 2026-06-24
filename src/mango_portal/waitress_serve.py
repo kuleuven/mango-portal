@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from waitress import serve
-import app
-import os
 import logging
+import os
 import signal
 import time
-import sys
+
 from waitress.server import create_server
+
 import mango_portal.irods_session_pool as irods_session_pool
+from mango_portal import app
 
 if __name__ == '__main__':
 
@@ -39,5 +39,5 @@ if __name__ == '__main__':
     for sig in (signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP):
         signal.signal(sig, handle_sig)
 
-    mango_server = create_server(app.app, host="*", port=service_port, threads=64, max_request_body_size=100*1024*1024*1024)
+    mango_server = create_server(app, host="*", port=service_port, threads=64, max_request_body_size=100*1024*1024*1024)
     mango_server.run()

@@ -1,7 +1,14 @@
 import importlib
 import logging
 
-from flask import current_app
+# Try application config first, fall back to the packaged default
+try:
+    config = importlib.import_module("config")
+    logging.info("Using application config.py")
+except ModuleNotFoundError:
+    config = importlib.import_module("mango_portal.default_config")
+    logging.info("Falling back to mango_portal.default_config")
+
 from irods.session import iRODSSession
 
 SCHEMA_CORE_PERMISSIONS = {
@@ -79,17 +86,20 @@ class BaseSchemaPermissionsManager:
 
 
 # register the schema permissions manager
-schema_permissions_manager_config = current_app.config.get(
+# need to import the class from the config and instantiate it
+schema_permissions_manager_config = getattr(
+    config,
     "MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS",
-    {"module": "kernel.metadata_schema", "class": "BaseSchemaPermissionsManager"},
+    {"module": "mango_portal.kernel.metadata_schema", "class": "BaseSchemaPermissionsManager"},
 )
 schema_permissions_manager_module = importlib.import_module(
-    schema_permissions_manager_config["module"], package="app"
+    schema_permissions_manager_config["module"]
 )
 schema_permissions_manager_class = getattr(
     schema_permissions_manager_module, schema_permissions_manager_config["class"]
 )
-schema_manager_config = current_app.config.get(
+schema_manager_config = getattr(
+    config,
     "MANGO_SCHEMA_MANAGER_CLASS",
     {
         "module": "kernel.metadata_schema.schema_handler",
@@ -97,7 +107,8 @@ schema_manager_config = current_app.config.get(
     },
 )
 schema_manager_module = importlib.import_module(
-    schema_manager_config["module"], package="app"
+    schema_manager_config["module"]
+
 )
 schema_manager_class = getattr(schema_manager_module, schema_manager_config["class"])
 

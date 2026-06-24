@@ -25,7 +25,7 @@ from ..template_overrides import get_template_override_manager
 from ..metadata_schema.editor import get_realms_for_current_user
 import time
 
-from mango_ui import register_module
+from mango_portal.mango_ui import register_module
 
 from . import (
     admin,

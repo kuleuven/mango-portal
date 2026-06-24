@@ -8,15 +8,13 @@ from flask import (
     request,
 )
 
-from kernel.template_overrides import (
-    template_override_managers,
-    TemplateOverrideManager,
+from mango_portal.kernel.template_overrides import (
     get_template_override_manager,
 )
 
-from mango_ui import register_module_admin
+from mango_portal.mango_ui import register_module_admin
 
-from plugins.admin import require_mango_portal_admin
+from mango_portal.plugins.admin import require_mango_portal_admin
 
 template_overrides_admin_bp = Blueprint(
     "template_overrides_admin_bp", __name__, template_folder="templates"
