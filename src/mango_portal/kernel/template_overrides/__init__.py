@@ -4,10 +4,23 @@ Collection and data object views and other template calls can be changed by over
 jinja2 template based on several rules (or no real rule at all for permanent overrides)
 """
 
-from flask import current_app, Blueprint
+import collections
+import importlib
+import logging
+import pathlib
+
+import yaml
+from flask import Blueprint
 from irods.collection import iRODSCollection
 from irods.data_object import iRODSDataObject
-import os, pathlib, yaml, collections, logging
+
+# Try application config first, fall back to the packaged default
+try:
+    config = importlib.import_module("config")
+    logging.info("Using application config.py")
+except ModuleNotFoundError:
+    config = importlib.import_module("mango_portal.default_config")
+    logging.info("Falling back to mango_portal.default_config")
 
 MANGO_OVERRIDE_TEMPLATE_AVU = "mg.template_override"
 MANGO_OVERRIDE_SOURCE_TEMPLATES = (
@@ -16,10 +29,12 @@ MANGO_OVERRIDE_SOURCE_TEMPLATES = (
     "data_object_content",
     "collection_content",
 )
-with current_app.app_context():
-    MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG = current_app.config.get(
-        "MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG", "config/template_override_rules.yml"
-    )
+
+MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG = getattr(
+    config,
+    "MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG",
+    "config/template_override_rules.yml",
+)
 
 override_rule_blocks = {}
 override_rule_blocks_path = pathlib.Path(MANGO_OVERRIDE_TEMPLATE_RULES_CONFIG)
@@ -33,7 +48,7 @@ if override_rule_blocks_path.exists():
     }
     logging.info(f"Found template override config file {override_rule_blocks_path}")
 else:
-    logging.warn(
+    logging.warning(
         f"No template override configuration found: {override_rule_blocks_path}"
     )
 
@@ -193,10 +208,10 @@ class TemplateOverrideManager:
             )
             for override_template_avu in override_template_avus:
                 try:
-                    (source, target) = override_template_avu.split(":")
-                    if source.trim() == source_template_path:
-                        return target.trim()
-                except:
+                    (source, target) = override_template_avu.value.split(":")
+                    if source.strip() == source_template_path:
+                        return target.strip()
+                except Exception:
                     pass
 
         except Exception as e:

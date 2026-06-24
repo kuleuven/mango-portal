@@ -1,5 +1,6 @@
 import os
 from cachelib import FileSystemCache
+import importlib
 
 MANGO_AUTH = os.environ.get("MANGO_AUTH", "login")  # "localdev" or "login"
 MANGO_LOGIN_ACTION = "data_platform_user_bp.login_openid"
@@ -31,55 +32,55 @@ METADATA_NOEDIT_PREFIX = tuple(PREFIX_DOTTED_LIST)
 
 TIKA_URL = os.environ.get("TIKA_URL", "http://localhost:9998/")
 USER_MAX_HOME_SIZE = 100 * 10**6  # 100MB
-MANGO_GLOBAL_SEARCH_ACTION = "mango_open_search_bp.zone_search"
+# MANGO_GLOBAL_SEARCH_ACTION = "mango_open_search_bp.zone_search"
 HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
 
 
 MANGO_PLUGIN_BLUEPRINTS = [
     # {"module": "", "blueprint": ""},
-    {"module": "plugins.mango_open_search.search", "blueprint": "mango_open_search_bp"},
-    {
-        "module": "plugins.mango_open_search.admin",
-        "blueprint": "mango_open_search_admin_bp",
-    },
-    {
-        "module": "plugins.mango_open_search.api",
-        "blueprint": "mango_open_search_api_bp",
-    },
-    {
-        "module": "plugins.mango_open_search.stats",
-        "blueprint": "mango_open_search_stats_bp",
-    },
-    {"module": "plugins.data_platform.user", "blueprint": "data_platform_user_bp"},
-    {
-        "module": "plugins.data_platform.project",
-        "blueprint": "data_platform_project_bp",
-    },
-    {
-        "module": "plugins.data_platform.autocomplete",
-        "blueprint": "data_platform_autocomplete_bp",
-    },
-    {
-        "module": "plugins.operator_group_manager.admin",
-        "blueprint": "operator_group_manager_admin_bp",
-    },
-    {"module": "plugins.operator.admin", "blueprint": "operator_admin_bp"},
-    {"module": "plugins.admin.admin", "blueprint": "admin_admin_bp"},
-    {
-        "module": "plugins.template_overrides.admin",
-        "blueprint": "template_overrides_admin_bp",
-    },
-    {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
-    {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
-    {"module": "plugins.mango_audit.audit_admin", "blueprint": "mango_audit_bp"},
-    {
-        "module": "plugins.mango_audit.audit_history",
-        "blueprint": "mango_audit_history_bp",
-    },
-    {
-        "module": "plugins.cold_storage.flask.cs_routes",
-        "blueprint": "cold_storage_bp",
-    },
+    # {"module": "plugins.mango_open_search.search", "blueprint": "mango_open_search_bp"},
+    # {
+    #     "module": "plugins.mango_open_search.admin",
+    #     "blueprint": "mango_open_search_admin_bp",
+    # },
+    # {
+    #     "module": "plugins.mango_open_search.api",
+    #     "blueprint": "mango_open_search_api_bp",
+    # },
+    # {
+    #     "module": "plugins.mango_open_search.stats",
+    #     "blueprint": "mango_open_search_stats_bp",
+    # },
+    # {"module": "plugins.data_platform.user", "blueprint": "data_platform_user_bp"},
+    # {
+    #     "module": "plugins.data_platform.project",
+    #     "blueprint": "data_platform_project_bp",
+    # },
+    # {
+    #     "module": "plugins.data_platform.autocomplete",
+    #     "blueprint": "data_platform_autocomplete_bp",
+    # },
+    # {
+    #     "module": "plugins.operator_group_manager.admin",
+    #     "blueprint": "operator_group_manager_admin_bp",
+    # },
+    # {"module": "plugins.operator.admin", "blueprint": "operator_admin_bp"},
+    # {"module": "plugins.admin.admin", "blueprint": "admin_admin_bp"},
+    # {
+    #     "module": "plugins.template_overrides.admin",
+    #     "blueprint": "template_overrides_admin_bp",
+    # },
+    # {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
+    # {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
+    # {"module": "plugins.mango_audit.audit_admin", "blueprint": "mango_audit_bp"},
+    # {
+    #     "module": "plugins.mango_audit.audit_history",
+    #     "blueprint": "mango_audit_history_bp",
+    # },
+    # {
+    #     "module": "plugins.cold_storage.flask.cs_active_zone_routes",
+    #     "blueprint": "cold_storage_bp",
+    # },
     # {"module": "kernel.search.basic_search", "blueprint": "basic_search_bp"},
     # {"module": "kernel.search.admin", "blueprint": "basic_search_admin_bp"},
     # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
@@ -98,14 +99,14 @@ MANGO_ADMINS = [
     "u0112360",
 ]
 
-MANGO_MAIN_LANDING_ROUTE = {"module": "plugins.user_tantra.realm", "function": "index"}
+MANGO_MAIN_LANDING_ROUTE = {"module": "mango_portal.plugins.user_tantra.realm", "function": "index"}
 MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {
-    "module": "plugins.mango_overrides.schema_permissions",
+    "module": "mango_portal.plugins.mango_overrides.schema_permissions",
     "class": "GroupBasedSchemaPermissions",
 }
 
 MANGO_SCHEMA_MANAGER_CLASS = {
-    "module": "kernel.metadata_schema.schema_handler",
+    "module": "mango_portal.kernel.metadata_schema.schema_handler",
     "class": "iRODSSchemaManager",
 }
 
@@ -123,3 +124,12 @@ SESSION_SERIALIZATION_FORMAT = "json"  # defaults to 'msgpack'
 SESSION_CACHELIB = FileSystemCache(threshold=100000, cache_dir="/tmp/sessions")
 PERMANENT_SESSION_LIFETIME = 1 * 24 * 60 * 60  # 1 days
 SESSION_KEY_PREFIX = "mango_portal_session:"
+
+
+schema_permissions_manager_config = {
+    "module": "mango_portal.plugins.mango_overrides.schema_permissions",
+}
+
+schema_permissions_manager_module = importlib.import_module(
+    schema_permissions_manager_config["module"]
+)
