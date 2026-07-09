@@ -62,6 +62,8 @@ import version
 
 from kernel.user import get_irods_session_from_environment
 
+from mango_lib.jinja import MangoJinjaExtension
+
 irods_zone_config_module = importlib.import_module(
     os.getenv("IRODS_ZONES_CONFIG", "irods_zones_config.py").rstrip(".py")
 )
@@ -86,6 +88,7 @@ rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))
 ## Allow cross origin requests for SPA/Ajax situations
 CORS(app, supports_credentials=True)
 
+app.jinja_env.add_extension(MangoJinjaExtension)
 
 mango_server_info = {"server_start": datetime.datetime.now()}
 # app.config["EXPLAIN_TEMPLATE_LOADING"] = True
