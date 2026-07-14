@@ -247,7 +247,7 @@ class ComplexField {
       label = subfield.help
         ? document.createElement("h5")
         : Field.quick("h5", "border-bottom border-secondary");
-      label.innerHTML = subfield.required
+      label.textContent = subfield.required
         ? subfield.title + "*"
         : subfield.title;
       label.id = `viewer-label-${subfield.id}`;

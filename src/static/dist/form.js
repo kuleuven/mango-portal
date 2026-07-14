@@ -81,7 +81,16 @@ class SchemaForm {
 
     // Add a title to the form
     let title = document.createElement("h3");
-    title.innerHTML = `<small class="text-muted">Metadata schema:</small> ${this.title} ${this.version}`;
+
+    let title_label = document.createElement("small");
+    title_label.className = "text-muted";
+    title_label.textContent = "Metadata schema:";
+
+    let title_text = document.createElement("span");
+    title_text.textContent = ` ${this.title} ${this.version}`;
+
+    title.appendChild(title_label);
+    title.appendChild(title_text);
     document.getElementById(this.container).appendChild(title);
 
     // Retrieve information from the URL and add it to the form as hidden fields

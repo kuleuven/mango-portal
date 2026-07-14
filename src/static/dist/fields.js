@@ -180,7 +180,7 @@ class InputField {
     );
 
     // Update the title of the MovingViewer
-    viewer.querySelector("h5").innerHTML = this.required
+    viewer.querySelector("h5").textContent = this.required
       ? this.title + "*"
       : this.title;
     let rep_icon = Field.quick("i", "bi bi-front px-2");
@@ -1663,7 +1663,7 @@ class ObjectInput extends InputField {
     this.recover_fields(this);
     this.form_field.form.parentElement.parentElement.querySelector(
       ".card-header h5"
-    ).innerHTML = this.title;
+    ).textContent = this.title;
     this.minischema.prefix = this.schema.prefixed;
     this.minischema.name = this.name;
   }
