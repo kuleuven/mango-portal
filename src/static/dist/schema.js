@@ -754,7 +754,7 @@ class Schema extends ComplexField {
           }
         });
         to_download = { ...filtered_json };
-        json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
+        json_rendering.textContent = JSON.stringify(to_download, null, "  ");
 
         // if all checkboxes are checked
         if (
@@ -793,21 +793,21 @@ class Schema extends ComplexField {
           .forEach((el) => (el.checked = true));
         fields_link.setAttribute("style", "cursor: pointer;");
         to_download = { ...this.properties };
-        json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
+        json_rendering.textContent = JSON.stringify(to_download, null, "  ");
       } else {
         field_checkboxes
           .querySelectorAll('input[type="checkbox"]')
           .forEach((el) => (el.checked = false));
         fields_link.setAttribute("style", "pointer-events:none;");
         to_download = {};
-        json_rendering.innerHTML = JSON.stringify({}, null, "  ");
+        json_rendering.textContent = JSON.stringify({}, null, "  ");
       }
     });
 
     // show json of selected fields
     let json_rendering = Field.quick("pre", "border p-1 bg-light");
     json_rendering.setAttribute("style", "white-space: pre-wrap;");
-    json_rendering.innerHTML = JSON.stringify(this.properties, null, "  ");
+    json_rendering.textContent = JSON.stringify(this.properties, null, "  ");
 
     for_download.appendChild(for_download_full);
     for_download.appendChild(select_all_box);
