@@ -40,7 +40,7 @@ from mango_portal.mango_ui import (collection_extra_tabs, collection_view_tabs,
                                    object_view_tabs, register_module)
 
 from ..common.error import flash_error
-from ..metadata_schema import get_schema_manager
+from ..metadata_schema.base import get_schema_manager
 from ..metadata_schema.editor import get_metadata_schema_dir
 from ..template_overrides import get_template_override_manager
 
@@ -55,6 +55,7 @@ UI = {
 }
 
 register_module(**UI)
+print(f"Registered UI module {UI['title']} with blueprint {UI['blueprint']}")
 
 
 # rudimentary code to obtain schema realm (project) from url

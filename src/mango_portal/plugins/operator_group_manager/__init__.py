@@ -16,4 +16,11 @@ def handle_yaml_listener(sender, irods_session, yaml_path, **kwargs):
     # plugin and be called via config
     pass
 
+
 yaml_definition_uploaded.connect(handle_yaml_listener)
+
+
+def init_app(app):
+    from .admin import operator_group_manager_admin_bp
+
+    app.register_blueprint(operator_group_manager_admin_bp)

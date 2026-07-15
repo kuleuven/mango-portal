@@ -30,18 +30,18 @@ import mango_portal.version as version
 from .cache import cache
 # proxy so it can also be imported in blueprints from csrf.py independently
 from .csrf import csrf
-from .kernel.common.browse import browse_bp
-from .kernel.common.error import error_bp
-from .kernel.metadata.metadata import metadata_bp
-from .kernel.metadata_schema.editor import metadata_schema_editor_bp
-from .kernel.metadata_schema.form import metadata_schema_form_bp
-from .kernel.search.admin import basic_search_admin_bp
-from .kernel.search.basic_search import basic_search_bp
-from .kernel.template_overrides import template_overrides_bp
+# from .kernel.common.browse import browse_bp
+# from .kernel.common.error import error_bp
+# from .kernel.metadata.metadata import metadata_bp
+# from .kernel.metadata_schema.editor import metadata_schema_editor_bp
+# from .kernel.metadata_schema.form import metadata_schema_form_bp
+# from .kernel.search.admin import basic_search_admin_bp
+# from .kernel.search.basic_search import basic_search_bp
+# from .kernel.template_overrides import template_overrides_bp
 from .kernel.user import get_irods_session_from_environment
-from .kernel.user.user import user_bp
+# from .kernel.user.user import user_bp
 
-from .mango_ui import admin_navbar_entries, navbar_entries
+
 
 irods_zone_config_module = importlib.import_module(
     os.getenv("IRODS_ZONES_CONFIG", "mango_portal.irods_zones_config").rstrip(".py")
@@ -65,6 +65,33 @@ try:
 except Exception as e:
     app.logger.warning(f"Failed to load application config: {e}")
 
+# initialize kernel modules
+for kernel_module in app.config.get("MANGO_PORTAL_KERNEL", []):
+    try:
+        kernel_module = importlib.import_module(kernel_module)
+        if hasattr(kernel_module, "init_app"):
+            kernel_module.init_app(app)
+            app.logger.info(f"Initialized kernel module {kernel_module.__name__}")
+        else:
+            app.logger.warning(
+                f"Kernel module {kernel_module.__name__} does not have an init_app function"
+            )
+    except Exception as e:
+        app.logger.error(f"Failed to initialize kernel module {kernel_module}: {e}")
+
+# Initialize plugins
+for plugin_module in app.config.get("MANGO_PORTAL_PLUGINS", []):
+    try:
+        plugin_module = importlib.import_module(plugin_module)
+        if hasattr(plugin_module, "init_app"):
+            plugin_module.init_app(app)
+            app.logger.info(f"Initialized plugin module {plugin_module.__name__}")
+        else:
+            app.logger.warning(
+                f"Plugin module {plugin_module.__name__} does not have an init_app function"
+            )
+    except Exception as e:
+        app.logger.error(f"Failed to initialize plugin module {plugin_module}: {e}")
 
 # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 
@@ -113,26 +140,26 @@ if os.getenv("FLASK_DEBUG_TOOLBAR", "disabled").lower() == "enabled":
 
 
 # Register core blueprints
-with app.app_context():
-    app.register_blueprint(user_bp)
-    app.register_blueprint(error_bp)
-    app.register_blueprint(browse_bp)
-    app.register_blueprint(metadata_bp)
-    app.register_blueprint(basic_search_bp)
-    app.register_blueprint(basic_search_admin_bp)
-    app.register_blueprint(metadata_schema_editor_bp)
-    app.register_blueprint(metadata_schema_form_bp)
-    app.register_blueprint(template_overrides_bp)
+# with app.app_context():
+#     app.register_blueprint(user_bp)
+#     app.register_blueprint(error_bp)
+#     app.register_blueprint(browse_bp)
+#     app.register_blueprint(metadata_bp)
+#     app.register_blueprint(basic_search_bp)
+#     app.register_blueprint(basic_search_admin_bp)
+#     app.register_blueprint(metadata_schema_editor_bp)
+#     app.register_blueprint(metadata_schema_form_bp)
+#     app.register_blueprint(template_overrides_bp)
 
 
 # import plugin blueprints dynamically based on the configuration
 
-print(f"Importing plugin blueprints from config: {app.config.get('MANGO_PLUGIN_BLUEPRINTS', [])}")
-for mango_plugin_bp in app.config.get("MANGO_PLUGIN_BLUEPRINTS", []):
+# print(f"Importing plugin blueprints from config: {app.config.get('MANGO_PLUGIN_BLUEPRINTS', [])}")
+# for mango_plugin_bp in app.config.get("MANGO_PLUGIN_BLUEPRINTS", []):
 
-    print(f"importing plugin blueprint {mango_plugin_bp['module']}.{mango_plugin_bp['blueprint']}")
-    module = importlib.import_module(mango_plugin_bp["module"])
-    app.register_blueprint(getattr(module, mango_plugin_bp["blueprint"]))
+#     print(f"importing plugin blueprint {mango_plugin_bp['module']}.{mango_plugin_bp['blueprint']}")
+#     module = importlib.import_module(mango_plugin_bp["module"])
+#     app.register_blueprint(getattr(module, mango_plugin_bp["blueprint"]))
 
 if app.config.get("DEBUG", False):
     print(app.url_map)
@@ -147,14 +174,20 @@ else:
 
 @app.context_processor
 def ui_navbars():
+    from .mango_ui import admin_navbar_entries, navbar_entries
+    for blueprint in admin_navbar_entries:
+        logging.info(f"Admin UI: added {blueprint}")
+
+    for blueprint in navbar_entries:
+        logging.info(f"UI: added {blueprint}")
+
     return {
         "admin_navbar_entries": admin_navbar_entries,
         "navbar_entries": navbar_entries,
     }
 
 
-for blueprint in admin_navbar_entries:
-    logging.info(f"Admin UI: added {blueprint}")
+
 
 
 @app.context_processor
@@ -458,3 +491,6 @@ app.add_url_rule(
     endpoint="index",
     view_func=getattr(main_landing_route_module, main_landing_route["function"]),
 )
+
+
+print(f"os.getcwd(): {os.getcwd()=}")

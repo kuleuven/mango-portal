@@ -12,7 +12,7 @@ from werkzeug.datastructures import MultiDict
 import mango_portal.signals as signals
 from mango_portal.lib.util import flatten_schema
 
-from ..metadata_schema import SchemaManager, get_schema_manager
+from .base import SchemaManager, get_schema_manager
 
 metadata_schema_form_bp = Blueprint(
     "metadata_schema_form_bp",

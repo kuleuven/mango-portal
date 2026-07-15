@@ -5,8 +5,14 @@ import pathlib
 navbar_entries = {}
 admin_navbar_entries = {}
 
+print("loading mango_ui config from config/mango_ui.yml")
 
-mango_ui_cfg_path = pathlib.Path("config/mango_ui.yml")
+try:
+    mango_ui_cfg_path = pathlib.Path("config/mango_ui.yml")
+except Exception:
+    print("config/mango_ui.yml not found, using default config")
+    mango_ui_cfg_path = pathlib.Path(__file__).parent / "config/mango_ui.yml"
+    print(f"using default config from {mango_ui_cfg_path}")
 mango_ui_cfg = yaml.safe_load(mango_ui_cfg_path.read_text())
 
 
@@ -15,7 +21,7 @@ class MangoModule:
     """Class for building the sidebars for the user and admin nav bars"""
 
     title: str
-    bootstrap_icon: str = None
+    bootstrap_icon: str | None = None
     description: str
     blueprint: str
     index: str = "index"

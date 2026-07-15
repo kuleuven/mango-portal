@@ -35,7 +35,26 @@ USER_MAX_HOME_SIZE = 100 * 10**6  # 100MB
 # MANGO_GLOBAL_SEARCH_ACTION = "mango_open_search_bp.zone_search"
 HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
 
+MANGO_PORTAL_KERNEL = [
+    "mango_portal.kernel.metadata_schema",
+    "mango_portal.kernel.common",
+    "mango_portal.kernel.metadata",
+    "mango_portal.kernel.search",
+    "mango_portal.kernel.user",
+    "mango_portal.kernel.template_overrides",
+]
 
+MANGO_PORTAL_PLUGINS = [
+    "mango_portal.plugins.user_tantra",
+    "mango_portal.plugins.admin",
+    "mango_portal.plugins.mango_overrides",
+    "mango_portal.plugins.operator_group_manager",
+
+]
+
+# MANGO_PLUGIN_BLUEPRINTS is deprecated
+# the extensions should register their blueprints in the plugin's init_app method
+# just like any other Flask extension would do
 MANGO_PLUGIN_BLUEPRINTS = [
     # {"module": "", "blueprint": ""},
     # {"module": "plugins.mango_open_search.search", "blueprint": "mango_open_search_bp"},
@@ -101,12 +120,12 @@ MANGO_ADMINS = [
 
 MANGO_MAIN_LANDING_ROUTE = {"module": "mango_portal.plugins.user_tantra.realm", "function": "index"}
 MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS = {
-    "module": "mango_portal.plugins.mango_overrides.schema_permissions",
+    "module": "mango_portal.kernel.metadata_schema.base",
     "class": "GroupBasedSchemaPermissions",
 }
 
 MANGO_SCHEMA_MANAGER_CLASS = {
-    "module": "mango_portal.kernel.metadata_schema.schema_handler",
+    "module": "mango_portal.kernel.metadata_schema.base",
     "class": "iRODSSchemaManager",
 }
 
@@ -116,7 +135,7 @@ MANGO_ERROR_MESSAGES = {
     "illegal_characters": "Illegal characters have been used: request rejected.",
 }
 
-### Session backend
+### Session backend, this refers to the Flask sessions, not iRODSSession
 
 SESSION_TYPE = "cachelib"
 SESSION_PERMANENT = True  # default True
@@ -126,10 +145,10 @@ PERMANENT_SESSION_LIFETIME = 1 * 24 * 60 * 60  # 1 days
 SESSION_KEY_PREFIX = "mango_portal_session:"
 
 
-schema_permissions_manager_config = {
-    "module": "mango_portal.plugins.mango_overrides.schema_permissions",
-}
+# schema_permissions_manager_config = {
+#     "module": "mango_portal.plugins.mango_overrides.schema_permissions",
+# }
 
-schema_permissions_manager_module = importlib.import_module(
-    schema_permissions_manager_config["module"]
-)
+# schema_permissions_manager_module = importlib.import_module(
+#     schema_permissions_manager_config["module"]
+# )

@@ -10,7 +10,7 @@ import logging
 import pathlib
 
 import yaml
-from flask import Blueprint
+from flask import Blueprint, Flask
 from irods.collection import iRODSCollection
 from irods.data_object import iRODSDataObject
 
@@ -268,3 +268,8 @@ def mango_template_override_filter(
     return get_template_override_manager(zone).get_template_for_catalog_item(
         catalog_item, template
     )
+
+
+def init_app(app: Flask):
+    """Initialize the template override kernel extension."""
+    app.register_blueprint(template_overrides_bp)

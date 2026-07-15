@@ -1,130 +1,55 @@
-import importlib
-import logging
+# """Public API for the metadata schema subsystem.
 
-# Try application config first, fall back to the packaged default
-try:
-    config = importlib.import_module("config")
-    logging.info("Using application config.py")
-except ModuleNotFoundError:
-    config = importlib.import_module("mango_portal.default_config")
-    logging.info("Falling back to mango_portal.default_config")
+# Importing this module is cheap and side-effect-free. It only re-exports the
+# abstract interfaces. To use a configured schema manager, call
+# `extension.schema_extension.init_app(app)` from your app factory, then use
+# `extension.get_schema_manager(zone, realm)`.
+# """
 
-from irods.session import iRODSSession
+# from .base import (
+#     SCHEMA_CORE_PERMISSIONS,
+#     SCHEMA_PERMISSIONS,
+#     BaseSchemaPermissionsManager,
+#     SchemaManager,
+#     combine_permissions,
+# )
 
-SCHEMA_CORE_PERMISSIONS = {
-    "read_schema": 1 << 0,
-    "read_archived": 1 << 1,
-    "read_draft": 1 << 2,
-    "edit_draft": 1 << 3,
-    "create_draft": 1 << 4,
-    "delete_draft": 1 << 5,
-    "publish_draft": 1 << 6,
-    "create_new_schema_draft": 1 << 7,
-    "archive_schema": 1 << 8,  # basically disable the schema
-}
+# __all__ = [
+#     "SCHEMA_CORE_PERMISSIONS",
+#     "SCHEMA_PERMISSIONS",
+#     "BaseSchemaPermissionsManager",
+#     "SchemaManager",
+#     "combine_permissions",
+# ]
 
-
-def combine_permissions(_keys: list[str]):
-    return sum([SCHEMA_CORE_PERMISSIONS[scp] for scp in _keys])
+from flask import Flask
 
 
-SCHEMA_PERMISSIONS = SCHEMA_CORE_PERMISSIONS | {
-    "write_schema": combine_permissions(
-        ["read_schema", "read_draft", "edit_draft", "create_draft", "delete_draft"]
-    ),
-    "read": combine_permissions(["read_schema", "read_archived"]),
-    "create_new_schema": combine_permissions(
-        [
-            "create_new_schema_draft",
-            "read_schema",
-            "read_archived",
-            "read_draft",
-            "edit_draft",
-            "create_draft",
-            "delete_draft",
-        ]
-    ),
-}
 
 
-class SchemaManager:
-    def get_user_permissions_realm(self, irods_session: iRODSSession):
-        pass
+def init_app(app: Flask):
+    """Initialize metadata schemas kernel module"""
 
-    def get_user_permissions_schema(
-        self, irods_session: iRODSSession, schema: str | None = None
-    ):
-        pass
+    # first the configured schema manager
+    from .base import set_schema_permissions_manager_class, set_schema_manager_class
 
-    def list_schemas(self, filters: list[str] = ["published", "draft", "archived"]):
-        pass
-
-
-class BaseSchemaPermissionsManager:
-    def __init__(self, zone: str, realm: str = ""):
-        self.zone = zone
-        self.realm = realm
-        self.schema_permissions = SCHEMA_PERMISSIONS
-        self.allow_all_bool = {
-            permission: True for permission in SCHEMA_CORE_PERMISSIONS.keys()
-        }
-        self.allow_all = sum(SCHEMA_CORE_PERMISSIONS.values())
-        self.deny_all = 0
-        self.inherit_permissions = None
-
-    def get_user_permissions_realm(self, irods_session: iRODSSession):
-        # anyone can do anything
-        return self.allow_all
-
-    def get_user_permissions_schema(
-        self, irods_session: iRODSSession, schema: str | None = None
-    ):
-        return self.inherit_permissions
-
-    def get_defined_schema_permissions(self, realm: None):
-        return self.schema_permissions
-
-
-# register the schema permissions manager
-# need to import the class from the config and instantiate it
-schema_permissions_manager_config = getattr(
-    config,
-    "MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS",
-    {"module": "mango_portal.kernel.metadata_schema", "class": "BaseSchemaPermissionsManager"},
-)
-schema_permissions_manager_module = importlib.import_module(
-    schema_permissions_manager_config["module"]
-)
-schema_permissions_manager_class = getattr(
-    schema_permissions_manager_module, schema_permissions_manager_config["class"]
-)
-schema_manager_config = getattr(
-    config,
-    "MANGO_SCHEMA_MANAGER_CLASS",
-    {
-        "module": "kernel.metadata_schema.schema_handler",
-        "class": "FileSystemSchemaManager",
-    },
-)
-schema_manager_module = importlib.import_module(
-    schema_manager_config["module"]
-
-)
-schema_manager_class = getattr(schema_manager_module, schema_manager_config["class"])
-
-schema_managers = {}
-
-logging.info(
-    f"Schema permissions manager from config: {schema_permissions_manager_class.__name__}"
-)
-
-
-def get_schema_manager(zone: str, realm: str) -> SchemaManager:
-    # global schema_managers
-
-    if zone_realm_key := f"{zone}-{realm}" not in schema_managers:
-        schema_managers[zone_realm_key] = schema_manager_class(
-            zone, realm, schema_permissions_manager_class
+    if schema_manager_config := app.config.get("MANGO_SCHEMA_MANAGER_CLASS", None):
+        set_schema_manager_class(
+            schema_manager_config["module"], schema_manager_config["class"]
         )
 
-    return schema_managers[zone_realm_key]
+    if schema_permissions_manager_config := app.config.get(
+        "MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS", None
+    ):
+        set_schema_permissions_manager_class(
+            schema_permissions_manager_config["module"],
+            schema_permissions_manager_config["class"],
+        )
+
+    from .editor import metadata_schema_editor_bp
+
+    app.register_blueprint(metadata_schema_editor_bp)
+
+    from .form import metadata_schema_form_bp
+
+    app.register_blueprint(metadata_schema_form_bp)
