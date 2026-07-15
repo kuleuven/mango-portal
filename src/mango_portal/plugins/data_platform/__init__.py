@@ -1,8 +1,9 @@
 import os
 import logging
 import requests
+import humanize
 from datetime import datetime
-
+from datetime import timedelta
 from functools import wraps
 
 from flask import Flask, current_app, session, redirect, url_for, g, request, flash
@@ -473,6 +474,49 @@ def init_app(app: Flask):
     app.register_blueprint(data_platform_autocomplete_bp)
     app.register_blueprint(data_platform_project_bp)
     update_zone_info(app.config["irods_zones"])
+
+    # register custom filters
+    
+    # data platform specific filters
+    @app.template_filter("parse_json_date")
+    def parse_json_date(ts):
+        return datetime.strptime(ts, "%Y-%m-%d")
+
+    # data platform specific filters
+    @app.template_filter("parse_json_timestamp")
+    def parse_json_timestamp(ts):
+        return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S%z")
+
+    # data platform specific filters
+    @app.template_filter("format_date")
+    def format_date(ts):
+        return ts.strftime("%Y-%m-%d")
+
+    # data platform specific filters
+    @app.template_filter("format_timestamp")
+    def format_timestamp(ts):
+        return ts.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # data platform specific filters
+    @app.template_filter("yesterday")
+    def yesterday(ts):
+        return ts - timedelta(days=1)
+
+    # data platform specific filters
+    @app.template_filter("format_time")
+    def format_time(ts, format="%Y-%m-%dT%H:%M:%S"):
+        return ts.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # data platform specific filters
+    @app.template_filter("format_size")
+    def format_size(size):
+        return humanize.naturalsize(size)
+
+    # data platform specific filters
+    @app.template_filter("format_intword")
+    def format_intword(size):
+        return humanize.intword(size)
+
 
 # # moved here from the main app/config: if the dataplatform plugin is loaded, it should take over the zones config
 # from mango_portal import app
