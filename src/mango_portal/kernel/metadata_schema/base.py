@@ -1,3 +1,5 @@
+import importlib
+import logging
 import json
 import logging
 import re
@@ -12,8 +14,106 @@ from irods.models import Collection, DataObject, DataObjectMeta
 from irods.session import iRODSSession
 
 from mango_portal.plugins.operator import get_zone_operator_session
+#from .schema_handler import FileSystemSchemaManager
 
-from .base import BaseSchemaPermissionsManager, SchemaManager
+# Try application config first, fall back to the packaged default
+# try:
+#     config = importlib.import_module("config")
+#     logging.info("Using application config.py")
+# except ModuleNotFoundError:
+#     config = importlib.import_module("mango_portal.default_config")
+#     logging.info("Falling back to mango_portal.default_config")
+
+from irods.session import iRODSSession
+
+SCHEMA_CORE_PERMISSIONS = {
+    "read_schema": 1 << 0,
+    "read_archived": 1 << 1,
+    "read_draft": 1 << 2,
+    "edit_draft": 1 << 3,
+    "create_draft": 1 << 4,
+    "delete_draft": 1 << 5,
+    "publish_draft": 1 << 6,
+    "create_new_schema_draft": 1 << 7,
+    "archive_schema": 1 << 8,  # basically disable the schema
+}
+
+
+def combine_permissions(_keys: list[str]):
+    return sum([SCHEMA_CORE_PERMISSIONS[scp] for scp in _keys])
+
+
+SCHEMA_PERMISSIONS = SCHEMA_CORE_PERMISSIONS | {
+    "write_schema": combine_permissions(
+        ["read_schema", "read_draft", "edit_draft", "create_draft", "delete_draft"]
+    ),
+    "read": combine_permissions(["read_schema", "read_archived"]),
+    "create_new_schema": combine_permissions(
+        [
+            "create_new_schema_draft",
+            "read_schema",
+            "read_archived",
+            "read_draft",
+            "edit_draft",
+            "create_draft",
+            "delete_draft",
+        ]
+    ),
+}
+
+
+class SchemaManager:
+    def get_user_permissions_realm(self, irods_session: iRODSSession):
+        pass
+
+    def get_user_permissions_schema(
+        self, irods_session: iRODSSession, schema: str | None = None
+    ):
+        pass
+
+    def list_schemas(self, filters: list[str] = ["published", "draft", "archived"]):
+        pass
+
+
+class BaseSchemaPermissionsManager:
+    def __init__(self, zone: str, realm: str = ""):
+        self.zone = zone
+        self.realm = realm
+        self.schema_permissions = SCHEMA_PERMISSIONS
+        self.allow_all_bool = {
+            permission: True for permission in SCHEMA_CORE_PERMISSIONS.keys()
+        }
+        self.allow_all = sum(SCHEMA_CORE_PERMISSIONS.values())
+        self.deny_all = 0
+        self.inherit_permissions = None
+
+    def get_user_permissions_realm(self, irods_session: iRODSSession):
+        # anyone can do anything
+        return self.allow_all
+
+    def get_user_permissions_schema(
+        self, irods_session: iRODSSession, schema: str | None = None
+    ):
+        return self.inherit_permissions
+
+    def get_defined_schema_permissions(self, realm: None):
+        return self.schema_permissions
+
+
+# register the schema permissions manager
+# need to import the class from the config and instantiate it
+# schema_permissions_manager_config = getattr(
+#     config,
+#     "MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS",
+#     {
+#         "module": "mango_portal.kernel.metadata_schema.base",
+#         "class": "BaseSchemaPermissionsManager",
+#     },
+# )
+
+
+
+
 
 MANGO_STORAGE_BASE_PATH = Path("storage")
 VERSION_PATTERN = re.compile(
@@ -825,3 +925,41 @@ class GroupBasedSchemaPermissions(BaseSchemaPermissionsManager):
 
     def get_user_permissions_schema(self, irods_session: iRODSSession, schema):
         return self.inherit_permissions
+
+
+SCHEMA_PERMISSIONS_MANAGER_CLASS = BaseSchemaPermissionsManager  # default
+
+
+def set_schema_permissions_manager_class(module: str, class_name: str):
+    global SCHEMA_PERMISSIONS_MANAGER_CLASS
+    schema_permissions_manager_module = importlib.import_module(module)
+    SCHEMA_PERMISSIONS_MANAGER_CLASS = getattr(
+        schema_permissions_manager_module, class_name
+    )
+
+
+SCHEMA_MANAGER_CLASS = FileSystemSchemaManager  # default
+
+
+def set_schema_manager_class(module: str, class_name: str):
+    global SCHEMA_MANAGER_CLASS
+    schema_manager_module = importlib.import_module(module)
+    SCHEMA_MANAGER_CLASS = getattr(schema_manager_module, class_name)
+
+
+schema_managers = {}
+
+logging.info(
+    f"Schema permissions manager from config: {SCHEMA_PERMISSIONS_MANAGER_CLASS.__name__}"
+)
+
+
+def get_schema_manager(zone: str, realm: str) -> SchemaManager:
+    # global schema_managers
+
+    if zone_realm_key := f"{zone}-{realm}" not in schema_managers:
+        schema_managers[zone_realm_key] = SCHEMA_MANAGER_CLASS(
+            zone, realm, SCHEMA_PERMISSIONS_MANAGER_CLASS
+        )
+
+    return schema_managers[zone_realm_key]

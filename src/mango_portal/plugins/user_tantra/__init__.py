@@ -1,4 +1,4 @@
-from flask import current_app, session
+from flask import current_app, session, Flask
 
 import mango_portal.irods_session_pool as irods_session_pool
 import mango_portal.signals as signals
@@ -9,6 +9,11 @@ from mango_portal.plugins.operator import get_zone_operator_session
 # attach the mango_admin group
 # to insert/update name/email from openid session
 
+def init_app(app: Flask):
+    """Initialize the user_tantra plugin."""
+    from .realm import user_tantra_realm_bp
+    app.register_blueprint(user_tantra_realm_bp)
+    signals.session_pool_user_session_created.connect(enrich_irods_session_listener)
 
 def enrich_irods_session_listener(sender, **parameters):
     # logging.info(f"Starting enrichment listener procedure, did nothing yet")
@@ -67,5 +72,3 @@ def enrich_irods_session_listener(sender, **parameters):
             f"No session found for user {parameters['username']}, this should not happen"
         )
 
-
-signals.session_pool_user_session_created.connect(enrich_irods_session_listener)

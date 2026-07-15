@@ -206,3 +206,12 @@ def get_user_session_via_operator_proxy_env():
             client_user=os.getenv("MANGO_PROXY_USER"),
         )
     return None
+
+
+# we do no type app here as this module may be imported by other non flask apps
+# so we do not want to import flask either
+def init_app(app):
+    # register the blueprint for the operator plugin
+    from .admin import operator_admin_bp
+
+    app.register_blueprint(operator_admin_bp)

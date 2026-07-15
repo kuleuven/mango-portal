@@ -1,6 +1,7 @@
 import collections
 import json
 import logging
+
 # create a Thread to periodically refresh the realm schemas
 import threading
 import time
@@ -8,11 +9,12 @@ import time
 from irods.session import iRODSSession
 
 import mango_portal.signals as signals
-from  mango_portal.cache import cache
-from  mango_portal.kernel.metadata_schema import SchemaManager, get_schema_manager
+from mango_portal.cache import cache
+from ..metadata_schema.base import SchemaManager, get_schema_manager
 from mango_portal.lib.util import flatten_schema
-from mango_portal.plugins.operator import \
-    get_zone_operator_session  # @todo: use mango_lib proxy
+from mango_portal.plugins.operator import (
+    get_zone_operator_session,
+)  # @todo: use mango_lib proxy
 
 
 class SchemaInfo:
@@ -216,3 +218,14 @@ def realm_schemas_updater():
 # Create the thread and start it
 # @todo, use a context manager? see mango ingest
 threading.Thread(target=realm_schemas_updater, daemon=True).start()
+
+
+def init_app(app: Flask):
+    """Initialize the search kernel extension."""
+    from .basic_search import basic_search_bp
+
+    app.register_blueprint(basic_search_bp)
+
+    from .admin import basic_search_admin_bp
+
+    app.register_blueprint(basic_search_admin_bp)

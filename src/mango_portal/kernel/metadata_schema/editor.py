@@ -21,7 +21,7 @@ from irods.session import iRODSSession
 
 from mango_portal.mango_ui import register_module
 
-from . import get_schema_manager
+from .base import get_schema_manager
 
 metadata_schema_editor_bp = Blueprint(
     "metadata_schema_editor_bp",

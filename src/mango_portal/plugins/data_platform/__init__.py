@@ -5,7 +5,7 @@ from datetime import datetime
 
 from functools import wraps
 
-from flask import current_app, session, redirect, url_for, g, request, flash
+from flask import Flask, current_app, session, redirect, url_for, g, request, flash
 
 from oic.oic import Client, Token
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
@@ -462,6 +462,18 @@ class Session(dict):
 
         return self
 
-# moved here from the main app/config: if the dataplatform plugin is loaded, it should take over the zones config
-from mango_portal import app
-update_zone_info(app.config["irods_zones"])
+
+def init_app(app: Flask):
+    # register the blueprint for the operator plugin
+    from .autocomplete import data_platform_autocomplete_bp
+    from .user import data_platform_user_bp
+    from .project import data_platform_project_bp
+
+    app.register_blueprint(data_platform_user_bp)
+    app.register_blueprint(data_platform_autocomplete_bp)
+    app.register_blueprint(data_platform_project_bp)
+    update_zone_info(app.config["irods_zones"])
+
+# # moved here from the main app/config: if the dataplatform plugin is loaded, it should take over the zones config
+# from mango_portal import app
+# update_zone_info(app.config["irods_zones"])
