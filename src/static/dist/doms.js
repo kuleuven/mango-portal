@@ -10,11 +10,15 @@ class Field {
    * @param {String} [inner=null] Text to be added inside the HTML element.
    * @returns {HTMLElement} An HTML element with the provided tag name, class and (optionally) internal text.
    */
-  static quick(tag, class_name, inner = null) {
+  static quick(tag, class_name, inner = null, no_escape = false) {
     let el = document.createElement(tag);
     el.className = class_name;
     if (inner != null) {
-      el.innerHTML = inner;
+      if (no_escape) {
+        el.innerHTML = inner;
+      } else {
+        el.textContent = inner;
+      }
     }
     return el;
   }
@@ -350,7 +354,7 @@ class MovingViewer extends MovingField {
   assemble() {
     let header = Field.quick("div", "card-header mover-header");
     let header_title = document.createElement("h5");
-    header_title.innerHTML = this.title;
+    header_title.textContent = this.title;
 
     // add symbol to indicate that a field is repeatable
     if (this.repeatable) {
@@ -1231,7 +1235,7 @@ class Modal {
    * @param {String} body Descriptive text to append to the modal (what are the consequences of accepting this?).
    * @param {String} url URL to post the contents of the hidden form to.
    * @param {Object<String,String>} form_data Names and values of the hidden fields to add to the form.
-   * @param {Function} extra_Action Something extra to do on submission, if relevant.
+   * @param {Function} extra_action Something extra to do on submission, if relevant.
    */
   static submit_confirmation(body, url, form_data, extra_action) {
     // capture the modal
@@ -1428,7 +1432,7 @@ class NavBar {
 
     // fill the contents of the button
     if (typeof button_text == "string") {
-      button.innerHTML = button_text;
+      button.textContent = button_text;
     } else {
       button_text.forEach((b) => button.appendChild(b));
     }
