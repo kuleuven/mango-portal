@@ -45,7 +45,7 @@
                                 <td>
                                     {% if realm_schemas_last_update[zone] is defined and realm_name in realm_schemas_last_update[zone] %}
                                         <span class="text-muted">
-                                            {{ realm_schemas_last_update[zone][realm_name] | int  | date_time_from_timestamp }}
+                                            {{ realm_schemas_last_update[zone][realm_name] | int  | format_timestamp }}
                                         </span>
                                     {% else %}
                                         <span class="text-muted">—</span>

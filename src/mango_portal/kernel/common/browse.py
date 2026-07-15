@@ -33,7 +33,7 @@ from multidict import MultiDict
 from pdf2image import convert_from_path
 from PIL import Image
 
-import mango_portal.csrf as csrf
+from mango_portal.csrf import csrf
 import mango_portal.signals as signals
 from mango_portal.lib.util import flatten_schema, generate_breadcrumbs
 from mango_portal.mango_ui import (collection_extra_tabs, collection_view_tabs,

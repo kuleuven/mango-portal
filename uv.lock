@@ -603,6 +603,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "flask-debugtoolbar" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
@@ -637,7 +638,10 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "flask-debugtoolbar", specifier = ">=0.16.0" }]
+dev = [
+    { name = "flask-debugtoolbar", specifier = ">=0.16.0" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
+]
 
 [[package]]
 name = "markdown-it-py"

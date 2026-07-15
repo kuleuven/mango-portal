@@ -25,8 +25,6 @@
 from flask import Flask
 
 
-
-
 def init_app(app: Flask):
     """Initialize metadata schemas kernel module"""
 
@@ -53,3 +51,5 @@ def init_app(app: Flask):
     from .form import metadata_schema_form_bp
 
     app.register_blueprint(metadata_schema_form_bp)
+
+    print(f"Metadata schema kernel module initialized ========================================")

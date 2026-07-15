@@ -347,7 +347,7 @@ class FileSystemSchemaManager(SchemaManager):
             if draft_file_name := current_schema_info["draft_name"]:
                 # file already exists, we will keep the version number if it corresponds to the latest one
                 if current_schema_info["latest_version"] and re.search(
-                    r"{current_schema_info['latest_version']}".replace(".", "\."),
+                    r"{current_schema_info['latest_version']}".replace(".", r"\."),
                     draft_file_name,
                 ):
                     json_contents["version"] = current_schema_info["latest_version"]
@@ -767,7 +767,7 @@ class iRODSSchemaManager(SchemaManager):
             if draft_file_name := current_schema_info["draft_name"]:
                 # file already exists, we will keep the version number if it corresponds to the latest one
                 if current_schema_info["latest_version"] and re.search(
-                    r"{current_schema_info['latest_version']}".replace(".", "\."),
+                    r"{current_schema_info['latest_version']}".replace(".", r"\."),
                     draft_file_name,
                 ):
                     json_contents["version"] = current_schema_info["latest_version"]
