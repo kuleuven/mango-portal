@@ -32,7 +32,7 @@
       {% else %}
       The ManGO platform is reachable over the iRODS protocol using the following connection information.
       {% endif %}
-      <i>Note that after June 1st, our iRODS servers will be firewalled. You will either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
+      <i>Note that since June 1st, our iRODS servers are firewalled. You either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
       or open the web firewall page
       <a href="{{ services['web-firewall']['url'] }}">{{ services['web-firewall']['url']|replace("https://", "") }}</a>,
       before attempting to connect using any of the clients listed below.</i>
@@ -247,28 +247,9 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
     <div class="tab-pane container fade p-1" id="owncloud">
       <p class="mt-3">
         The ownCloud desktop sync application can be used to synchorize an iRODS folder to your local workstation.
-
-        See the instructions below or the <a href="{% if '-hpc-' in zone_info['jobid'] %}{{ doc_base }}{% else %}{{ doc_base }}/clients/owncloud.html{% endif %}">{{ doc_type }}</a> for more detailed information.
+        Please find the installation instructions and how to use ownCloud at the <a href="{% if '-hpc-' in zone_info['jobid'] %}{{ doc_base }}{% else %}{{ doc_base }}/clients/owncloud.html{% endif %}">{{ doc_type }}</a>.
+        After installation, the application will prompt you to re-authenticate when your token needs to be renewed.
       </p>
-      <p>
-        <i>The use of ownCloud is currently in an open pilot phase. Please report any feedback to the RDM team.</i>
-      </p>
-      <ol>
-        <li>Ensure the ownCloud desktop client for Windows or Linux is installed via your local IT-support, or via the installation instructions at <a href="https://owncloud.com/desktop-app">https://owncloud.com/desktop-app</a>.</li>
-        <li>Open ownCloud and click on "Add account". On the box to provide your server's address, enter a URL:
-          <div class="code-container ms-2 mt-2">
-            <button class="copy-btn btn btn-sm" onclick="copyToClipboard(this)">
-              <i class="bi bi-clipboard"></i> Copy
-            </button>
-            <pre><code class="user-select-all">{{ services['desktop-sync']['url'] }}</code></pre>
-          </div>
-        </li>
-        <li>Click on "Open Browser" to log in to ownCloud. To grant privileges to ownCloud click on "Agree and continue to the application".</li>
-        <li>In the client, you get "You're all set!" message and there is a checkbox to select advanced configuration. <strong>Check the "Advanced configuration" box.</strong></li>
-        <li>Additional options on the configuration show up. Options under advanced configuration Select "Configure synchronization manually" to manually determine what is synced, otherwise you pull-in all the files you have access to.</li>
-        <li>Pick a local folder on your computer to sync. Navigate to the ManGO Project you want to synchronize locally.</li>
-        <li>Keep checked the option to "Use virtual files instead of downloading content manually" and click on "Add sync connection".</li>
-      </ol>
     </div>
     {% endif %}
 
@@ -279,7 +260,7 @@ iinit --ttl 168 && echo You are now authenticated to iRODS.
         It is a file transfer protocol on top of SSH and SSH certificates are used for authentication.
       </p>
       <p>
-        <i>Note that after June 1st, the SFTP service will be firewalled. You will either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
+        <i>Note that since June 1st, the SFTP service is firewalled. You either need to connect from a managed laptop, an HPC node, a device in the KU Leuven L- or S-zone,
         or to open the web firewall page 
         <a href="{{ services['web-firewall']['url'] }}">{{ services['web-firewall']['url']|replace("https://", "") }}</a>,
         before attempting to connect.</i>
