@@ -1,11 +1,11 @@
 import os
 from cachelib import FileSystemCache
-import importlib
+import uuid
 
 MANGO_AUTH = os.environ.get("MANGO_AUTH", "login")  # "localdev" or "login"
-MANGO_LOGIN_ACTION = "data_platform_user_bp.login_openid"
-MANGO_LOGOUT_ACTION = "data_platform_user_bp.logout_openid"
-SECRET_KEY = os.environ.get("SECRET_KEY", "HV44H6oH-eKMqJDU0W6Xw6ch_c4wpmDWf5tgD0p-0Gc")
+MANGO_LOGIN_ACTION = "mango_portal.kernel.user.user_bp.login_basic"
+MANGO_LOGOUT_ACTION = "mango_portal.kernel.user.user_bp.logout_basic"
+SECRET_KEY = os.environ.get("SECRET_KEY", str(uuid.uuid4()))
 DATA_OBJECT_MAX_SIZE_PREVIEW = 1024 * 1024 * 128  # 128MiB
 DATA_OBJECT_MAX_SIZE_DOWNLOAD = 1024 * 1024 * 1024 * 50  # 50GiB
 DATA_OBJECT_PREVIEW_ALLOWED_SUFFIXES = (
@@ -35,6 +35,10 @@ USER_MAX_HOME_SIZE = 100 * 10**6  # 100MB
 # MANGO_GLOBAL_SEARCH_ACTION = "mango_open_search_bp.zone_search"
 HOSTNAME = os.environ.get("HOSTNAME", "unnamed-host")
 
+
+# All the kernel modules and plugins are supposted to expose an init_app function that takes the Flask app 
+# as argument and registers the routes and other functionality of the module/plugin with the app. 
+# The init_app function is called during app initialization in mango_portal/__init__.py
 MANGO_PORTAL_KERNEL = [
     "mango_portal.kernel.metadata_schema",
     "mango_portal.kernel.common",
@@ -48,74 +52,16 @@ MANGO_PORTAL_PLUGINS = [
     "mango_portal.plugins.user_tantra",
     "mango_portal.plugins.admin",
     "mango_portal.plugins.mango_overrides",
-    "mango_portal.plugins.operator_group_manager",
-
+    "mango_portal.plugins.basic_user_group_manager",
 ]
 
-# MANGO_PLUGIN_BLUEPRINTS is deprecated
-# the extensions should register their blueprints in the plugin's init_app method
-# just like any other Flask extension would do
-MANGO_PLUGIN_BLUEPRINTS = [
-    # {"module": "", "blueprint": ""},
-    # {"module": "plugins.mango_open_search.search", "blueprint": "mango_open_search_bp"},
-    # {
-    #     "module": "plugins.mango_open_search.admin",
-    #     "blueprint": "mango_open_search_admin_bp",
-    # },
-    # {
-    #     "module": "plugins.mango_open_search.api",
-    #     "blueprint": "mango_open_search_api_bp",
-    # },
-    # {
-    #     "module": "plugins.mango_open_search.stats",
-    #     "blueprint": "mango_open_search_stats_bp",
-    # },
-    # {"module": "plugins.data_platform.user", "blueprint": "data_platform_user_bp"},
-    # {
-    #     "module": "plugins.data_platform.project",
-    #     "blueprint": "data_platform_project_bp",
-    # },
-    # {
-    #     "module": "plugins.data_platform.autocomplete",
-    #     "blueprint": "data_platform_autocomplete_bp",
-    # },
-    # {
-    #     "module": "plugins.operator_group_manager.admin",
-    #     "blueprint": "operator_group_manager_admin_bp",
-    # },
-    # {"module": "plugins.operator.admin", "blueprint": "operator_admin_bp"},
-    # {"module": "plugins.admin.admin", "blueprint": "admin_admin_bp"},
-    # {
-    #     "module": "plugins.template_overrides.admin",
-    #     "blueprint": "template_overrides_admin_bp",
-    # },
-    # {"module": "plugins.user_tantra.realm", "blueprint": "user_tantra_realm_bp"},
-    # {"module": "plugins.mango_overrides", "blueprint": "mango_overrides_bp"},
-    # {"module": "plugins.mango_audit.audit_admin", "blueprint": "mango_audit_bp"},
-    # {
-    #     "module": "plugins.mango_audit.audit_history",
-    #     "blueprint": "mango_audit_history_bp",
-    # },
-    # {
-    #     "module": "plugins.cold_storage.flask.cs_active_zone_routes",
-    #     "blueprint": "cold_storage_bp",
-    # },
-    # {"module": "kernel.search.basic_search", "blueprint": "basic_search_bp"},
-    # {"module": "kernel.search.admin", "blueprint": "basic_search_admin_bp"},
-    # {"module": "plugins.basic_user_group_manager.admin", "blueprint": "basic_user_group_manager_admin_bp"}
+MANGO_NON_LOGGED_IN_ROUTES = [
+    "static",
+    "user_bp.login_basic",
 ]
-
 
 MANGO_ADMINS = [
-    "u0123318",
-    "u0118974",
-    "u0116999",
-    "u0137480",
-    "u0079275",
-    "u0056780",
-    "u0031305",
-    "u0125288",
-    "u0112360",
+    "rods"
 ]
 
 MANGO_MAIN_LANDING_ROUTE = {"module": "mango_portal.plugins.user_tantra.realm", "function": "index"}
@@ -143,12 +89,3 @@ SESSION_SERIALIZATION_FORMAT = "json"  # defaults to 'msgpack'
 SESSION_CACHELIB = FileSystemCache(threshold=100000, cache_dir="/tmp/sessions")
 PERMANENT_SESSION_LIFETIME = 1 * 24 * 60 * 60  # 1 days
 SESSION_KEY_PREFIX = "mango_portal_session:"
-
-
-# schema_permissions_manager_config = {
-#     "module": "mango_portal.plugins.mango_overrides.schema_permissions",
-# }
-
-# schema_permissions_manager_module = importlib.import_module(
-#     schema_permissions_manager_config["module"]
-# )

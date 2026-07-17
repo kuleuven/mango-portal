@@ -131,7 +131,7 @@ def group_prefix_metadata_items(
     """ """
 
     def is_valid_composite_units(units):
-        return re.match("\d+(\.\d+)*$", units)
+        return re.match(r"\d+(\.\d+)*$", units)
 
     ANALYSIS_LABEL = "analysis"
 

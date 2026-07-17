@@ -12,9 +12,7 @@ import mango_portal.signals as signals
 from mango_portal.cache import cache
 from ..metadata_schema.base import SchemaManager, get_schema_manager
 from mango_portal.lib.util import flatten_schema
-from mango_portal.plugins.operator import (
-    get_zone_operator_session,
-)  # @todo: use mango_lib proxy
+from mango_lib.irods.auth import get_zone_operator_session
 
 
 class SchemaInfo:
