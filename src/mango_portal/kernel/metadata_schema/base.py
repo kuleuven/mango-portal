@@ -13,7 +13,7 @@ from irods.data_object import iRODSDataObject
 from irods.models import Collection, DataObject, DataObjectMeta
 from irods.session import iRODSSession
 
-from mango_portal.plugins.operator import get_zone_operator_session
+from mango_lib.irods.auth import get_zone_operator_session
 #from .schema_handler import FileSystemSchemaManager
 
 # Try application config first, fall back to the packaged default

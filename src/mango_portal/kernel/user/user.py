@@ -173,7 +173,7 @@ def login_basic():
             f"User {irods_session.username}, zone {irods_session.zone} logged in"
         )
 
-        return redirect(url_for("index"))
+    return redirect(url_for("index"))
 
 
 def irods_connection_info(zone, username, password):
