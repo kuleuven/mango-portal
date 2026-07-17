@@ -46,6 +46,7 @@ MANGO_PORTAL_KERNEL = [
     "mango_portal.kernel.search",
     "mango_portal.kernel.user",
     "mango_portal.kernel.template_overrides",
+    "mango_portal.kernel.default_templates",
 ]
 
 MANGO_PORTAL_PLUGINS = [
