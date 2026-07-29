@@ -1048,6 +1048,7 @@ class SchemaDraftForm extends BasicForm {
       raw_schema: "", // encoded and stringified collection of fields
       with_status: schema.status, // status
       parent: schema.parent ? schema.parent : "", // parent, if it exists
+      csrf_token: csrf_token
     };
     for (let i of Object.entries(inputs)) {
       this.add_hidden_field(i[0], i[1]);
