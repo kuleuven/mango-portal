@@ -505,6 +505,10 @@ class Schema extends ComplexField {
         ? "This cannot be changed after the draft is saved." + " " + description_text
         : false,
     });
+
+    this.form.add_hidden_field("csrf_token", url_list.csrf_token.value
+)
+
     const name_input = this.form.form.querySelector(`#${this.card_id}-name`);
     name_input.name = "schema_name";
     name_input.addEventListener("change", () => {
@@ -520,6 +524,8 @@ class Schema extends ComplexField {
         ? "This cannot be changed once a version has been published."
         : false,
     });
+
+
     const title_input = this.form.form.querySelector(`#${this.card_id}-label`);
     title_input.name = "title";
     title_input.addEventListener("change", () => {
@@ -537,6 +543,8 @@ class Schema extends ComplexField {
     }
     // create and add the first button to add fields
     this.add_field_box(this.form.divider);
+
+  
 
     // create and add a submission button that saves the draft without publishing
     this.form.add_action_button("Save draft", "draft");
@@ -576,6 +584,7 @@ class Schema extends ComplexField {
           realm: realm,
           raw_schema: "",
           parent: "",
+          csrf_token: url_list.csrf_token.value,
         };
         // fill the confirmation modal with the right hidden fields
         // if accepted, go through the 'save_draft' part and submit
