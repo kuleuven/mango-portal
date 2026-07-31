@@ -919,6 +919,7 @@ class Schema extends ComplexField {
                 realm: realm,
                 schema_name: this.name,
                 with_status: "published",
+                csrf_token: url_list.csrf_token.value
               }
             );
           }
