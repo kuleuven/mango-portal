@@ -1,16 +1,30 @@
-def get_app(config_module_name: str | None = None):
-    """Returns the Flask application instance, optionally loading a specific configuration module."""
-    import datetime
-    import importlib
-    import logging
-    import os
-    import platform
+import datetime
+import importlib
+import logging
+import os
+import platform
 
-    import dotenv
+
+def get_app(
+    config_module_name: str | None = None,
+    root_path: str | os.PathLike[str] | None = None,
+    template_folder: str | os.PathLike[str] | None = None,
+    static_folder: str | os.PathLike[str] | None = None,
+):
+    """Returns the Flask application instance, optionally loading a specific configuration module."""
+
     import flask
     import irods
-    from flask import (Flask, current_app, g, redirect, render_template,
-                       request, session, url_for)
+    from flask import (
+        Flask,
+        current_app,
+        g,
+        redirect,
+        render_template,
+        request,
+        session,
+        url_for,
+    )
     from flask_bootstrap import Bootstrap5
     from flask_cors import CORS
     from flask_session import Session
@@ -30,15 +44,15 @@ def get_app(config_module_name: str | None = None):
     rootlogger = logging.getLogger()
     rootlogger.setLevel("INFO")
 
-    app = Flask(__name__)
+    app = Flask(
+        __name__,
+        root_path=root_path,
+        template_folder=template_folder,
+        static_folder=static_folder,
+    )
 
     # Initialize Jinja extensions
     app.jinja_env.add_extension(MangoJinjaExtension)
-
-
-    # DEV mode, load .env file if present
-    if os.getenv("FLASK_ENV", "production") == "development":
-        dotenv.load_dotenv()  # will not override existing ENV vars
 
     # 1) Load packaged defaults first (always)
     import mango_portal.default_config as _default_config
@@ -73,17 +87,17 @@ def get_app(config_module_name: str | None = None):
 
     # Initialize plugins
     for plugin_module in app.config.get("MANGO_PORTAL_PLUGINS", []):
-        try:
-            plugin_module = importlib.import_module(plugin_module)
-            if hasattr(plugin_module, "init_app"):
-                plugin_module.init_app(app)
-                app.logger.info(f"Initialized plugin module {plugin_module.__name__}")
-            else:
-                app.logger.warning(
-                    f"Plugin module {plugin_module.__name__} does not have an init_app function"
-                )
-        except Exception as e:
-            app.logger.error(f"Failed to initialize plugin module {plugin_module}: {e}")
+        # try:
+        plugin_module = importlib.import_module(plugin_module)
+        if hasattr(plugin_module, "init_app"):
+            plugin_module.init_app(app)
+            app.logger.info(f"Initialized plugin module {plugin_module.__name__}")
+        else:
+            app.logger.warning(
+                f"Plugin module {plugin_module.__name__} does not have an init_app function"
+            )
+        # except Exception as e:
+        #     app.logger.error(f"Failed to initialize plugin module {plugin_module}: {e}")
 
     # global dict holding the irods sessions per user, identified either by their flask session id or by a magic key 'localdev'
 
@@ -173,7 +187,6 @@ def get_app(config_module_name: str | None = None):
                 message = f.read()
             raise ServiceUnavailable(message)
 
-
         # some globals for feeding the templates
         g.prc_version = irods.__version__
         g.flask_version = flask.__version__
@@ -247,6 +260,5 @@ def get_app(config_module_name: str | None = None):
         endpoint="index",
         view_func=getattr(main_landing_route_module, main_landing_route["function"]),
     )
-
 
     return app

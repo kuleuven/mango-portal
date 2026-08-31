@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template
 
-from mango_portal.mango_ui import register_module_admin
 import mango_portal.irods_session_pool as irods_session_pool
+from mango_portal.mango_ui import register_module_admin
 
 admin_admin_bp = Blueprint(
     "admin_admin_bp", __name__, template_folder="templates/admin"
@@ -12,6 +12,7 @@ ADMIN_UI = {
     "bootstrap_icon": "hdd-network",
     "description": "Basic info about the current node",
     "blueprint": admin_admin_bp.name,
+    "index": "index"
 }
 
 register_module_admin(**ADMIN_UI)
