@@ -177,7 +177,6 @@ def get_schema(realm: str, schema: str):
 
 
 @metadata_schema_editor_bp.route("/metadata-schema/save", methods=["POST"])
-@csrf.exempt
 def save_schema():
     if "realm" in request.form:
         schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
@@ -225,7 +224,6 @@ def delete_meta_data_schema():
 
 
 @metadata_schema_editor_bp.route("/metadata-schema/archive", methods=["POST"])
-@csrf.exempt
 def archive_meta_data_schema():
     """ """
     if "realm" in request.form:

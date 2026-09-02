@@ -247,7 +247,7 @@ class ComplexField {
       label = subfield.help
         ? document.createElement("h5")
         : Field.quick("h5", "border-bottom border-secondary");
-      label.innerHTML = subfield.required
+      label.textContent = subfield.required
         ? subfield.title + "*"
         : subfield.title;
       label.id = `viewer-label-${subfield.id}`;
@@ -505,6 +505,10 @@ class Schema extends ComplexField {
         ? "This cannot be changed after the draft is saved." + " " + description_text
         : false,
     });
+
+    this.form.add_hidden_field("csrf_token", url_list.csrf_token.value
+)
+
     const name_input = this.form.form.querySelector(`#${this.card_id}-name`);
     name_input.name = "schema_name";
     name_input.addEventListener("change", () => {
@@ -520,6 +524,8 @@ class Schema extends ComplexField {
         ? "This cannot be changed once a version has been published."
         : false,
     });
+
+
     const title_input = this.form.form.querySelector(`#${this.card_id}-label`);
     title_input.name = "title";
     title_input.addEventListener("change", () => {
@@ -537,6 +543,8 @@ class Schema extends ComplexField {
     }
     // create and add the first button to add fields
     this.add_field_box(this.form.divider);
+
+  
 
     // create and add a submission button that saves the draft without publishing
     this.form.add_action_button("Save draft", "draft");
@@ -576,6 +584,7 @@ class Schema extends ComplexField {
           realm: realm,
           raw_schema: "",
           parent: "",
+          csrf_token: url_list.csrf_token.value,
         };
         // fill the confirmation modal with the right hidden fields
         // if accepted, go through the 'save_draft' part and submit
@@ -754,7 +763,7 @@ class Schema extends ComplexField {
           }
         });
         to_download = { ...filtered_json };
-        json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
+        json_rendering.textContent = JSON.stringify(to_download, null, "  ");
 
         // if all checkboxes are checked
         if (
@@ -793,21 +802,21 @@ class Schema extends ComplexField {
           .forEach((el) => (el.checked = true));
         fields_link.setAttribute("style", "cursor: pointer;");
         to_download = { ...this.properties };
-        json_rendering.innerHTML = JSON.stringify(to_download, null, "  ");
+        json_rendering.textContent = JSON.stringify(to_download, null, "  ");
       } else {
         field_checkboxes
           .querySelectorAll('input[type="checkbox"]')
           .forEach((el) => (el.checked = false));
         fields_link.setAttribute("style", "pointer-events:none;");
         to_download = {};
-        json_rendering.innerHTML = JSON.stringify({}, null, "  ");
+        json_rendering.textContent = JSON.stringify({}, null, "  ");
       }
     });
 
     // show json of selected fields
     let json_rendering = Field.quick("pre", "border p-1 bg-light");
     json_rendering.setAttribute("style", "white-space: pre-wrap;");
-    json_rendering.innerHTML = JSON.stringify(this.properties, null, "  ");
+    json_rendering.textContent = JSON.stringify(this.properties, null, "  ");
 
     for_download.appendChild(for_download_full);
     for_download.appendChild(select_all_box);
@@ -910,6 +919,7 @@ class Schema extends ComplexField {
                 realm: realm,
                 schema_name: this.name,
                 with_status: "published",
+                csrf_token: url_list.csrf_token.value
               }
             );
           }

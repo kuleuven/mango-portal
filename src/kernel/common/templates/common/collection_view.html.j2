@@ -246,6 +246,7 @@
           <div class="modal-body">
             <input type="hidden" id="action" name="action" />
             <input type="hidden" id="destination" name="destination" />
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> 
             <p id="confirmation-text">.</p>
           </div>
           <div class="modal-footer">

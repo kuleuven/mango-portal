@@ -77,7 +77,7 @@ MANGO_PLUGIN_BLUEPRINTS = [
         "blueprint": "mango_audit_history_bp",
     },
     {
-        "module": "plugins.cold_storage.flask.cs_active_zone_routes",
+        "module": "plugins.cold_storage.flask.cs_routes",
         "blueprint": "cold_storage_bp",
     },
     # {"module": "kernel.search.basic_search", "blueprint": "basic_search_bp"},
