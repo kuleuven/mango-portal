@@ -1317,7 +1317,6 @@ def resolve_persistent_id(zone, id, item_type=None):
 
 
 @browse_bp.route("/items/bulk", methods=["POST"])
-@csrf.exempt
 def bulk_operation_items():
     """ """
 
