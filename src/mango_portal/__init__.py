@@ -38,9 +38,6 @@ def get_app(
     from .csrf import csrf
     from .kernel.user import get_irods_session_from_environment
 
-    irods_zone_config_module = importlib.import_module(
-        os.getenv("IRODS_ZONES_CONFIG", "mango_portal.irods_zones_config").rstrip(".py")
-    )
     rootlogger = logging.getLogger()
     rootlogger.setLevel("INFO")
 
@@ -50,6 +47,11 @@ def get_app(
         template_folder=template_folder,
         static_folder=static_folder,
     )
+
+    irods_zone_config_module = importlib.import_module(
+        os.getenv("IRODS_ZONES_CONFIG", "mango_portal.irods_zones_config").rstrip(".py")
+    )
+    app.config["irods_zones"] = irods_zone_config_module.irods_zones
 
     # Initialize Jinja extensions
     app.jinja_env.add_extension(MangoJinjaExtension)
@@ -106,7 +108,6 @@ def get_app(
         Session(app)  # use session specified in config.py
 
     print(f"Flask version {flask.__version__}")
-    app.config["irods_zones"] = irods_zone_config_module.irods_zones
 
     # set the loggin level to the configured one
     rootlogger.setLevel(app.config.get("LOGGING_LEVEL", "INFO"))

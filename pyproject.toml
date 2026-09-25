@@ -1,6 +1,6 @@
 [project]
 name = "mango-portal"
-version = "0.50.0"
+version = "0.50.1"
 description = "Add your description here"
 readme = "README.md"
 authors = [
