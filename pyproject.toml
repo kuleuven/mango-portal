@@ -1,6 +1,6 @@
 [project]
 name = "mango-portal"
-version = "0.50.1"
+version = "0.50.2"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -29,11 +29,11 @@ dependencies = [
     "python-dateutil>=2.9.0.post0",
     "python-irodsclient>=3.3.0",
     "python-magic>=0.4.27",
+    "python-slugify>=9.1.2",
     "pytz>=2026.2",
     "pyyaml>=6.0.3",
     "requests>=2.34.2",
     "semver>=3.0.4",
-    "slugify>=0.0.1",
     "waitress>=3.0.2",
 ]
 
