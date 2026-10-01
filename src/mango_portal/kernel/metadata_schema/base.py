@@ -1,0 +1,965 @@
+import importlib
+import logging
+import json
+import logging
+import re
+from pathlib import Path
+
+import semver
+from irods.access import iRODSAccess
+from irods.collection import iRODSCollection
+from irods.column import Criterion
+from irods.data_object import iRODSDataObject
+from irods.models import Collection, DataObject, DataObjectMeta
+from irods.session import iRODSSession
+
+from mango_lib.irods.auth import get_zone_operator_session
+#from .schema_handler import FileSystemSchemaManager
+
+# Try application config first, fall back to the packaged default
+# try:
+#     config = importlib.import_module("config")
+#     logging.info("Using application config.py")
+# except ModuleNotFoundError:
+#     config = importlib.import_module("mango_portal.default_config")
+#     logging.info("Falling back to mango_portal.default_config")
+
+from irods.session import iRODSSession
+
+SCHEMA_CORE_PERMISSIONS = {
+    "read_schema": 1 << 0,
+    "read_archived": 1 << 1,
+    "read_draft": 1 << 2,
+    "edit_draft": 1 << 3,
+    "create_draft": 1 << 4,
+    "delete_draft": 1 << 5,
+    "publish_draft": 1 << 6,
+    "create_new_schema_draft": 1 << 7,
+    "archive_schema": 1 << 8,  # basically disable the schema
+}
+
+
+def combine_permissions(_keys: list[str]):
+    return sum([SCHEMA_CORE_PERMISSIONS[scp] for scp in _keys])
+
+
+SCHEMA_PERMISSIONS = SCHEMA_CORE_PERMISSIONS | {
+    "write_schema": combine_permissions(
+        ["read_schema", "read_draft", "edit_draft", "create_draft", "delete_draft"]
+    ),
+    "read": combine_permissions(["read_schema", "read_archived"]),
+    "create_new_schema": combine_permissions(
+        [
+            "create_new_schema_draft",
+            "read_schema",
+            "read_archived",
+            "read_draft",
+            "edit_draft",
+            "create_draft",
+            "delete_draft",
+        ]
+    ),
+}
+
+
+class SchemaManager:
+    def get_user_permissions_realm(self, irods_session: iRODSSession):
+        pass
+
+    def get_user_permissions_schema(
+        self, irods_session: iRODSSession, schema: str | None = None
+    ):
+        pass
+
+    def list_schemas(self, filters: list[str] = ["published", "draft", "archived"]):
+        pass
+
+
+class BaseSchemaPermissionsManager:
+    def __init__(self, zone: str, realm: str = ""):
+        self.zone = zone
+        self.realm = realm
+        self.schema_permissions = SCHEMA_PERMISSIONS
+        self.allow_all_bool = {
+            permission: True for permission in SCHEMA_CORE_PERMISSIONS.keys()
+        }
+        self.allow_all = sum(SCHEMA_CORE_PERMISSIONS.values())
+        self.deny_all = 0
+        self.inherit_permissions = None
+
+    def get_user_permissions_realm(self, irods_session: iRODSSession):
+        # anyone can do anything
+        return self.allow_all
+
+    def get_user_permissions_schema(
+        self, irods_session: iRODSSession, schema: str | None = None
+    ):
+        return self.inherit_permissions
+
+    def get_defined_schema_permissions(self, realm: None):
+        return self.schema_permissions
+
+
+# register the schema permissions manager
+# need to import the class from the config and instantiate it
+# schema_permissions_manager_config = getattr(
+#     config,
+#     "MANGO_SCHEMA_PERMISSIONS_MANAGER_CLASS",
+#     {
+#         "module": "mango_portal.kernel.metadata_schema.base",
+#         "class": "BaseSchemaPermissionsManager",
+#     },
+# )
+
+
+
+
+
+MANGO_STORAGE_BASE_PATH = Path("storage")
+VERSION_PATTERN = re.compile(
+    r"-v(\d+\.\d+\.\d+)(?:\.json|-published\.json|-draft\.json)$"
+)
+
+
+class FileSystemSchemaManager(SchemaManager):
+    def __init__(
+        self,
+        zone: str,
+        realm: str,
+        permission_manager_class=BaseSchemaPermissionsManager,
+    ):
+        self._storage_schemas_path = (
+            MANGO_STORAGE_BASE_PATH / zone / "mango" / "realms" / realm / "schemas"
+        )
+        if not self._storage_schemas_path.exists():
+            # mkdir -p equivalent
+            self._storage_schemas_path.mkdir(parents=True, exist_ok=True)
+        # load schemas if any exist yet
+        self.zone = zone
+        self.realm = realm
+        self.permission_manager: BaseSchemaPermissionsManager = (
+            permission_manager_class(zone=zone, realm=realm)
+        )
+
+        self._schemas = self.list_schemas(filters=[])
+        self._schemas_dir_mtime = self._storage_schemas_path.stat().st_mtime
+
+        # print(self)
+
+    def increment_version(self, version_string: str, part="major"):
+        if re.match(r"\d+\.\d+\.\d+", version_string):
+            (major, minor, bugfix) = version_string.split(".")
+            if part == "major":
+                major = str(int(major) + 1)
+            if part == "minor":
+                minor = str(int(minor) + 1)
+            if part == "bugfix":
+                bugfix = str(int(bugfix) + 1)
+            # locals()[part] = int(locals()[part]) + 1 this does not work :(((((
+            new_version = ".".join((major, minor, bugfix))
+            logging.info(
+                f"incrementing for {version_string} and part {part} to {locals()[part]}"
+            )
+            return new_version
+
+        return ""
+
+    def _get_realm_schemas_path(self) -> Path:
+        return self._storage_schemas_path
+
+    def _get_schema_path(self, schema_name: str) -> Path:
+        schema_path = self._get_realm_schemas_path() / schema_name
+        if not schema_path.exists():
+            schema_path.mkdir(parents=True, exist_ok=True)
+        return schema_path
+
+    def get_schema_info(self, schema_name: str) -> dict:
+        schema_dir = self._get_schema_path(schema_name)
+        if (
+            hasattr(self, "_schemas")
+            and (schema_name in self._schemas)
+            and (self._schemas[schema_name]["timestamp"] == schema_dir.stat().st_mtime)
+        ):
+            return self._schemas[schema_name]
+
+        all_schema_files = list(schema_dir.glob("*.json"))
+        # pprint.pprint(all_schema_files)
+        published_files = list(schema_dir.glob("*published.json"))
+        draft_files = list(schema_dir.glob("*draft.json"))
+        total_count = len(all_schema_files)
+        published_count = len(published_files)
+        draft_count = len(draft_files)
+        versions_sorted = sorted(
+            [
+                re.search(
+                    VERSION_PATTERN,
+                    schema_file.name,
+                ).group(1)
+                for schema_file in all_schema_files
+            ],
+            key=semver.Version.parse,
+        )
+
+        # Obtain the schema title from one of the files
+        title = ""
+        if total_count > 0:
+            with all_schema_files[0].open() as first_schema_file:
+                schema_file_content = json.load(first_schema_file)
+                title = (
+                    schema_file_content["title"]
+                    if "title" in schema_file_content
+                    else "UNKNOWN"
+                )
+
+        return {
+            "total_count": total_count,
+            "published_count": published_count,
+            "published": True if published_count > 0 else False,
+            "draft_count": draft_count,
+            "draft": True if draft_count > 0 else False,
+            "archived": (
+                True
+                if all([draft_count == 0, published_count == 0, total_count > 0])
+                else False
+            ),
+            "published_name": (
+                sorted(published_files)[-1].name if published_count >= 1 else ""
+            ),
+            "draft_name": sorted(draft_files)[-1].name if draft_count >= 1 else "",
+            "timestamp": schema_dir.stat().st_mtime,
+            "versions_sorted": versions_sorted,
+            "latest_version": versions_sorted[-1] if total_count > 0 else "",
+            "realm": self.realm,
+            "title": title,
+        }
+
+    def list_schemas(self, filters=["published", "draft"]) -> dict:
+        """
+        filters: possible values: "published", meaning they contain a published version. This is needed for using schemas to add / edit metadata
+        """
+
+        realm_schemas_path = self._get_realm_schemas_path()
+        schemas = []
+        if hasattr(self, "_schemas_dir_mtime") and (
+            realm_schemas_path.stat().st_mtime == self._schemas_dir_mtime
+        ):
+            schemas = self._schemas.keys()
+        else:
+            schemas = [
+                schema_path.name
+                for schema_path in realm_schemas_path.glob("*")
+                if schema_path.is_dir()
+            ]
+
+        schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
+
+        if not filters:
+            return schemas_dict
+        if filters:
+            return {
+                schema: schema_info
+                for schema, schema_info in schemas_dict.items()
+                if any([schema_info[filter] for filter in filters])
+            }
+
+    def load_schema(
+        self, schema_name: str, status="published", version=""
+    ) -> dict | bool:
+        schema_paths = []
+        if status in ["published", "draft"] and not version:
+            schema_paths = list(
+                self._get_schema_path(schema_name).glob(f"{schema_name}*{status}.json")
+            )
+        if version:
+            schema_paths = list(
+                self._get_schema_path(schema_name).glob(
+                    f"*{schema_name}*v{version}*.json"
+                )
+            )
+        if len(schema_paths) >= 1:
+            return sorted(schema_paths)[-1].read_text()
+
+        return False
+
+    def store_schema(
+        self,
+        raw_schema: dict,
+        schema_name: str,
+        current_version="auto-major",
+        with_status="draft",
+        title="MISSING TITLE",
+        username="unknown",
+        parent="",
+    ):
+        current_schema_info = self.get_schema_info(schema_name)
+        # Check validity of save request
+        validity = {"version": {"valid": True}, "title": {"valid": True}}
+        if (
+            current_schema_info["latest_version"]
+            and semver.compare(current_version, current_schema_info["latest_version"])
+            < 0
+        ):
+            if not any(
+                (current_schema_info["draft"], current_schema_info["published"])
+            ):
+                # there are only archived versions
+                validity["version"] = {
+                    "valid": False,
+                    "message": f"Only archived versions for schema {schema_name} in zone {self.zone} and realm {self.realm}",
+                }
+                logging.warn(
+                    f"Only archived versions for schema {schema_name} in zone {self.zone} and realm {self.realm}. Requested version ({current_version}) is smaller than latest recorded version ({current_schema_info['latest_version']})"
+                )
+            else:
+                validity["version"] = {
+                    "valid": False,
+                    "message": f"Requested version ({current_version}) is smaller than latest recorded version ({current_schema_info['latest_version']})",
+                }
+                logging.warn(
+                    f"Problem: requested schema version ({current_version}) to store smaller than highest so far ({current_schema_info['latest_version']}) for {schema_name} in zone {self.zone} and realm {self.realm}"
+                )
+
+            current_version = self.increment_version(
+                current_schema_info["latest_version"], part="major"
+            )
+        if current_schema_info["title"] and current_schema_info["title"] != title:
+            title = current_schema_info["title"]
+            validity["title"] = {
+                "valid": False,
+                "message": f"requested schema title is different from existing for schema {schema_name} in zone {self.zone} and realm {self.realm}",
+            }
+            logging.warn(
+                f"Refused to change title for schema {schema_name} in zone {self.zone} and realm {self.realm}"
+            )
+
+        json_contents = {
+            "schema_name": schema_name,
+            "version": current_version,
+            "status": with_status,
+            "properties": raw_schema,
+            "edited_by": username,
+            "realm": self.realm,
+            "title": title,
+            "parent": parent,
+        }
+
+        if with_status == "draft":
+            if draft_file_name := current_schema_info["draft_name"]:
+                # file already exists, we will keep the version number if it corresponds to the latest one
+                if current_schema_info["latest_version"] and re.search(
+                    r"{current_schema_info['latest_version']}".replace(".", r"\."),
+                    draft_file_name,
+                ):
+                    json_contents["version"] = current_schema_info["latest_version"]
+                    draft_file_name.write_text(json.dumps(json_contents))
+                else:
+                    current_version = (
+                        current_schema_info["latest_version"]
+                        if current_schema_info["latest_version"]
+                        else "v1.0.0"
+                    )
+                    json_contents["version"] = current_version
+                    draft_file_name = (
+                        self._get_schema_path(schema_name)
+                        / f"{schema_name}-v{current_version}-draft.json"
+                    )
+                    draft_file_name.write_text(json.dumps(json_contents))
+            else:
+                if current_version.startswith("auto"):
+                    auto_part = current_version.split("-")[1]  # major, minor, bugfix
+                    current_version = self.increment_version(
+                        (
+                            current_schema_info["latest_version"]
+                            if current_schema_info["latest_version"]
+                            else "1.0.0"
+                        ),
+                        auto_part,
+                    )
+                json_contents["version"] = current_version
+
+                draft_file = (
+                    self._get_schema_path(schema_name)
+                    / f"{schema_name}-v{current_version}-draft.json"
+                )
+
+                draft_file.write_text(json.dumps(json_contents))
+
+        if with_status == "published":
+            # First see what the origin could be: for example is there a draft version or not
+            # if so we need to re-use the version from that draft version
+            # if there is no draft version, check if there is an (older) published version en rename it by
+            # removing the "published" attribute in the filename and calculate a new version
+            if draft_file_name := current_schema_info["draft_name"]:
+                draft_file: Path = self._get_schema_path(schema_name) / draft_file_name
+                draft_file.unlink()
+            if current_schema_info["published_name"]:
+                self.archive_published_schema(schema_name)
+
+            new_published_file = (
+                self._get_schema_path(schema_name)
+                / f"{schema_name}-v{current_version}-published.json"
+            )
+
+            new_published_file.write_text(json.dumps(json_contents))
+
+        return validity
+
+        # return super().store_schema(**kwargs)
+
+    def archive_published_schema(self, schema_name: str):
+        current_schema_info = self.get_schema_info(schema_name)
+        if published_file_name := current_schema_info["published_name"]:
+            published_file: Path = (
+                self._get_schema_path(schema_name) / published_file_name
+            )
+            # change the status to archived
+            schema_dict = json.loads(published_file.read_text())
+            schema_dict["status"] = "archived"
+            published_file.write_text(json.dumps(schema_dict))
+            published_file.rename(
+                self._get_schema_path(schema_name)
+                / published_file_name.replace("-published.json", ".json")
+            )
+            return True
+        else:
+            return False
+
+    def check_and_sanitize_schema(self, schema_name: str):
+        current_schema_info = self.get_schema_info(schema_name)
+        if current_schema_info["total_count"] == 0:
+            current_schema_path = self._get_realm_schemas_path() / schema_name
+            current_schema_path.rmdir()
+            logging.warn(
+                f"Removed schema directory {current_schema_path} from file system because there are no more files left"
+            )
+        # TODO: check for multiple drafts, published versions that may be there because of non robust handling
+
+    def delete_draft_schema(self, schema_name: str):
+        current_schema_info = self.get_schema_info(schema_name)
+        if draft_file_name := current_schema_info["draft_name"]:
+            draft_file: Path = self._get_schema_path(schema_name) / draft_file_name
+            draft_file.unlink()
+            # do a sanitize check, maybe the directory can be deleted
+            self.check_and_sanitize_schema(schema_name)
+
+            return True
+        else:
+            return False
+
+    def get_user_permissions_realm(self, irods_session):
+        return self.permission_manager.get_user_permissions_realm(
+            irods_session=irods_session
+        )
+
+    def get_user_permissions_schema(self, irods_session, schema):
+        return self.permission_manager.get_user_permissions_schema(
+            irods_session=irods_session, schema=schema
+        )
+
+
+class iRODSSchemaManager(SchemaManager):
+    STATUS_METADATA_NAME = "mg.lifecycle_status"
+
+    def __init__(
+        self,
+        zone: str,
+        realm: str,
+        permission_manager_class=BaseSchemaPermissionsManager,
+    ):
+        mango_collection = Path("/") / zone / "mango"
+        irods_session = get_zone_operator_session(zone)
+
+        # TODO make rods user configurable
+        rods_irods_session = get_zone_operator_session(zone, client_user="rods")
+        if not rods_irods_session.collections.exists(str(mango_collection)):
+            rods_irods_session.collections.create(str(mango_collection))
+            rods_irods_session.acls.set(
+                iRODSAccess(
+                    "own", str(mango_collection), user_name=irods_session.username
+                ),
+                recursive=True,
+            )
+
+        self._storage_schemas_path = str(mango_collection / realm / "schemas")
+
+        if not irods_session.collections.exists(self._storage_schemas_path):
+            _schema_manager_realm = irods_session.collections.create(
+                self._storage_schemas_path, recurse=True
+            )
+            irods_session.acls.set(
+                iRODSAccess("read", self._storage_schemas_path, user_name=realm),
+                recursive=True,
+            )
+            irods_session.acls.set(iRODSAccess("inherit", self._storage_schemas_path))
+        else:
+            _schema_manager_realm = irods_session.collections.get(
+                self._storage_schemas_path
+            )
+
+        # load schemas if any exist yet
+        self.zone = zone
+        self.realm = realm
+        self.permission_manager: BaseSchemaPermissionsManager = (
+            permission_manager_class(zone=zone, realm=realm)
+        )
+
+        self._schemas = self.list_schemas(
+            filters=[]
+        )  # check if there are existing schemas
+        self._schemas_dir_mtime = (
+            _schema_manager_realm.modify_time
+        )  # set the 'last-updated' time
+
+        # print(self)
+
+    def increment_version(self, version_string: str, part="major"):
+        if re.match(r"\d+\.\d+\.\d+", version_string):
+            (major, minor, bugfix) = version_string.split(".")
+            if part == "major":
+                major = str(int(major) + 1)
+            if part == "minor":
+                minor = str(int(minor) + 1)
+            if part == "bugfix":
+                bugfix = str(int(bugfix) + 1)
+            # locals()[part] = int(locals()[part]) + 1 this does not work :(((((
+            new_version = ".".join((major, minor, bugfix))
+            logging.info(
+                f"incrementing for {version_string} and part {part} to {locals()[part]}"
+            )
+            return new_version
+
+        return ""
+
+    @property
+    def irods_session(self) -> iRODSSession:
+        return get_zone_operator_session(self.zone)
+
+    @property
+    def realm_schemas_path(self) -> iRODSCollection:
+        irods_session = self.irods_session
+        return irods_session.collections.get(self._storage_schemas_path)
+
+    def _get_schema_path(self, schema_name: str) -> iRODSCollection:
+        irods_session = self.irods_session
+        schema_path = Path(self._storage_schemas_path) / schema_name
+        return irods_session.collections.create(str(schema_path), recurse=True)
+
+    def _get_schema_version_object(
+        self, schema_name: str, file_name: str
+    ) -> iRODSDataObject:
+        irods_session = self.irods_session
+        schema_version_path = str(
+            Path(self._get_schema_path(schema_name).path) / file_name
+        )
+        if not irods_session.data_objects.exists(schema_version_path):
+            return irods_session.data_objects.create(schema_version_path)
+        return irods_session.data_objects.get(schema_version_path)
+
+    def get_schema_info(self, schema_name: str) -> dict:
+        schema_coll = self._get_schema_path(schema_name)
+        if (
+            hasattr(self, "_schemas")
+            and (schema_name in self._schemas)
+            and (
+                self._schemas[schema_name]["timestamp"]
+                == schema_coll.modify_time.timestamp()
+            )
+        ):
+            return self._schemas[schema_name]
+
+        query = (
+            self.irods_session.query(
+                Collection.name, DataObject.name, DataObjectMeta.value
+            )
+            .filter(Criterion("=", Collection.name, schema_coll.path))
+            .filter(Criterion("like", DataObject.name, "%.json"))
+            .filter(Criterion("=", DataObjectMeta.name, self.STATUS_METADATA_NAME))
+            .all()
+        )
+        all_schema_files = []
+        published_files = []
+        draft_files = []
+        for i in query:
+            obj = self.irods_session.data_objects.get(
+                f"/{i[Collection.name]}/{i[DataObject.name]}"
+            )
+            all_schema_files.append(obj)
+            status = obj.metadata.get_one(self.STATUS_METADATA_NAME).value
+            if status == "published":
+                published_files.append(obj.name)
+            elif status == "draft":
+                draft_files.append(obj.name)
+
+        total_count = len(all_schema_files)
+        published_count = len(published_files)
+        draft_count = len(draft_files)
+        versions_sorted = sorted(
+            [
+                re.search(
+                    VERSION_PATTERN,
+                    schema_file.name,
+                ).group(1)
+                for schema_file in all_schema_files
+            ],
+            key=semver.Version.parse,
+        )
+
+        # Obtain the schema title from one of the files
+        title = ""
+        if total_count > 0:
+            with all_schema_files[0].open() as first_schema_file:
+                schema_file_content = json.load(first_schema_file)
+                title = (
+                    schema_file_content["title"]
+                    if "title" in schema_file_content
+                    else "UNKNOWN"
+                )
+
+        return {
+            "total_count": total_count,
+            "published_count": published_count,
+            "published": True if published_count > 0 else False,
+            "draft_count": draft_count,
+            "draft": True if draft_count > 0 else False,
+            "archived": (
+                True
+                if all([draft_count == 0, published_count == 0, total_count > 0])
+                else False
+            ),
+            "published_name": (
+                sorted(published_files)[-1] if published_count >= 1 else ""
+            ),
+            "draft_name": sorted(draft_files)[-1] if draft_count >= 1 else "",
+            "timestamp": schema_coll.modify_time.timestamp(),
+            "versions_sorted": versions_sorted,
+            "latest_version": versions_sorted[-1] if total_count > 0 else "",
+            "realm": self.realm,
+            "title": title,
+        }
+
+    def list_schemas(self, filters=["published", "draft"]) -> dict:
+        """
+        filters: possible values: "published", meaning they contain a published version.
+        This is needed for using schemas to add / edit metadata
+        """
+
+        realm_schemas_collection = self.realm_schemas_path
+        schemas = []
+        if hasattr(self, "_schemas_dir_mtime") and (
+            realm_schemas_collection.modify_time == self._schemas_dir_mtime
+        ):
+            schemas = self._schemas.keys()
+        else:
+            schemas = [
+                schema_path.name
+                for schema_path in realm_schemas_collection.subcollections
+            ]
+
+        schemas_dict = {schema: self.get_schema_info(schema) for schema in schemas}
+
+        if not filters:
+            return schemas_dict
+        if filters:
+            return {
+                schema: schema_info
+                for schema, schema_info in schemas_dict.items()
+                if any([schema_info[filter] for filter in filters])
+            }
+
+    def load_schema(self, schema_name: str, status="", version="") -> dict | bool:
+        schema_coll = self._get_schema_path(schema_name)
+
+        query = (
+            self.irods_session.query(Collection.name, DataObject.name)
+            .filter(Criterion("=", Collection.name, schema_coll.path))
+            .filter(Criterion("like", DataObject.name, "%.json"))
+            .filter(Criterion("=", DataObjectMeta.name, self.STATUS_METADATA_NAME))
+        )
+
+        if status in ["published", "draft", "archived"]:
+            query.filter(Criterion("=", DataObjectMeta.value, status))
+        if status not in ["published", "draft"]:
+            if version:
+                query.filter(
+                    Criterion("like", DataObject.name, f"{schema_name}-v{version}%")
+                )
+            else:
+                raise ValueError(
+                    "Either provide published/draft status or a specific version"
+                )
+
+        path = None
+        for result in query.all():
+            if result:
+                path = f"{result[Collection.name]}/{result[DataObject.name]}"
+                break
+        if path:
+            schema_object = self.irods_session.data_objects.get(path)
+            with schema_object.open() as f:
+                # return json.load(f)
+                return f.read().decode()  # we want it as a string
+
+        return False
+
+    def store_schema(
+        self,
+        raw_schema: dict,
+        schema_name: str,
+        current_version="auto-major",
+        with_status="draft",
+        title="MISSING TITLE",
+        username="unknown",
+        parent="",
+    ):
+        current_schema_info = self.get_schema_info(schema_name)
+        # Check validity of save request
+        validity = {"version": {"valid": True}, "title": {"valid": True}}
+        if (
+            current_schema_info["latest_version"]
+            and semver.compare(current_version, current_schema_info["latest_version"])
+            < 0
+        ):  # current version is earlier than latest version
+            if not any(
+                (current_schema_info["draft"], current_schema_info["published"])
+            ):
+                # there are only archived versions
+                validity["version"] = {
+                    "valid": False,
+                    "message": f"Only archived versions for schema {schema_name} in zone {self.zone} and realm {self.realm}",
+                }
+                logging.warn(
+                    f"Only archived versions for schema {schema_name} in zone {self.zone} and realm {self.realm}. Requested version ({current_version}) is smaller than latest recorded version ({current_schema_info['latest_version']})"
+                )
+            else:
+                validity["version"] = {
+                    "valid": False,
+                    "message": f"Requested version ({current_version}) is smaller than latest recorded version ({current_schema_info['latest_version']})",
+                }
+                logging.warn(
+                    f"Problem: requested schema version ({current_version}) to store smaller than highest so far ({current_schema_info['latest_version']}) for {schema_name} in zone {self.zone} and realm {self.realm}"
+                )
+
+            current_version = self.increment_version(
+                current_schema_info["latest_version"], part="major"
+            )
+        if current_schema_info["title"] and current_schema_info["title"] != title:
+            title = current_schema_info["title"]
+            validity["title"] = {
+                "valid": False,
+                "message": f"requested schema title is different from existing for schema {schema_name} in zone {self.zone} and realm {self.realm}",
+            }
+            logging.warn(
+                f"Refused to change title for schema {schema_name} in zone {self.zone} and realm {self.realm}"
+            )
+
+        json_contents = {
+            "schema_name": schema_name,
+            "version": current_version,
+            "status": with_status,
+            "properties": raw_schema,
+            "edited_by": username,
+            "realm": self.realm,
+            "title": title,
+            "parent": parent,
+        }
+
+        if with_status == "draft":
+            if draft_file_name := current_schema_info["draft_name"]:
+                # file already exists, we will keep the version number if it corresponds to the latest one
+                if current_schema_info["latest_version"] and re.search(
+                    r"{current_schema_info['latest_version']}".replace(".", r"\."),
+                    draft_file_name,
+                ):
+                    json_contents["version"] = current_schema_info["latest_version"]
+                    draft_object = self._get_schema_version_object(
+                        schema_name, draft_file_name
+                    )
+                else:
+                    current_version = (
+                        current_schema_info["latest_version"]
+                        if current_schema_info["latest_version"]
+                        else "v1.0.0"
+                    )
+                    json_contents["version"] = current_version
+                    draft_object = self._get_schema_version_object(
+                        schema_name, f"{schema_name}-v{current_version}-draft.json"
+                    )
+            else:
+                if current_version.startswith("auto"):
+                    auto_part = current_version.split("-")[1]  # major, minor, bugfix
+                    current_version = self.increment_version(
+                        (
+                            current_schema_info["latest_version"]
+                            if current_schema_info["latest_version"]
+                            else "1.0.0"
+                        ),
+                        auto_part,
+                    )
+                json_contents["version"] = current_version
+
+                draft_object = self._get_schema_version_object(
+                    schema_name, f"{schema_name}-v{current_version}-draft.json"
+                )
+
+            with draft_object.open("w") as f:
+                f.write(json.dumps(json_contents).encode())
+            draft_object.metadata.set(self.STATUS_METADATA_NAME, with_status)
+
+        if with_status == "published":
+            # First see what the origin could be: for example is there a draft version or not
+            # if so we need to re-use the version from that draft version
+            # if there is no draft version, check if there is an (older) published version en rename it by
+            # removing the "published" attribute in the filename and calculate a new version
+            if draft_file_name := current_schema_info["draft_name"]:
+                draft_file: iRODSDataObject = self._get_schema_version_object(
+                    schema_name, draft_file_name
+                )
+                draft_file.unlink()
+            if current_schema_info["published_name"]:
+                self.archive_published_schema(schema_name)
+
+            new_published_file = self._get_schema_version_object(
+                schema_name, f"{schema_name}-v{current_version}-published.json"
+            )
+
+            with new_published_file.open("w") as f:
+                f.write(json.dumps(json_contents).encode())
+            new_published_file.metadata.set(self.STATUS_METADATA_NAME, with_status)
+
+        return validity
+
+        # return super().store_schema(**kwargs)
+
+    def archive_published_schema(self, schema_name: str):
+        current_schema_info = self.get_schema_info(schema_name)
+        if published_file_name := current_schema_info["published_name"]:
+            published_file: iRODSDataObject = self._get_schema_version_object(
+                schema_name, published_file_name
+            )
+            # change the status to archived
+            with published_file.open() as f:
+                schema_dict = json.load(f)
+            schema_dict["status"] = "archived"
+            with published_file.open("w") as f:
+                # it doesn't work to read and write with w+
+                f.write(json.dumps(schema_dict).encode())
+            published_file.metadata.set(self.STATUS_METADATA_NAME, "archived")
+            self.irods_session.data_objects.move(
+                published_file.path,
+                published_file.path.replace("-published.json", ".json"),
+            )
+            return True
+        return False
+
+    def check_and_sanitize_schema(self, schema_name: str):
+        current_schema_info = self.get_schema_info(schema_name)
+        if current_schema_info["total_count"] == 0:
+            current_schema_path = self._get_schema_path(schema_name)
+            current_schema_path.remove(force=True)
+            logging.warn(
+                f"Removed schema collection {current_schema_path.path} from iRODS because there are no more files left"
+            )
+        # TODO: check for multiple drafts, published versions that may be there because of non robust handling
+
+    def delete_draft_schema(self, schema_name: str):
+        current_schema_info = self.get_schema_info(schema_name)
+        if draft_file_name := current_schema_info["draft_name"]:
+            draft_file: iRODSDataObject = self._get_schema_version_object(
+                schema_name, draft_file_name
+            )
+            draft_file.unlink()
+            # do a sanitize check, maybe the directory can be deleted
+            self.check_and_sanitize_schema(schema_name)
+
+            return True
+        else:
+            return False
+
+    def get_user_permissions_realm(self, irods_session):
+        return self.permission_manager.get_user_permissions_realm(
+            irods_session=irods_session
+        )
+
+    def get_user_permissions_schema(self, irods_session, schema):
+        return self.permission_manager.get_user_permissions_schema(
+            irods_session=irods_session, schema=schema
+        )
+
+
+
+# GROUP BASED PERMISSIONS MANAGER
+
+SCHEMA_MANAGER_GROUP_SUFFIX = "schema_manager"
+
+
+class GroupBasedSchemaPermissions(BaseSchemaPermissionsManager):
+    def __init__(self, zone: str, realm: str):
+        super().__init__(zone, realm)
+        self.group_schema_manager = f"{realm}_{SCHEMA_MANAGER_GROUP_SUFFIX}"
+        self.realm_manager = f"{realm}_manager"
+
+    def get_user_permissions_realm(self, irods_session: iRODSSession):
+        # check if the realm is the user personal space and grant full access
+        if self.realm == irods_session.username:
+            return self.allow_all
+        # the public realm holds all common zone schemas
+        # mango portal admins are the sole responsibles for managing them
+        # other users get read access (published and archived only)
+        if self.realm == "public":
+            if "mango_portal_admin" in irods_session.roles:
+                return self.allow_all
+            else:
+                return self.schema_permissions["read"]
+        # realm schema managers "{realm}_schema_manager" have full rights
+        # realm members only read rights
+        if any(
+            group in irods_session.my_group_names
+            for group in (self.group_schema_manager, self.realm_manager)
+        ):
+            return self.allow_all
+        if self.realm in irods_session.my_group_names:
+            return self.schema_permissions["read"]
+
+        # if no matches, nothing allowed
+        return self.deny_all
+
+    def get_user_permissions_schema(self, irods_session: iRODSSession, schema):
+        return self.inherit_permissions
+
+
+SCHEMA_PERMISSIONS_MANAGER_CLASS = BaseSchemaPermissionsManager  # default
+
+
+def set_schema_permissions_manager_class(module: str, class_name: str):
+    global SCHEMA_PERMISSIONS_MANAGER_CLASS
+    schema_permissions_manager_module = importlib.import_module(module)
+    SCHEMA_PERMISSIONS_MANAGER_CLASS = getattr(
+        schema_permissions_manager_module, class_name
+    )
+
+
+SCHEMA_MANAGER_CLASS = FileSystemSchemaManager  # default
+
+
+def set_schema_manager_class(module: str, class_name: str):
+    global SCHEMA_MANAGER_CLASS
+    schema_manager_module = importlib.import_module(module)
+    SCHEMA_MANAGER_CLASS = getattr(schema_manager_module, class_name)
+
+
+schema_managers = {}
+
+logging.info(
+    f"Schema permissions manager from config: {SCHEMA_PERMISSIONS_MANAGER_CLASS.__name__}"
+)
+
+
+def get_schema_manager(zone: str, realm: str) -> SchemaManager:
+    # global schema_managers
+
+    if zone_realm_key := f"{zone}-{realm}" not in schema_managers:
+        schema_managers[zone_realm_key] = SCHEMA_MANAGER_CLASS(
+            zone, realm, SCHEMA_PERMISSIONS_MANAGER_CLASS
+        )
+
+    return schema_managers[zone_realm_key]
