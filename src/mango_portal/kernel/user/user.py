@@ -21,7 +21,7 @@ import os
 
 
 irods_zone_config_module = importlib.import_module(
-    os.getenv("IRODS_ZONES_CONFIG", "mango_portal.irods_zones_config").rstrip(".py")
+    os.getenv("IRODS_ZONES_CONFIG", "mango_portal.irods_zones_config")
 )
 
 irods_zones = irods_zone_config_module.irods_zones
