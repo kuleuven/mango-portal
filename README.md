@@ -1,90 +1,18 @@
 ## ManGO: an iRODS Python Client based portal
 
-> WARNING: the current state is geared towards deployments in the KU Leuven specific cloud services, see [Custom deployments](Custom-deployments.md) for your options. In the near future, the KU Leuven specifics will be entirely decoupled from the generic code base so a default installation will work with a vanilla iRODS installation 
+> UPDATE: 2026-10-02 BREAKING CHANGES
 
-> The current version requires python 3.10 or higher. See also the section on changing the python version below.
+This repository now hosts the refactored version of ManGO Portal as part of a refactored ManGO platform.
 
-### Installation (local development mode, Linux, KULeuven specific for now)
+The main changes are:
 
-You need to have a valid and initialised iRODS environment for your account, the easiest is to install the iRODS icommands and execute the instructions from the ManGO landing page for the chosen iRODS zone 
+- The entire ManGO platform is now basically a set of Python packages
+- Some plugins have moved out of this repository and are now in their own repository (KuLeuven specific are now in an internal repository)
 
-Create a python virtual environment in the root of this repository checkout and install the required modules, for example
+In the current phase, there are hardly any functional changes, it is mostly refactoring for standard Python packaging
 
-```sh
-$ python3 -m venv venv
-$ . venv/bin/activate
-$ pip3 install -r requirements.txt
-```
+Documentation is in the works on how to deal with this new incarnation of the ManGO platform, but the we are quite sure the changes for any "fork" of implementation of the ManGo POrtal code base is rather small, and much more customisable and maintanable in the future
 
-### Vue2.js development and building
+Stay tuned for more information in the coming weeks
 
-Currently the node module parcel and its dependencies are required for building, see https://parceljs.org/
 
-Before using the first time, execute the following steps
-
-```sh
-$ cd src
-$ npm install
-$ npm run build
-```
-
-### Starting the development server (waitress version, recommended)
-
-Make sure you activated the virtual environment
-
-Launch the flask development server from the src directory:
-```sh
-$ cd src
-$ ./run_waitress.sh
-```
-or
-
-```sh
-$ src/run_waitress.sh
-```
-
-This will start waitress as used in the production deployments, but adds a listener for reloading the app when you change files locally.
-
-Point your browser to `http://localhost:3000`
-
-### Updating
-
-Check for new required python modules and or versions
-
-```
-$ pip3 install -r requirements.txt
-```
-
-If you encounter javascript related errors, the used js files may need an update:
-
-```sh
-$ cd src
-$ npm install
-$ npm run build
-```
-
-### Changing the python version
-
-If you upgrade your python version, the requirements.txt may not be correct anymore (outdated packages). You can install updated python modules with:
-
-```sh
-$ pip list --outdated --format=freeze | grep -v '^\-e' | \
- cut -d = -f 1  | xargs -n1 pip install -U
-```
-
-### Technical:
-
-- backend framework: Flask
-- code organisation: Flask blueprints for making things modular
-- leverage the irods-Python client
-- optional OpenSearch integration
-
-## Development guidelines
-
-### Python
-
-The preferred formatter is _black_ with its default options, it also has an integration with IDE's such as VSCode
-
-### Javascript
-
-The preferred formatter is _prettier_ with indenting to 4 spaces, no TAB's and single quotes for strings
