@@ -2,15 +2,23 @@ import json
 import logging
 from pprint import pprint
 
-from flask import (Blueprint, Response, current_app, g, redirect,
-                   render_template, request, url_for)
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from irods.meta import AVUOperation, iRODSMeta
 from irods.session import iRODSSession
 from slugify import slugify
 from werkzeug.datastructures import MultiDict
 
-import mango_portal.signals as signals
-from mango_portal.lib.util import flatten_schema
+from mango_portal import lib, signals
+from mango_portal.lib.util import flatten_schema, btoa, execute_atomic_operations
 
 from .base import SchemaManager, get_schema_manager
 
@@ -152,7 +160,7 @@ def edit_metadata(
                 "schema_form_edit.html.j2",
                 schema=schema,
                 realm=realm,
-                schema_values=lib.util.btoa(values_json),
+                schema_values=btoa(values_json),
                 prefix=prefix,
                 item=catalog_item,
             )
@@ -197,7 +205,7 @@ def edit_metadata(
                     )
 
         # workaround for a bug in iRODS < = 4.2.11: only 'own' can execute atomic operations
-        lib.util.execute_atomic_operations(
+        execute_atomic_operations(
             irods_session, catalog_item, avu_operation_list
         )
 
@@ -254,7 +262,7 @@ def delete_schema_metadata_for_item():
             )
 
     # workaround for a bug in iRODS < = 4.2.11: only 'own' can execute atomic operations
-    lib.util.execute_atomic_operations(
+    execute_atomic_operations(
         g.irods_session, catalog_item, avu_operation_list
     )
 
