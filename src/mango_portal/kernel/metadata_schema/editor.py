@@ -158,10 +158,13 @@ def get_schema(realm: str, schema: str):
 
 @metadata_schema_editor_bp.route("/metadata-schema/save", methods=["POST"])
 def save_schema():
+    print(f"Entering save_schema()")
     if "realm" in request.form:
         schema_manager = get_schema_manager(g.irods_session.zone, request.form["realm"])
         raw_schema = {}
         # either we get a json string or a decoded json string
+        print(f"Saving schema for realm {request.form['realm']}")
+        print(request.form["raw_schema"])
         try:
             raw_schema = json.loads(request.form["raw_schema"])
         except Exception as e:
