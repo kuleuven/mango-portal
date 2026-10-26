@@ -431,7 +431,7 @@ wheels = [
 
 [[package]]
 name = "mango-portal"
-version = "0.50.8"
+version = "0.50.9"
 source = { editable = "." }
 dependencies = [
     { name = "bootstrap-flask" },
