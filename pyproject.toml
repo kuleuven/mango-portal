@@ -53,4 +53,4 @@ dev = [
 ]
 
 [tool.uv.sources]
-mango-lib = { path = "../mango-lib", editable = true }
+mango-lib = { git = "https://github.com/kuleuven/mango-lib", branch = "development" }
