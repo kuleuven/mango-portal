@@ -28,6 +28,7 @@ def get_app(
     from flask_bootstrap import Bootstrap5
     from flask_cors import CORS
     from flask_session import Session
+    from jinja2 import select_autoescape
     from mango_lib.jinja import MangoJinjaExtension
     from werkzeug.exceptions import HTTPException, ServiceUnavailable
 
@@ -118,7 +119,15 @@ def get_app(
     mango_server_info = {"server_start": datetime.datetime.now()}
     # app.config["EXPLAIN_TEMPLATE_LOADING"] = True
     ## enable auto escape in jinja2 templates
-    app.jinja_options["autoescape"] = lambda _: True
+    # app.jinja_options["autoescape"] = lambda _: True
+
+    
+
+    app.jinja_env.autoescape = select_autoescape(
+        enabled_extensions=("html", "htm", "xml", "xhtml", "svg", "j2", "jinja"),
+        default_for_string=True,
+        default=True,          # escape by default, opt out per template
+    )
 
     # register bootstrap5 support
     bootstrap = Bootstrap5(app)
