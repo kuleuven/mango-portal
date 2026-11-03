@@ -121,12 +121,10 @@ def get_app(
     ## enable auto escape in jinja2 templates
     # app.jinja_options["autoescape"] = lambda _: True
 
-    
-
     app.jinja_env.autoescape = select_autoescape(
         enabled_extensions=("html", "htm", "xml", "xhtml", "svg", "j2", "jinja"),
         default_for_string=True,
-        default=True,          # escape by default, opt out per template
+        default=True,  # escape by default, opt out per template
     )
 
     # register bootstrap5 support
