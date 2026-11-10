@@ -13,6 +13,7 @@ from collections.abc import Mapping
 from operator import itemgetter
 from pathlib import Path, PurePath
 from urllib.parse import unquote
+import importlib
 
 import flask
 import httpx
@@ -60,6 +61,16 @@ print(f"Registered UI module {UI['title']} with blueprint {UI['blueprint']}")
 
 # rudimentary code to obtain schema realm (project) from url
 
+env_var =  "MANGO_GET_SUB_COLLECTIONS_SIZE"
+module_name, func_name = os.getenv(env_var, ":").split(":")
+if module_name and func_name:
+        content_module = importlib.import_module(module_name)
+        get_subcollections = getattr(content_module, func_name)
+else:
+    def get_subcollections(current_collection: iRODSCollection) -> iRODSCollection:
+        return current_collection.subcollections
+
+        
 
 def avu_to_dict(avu):
     d = {"name": avu.name, "value": avu.value}
@@ -313,7 +324,9 @@ def collection_browse(collection=None):
         current_collection = g.irods_session.collections.get(co_path)
     except:
         abort(404, "Path not found or not accessible for you")
-    sub_collections = current_collection.subcollections
+
+
+    sub_collections = get_subcollections(current_collection)
     data_objects = current_collection.data_objects
 
     schemas = {}
@@ -465,6 +478,7 @@ def collection_browse(collection=None):
     # query = Query(g.irods_session, *objects).filter(*filters)
     # metadata_objects = query.execute()
 
+
     # end temp
     view_template = get_template_override_manager(
         g.irods_session.zone
@@ -480,6 +494,7 @@ def collection_browse(collection=None):
         md2dict.convert_metadata_to_dict(current_collection.metadata.items())
     )
     # print(reorganized_dict)
+
 
     return render_template(
         view_template,

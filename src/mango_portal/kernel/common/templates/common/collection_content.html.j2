@@ -35,7 +35,8 @@
                 <td>{{ collection.owner_name }}</td>
                 <td>{{ collection.create_time | format_datetime }}</td>
                 <td>{{ collection.modify_time | format_datetime }}</td>
-                <td></td>
+                {% set size = collection | attr('size') | default(none) %}
+                <td>{% if size is not none %} {{ size | filesizeformat }} {% endif %}</td>
                 <td></td>
             </tr>
         {% endfor %}
