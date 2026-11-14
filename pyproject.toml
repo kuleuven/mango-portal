@@ -1,6 +1,6 @@
 [project]
 name = "mango-portal"
-version = "0.50.10"
+version = "0.50.11"
 description = "ManGO Portal core package with a kernel and some optional plugins"
 readme = "README.md"
 authors = [
@@ -18,7 +18,7 @@ dependencies = [
     "flask-wtf>=1.3.0",
     "httpx>=0.28.1",
     "humanize>=4.15.0",
-    "mango-lib",
+    "mango-lib>=0.3.0",
     "mango-mdconverter>=0.0.10",
     "multidict>=6.7.1",
     "nh3>=0.3.6",
@@ -52,5 +52,3 @@ dev = [
     "python-dotenv>=1.2.2",
 ]
 
-[tool.uv.sources]
-mango-lib = { git = "https://github.com/kuleuven/mango-lib", branch = "development" }
