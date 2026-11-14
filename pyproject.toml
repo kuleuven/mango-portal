@@ -1,7 +1,7 @@
 [project]
 name = "mango-portal"
 version = "0.50.10"
-description = "Add your description here"
+description = "ManGO Portal core package with a kernel and some optional plugins"
 readme = "README.md"
 authors = [
     { name = "Paul Borgermans", email = "paul.borgermans@kuleuven.be" }

@@ -6,7 +6,6 @@
 .idea/
 .idea
 .boot.sh 
-*.qmd
 # other IDEs
 .spyproject
 .spyproject/
@@ -21,15 +20,13 @@ build
 eggs
 parts
 # bin
-var
+
 sdist
 develop-eggs
 .installed.cfg
-#lib
-lib64
 
-# Installer logs
-pip-log.txt
+
+
 
 # Unit test / coverage reports
 .coverage
@@ -67,8 +64,7 @@ node_modules
 src/storage
 src/scratch
 
+dist/
 
-.gitignore
 .cache
-.eslintrc.json
-package-lock.json
+
